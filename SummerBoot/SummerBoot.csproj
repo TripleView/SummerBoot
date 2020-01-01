@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <ApplicationIcon></ApplicationIcon>
+    <OutputType>Library</OutputType>
+    <StartupObject />
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Version>1.0.1</Version>
+    <Description>SummerBoot,将SpringBoot的先进理念与C#的简洁优雅合二为一。AOP,一种奇妙的开发理念，能实现许许多多的黑魔法。本库支持普通类级别的精准属性注入，配置值注入，注解式缓存，只需写接口即可实现自定义sql功能等。</Description>
+    <PackageReleaseNotes>SummerBoot,将SpringBoot的先进理念与C#的简洁优雅合二为一。AOP,一种奇妙的开发理念，能实现许许多多的黑魔法。本库支持普通类级别的精准属性注入，配置值注入，注解式缓存，只需写接口即可实现自定义sql功能等。</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/TripleView/SummerBoot</RepositoryUrl>
+    <RepositoryType>github</RepositoryType>
+    <Copyright>MIT</Copyright>
+    <IsPackable>true</IsPackable>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Cache\CacheOperationContext.cs" />
+    <Compile Remove="Cache\CacheOperationContextCollection.cs" />
+    <Compile Remove="Cache\CachePutRequest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Castle.Core" Version="4.4.0" />
+    <PackageReference Include="Dapper.Contrib" Version="2.0.30" />
+    <PackageReference Include="DynamicExpresso.Core" Version="2.3.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
+  </ItemGroup>
+  
+
+
+</Project>
