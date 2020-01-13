@@ -188,15 +188,15 @@ namespace SummerBoot.Repository
         private object ProcessDeleteAttribute(DeleteAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
         {
             var sql = attribute.Sql;
-            var updateResult = 0;
+            var deleteResult = 0;
             if (uow == null)
             {
-                updateResult = db.ShortDbConnection.Execute(sql, args);
-                return updateResult;
+                deleteResult = db.ShortDbConnection.Execute(sql, args);
+                return deleteResult;
             }
 
             var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
-            updateResult = dbcon.Execute(sql, args, db.LongDbTransaction);
+            deleteResult = dbcon.Execute(sql, args, db.LongDbTransaction);
 
             if (uow.ActiveNumber == 0)
             {
@@ -204,7 +204,7 @@ namespace SummerBoot.Repository
                 dbcon.Dispose();
             }
 
-            return updateResult;
+            return deleteResult;
         }
     }
 }
