@@ -59,7 +59,7 @@ namespace SummerBoot.Repository
 
             //处理delete逻辑
             var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
-            if (updateAttribute != null)
+            if (deleteAttribute != null)
             {
                 return ProcessDeleteAttribute(deleteAttribute, db, dbArgs, uow);
             }
