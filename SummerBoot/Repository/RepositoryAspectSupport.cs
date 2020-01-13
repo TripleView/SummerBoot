@@ -39,9 +39,9 @@ namespace SummerBoot.Repository
             var isCollection = returnTypeTmp.IsCollection();
             var isEnumerable = returnTypeTmp.IsEnumerable();
             var isQueryable = returnTypeTmp.IsQueryable();
-            var IsValueType = returnTypeTmp.IsValueType;
+            var isValueType = returnTypeTmp.IsValueType;
             var isString = returnTypeTmp.IsString();
-            
+
             //最底层的返回类型
             Type returnType = isGenericType ? returnTypeTmp.GetGenericArguments().FirstOrDefault() : returnTypeTmp;
 
@@ -57,17 +57,25 @@ namespace SummerBoot.Repository
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
-                return ProcessSelectAttribute(selectAttribute, db,dbArgs,isCollection,isQueryable,isEnumerable,isString);
+                return ProcessSelectAttribute(selectAttribute, db, dbArgs, isCollection, isQueryable, isEnumerable, isString);
             }
 
             //处理update逻辑
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
             if (updateAttribute != null)
             {
-                return ProcessSelectAttribute(selectAttribute, db, dbArgs, isCollection, isQueryable, isEnumerable, isString);
+                return ProcessUpdateAttribute(updateAttribute, db, dbArgs, uow);
             }
 
-            throw new Exception("can not process method name:"+method.Name);
+            //处理delete逻辑
+            var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
+            if (updateAttribute != null)
+            {
+                return ProcessDeleteAttribute(deleteAttribute, db, dbArgs, uow);
+            }
+
+
+            throw new Exception("can not process method name:" + method.Name);
         }
 
         /// <summary>
@@ -127,7 +135,7 @@ namespace SummerBoot.Repository
             return dbArgs;
         }
 
-        private object ProcessSelectAttribute(SelectAttribute attribute,IDbFactory db,DynamicParameters args,bool isCollection,bool isQueryable,bool isEnumerable,bool isString)
+        private object ProcessSelectAttribute(SelectAttribute attribute, IDbFactory db, DynamicParameters args, bool isCollection, bool isQueryable, bool isEnumerable, bool isString)
         {
             var sql = attribute.Sql;
 
@@ -153,6 +161,50 @@ namespace SummerBoot.Repository
             }
 
             return result;
+        }
+
+        private object ProcessUpdateAttribute(UpdateAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
+        {
+            var sql = attribute.Sql;
+            var updateResult = 0;
+            if (uow == null)
+            {
+                updateResult = db.ShortDbConnection.Execute(sql, args);
+                return updateResult;
+            }
+
+            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
+            updateResult = dbcon.Execute(sql, args, db.LongDbTransaction);
+
+            if (uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
+
+            return updateResult;
+        }
+        
+        private object ProcessDeleteAttribute(DeleteAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
+        {
+            var sql = attribute.Sql;
+            var updateResult = 0;
+            if (uow == null)
+            {
+                updateResult = db.ShortDbConnection.Execute(sql, args);
+                return updateResult;
+            }
+
+            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
+            updateResult = dbcon.Execute(sql, args, db.LongDbTransaction);
+
+            if (uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
+
+            return updateResult;
         }
     }
 }
