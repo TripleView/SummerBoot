@@ -1,17 +1,14 @@
-using Example.Models;
+using Castle.DynamicProxy;
 using Example.Service;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MySql.Data.MySqlClient;
-using SqlOnline.Utils;
 using SummerBoot.Core;
-using System;
-using System.Linq;
-using Example.DbFile;
-using Microsoft.Data.Sqlite;
+using SummerBoot.Core.Aop;
+using SummerBoot.Core.Aop.Express;
 
 namespace Example
 {
@@ -27,37 +24,23 @@ namespace Example
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSummerBoot();
+            services.AddSummerBoot(
+                builder =>
+                {
+                    builder.AddSummerBootCache(it =>
+                        {
+                            it.UseRedis("129.204.47.226,password=summerBoot");
+                        })
+                        .AddSummerBootRepository(it =>
+                    {
+                        it.DbConnectionType = typeof(SqliteConnection);
+                        it.ConnectionString = "Data source=./DbFile/mydb.db";
+                    })
+                        .RegisterExpression<StandardInterceptor>(new WithinAopExpress(typeof(IPersonService)));
+                }
 
-            services.AddSummerBootCache(it =>
-            {
-                it.UseRedis("129.204.47.226,password=summerBoot");
-            });
-
-            services.AddSummerBootRepository(it =>
-            {
-                it.DbConnectionType = typeof(SqliteConnection);
-                it.ConnectionString = "Data source=./DbFile/mydb.db";
-            });
-
+            );
             services.AddControllers().AddSummerBootMvcExtention();
-
-            //services.AddSbScoped<Engine>(typeof(TransactionalInterceptor));
-
-            //services.AddSbScoped<ICar, Car>(typeof(TransactionalInterceptor));
-
-            //using (var database = new Db())    //新增
-            //{
-            //    database.Database.EnsureCreated(); //如果没有创建数据库会自动创建，最为关键的一句代码
-            //}
-
-
-            //services.AddSbScoped<IAddOilService, AddOilService>(typeof(TransactionalInterceptor));
-
-            //services.AddSbScoped<IWheel, WheelA>("A轮胎", typeof(TransactionalInterceptor));
-            //services.AddSbScoped<IWheel, WheelB>("B轮胎", typeof(TransactionalInterceptor));
-
-            services.AddSbScoped<IPersonService, PersonService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
