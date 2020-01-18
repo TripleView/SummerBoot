@@ -17,7 +17,7 @@ namespace Example.Controllers
         public IActionResult InsertPerson()
         {
             var person=new Person(){Age = RandonDataService.GetRandomNumber(1,99),Name = RandonDataService.GetRandomName()};
-            var result=PersonService.InsertPerson(person);
+                 var result=PersonService.InsertPerson(person);
             return Ok(result);
         }
 

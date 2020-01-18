@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Dapper;
+using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Core;
+using System;
 using System.Linq;
 using System.Reflection;
-using Dapper;
-using Microsoft.Extensions.DependencyInjection;
-using SqlOnline.Utils;
-using SummerBoot.Core;
 
 namespace SummerBoot.Repository
 {

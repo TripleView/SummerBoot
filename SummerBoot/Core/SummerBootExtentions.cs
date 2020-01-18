@@ -6,15 +6,15 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SqlOnline.Utils;
 using StackExchange.Redis;
 using SummerBoot.Cache;
+using SummerBoot.Core.Aop;
 using SummerBoot.Repository;
+using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using SummerBoot.Repository.Druid;
-using SummerBoot.Resource;
 
 namespace SummerBoot.Core
 {
@@ -994,7 +994,7 @@ namespace SummerBoot.Core
             return services;
         }
 
-        public static IServiceCollection AddSummerBoot(this IServiceCollection services, CultureInfo cultureInfo = null)
+        public static IServiceCollection AddSummerBoot(this IServiceCollection services, Action<AopBuilder> action = null, CultureInfo cultureInfo = null)
         {
             //设置语言
             if (cultureInfo == null) cultureInfo = CultureInfo.CurrentCulture;
@@ -1005,9 +1005,13 @@ namespace SummerBoot.Core
             services.AddSbScoped<IUnitOfWork, UnitOfWork>();
             services.AddSbScoped<TransactionalInterceptor>();
 
+            if (action != null)
+            {
+                var aop = new AopBuilder(services);
+                action.Invoke(aop);
+            }
             return services;
         }
-
         public static IServiceCollection AddSbRepositoryService2(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime)
         {
@@ -1021,6 +1025,8 @@ namespace SummerBoot.Core
 
                 var proxyGenerator = provider.GetService<ProxyGenerator>();
                 var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
+
+                
 
                 return proxy;
             };
