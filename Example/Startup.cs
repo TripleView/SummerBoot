@@ -33,9 +33,9 @@ namespace Example
                             it.DbConnectionType = typeof(SqliteConnection);
                             it.ConnectionString = "Data source=./DbFile/mydb.db";
                         })
-                        .RegisterExpression<A>(new ExecutionAopExpress("* .*PersonService Insert.*")) //表达式注册
-                        .RegisterDefaultAttribute<B>() //属性注册
-                        .RegisterExpression<B>(new WithinAopExpress(typeof(IPersonService)));  //接口或类注册
+                        .RegisterExpression<AStandardInterceptor>(new ExecutionAopExpress("* .*PersonService Insert.*")) //表达式注册
+                        .RegisterDefaultAttribute<BStandardInterceptor>() //属性注册
+                        .RegisterExpression<BStandardInterceptor>(new WithinAopExpress(typeof(IPersonService)));  //接口或类注册
                 }
 
             );
@@ -63,7 +63,7 @@ namespace Example
     }
 
 
-    public class A : StandardInterceptor
+    public class AStandardInterceptor : StandardInterceptor
     {
         protected override void PostProceed(IInvocation invocation)
         {
@@ -71,7 +71,7 @@ namespace Example
         }
     }
 
-    public class B : StandardInterceptor
+    public class BStandardInterceptor : StandardInterceptor
     {
         protected override void PostProceed(IInvocation invocation)
         {
