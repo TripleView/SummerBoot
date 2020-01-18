@@ -5,10 +5,12 @@ using Dapper;
 using Example.Models;
 using SummerBoot.Cache;
 using SummerBoot.Core;
+using SummerBoot.Core.Aop.Attribute;
 using SummerBoot.Repository;
 
 namespace Example.Service
 {
+    [SummerAop]
     public class PersonService : IPersonService
     {
         [Autowired]

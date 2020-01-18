@@ -18,17 +18,17 @@ namespace SummerBoot.Core.Aop
     {
         public IServiceCollection Service { get; }
 
-        private readonly IList<Type> _types;
+        private readonly Lazy<IEnumerable<Type>> _types;
 
         public AopBuilder(IServiceCollection service)
         {
             Service = service;
-            _types = SbUtil.GetAllTypes().Where(t => t.IsClass && !t.IsAbstract).ToList();
+            _types =new Lazy<IEnumerable<Type>>(AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes()));
         }
 
         public IEnumerable<Type> FilterType(Func<Type,bool> func)
         {
-            return _types.Where(func);
+            return _types.Value.Where(func);
         }
     }
 }

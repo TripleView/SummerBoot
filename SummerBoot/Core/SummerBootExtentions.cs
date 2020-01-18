@@ -6,16 +6,15 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SqlOnline.Utils;
 using StackExchange.Redis;
 using SummerBoot.Cache;
+using SummerBoot.Core.Aop;
 using SummerBoot.Repository;
+using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using SummerBoot.Core.Aop;
-using SummerBoot.Repository.Druid;
-using SummerBoot.Resource;
 
 namespace SummerBoot.Core
 {
@@ -1026,6 +1025,8 @@ namespace SummerBoot.Core
 
                 var proxyGenerator = provider.GetService<ProxyGenerator>();
                 var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
+
+                
 
                 return proxy;
             };

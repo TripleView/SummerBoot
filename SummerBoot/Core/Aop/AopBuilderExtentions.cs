@@ -10,6 +10,7 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using SqlOnline.Utils;
 using StackExchange.Redis;
+using SummerBoot.Core.Aop.Attribute;
 using SummerBoot.Core.Aop.Hook;
 
 namespace SummerBoot.Core.Aop
@@ -221,12 +222,36 @@ namespace SummerBoot.Core.Aop
             return aopBuilder;
         }
 
+
+        public static AopBuilder RegisterDefaultAttribute<TInterceptor>(this AopBuilder aopBuilder,ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+        {
+            return aopBuilder.RegisterExpression(new WithinAopExpress(typeof(SummerAopAttribute)),new []{ typeof(TInterceptor)},serviceLifetime);
+        }
+
+
+        /// <summary>
+        /// 只注册有对应该类:xxx的接口：Ixxx的类
+        /// </summary>
+        /// <typeparam name="TInterceptor"></typeparam>
+        /// <param name="aopBuilder"></param>
+        /// <param name="expression"></param>
+        /// <param name="serviceLifetime"></param>
+        /// <returns></returns>
         public static AopBuilder RegisterExpression<TInterceptor>(this AopBuilder aopBuilder, IAopExpress expression, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped) where TInterceptor : IInterceptor
         {
             return aopBuilder.RegisterExpression(expression, new[] { typeof(TInterceptor) }, serviceLifetime);
         }
 
 
+
+        /// <summary>
+        /// 只注册有对应该类:xxx的接口：Ixxx的类
+        /// </summary>
+        /// <param name="aopBuilder"></param>
+        /// <param name="expression"></param>
+        /// <param name="interceptorTypes"></param>
+        /// <param name="serviceLifetime"></param>
+        /// <returns></returns>
         public static AopBuilder RegisterExpression(this AopBuilder aopBuilder,IAopExpress expression, Type[] interceptorTypes, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
         {
             interceptorTypes.AsParallel().ForAll(t => aopBuilder.AddSbService(t, serviceLifetime));
@@ -235,8 +260,9 @@ namespace SummerBoot.Core.Aop
                 var ts = aopBuilder.FilterType(expression.IsMatch).ToList();
                 foreach (var t in ts)
                 {
-                    var it = t.GetTypeInfo().GetInterfaces().FirstOrDefault();
-
+                    var it = t.GetTypeInfo().GetInterface($"I{t.Name}"); 
+                    if(it==null)
+                        continue;
                     aopBuilder.AddSbService(it, t, serviceLifetime, ProxyGenerationOptions.Default, interceptorTypes);
                 }
             }
@@ -247,8 +273,10 @@ namespace SummerBoot.Core.Aop
                 var options = new ProxyGenerationOptions(fiter);
                 foreach (var t in ts)
                 {
-                    var it = t.GetTypeInfo().GetInterfaces().FirstOrDefault();
-                    aopBuilder.AddSbService(t, it, serviceLifetime, options, interceptorTypes);
+                    var it = t.GetTypeInfo().GetInterface($"I{t.Name}");
+                    if (it == null)
+                        continue;
+                    aopBuilder.AddSbService(it, t, serviceLifetime, options, interceptorTypes);
                 }
             }
 
@@ -302,9 +330,7 @@ namespace SummerBoot.Core.Aop
 
             aopBuilder.Service.TryAddSbScoped<IDbFactory, DbFactory>();
 
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
-
-            var repositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<RepositoryAttribute>() != null);
+            var repositoryTypes = aopBuilder.FilterType(it => it.IsInterface && it.GetCustomAttribute<RepositoryAttribute>() != null);
 
             foreach (var type in repositoryTypes)
             {

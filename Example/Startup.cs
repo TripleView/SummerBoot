@@ -27,16 +27,15 @@ namespace Example
             services.AddSummerBoot(
                 builder =>
                 {
-                    builder.AddSummerBootCache(it =>
-                        {
-                            it.UseRedis("129.204.47.226,password=summerBoot");
-                        })
+                    builder.AddSummerBootCache(it => { it.UseRedis("129.204.47.226,password=summerBoot"); })
                         .AddSummerBootRepository(it =>
-                    {
-                        it.DbConnectionType = typeof(SqliteConnection);
-                        it.ConnectionString = "Data source=./DbFile/mydb.db";
-                    })
-                        .RegisterExpression<StandardInterceptor>(new WithinAopExpress(typeof(IPersonService)));
+                        {
+                            it.DbConnectionType = typeof(SqliteConnection);
+                            it.ConnectionString = "Data source=./DbFile/mydb.db";
+                        })
+                        .RegisterExpression<A>(new ExecutionAopExpress("* .*PersonService Insert.*")) //表达式注册
+                        .RegisterDefaultAttribute<B>() //属性注册
+                        .RegisterExpression<B>(new WithinAopExpress(typeof(IPersonService)));  //接口或类注册
                 }
 
             );
@@ -51,7 +50,6 @@ namespace Example
                 app.UseDeveloperExceptionPage();
             }
 
-
             app.UseRouting();
 
             app.UseAuthorization();
@@ -60,6 +58,23 @@ namespace Example
             {
                 endpoints.MapControllers();
             });
+
+        }
+    }
+
+
+    public class A : StandardInterceptor
+    {
+        protected override void PostProceed(IInvocation invocation)
+        {
+            
+        }
+    }
+
+    public class B : StandardInterceptor
+    {
+        protected override void PostProceed(IInvocation invocation)
+        {
 
         }
     }
