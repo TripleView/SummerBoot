@@ -110,10 +110,20 @@ namespace SummerBoot.Core
         /// <returns></returns>
         public static Type ForName(string typeName)
         {
-            if(typeName.IsNullOrWhiteSpace()) throw new Exception("typeName must be not empty");
+            if (typeName.IsNullOrWhiteSpace()) throw new Exception("typeName must be not empty");
             Type t = Type.GetType(typeName);
-            if(t!=null)System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+            if (t != null) System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(t.TypeHandle);
             return t;
+        }
+
+        /// <summary>
+        /// 获取某个类的默认值
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static object GetDefaultValue(this Type type)
+        {
+            return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
     }
 }

@@ -1,8 +1,10 @@
-﻿using Example.Models;
+﻿using System.Net.Http;
+using Example.Models;
 using Example.Service;
 using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Core;
 using System.Threading.Tasks;
+using Example.Feign;
 
 namespace Example.Controllers
 {
@@ -12,7 +14,34 @@ namespace Example.Controllers
     {
         [Autowired]
         private IPersonService PersonService { set; get; }
+        [Autowired]
+        private IQueryUser QueryUser { set; get; }
 
+        [Autowired]
+        private IHttpClientFactory IHttpClientFactory { set; get; }
+        //[HttpGet("testFeign")]
+        //public async Task<IActionResult> TestFeign()
+        //{
+        //    var f =await QueryUser.FindAsync("666",new User(){Name = "summer",Value = "boot"});
+        //   return Ok(f);
+        //}
+
+        [HttpGet("testFeign")]
+        public IActionResult TestFeign()
+        {
+            var f =  QueryUser.Find("666", new User() { Name = "summer", Value = "boot" });
+            return Ok(f);
+        }
+        [HttpGet("testFeign1")]
+        public async Task<IActionResult> TestFeign2()
+        {
+            var client= IHttpClientFactory.CreateClient();
+            var httpContent=new StringContent(new User(){Name = "123",Value = "456"}.ToJson());
+            client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            var f=await client.PostAsync("http://localhost:6296/WeatherForecast/Find2?Id=3223", httpContent);
+            //var f =await QueryUser.FindAsync("666", new User() { Name = "summer", Value = "boot" });
+            return Ok(f);
+        }
         [HttpGet("InsertPerson")]
         public IActionResult InsertPerson()
         {

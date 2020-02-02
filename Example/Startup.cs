@@ -40,6 +40,10 @@ namespace Example
                 it.ConnectionString = "Data source=./DbFile/mydb.db";
             });
 
+            services.AddSummerBootFeign(it =>
+            {
+
+            });
             services.AddControllers().AddSummerBootMvcExtention();
 
             //services.AddSbScoped<Engine>(typeof(TransactionalInterceptor));

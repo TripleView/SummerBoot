@@ -13,6 +13,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using SummerBoot.Feign;
 using SummerBoot.Repository.Druid;
 using SummerBoot.Resource;
 
@@ -1064,6 +1065,48 @@ namespace SummerBoot.Core
             }
 
             services.AddSbRepositoryService(typeof(TransactionalInterceptor));
+            return services;
+        }
+        public static IServiceCollection AddSummerBootFeign(this IServiceCollection services, Action<SbCacheOption> setUpOption)
+        {
+            services.AddHttpClient();
+            services.AddSbSingleton<IClient,IClient.DefaultFeignClient>();
+            services.AddSbScoped<FeignInterceptor>();
+            services.AddHttpContextAccessor();
+            services.TryAddSingleton<IEncoder,IEncoder.DefaultEncoder>();
+            services.TryAddSingleton<IDecoder, IDecoder.DefaultDecoder>();
+
+            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
+
+            var feignTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null);
+
+            foreach (var type in feignTypes)
+            {
+                services.AddSummerBootFeignService(type, ServiceLifetime.Scoped);
+            }
+            return services;
+        }
+
+        private static IServiceCollection AddSummerBootFeignService(this IServiceCollection services, Type serviceType,
+            ServiceLifetime lifetime)
+        {
+            if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
+
+            object Factory(IServiceProvider provider)
+            {
+                var interceptors = new List<IInterceptor>();
+                var feignInterceptor = provider.GetService<FeignInterceptor>();
+                interceptors.Add(feignInterceptor);
+
+                var proxyGenerator = provider.GetService<ProxyGenerator>();
+                var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
+
+                return proxy;
+            };
+
+            var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
+            services.Add(serviceDescriptor);
+
             return services;
         }
     }
