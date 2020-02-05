@@ -13,11 +13,11 @@ namespace SummerBoot.Cache
         [Autowired]
         private IServiceProvider ServiceProvider { set; get; }
 
-        public void Intercept(IInvocation invocation)
+        public async void Intercept(IInvocation invocation)
         {
             var method = invocation.MethodInvocationTarget;
 
-            invocation.ReturnValue= base.Execute(() =>
+            invocation.ReturnValue= await base.Execute(() =>
             {
                 invocation.Proceed();
                 return invocation.ReturnValue;
