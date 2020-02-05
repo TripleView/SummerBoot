@@ -13,21 +13,21 @@ namespace SummerBoot.Cache
     {
         private readonly ConcurrentDictionary<CacheOperationCacheKey, CacheOperationMetadata> metadataCaches=new ConcurrentDictionary<CacheOperationCacheKey, CacheOperationMetadata>();
         private IServiceProvider _serviceProvider;
-        public object Execute(Func<object> invoker, object target, Type targetType, MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        public async Task<object> Execute(Func<object> invoker, object target, Type targetType, MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ICacheAttributeParser parser = new CacheAttributeParser();
             this._serviceProvider = serviceProvider;
             var operations = parser.ParseCacheAttributes(method);
             if (!operations.IsNullOrEmpty())
             {
-                return Execute(invoker, method,
+                return await Execute(invoker, method,
                       new CacheOperationContexts(this,operations, method, args, target, targetType, serviceProvider));
             }
 
             return invoker();
         }
 
-        private object Execute(Func<object> invoker, MethodInfo method, CacheOperationContexts contexts)
+        private async Task<object> Execute(Func<object> invoker, MethodInfo method, CacheOperationContexts contexts)
         {
 
             //var context = contexts.Get(typeof(CacheableOperation)).FirstOrDefault();
