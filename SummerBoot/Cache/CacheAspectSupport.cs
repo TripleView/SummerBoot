@@ -13,21 +13,21 @@ namespace SummerBoot.Cache
     {
         private readonly ConcurrentDictionary<CacheOperationCacheKey, CacheOperationMetadata> metadataCaches=new ConcurrentDictionary<CacheOperationCacheKey, CacheOperationMetadata>();
         private IServiceProvider _serviceProvider;
-        public object Execute(Func<object> invoker, object target, Type targetType, MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        public async Task<object> Execute(Func<object> invoker, object target, Type targetType, MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ICacheAttributeParser parser = new CacheAttributeParser();
             this._serviceProvider = serviceProvider;
             var operations = parser.ParseCacheAttributes(method);
             if (!operations.IsNullOrEmpty())
             {
-                return Execute(invoker, method,
+                return await Execute(invoker, method,
                       new CacheOperationContexts(this,operations, method, args, target, targetType, serviceProvider));
             }
 
             return invoker();
         }
 
-        private object Execute(Func<object> invoker, MethodInfo method, CacheOperationContexts contexts)
+        private async Task<object> Execute(Func<object> invoker, MethodInfo method, CacheOperationContexts contexts)
         {
 
             //var context = contexts.Get(typeof(CacheableOperation)).FirstOrDefault();
@@ -75,11 +75,13 @@ namespace SummerBoot.Cache
             {
 
                 var cacheValueInvoker = invoker();
-                if (isAsyncReturnType)
+                if (isAsyncReturnType && cacheValueInvoker is Task task)
                 {
+                    await task;
+                    cacheValue = (cacheValueInvoker as dynamic).Result;
                     //如果是异步结果，则获取task里的result
-                    var resultProperty = typeof(Task<>).MakeGenericType(returnType).GetProperty("Result");
-                    cacheValue = resultProperty?.GetValue(cacheValueInvoker);
+                    // var resultProperty = typeof(Task<>).MakeGenericType(returnType).GetProperty("Result");
+                    // cacheValue = resultProperty?.GetValue(cacheValueInvoker);
                 }
                 else
                 {
@@ -103,9 +105,11 @@ namespace SummerBoot.Cache
 
             if (isAsyncReturnType)
             {
+                dynamic temp = cacheValue;
+                var result = Task.FromResult(temp);
                 //如果是异步方法，需要对结果值进行封装
-                var result = typeof(Task).GetMethods().First(p => p.Name == "FromResult" && p.ContainsGenericParameters)
-                    .MakeGenericMethod(returnType).Invoke(null, new object[] { cacheValue });
+                // var result = typeof(Task).GetMethods().First(p => p.Name == "FromResult" && p.ContainsGenericParameters)
+                //     .MakeGenericMethod(returnType).Invoke(null, new object[] { cacheValue });
                 return result;
             }
 
