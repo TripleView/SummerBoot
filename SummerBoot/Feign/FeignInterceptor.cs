@@ -1,6 +1,7 @@
 ﻿using Castle.DynamicProxy;
 using SummerBoot.Core;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SummerBoot.Feign
@@ -16,10 +17,17 @@ namespace SummerBoot.Feign
             var args = invocation.Arguments;
 
             if (method == null) return;
+            var returnType =method.ReturnType;
             var isAsyncType = method.ReturnType.IsAsyncType();
             if (isAsyncType)
             {
-                invocation.ReturnValue = await base.ExecuteAsync(method, args, ServiceProvider);
+                
+                var proceedIno= invocation.CaptureProceedInfo();
+                
+                var result= await base.ExecuteAsync(method, args, ServiceProvider);
+           
+                invocation.ReturnValue = result;
+                
             }
             else
             {

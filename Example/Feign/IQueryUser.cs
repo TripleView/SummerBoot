@@ -7,14 +7,14 @@ using SummerBoot.Feign;
 
 namespace Example.Feign
 {
-    [FeignClient(name:"queryUser",url: "http://localhost:6296/",path: "WeatherForecast")]
+    [FeignClient(name:"queryUser",url: "http://localhost:5000/",path: "home")]
     public interface IQueryUser
     {
         //[PostMapping("/find")]
         //[Headers("Content-Type:application/json", "Accept:application/json")]
         //User Find([Param]string id, [Body] User user);
 
-        [PostMapping("/find2")]
+        [PostMapping("/test")]
         [Headers("Content-Type:application/json", "Accept:application/json", "Charset=utf-8")]
         Task<User> FindAsync([Param]string id, [Body] User user);
 

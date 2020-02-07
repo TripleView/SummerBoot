@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using Example.Models;
 using Example.Service;
 using Microsoft.AspNetCore.Mvc;
@@ -35,11 +36,19 @@ namespace Example.Controllers
         [HttpGet("testFeign1")]
         public async Task<IActionResult> TestFeign2()
         {
-            var client= IHttpClientFactory.CreateClient();
-            var httpContent=new StringContent(new User(){Name = "123",Value = "456"}.ToJson());
-            client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            var f=await client.PostAsync("http://localhost:6296/WeatherForecast/Find2?Id=3223", httpContent);
-            //var f =await QueryUser.FindAsync("666", new User() { Name = "summer", Value = "boot" });
+            //var client= IHttpClientFactory.CreateClient();
+            //var httpRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5000/home/test?Id=3223");
+            //httpRequest.Headers.Add("Content-Type", "application/json");
+
+            //var httpContent=new StringContent(new User(){Name = "123",Value = "456"}.ToJson());
+            //httpRequest.Content = httpContent;
+            ////client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            ////httpContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+            ////var f = await client.PostAsync("http://localhost:5000/home/test?Id=3223", httpContent);
+
+            //var f = await client.SendAsync(httpRequest);
+            
+            var f = await QueryUser.FindAsync("666", new User() { Name = "summer", Value = "boot" });
             return Ok(f);
         }
         [HttpGet("InsertPerson")]

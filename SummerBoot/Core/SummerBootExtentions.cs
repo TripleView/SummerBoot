@@ -1075,6 +1075,8 @@ namespace SummerBoot.Core
             services.AddHttpContextAccessor();
             services.TryAddSingleton<IEncoder,IEncoder.DefaultEncoder>();
             services.TryAddSingleton<IDecoder, IDecoder.DefaultDecoder>();
+            
+            HttpHeaderSupport.Init();
 
             var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
 

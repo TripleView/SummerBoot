@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -13,7 +14,7 @@ namespace SummerBoot.Feign
     public interface IClient
     {
         Task<ResponseTemplate> ExecuteAsync(RequestTemplate requestTemplate, CancellationToken cancellationToken);
-        
+
         public class DefaultFeignClient : IClient
         {
             private IHttpClientFactory HttpClientFactory { get; }
@@ -26,30 +27,46 @@ namespace SummerBoot.Feign
             {
                 var httpClient = HttpClientFactory.CreateClient();
 
+                var httpRequest = new HttpRequestMessage(requestTemplate.HttpMethod, requestTemplate.Url);
+
                 foreach (var requestTemplateHeader in requestTemplate.Headers)
                 {
-                    httpClient.DefaultRequestHeaders.TryAddWithoutValidation(requestTemplateHeader.Key, requestTemplateHeader.Value);
+                    var uppperKey = requestTemplateHeader.Key.ToUpper();
+                    var key = uppperKey.Replace("-", "");
+                    if (HttpHeaderSupport.RequestHeaders.Contains(key))
+                    {
+                        httpRequest.Headers.Remove(requestTemplateHeader.Key);
+                        httpRequest.Headers.Add(requestTemplateHeader.Key, requestTemplateHeader.Value);
+                    }
                 }
 
-                //httpClient.BaseAddress = new Uri(requestTemplate.Url);
-                var httpResponse = new HttpResponseMessage();
-                if (requestTemplate.HttpMethod == HttpMethod.Get)
-                {
-                    httpResponse = await httpClient.GetAsync(requestTemplate.Url, cancellationToken);
-                }
-                else if (requestTemplate.HttpMethod == HttpMethod.Post)
+                if (requestTemplate.HttpMethod == HttpMethod.Post)
                 {
                     var content = new StringContent(requestTemplate.Body);
-                    httpResponse = await httpClient.PostAsync(requestTemplate.Url, content, cancellationToken);
+                    foreach (var header in requestTemplate.Headers)
+                    {
+                        var uppperKey = header.Key.ToUpper();
+                        var key = uppperKey.Replace("-", "");
+                        if (HttpHeaderSupport.ContentHeaders.Contains(key))
+                        {
+                            content.Headers.Remove(header.Key);
+                            content.Headers.Add(header.Key, header.Value);
+                        }
+                    }
+
+                    httpRequest.Content = content;
                 }
 
+                //var temp = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestTemplate.Url));
+                var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
                 //把httpResponseMessage转化为responseTemplate
-                var result= await ConvertResponseAsync(httpResponse);
+                var result = await ConvertResponseAsync(httpResponse);
 
                 return result;
             }
 
-            private async Task<ResponseTemplate> ConvertResponseAsync( HttpResponseMessage responseMessage)
+            private async Task<ResponseTemplate> ConvertResponseAsync(HttpResponseMessage responseMessage)
             {
                 var responseTemplate = new ResponseTemplate
                 {
@@ -61,7 +78,7 @@ namespace SummerBoot.Feign
                 {
                     responseTemplate.Headers.Add(httpResponseHeader);
                 }
-                
+
                 var stream = new MemoryStream();
                 await responseMessage.Content.CopyToAsync(stream);
                 stream.Seek(0, SeekOrigin.Begin);

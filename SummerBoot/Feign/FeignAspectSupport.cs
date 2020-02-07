@@ -65,7 +65,22 @@ namespace SummerBoot.Feign
 
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
 
-            return decoder.Decoder(responseTemplate, method.ReturnType);
+            //判断方法返回值是否为异步类型
+            var isAsyncReturnType = method.ReturnType.IsAsyncType();
+            //返回类型
+            var returnType = isAsyncReturnType ? method.ReturnType.GenericTypeArguments.First() : method.ReturnType;
+
+            var resultTmp = decoder.Decoder(responseTemplate, returnType);
+
+            if (isAsyncReturnType)
+            {
+                var result = typeof(Task).GetMethods().First(p => p.Name == "FromResult" && p.ContainsGenericParameters)
+                    .MakeGenericMethod(returnType).Invoke(null, new object[] { resultTmp });
+                return result;
+            }
+            
+
+            return resultTmp;
         }
 
         /// <summary>
@@ -84,11 +99,11 @@ namespace SummerBoot.Feign
                     if (headerParam.HasIndexOf(':'))
                     {
                         var headerParamArr = headerParam.Split(":");
-                        var key = headerParamArr[0];
+                        var key = headerParamArr[0].Trim();
                         var keyValue = headerParamArr[1];
                         var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
                         if (!hasHeaderKey) keyList = new List<string>();
-                        keyList.Add(keyValue);
+                        keyList.Add(keyValue.Trim());
                         if (!hasHeaderKey) requestTemplate.Headers.Add(key, keyList);
                     }
                 }
