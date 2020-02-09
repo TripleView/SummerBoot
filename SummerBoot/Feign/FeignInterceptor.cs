@@ -26,6 +26,9 @@ namespace SummerBoot.Feign
                 
                 var result= await base.ExecuteAsync(method, args, ServiceProvider);
            
+                result
+
+
                 invocation.ReturnValue = result;
                 
             }

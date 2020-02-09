@@ -72,14 +72,6 @@ namespace SummerBoot.Feign
 
             var resultTmp = decoder.Decoder(responseTemplate, returnType);
 
-            if (isAsyncReturnType)
-            {
-                var result = typeof(Task).GetMethods().First(p => p.Name == "FromResult" && p.ContainsGenericParameters)
-                    .MakeGenericMethod(returnType).Invoke(null, new object[] { resultTmp });
-                return result;
-            }
-            
-
             return resultTmp;
         }
 

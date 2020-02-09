@@ -15,6 +15,10 @@
     <ProjectReference Include="..\SummerBoot\SummerBoot.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="AopTest\" />
+  </ItemGroup>
+
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="http://json.schemastore.org/appsettings" /></VisualStudio></ProjectExtensions>
 
 
