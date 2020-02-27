@@ -1075,7 +1075,7 @@ namespace SummerBoot.Core
             services.AddHttpContextAccessor();
             services.TryAddSingleton<IEncoder,IEncoder.DefaultEncoder>();
             services.TryAddSingleton<IDecoder, IDecoder.DefaultDecoder>();
-            
+            services.AddScoped<IProxyBuilder, FeignProxyBuilder>();
             HttpHeaderSupport.Init();
 
             var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
@@ -1099,6 +1099,7 @@ namespace SummerBoot.Core
                 var interceptors = new List<IInterceptor>();
                 var feignInterceptor = provider.GetService<FeignInterceptor>();
                 interceptors.Add(feignInterceptor);
+                provider.GetService<IProxyBuilder>();
 
                 var proxyGenerator = provider.GetService<ProxyGenerator>();
                 var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
