@@ -1,26 +1,18 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using  Newtonsoft.Json;
 
-namespace demo.Service
+namespace SummerBoot.Feign
 {
-    public class HttpService
+    public class HttpService:FeignAspectSupport
     {
-        public string Name { set; get; }
-        //public async Task<T> GetAsync<T>() where T:class
-        //{
-        //    var url = "http://localhost:5000/home/test";
-        //    HttpClient t=new HttpClient();
-        //    var f=await t.GetAsync(url);
-        //    return JsonConvert.DeserializeObject<T>(await f.Content.ReadAsStringAsync());
-        //}
-
-        public async Task<User> GetAsync()        {
-            var url = "http://localhost:5000/home/test";
-            HttpClient t = new HttpClient();
-            var f = await t.GetAsync(url);
-            return JsonConvert.DeserializeObject<User>(await f.Content.ReadAsStringAsync());
+        public async Task<T> ExecuteAsync<T>(List<object> args, MethodInfo method,IServiceProvider serviceProvider)
+        {
+            return await base.BaseExecuteAsync<T>(method,args.ToArray(),serviceProvider);
         }
     }
 }

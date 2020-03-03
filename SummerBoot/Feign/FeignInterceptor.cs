@@ -19,23 +19,23 @@ namespace SummerBoot.Feign
             if (method == null) return;
             var returnType =method.ReturnType;
             var isAsyncType = method.ReturnType.IsAsyncType();
-            if (isAsyncType)
-            {
+            //if (isAsyncType)
+            //{
                 
-                var proceedIno= invocation.CaptureProceedInfo();
+            //    var proceedIno= invocation.CaptureProceedInfo();
                 
-                var result= await base.ExecuteAsync(method, args, ServiceProvider);
+            //    var result= await base.ExecuteAsync(method, args, ServiceProvider);
            
-                result
-
-
-                invocation.ReturnValue = result;
                 
-            }
-            else
-            {
-                invocation.ReturnValue = base.ExecuteAsync(method, args, ServiceProvider).GetAwaiter().GetResult();
-            }
+
+
+            //    invocation.ReturnValue = result;
+                
+            //}
+            //else
+            //{
+            //    invocation.ReturnValue = base.ExecuteAsync(method, args, ServiceProvider).GetAwaiter().GetResult();
+            //}
             
         }
 

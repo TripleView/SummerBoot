@@ -15,6 +15,7 @@ namespace SummerBoot.Feign
         object Decoder(ResponseTemplate responseTemplate, Type type);
 
         T Decoder<T>(ResponseTemplate responseTemplate);
+
         public class DefaultDecoder : IDecoder
         {
             public object Decoder(ResponseTemplate responseTemplate, Type type)

@@ -1075,7 +1075,8 @@ namespace SummerBoot.Core
             services.AddHttpContextAccessor();
             services.TryAddSingleton<IEncoder,IEncoder.DefaultEncoder>();
             services.TryAddSingleton<IDecoder, IDecoder.DefaultDecoder>();
-            services.AddScoped<IProxyBuilder, FeignProxyBuilder>();
+            services.AddSingleton<IProxyBuilder, FeignProxyBuilder>();
+            services.AddScoped<HttpService>();
             HttpHeaderSupport.Init();
 
             var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
@@ -1096,13 +1097,17 @@ namespace SummerBoot.Core
 
             object Factory(IServiceProvider provider)
             {
-                var interceptors = new List<IInterceptor>();
-                var feignInterceptor = provider.GetService<FeignInterceptor>();
-                interceptors.Add(feignInterceptor);
-                provider.GetService<IProxyBuilder>();
+                var feignProxyBuilder = provider.GetService<IProxyBuilder>();
+                var httpService= provider.GetService<HttpService>();
+                var proxy = feignProxyBuilder.Build(serviceType, httpService,provider);
 
-                var proxyGenerator = provider.GetService<ProxyGenerator>();
-                var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
+                //var interceptors = new List<IInterceptor>();
+                //var feignInterceptor = provider.GetService<FeignInterceptor>();
+                //interceptors.Add(feignInterceptor);
+                //provider.GetService<IProxyBuilder>();
+
+                //var proxyGenerator = provider.GetService<ProxyGenerator>();
+                //var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
 
                 return proxy;
             };

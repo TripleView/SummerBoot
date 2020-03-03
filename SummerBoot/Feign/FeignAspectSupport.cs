@@ -18,7 +18,7 @@ namespace SummerBoot.Feign
     {
         private IServiceProvider _serviceProvider;
 
-        public async Task<object> ExecuteAsync(MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        public async Task<T> BaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
             //获得具体的client客户端
@@ -70,7 +70,7 @@ namespace SummerBoot.Feign
             //返回类型
             var returnType = isAsyncReturnType ? method.ReturnType.GenericTypeArguments.First() : method.ReturnType;
 
-            var resultTmp = decoder.Decoder(responseTemplate, returnType);
+            var resultTmp = (T)decoder.Decoder(responseTemplate, returnType);
 
             return resultTmp;
         }
