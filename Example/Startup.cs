@@ -11,7 +11,9 @@ using SummerBoot.Core;
 using System;
 using System.Linq;
 using Example.DbFile;
+using Example.Feign;
 using Microsoft.Data.Sqlite;
+using SummerBoot.Feign;
 
 namespace Example
 {
@@ -40,10 +42,10 @@ namespace Example
                 it.ConnectionString = "Data source=./DbFile/mydb.db";
             });
 
-            services.AddSummerBootFeign(it =>
-            {
+            //ÃÌº”feign«Î«Û¿πΩÿ∆˜
+            services.AddScoped<IRequestInterceptor,MyRequestInterceptor>();
+            services.AddSummerBootFeign();
 
-            });
             services.AddControllers().AddSummerBootMvcExtention();
 
             //services.AddSbScoped<Engine>(typeof(TransactionalInterceptor));

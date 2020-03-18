@@ -6,10 +6,16 @@ using Newtonsoft.Json;
 
 namespace SummerBoot.Feign
 {
-    public interface IEncoder
+    /// <summary>
+    /// 序列化接口
+    /// </summary>
+    public interface IFeignEncoder
     {
         void Encoder(object obj, RequestTemplate requestTemplate);
-        public class DefaultEncoder : IEncoder
+        /// <summary>
+        /// 默认的序列化器
+        /// </summary>
+        public class DefaultEncoder : IFeignEncoder
         {
             public void Encoder(object obj, RequestTemplate requestTemplate)
             {

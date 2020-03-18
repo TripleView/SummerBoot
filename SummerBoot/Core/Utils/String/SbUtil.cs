@@ -3,6 +3,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Castle.DynamicProxy;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
@@ -89,6 +90,12 @@ namespace SummerBoot.Core
         public static string ToJson(this object obj)
         {
             return JsonConvert.SerializeObject(obj);
+        }
+
+        public static bool IsUrl(this string str)
+        {
+            string Url = @"^http(s)?://([\w-]+\.)+[\w-]+(/[\w- ./?%&=]*)?$";
+            return Regex.IsMatch(str, Url);
         }
     }
 }

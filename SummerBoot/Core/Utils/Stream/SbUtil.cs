@@ -3,6 +3,7 @@ using System.Collections;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Castle.DynamicProxy;
@@ -22,5 +23,22 @@ namespace SummerBoot.Core
             var streamReader=new StreamReader(stream);
             return streamReader.ReadToEnd();
         }
+
+        /// <summary>
+        /// 判断2个流是否相等
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public static bool Matches(this Stream content, Stream target)
+        {
+            using var sha256 = SHA256.Create();
+            var contentHash = sha256.ComputeHash(content);
+            var targetHash = sha256.ComputeHash(target);
+
+            return contentHash.SequenceEqual(targetHash);
+        }
     }
+
+
 }

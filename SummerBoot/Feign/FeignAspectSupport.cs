@@ -1,16 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Core;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using SummerBoot.Cache;
-using SummerBoot.Core;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace SummerBoot.Feign
 {
@@ -24,8 +22,8 @@ namespace SummerBoot.Feign
             //获得具体的client客户端
             var feignClient = serviceProvider.GetService<IClient>();
             //序列化器与反序列化器
-            var encoder = serviceProvider.GetService<IEncoder>();
-            var decoder = serviceProvider.GetService<IDecoder>();
+            var encoder = serviceProvider.GetService<IFeignEncoder>();
+            var decoder = serviceProvider.GetService<IFeignDecoder>();
 
             //读取feignClientAttribute里的信息；
             //接口类型
@@ -39,6 +37,9 @@ namespace SummerBoot.Feign
             var requestPath = url + path;
             var requestTemplate = new RequestTemplate();
 
+            //获得请求拦截器
+            var requestInterceptor = serviceProvider.GetService<IRequestInterceptor>();
+            
             //处理请求头逻辑
             ProcessHeaders(method, requestTemplate);
 
@@ -58,13 +59,18 @@ namespace SummerBoot.Feign
                 requestTemplate.HttpMethod = HttpMethod.Post;
             }
 
-            requestTemplate.Url = requestPath + path2;
+            var urlTemp = (requestPath + path2).ToLower();
+            
+            requestTemplate.Url = GetUrl(urlTemp);
 
             //处理参数,因为有些参数需要拼接到url里，所以要在url处理完毕后才能处理参数
             ProcessParameter(method, args, requestTemplate, encoder);
 
-            var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
+            //如果存在拦截器，则进行拦截
+            if(requestInterceptor!=null) requestInterceptor.Apply(requestTemplate);
 
+            var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
+           
             //判断方法返回值是否为异步类型
             var isAsyncReturnType = method.ReturnType.IsAsyncType();
             //返回类型
@@ -73,6 +79,45 @@ namespace SummerBoot.Feign
             var resultTmp = (T)decoder.Decoder(responseTemplate, returnType);
 
             return resultTmp;
+        }
+
+        private string GetUrl(string urlTemp)
+        {
+            Func<string,string> func = (string s) =>
+            {
+                s = s.Replace("//", "/");
+                s = s.Replace("///", "/");
+                s = "http://" + s;
+                return s;
+            };
+
+            if (urlTemp.Length < 8)
+            {
+                return func(urlTemp);
+            }
+            
+            var isHttp = urlTemp.Substring(0, 7) == "http://";
+            var isHttps = urlTemp.Substring(0, 8) == "https://";
+            if (!isHttp && !isHttps)
+            {
+                return func(urlTemp);
+            }
+
+            if (isHttp)
+            {
+                urlTemp = urlTemp.Substring(7, urlTemp.Length - 7);
+                return func(urlTemp);
+            }
+
+            if (isHttps)
+            {
+                urlTemp=urlTemp.Substring(8, urlTemp.Length - 8);
+                urlTemp = urlTemp.Replace("//", "/");
+                urlTemp = urlTemp.Replace("///", "/");
+                urlTemp = "https://" + urlTemp;
+            }
+
+            return urlTemp;
         }
 
         /// <summary>
@@ -105,7 +150,7 @@ namespace SummerBoot.Feign
         /// <summary>
         /// 处理参数
         /// </summary>
-        private void ProcessParameter(MethodInfo method, object[] args, RequestTemplate requestTemplate, IEncoder encoder)
+        private void ProcessParameter(MethodInfo method, object[] args, RequestTemplate requestTemplate, IFeignEncoder encoder)
         {
             var parameterInfos = method.GetParameters();
             //所有参数里，只能有一个body的注解
@@ -135,9 +180,9 @@ namespace SummerBoot.Feign
                 var parameterTypeIsString = parameterType.IsString();
 
                 //处理param类型
-                if ((parameterTypeIsString || parameterType.IsValueType) && paramAttribute != null)
+                if ((parameterTypeIsString || parameterType.IsValueType) && bodyAttribute == null)
                 {
-                    parameterName = paramAttribute.Value.GetValueOrDefault(parameterName);
+                    parameterName = paramAttribute != null? paramAttribute.Value.GetValueOrDefault(parameterName):parameterName;
                     parameters.Add(parameterName, arg.ToString());
                 }
 

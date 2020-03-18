@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using Example.Models;
 using Example.Service;
@@ -6,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Core;
 using System.Threading.Tasks;
 using Example.Feign;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Example.Controllers
 {
@@ -15,46 +18,22 @@ namespace Example.Controllers
     {
         [Autowired]
         private IPersonService PersonService { set; get; }
-        [Autowired]
-        private IQueryUser QueryUser { set; get; }
 
         [Autowired]
-        private IHttpClientFactory IHttpClientFactory { set; get; }
-        //[HttpGet("testFeign")]
-        //public async Task<IActionResult> TestFeign()
-        //{
-        //    var f =await QueryUser.FindAsync("666",new User(){Name = "summer",Value = "boot"});
-        //   return Ok(f);
-        //}
+        private IQueryEmployee QueryUser { set; get; }
 
-        [HttpGet("testFeign")]
-        public IActionResult TestFeign()
-        {
-            var f =  QueryUser.Find("666", new User() { Name = "summer", Value = "boot" });
-            return Ok(f);
-        }
         [HttpGet("testFeign1")]
         public async Task<IActionResult> TestFeign2()
         {
-            //var client= IHttpClientFactory.CreateClient();
-            //var httpRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5000/home/test?Id=3223");
-            //httpRequest.Headers.Add("Content-Type", "application/json");
-
-            //var httpContent=new StringContent(new User(){Name = "123",Value = "456"}.ToJson());
-            //httpRequest.Content = httpContent;
-            ////client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            ////httpContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-            ////var f = await client.PostAsync("http://localhost:5000/home/test?Id=3223", httpContent);
-
-            //var f = await client.SendAsync(httpRequest);
-            
-            var f = await QueryUser.FindAsync("666", new User() { Name = "summer", Value = "boot" });
-            return Ok(f);
+            //var f = await QueryUser.GetEmployeeAsync("fsdfsdf", 3);
+            //var f2 = await QueryUser.FindAsync("1", new Employee() { Name = "sendTest" });
+            var f3 = await QueryUser.GetEmployeeCountAsync();
+            return Ok(f3);
         }
         [HttpGet("InsertPerson")]
         public IActionResult InsertPerson()
         {
-            var person=new Person(){Age = RandonDataService.GetRandomNumber(1,99),Name = RandonDataService.GetRandomName()};
+            var person=new Models.Person(){ Age = RandonDataService.GetRandomNumber(1,99), Name = RandonDataService.GetRandomName()};
             var result=PersonService.InsertPerson(person);
             return Ok(result);
         }
@@ -69,14 +48,14 @@ namespace Example.Controllers
         [HttpGet("UpdatePerson")]
         public IActionResult UpdatePerson()
         {
-            var person = PersonService.UpdatePerson(new Person());
+            var person = PersonService.UpdatePerson(new Models.Person());
             return Ok(person);
         }
 
         [HttpGet("DeletePerson")]
         public IActionResult DeletePerson()
         {
-            var success = PersonService.DeletePerson(new Person());
+            var success = PersonService.DeletePerson(new Models.Person());
             return Ok(success);
         }
 
@@ -90,14 +69,14 @@ namespace Example.Controllers
         [HttpGet("UpdatePersonAsync")]
         public async Task<IActionResult> UpdatePersonAsync()
         {
-            var person = await PersonService.UpdatePersonAsync(new Person());
+            var person = await PersonService.UpdatePersonAsync(new Models.Person());
             return Ok(person);
         }
 
         [HttpGet("DeletePersonAsync")]
         public async Task<IActionResult> DeletePersonAsync()
         {
-            var success = await PersonService.DeletePersonAsync(new Person());
+            var success = await PersonService.DeletePersonAsync(new Models.Person());
             return Ok(success);
         }
     }

@@ -11,10 +11,15 @@ using Microsoft.AspNetCore.Http;
 
 namespace SummerBoot.Feign
 {
+    /// <summary>
+    /// 实际执行http请求的客户端
+    /// </summary>
     public interface IClient
     {
         Task<ResponseTemplate> ExecuteAsync(RequestTemplate requestTemplate, CancellationToken cancellationToken);
-
+        /// <summary>
+        /// 默认的IClient类，内部采用httpClient
+        /// </summary>
         public class DefaultFeignClient : IClient
         {
             private IHttpClientFactory HttpClientFactory { get; }
@@ -29,35 +34,37 @@ namespace SummerBoot.Feign
 
                 var httpRequest = new HttpRequestMessage(requestTemplate.HttpMethod, requestTemplate.Url);
 
+                if (requestTemplate.HttpMethod == HttpMethod.Post)
+                {
+                    httpRequest.Content = new StringContent(requestTemplate.Body);
+                }
+
+                //处理header
                 foreach (var requestTemplateHeader in requestTemplate.Headers)
                 {
                     var uppperKey = requestTemplateHeader.Key.ToUpper();
+
                     var key = uppperKey.Replace("-", "");
+                    //判断普通标头
                     if (HttpHeaderSupport.RequestHeaders.Contains(key))
                     {
                         httpRequest.Headers.Remove(requestTemplateHeader.Key);
                         httpRequest.Headers.Add(requestTemplateHeader.Key, requestTemplateHeader.Value);
                     }
-                }
-
-                if (requestTemplate.HttpMethod == HttpMethod.Post)
-                {
-                    var content = new StringContent(requestTemplate.Body);
-                    foreach (var header in requestTemplate.Headers)
+                    //判断body标头
+                    else if (HttpHeaderSupport.ContentHeaders.Contains(key))
                     {
-                        var uppperKey = header.Key.ToUpper();
-                        var key = uppperKey.Replace("-", "");
-                        if (HttpHeaderSupport.ContentHeaders.Contains(key))
-                        {
-                            content.Headers.Remove(header.Key);
-                            content.Headers.Add(header.Key, header.Value);
-                        }
+                        httpRequest.Content.Headers.Remove(requestTemplateHeader.Key);
+                        httpRequest.Content.Headers.Add(requestTemplateHeader.Key, requestTemplateHeader.Value);
                     }
-
-                    httpRequest.Content = content;
+                    //自定义标头
+                    else
+                    {
+                        httpRequest.Headers.TryAddWithoutValidation(requestTemplateHeader.Key,
+                            requestTemplateHeader.Value);
+                    }
                 }
 
-                //var temp = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestTemplate.Url));
                 var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
 
                 //把httpResponseMessage转化为responseTemplate
@@ -66,6 +73,11 @@ namespace SummerBoot.Feign
                 return result;
             }
 
+            /// <summary>
+            /// 把httpResponseMessage转化为responseTemplate
+            /// </summary>
+            /// <param name="responseMessage"></param>
+            /// <returns></returns>
             private async Task<ResponseTemplate> ConvertResponseAsync(HttpResponseMessage responseMessage)
             {
                 var responseTemplate = new ResponseTemplate

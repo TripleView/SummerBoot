@@ -1067,15 +1067,13 @@ namespace SummerBoot.Core
             services.AddSbRepositoryService(typeof(TransactionalInterceptor));
             return services;
         }
-        public static IServiceCollection AddSummerBootFeign(this IServiceCollection services, Action<SbCacheOption> setUpOption)
+        public static IServiceCollection AddSummerBootFeign(this IServiceCollection services)
         {
             services.AddHttpClient();
-            services.AddSbSingleton<IClient,IClient.DefaultFeignClient>();
-            services.AddSbScoped<FeignInterceptor>();
-            services.AddHttpContextAccessor();
-            services.TryAddSingleton<IEncoder,IEncoder.DefaultEncoder>();
-            services.TryAddSingleton<IDecoder, IDecoder.DefaultDecoder>();
-            services.AddSingleton<IProxyBuilder, FeignProxyBuilder>();
+            services.TryAddSingleton<IClient,IClient.DefaultFeignClient>();
+            services.TryAddSingleton<IFeignEncoder,IFeignEncoder.DefaultEncoder>();
+            services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
+            services.TryAddSingleton<IFeignProxyBuilder, FeignProxyBuilder>();
             services.AddScoped<HttpService>();
             HttpHeaderSupport.Init();
 
@@ -1085,9 +1083,21 @@ namespace SummerBoot.Core
 
             foreach (var type in feignTypes)
             {
+                CheckFeignFallBack(type,services);
                 services.AddSummerBootFeignService(type, ServiceLifetime.Scoped);
             }
             return services;
+        }
+
+        private static void CheckFeignFallBack(Type type, IServiceCollection services)
+        {
+            var feignClient = type.GetCustomAttribute<FeignClientAttribute>();
+            var fallBack = feignClient.FallBack;
+            if (fallBack != null)
+            {
+                if(!fallBack.GetInterfaces().Contains(type)) throw new Exception("fallback must implement "+type.Name);
+                services.AddSbScoped(type, fallBack, type.Name + "FallBack");
+            }
         }
 
         private static IServiceCollection AddSummerBootFeignService(this IServiceCollection services, Type serviceType,
@@ -1097,7 +1107,7 @@ namespace SummerBoot.Core
 
             object Factory(IServiceProvider provider)
             {
-                var feignProxyBuilder = provider.GetService<IProxyBuilder>();
+                var feignProxyBuilder = provider.GetService<IFeignProxyBuilder>();
                 var httpService= provider.GetService<HttpService>();
                 var proxy = feignProxyBuilder.Build(serviceType, httpService,provider);
 

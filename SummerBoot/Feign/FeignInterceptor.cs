@@ -11,7 +11,7 @@ namespace SummerBoot.Feign
         [Autowired]
         private IServiceProvider ServiceProvider { set; get; }
 
-        public async void  Intercept(IInvocation invocation)
+        public void  Intercept(IInvocation invocation)
         {
             var method = invocation.Method;
             var args = invocation.Arguments;
@@ -21,16 +21,9 @@ namespace SummerBoot.Feign
             var isAsyncType = method.ReturnType.IsAsyncType();
             //if (isAsyncType)
             //{
-                
             //    var proceedIno= invocation.CaptureProceedInfo();
-                
             //    var result= await base.ExecuteAsync(method, args, ServiceProvider);
-           
-                
-
-
             //    invocation.ReturnValue = result;
-                
             //}
             //else
             //{

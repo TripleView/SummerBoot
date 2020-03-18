@@ -10,13 +10,19 @@ using SummerBoot.Core;
 
 namespace SummerBoot.Feign
 {
-    public interface IDecoder
+    /// <summary>
+    /// 反序列化接口
+    /// </summary>
+    public interface IFeignDecoder
     {
         object Decoder(ResponseTemplate responseTemplate, Type type);
 
         T Decoder<T>(ResponseTemplate responseTemplate);
 
-        public class DefaultDecoder : IDecoder
+        /// <summary>
+        /// 默认的反序列化器
+        /// </summary>
+        public class DefaultDecoder : IFeignDecoder
         {
             public object Decoder(ResponseTemplate responseTemplate, Type type)
             {

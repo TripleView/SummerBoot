@@ -64,7 +64,7 @@ public class TypeCreator
         ILGenerator ilgCtor = constructorBuilder.GetILGenerator();
         ilgCtor.Emit(OpCodes.Ldarg_0); //加载当前类
         ilgCtor.Emit(OpCodes.Newobj, newTypeParent.GetConstructor(new Type[0])); //实例化对象入栈
-        ilgCtor.Emit(OpCodes.Stfld, fbModifiedPropertyNames); //设置fbModifiedPropertyNames值,为刚入栈的实例化对象
+        //ilgCtor.Emit(OpCodes.Stfld, fbModifiedPropertyNames); //设置fbModifiedPropertyNames值,为刚入栈的实例化对象
         ilgCtor.Emit(OpCodes.Ret); //返回
 
         //typeBuilder.AddInterfaceImplementation(targetType);

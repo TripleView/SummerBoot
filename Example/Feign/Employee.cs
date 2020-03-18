@@ -1,8 +1,7 @@
 ﻿namespace Example.Feign
 {
-    public class User
+    public class Employee
     {
         public string Name { set; get; }
-        public string Value { set; get; }
     }
 }
