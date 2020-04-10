@@ -8,6 +8,12 @@ namespace SummerBoot.Core
 {
     public class UnitOfWork : IUnitOfWork
     {
+
+        public UnitOfWork(ILogger<UnitOfWork> logger, IDbFactory dbFactory)
+        {
+            this.Logger = logger;
+            DbFactory = dbFactory;
+        }
         /// <summary>
         /// 回调事件
         /// </summary>
@@ -18,7 +24,6 @@ namespace SummerBoot.Core
         /// </summary>
         public int ActiveNumber { get; set; } = 0;
 
-        [Autowired]
         private IDbFactory DbFactory { set; get; }
 
         private ILogger<UnitOfWork> Logger { set; get; }
@@ -27,12 +32,6 @@ namespace SummerBoot.Core
         /// 是否开启工作单元
         /// </summary>
         private bool EnableUnitOfWork => DbFactory != null;
-
-        public UnitOfWork(ILogger<UnitOfWork> logger)
-        {
-            this.Logger = logger;
-        }
-
 
         public void BeginTransaction()
         {
@@ -86,7 +85,7 @@ namespace SummerBoot.Core
         {
             this.callBackActions.Clear();
 
-            if(EnableUnitOfWork)DbFactory.Dispose();
+            if (EnableUnitOfWork) DbFactory.Dispose();
         }
 
         public void RegisterCallBack(Action action)
@@ -96,6 +95,7 @@ namespace SummerBoot.Core
 
         public void RollBack()
         {
+            this.ActiveNumber--;
             if (this.ActiveNumber > 0 && DbFactory.LongDbTransaction != null && EnableUnitOfWork)
             {
                 try
@@ -104,10 +104,10 @@ namespace SummerBoot.Core
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
                     throw;
                 }
             }
+            this.Dispose();
             Logger.LogDebug("回滚事务");
         }
     }

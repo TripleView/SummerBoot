@@ -9,11 +9,14 @@ using MySql.Data.MySqlClient;
 using SqlOnline.Utils;
 using SummerBoot.Core;
 using System;
+using System.Data.Common;
 using System.Linq;
 using Example.DbFile;
 using Example.Feign;
 using Microsoft.Data.Sqlite;
 using SummerBoot.Feign;
+using Oracle.ManagedDataAccess.Client;
+using System.Data.SqlClient;
 
 namespace Example
 {

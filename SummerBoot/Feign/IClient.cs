@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 
 namespace SummerBoot.Feign
 {
@@ -36,7 +37,14 @@ namespace SummerBoot.Feign
 
                 if (requestTemplate.HttpMethod == HttpMethod.Post)
                 {
-                    httpRequest.Content = new StringContent(requestTemplate.Body);
+                    if (requestTemplate.IsForm)
+                    {
+                        httpRequest.Content = new FormUrlEncodedContent(requestTemplate.FormValue);
+                    }
+                    else
+                    {
+                        httpRequest.Content = new StringContent(requestTemplate.Body);
+                    }
                 }
 
                 //处理header

@@ -96,9 +96,9 @@ namespace SummerBoot.Core
         public static Type GetUnderlyingType(this Type type)
         {
             var resultTmp = type.IsAsyncType() ? type.GenericTypeArguments.First() : type;
-            var resultTmp2 = resultTmp.IsGenericType && (type.IsQueryable() || type.IsCollection() || type.IsEnumerable())
-                ? type.GetGenericArguments().First()
-                : type;
+            var resultTmp2 = resultTmp.IsGenericType 
+                ? resultTmp.GetGenericArguments().First()
+                : resultTmp;
 
             return resultTmp2;
         }

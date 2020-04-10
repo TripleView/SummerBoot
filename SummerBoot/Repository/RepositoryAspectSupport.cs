@@ -1,54 +1,140 @@
 ﻿using System;
+using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
+using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
+using Castle.DynamicProxy.Internal;
 using Dapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using SqlOnline.Utils;
 using SummerBoot.Core;
 
 namespace SummerBoot.Repository
 {
-    public class RepositoryAspectSupport<T>
+    public class RepositoryAspectSupport
     {
-        //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] { "GetAll", "Get", "Insert", "Update", "Delete", "GetAllAsync", "GetAsync", "InsertAsync", "UpdateAsync", "DeleteAsync" };
-
+        private IPageable pageable;
         private IServiceProvider ServiceProvider { set; get; }
 
-        public object Execute(Func<object> invoker, MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        public Page<T> PageBaseExecute<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
-            //如果是IRepository接口里的固定方法，则调用BaseRepository获取结果
-            if (method.DeclaringType?.Name == "IRepository`1" && solidMethodNames.Contains(method.Name) && typeof(T).IsClass)
+            ServiceProvider = serviceProvider;
+
+            //先获得工作单元和数据库工厂以及序列化器
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var db = serviceProvider.GetService<IDbFactory>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            //获得动态参数
+            var dbArgs = GetParameters(method, args);
+
+            //处理select逻辑
+            var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
+            if (selectAttribute != null)
             {
-                var result = ProcessFixedMethodCall(method, args);
+                var sql = selectAttribute.Sql;
+                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+
+                var result = new Page<T>() { };
+                //oracle这坑逼数据库需要单独处理
+                if (repositoryOption.IsOracle)
+                {
+                    var countSql = $"select count(*) from ({sql}) ";
+                    var pageSql = pageable != null ?
+                        $"select * from (SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ({sql}) TMP_PAGE)    WHERE ROW_ID <{pageable.PageSize * (pageable.PageNumber) + 1}  AND ROW_ID >={pageable.PageSize * (pageable.PageNumber - 1) + 1}" :
+                        $"select * from ({sql})";
+                    var count = dbConnection.QueryFirst<int>(countSql, dbArgs);
+                    var resultList = dbConnection.Query<T>(pageSql, dbArgs).ToList();
+                    result.TotalPages = count;
+                    result.Data = resultList;
+                }
+                else
+                {
+                    sql = GetPageSql(repositoryOption, sql);
+                    var dbResult = dbConnection.QueryMultiple(sql, dbArgs);
+                    var count = dbResult.Read<int>().First();
+                    var resultList = dbResult.Read<T>().ToList();
+
+                    result.TotalPages = count;
+                    result.Data = resultList;
+                }
+
+                if (pageable != null)
+                {
+                    result.PageSize = pageable.PageSize;
+                    result.PageNumber = pageable.PageNumber;
+                }
+
                 return result;
             }
 
-            //如果是自定义方法，则使用dapper获得结果
+            throw new Exception("can not process method name:" + method.Name);
+        }
 
-            //先获得工作单元和数据库工厂
+        public async Task<Page<T>> PageBaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+
+            //先获得工作单元和数据库工厂以及序列化器
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var db = serviceProvider.GetService<IDbFactory>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            //获得动态参数
+            var dbArgs = GetParameters(method, args);
 
-            //判断方法返回值是否为异步类型
-            var isAsyncReturnType = method.ReturnType.IsAsyncType();
-            //返回类型
-            var returnTypeTmp = isAsyncReturnType ? method.ReturnType.GenericTypeArguments.First() : method.ReturnType;
-
-            var isGenericType = returnTypeTmp.IsGenericType;
-            var isCollection = returnTypeTmp.IsCollection();
-            var isEnumerable = returnTypeTmp.IsEnumerable();
-            var isQueryable = returnTypeTmp.IsQueryable();
-            var isValueType = returnTypeTmp.IsValueType;
-            var isString = returnTypeTmp.IsString();
-
-            //最底层的返回类型
-            Type returnType = isGenericType ? returnTypeTmp.GetGenericArguments().FirstOrDefault() : returnTypeTmp;
-
-            if (returnType != typeof(T))
+            //处理select逻辑
+            var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
+            if (selectAttribute != null)
             {
-                return invoker();
+                var sql = selectAttribute.Sql;
+                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                var result = new Page<T>() { };
+                //oracle这坑逼数据库需要单独处理
+                if (repositoryOption.IsOracle)
+                {
+                    var countSql = $"select count(*) from ({sql}) ";
+                    var pageSql = pageable != null ?
+                        $"select * from (SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ({sql}) TMP_PAGE)    WHERE ROW_ID <{pageable.PageSize * (pageable.PageNumber) + 1}  AND ROW_ID >={pageable.PageSize * (pageable.PageNumber - 1) + 1}" :
+                        $"select * from ({sql})";
+                    var count = await dbConnection.QueryFirstAsync<int>(countSql, dbArgs);
+                    var resultList = await dbConnection.QueryAsync<T>(pageSql, dbArgs);
+                    result.TotalPages = count;
+                    result.Data = resultList.ToList();
+                }
+                else
+                {
+                    sql = GetPageSql(repositoryOption, sql);
+                    var dbResult = await dbConnection.QueryMultipleAsync(sql, dbArgs);
+                    var count = dbResult.Read<int>().First();
+                    var resultList = dbResult.Read<T>().ToList();
+
+                    result.TotalPages = count;
+                    result.Data = resultList;
+                }
+
+                if (pageable != null)
+                {
+                    result.PageSize = pageable.PageSize;
+                    result.PageNumber = pageable.PageNumber;
+                }
+
+                return result;
             }
+
+            throw new Exception("can not process method name:" + method.Name);
+        }
+
+        public T BaseExecute<T, TBaseType>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+            var targetType = typeof(T);
+            var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
+
+            //先获得工作单元和数据库工厂以及序列化器
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var db = serviceProvider.GetService<IDbFactory>();
 
             //获得动态参数
             var dbArgs = GetParameters(method, args);
@@ -57,45 +143,141 @@ namespace SummerBoot.Repository
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
-                return ProcessSelectAttribute(selectAttribute, db, dbArgs, isCollection, isQueryable, isEnumerable, isString);
+                var sql = selectAttribute.Sql;
+                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                if (baseTypeIsSameReturnType)
+                {
+                    var queryResult = dbConnection.Query<T>(sql, dbArgs);
+                    return queryResult.FirstOrDefault();
+                }
+                else
+                {
+                    var queryResult = dbConnection.Query<TBaseType>(sql, dbArgs);
+                    if (targetType.IsCollection())
+                    {
+                        return (T)queryResult;
+                    }
+                }
             }
-
-            //处理update逻辑
-            var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
-            if (updateAttribute != null)
-            {
-                return ProcessUpdateAttribute(updateAttribute, db, dbArgs, uow);
-            }
-
-            //处理delete逻辑
-            var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
-            if (deleteAttribute != null)
-            {
-                return ProcessDeleteAttribute(deleteAttribute, db, dbArgs, uow);
-            }
-
 
             throw new Exception("can not process method name:" + method.Name);
         }
 
-        /// <summary>
-        /// 处理固定方法调用
-        /// </summary>
-        /// <returns></returns>
-        private object ProcessFixedMethodCall(MethodInfo method, object[] args)
+        public async Task<T> BaseExecuteAsync<T, TBaseType>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
-            var baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(typeof(T));
+            ServiceProvider = serviceProvider;
+            var targetType = typeof(T);
+            var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
+            //先获得工作单元和数据库工厂以及序列化器
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var db = serviceProvider.GetService<IDbFactory>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            //获得动态参数
+            var dbArgs = GetParameters(method, args);
 
-            var callMethod = baseRepositoryType.GetMethods()
-                .FirstOrDefault(it => it.Name == method.Name && it.ReturnType == method.ReturnType && it.GetGenericArguments() == method.GetGenericArguments());
+            //处理select逻辑
+            var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
+            if (selectAttribute != null)
+            {
+                var sql = selectAttribute.Sql;
+                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                if (baseTypeIsSameReturnType)
+                {
+                    var queryResult = await dbConnection.QueryAsync<T>(sql, dbArgs);
+                    return queryResult.FirstOrDefault();
+                }
+                else
+                {
+                    var queryResult = await dbConnection.QueryAsync<TBaseType>(sql, dbArgs);
+                    if (targetType.IsCollection())
+                    {
+                        return (T)queryResult;
+                    }
+                }
+            }
 
-            var baseRepository = ServiceProvider.GetService(baseRepositoryType);
-
-            var result = callMethod?.Invoke(baseRepository, args);
-
-            return result;
+            throw new Exception("can not process method name:" + method.Name);
         }
 
+        public void BaseExecuteNoReturn(MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        {
+            BaseExecuteReturnCount(method, args, serviceProvider);
+        }
+
+        public async Task BaseExecuteNoReturnAsync(MethodInfo method, object[] args,
+            IServiceProvider serviceProvider)
+        {
+            await BaseExecuteReturnCountAsync(method, args, serviceProvider);
+        }
+
+        public int BaseExecuteReturnCount(MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+
+            //先获得工作单元和数据库工厂
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var db = serviceProvider.GetService<IDbFactory>();
+
+            //获得动态参数
+            var dbArgs = GetParameters(method, args);
+            var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
+            var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
+            if (deleteAttribute == null && updateAttribute == null) return 0;
+            var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
+
+            var executeResult = 0;
+            if (uow == null)
+            {
+                executeResult = db.ShortDbConnection.Execute(sql, dbArgs);
+                return executeResult;
+            }
+
+            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
+            executeResult = dbcon.Execute(sql, dbArgs, db.LongDbTransaction);
+
+            if (uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
+
+            return executeResult;
+        }
+
+        public async Task<int> BaseExecuteReturnCountAsync(MethodInfo method, object[] args,
+            IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+
+            //先获得工作单元和数据库工厂以及序列化器
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var db = serviceProvider.GetService<IDbFactory>();
+
+            //获得动态参数
+            var dbArgs = GetParameters(method, args);
+            var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
+            var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
+            if (deleteAttribute == null && updateAttribute == null) return 0;
+            var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
+
+            var executeResult = 0;
+            if (uow == null)
+            {
+                executeResult = await db.ShortDbConnection.ExecuteAsync(sql, dbArgs);
+                return executeResult;
+            }
+
+            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
+            executeResult = await dbcon.ExecuteAsync(sql, dbArgs, db.LongDbTransaction);
+
+            if (uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
+
+            return executeResult;
+        }
         /// <summary>
         /// 获取实际参数值
         /// </summary>
@@ -111,6 +293,12 @@ namespace SummerBoot.Repository
             {
                 var parameterType = parameterInfos[i].ParameterType;
                 var parameterTypeIsString = parameterType.IsString();
+                //如果是分页参数直接跳过
+                if (typeof(IPageable).IsAssignableFrom(parameterType))
+                {
+                    pageable = (IPageable)args[i];
+                    continue;
+                }
                 //如果是值类型或者字符串直接添加到参数里
                 if (parameterType.IsValueType || parameterTypeIsString)
                 {
@@ -135,32 +323,39 @@ namespace SummerBoot.Repository
             return dbArgs;
         }
 
-        private object ProcessSelectAttribute(SelectAttribute attribute, IDbFactory db, DynamicParameters args, bool isCollection, bool isQueryable, bool isEnumerable, bool isString)
+        /// <summary>
+        /// 获得分页数据
+        /// </summary>
+        /// <param name="repositoryOption"></param>
+        /// <param name="sql"></param>
+        /// <returns></returns>
+        private string GetPageSql(RepositoryOption repositoryOption, string sql)
         {
-            var sql = attribute.Sql;
-
-            var queryResult = db.ShortDbConnection.Query<T>(sql, args);
-
-            var result = new object();
-
-            if (isCollection)
+            var resultSql = $"select count(*) from ({sql});";
+            var dbName = repositoryOption.DbConnectionType.FullName;
+            if (repositoryOption.IsSqlite)
             {
-                result = queryResult;
+                resultSql += pageable != null ?
+                    $"select * from ({sql}) limit {pageable.PageSize} offset {pageable.PageSize * (pageable.PageNumber - 1)}" :
+                    $"select * from ({sql})";
             }
-            else if (isQueryable)
+            else if (repositoryOption.IsMysql)
             {
-                result = queryResult.AsQueryable();
+                resultSql = $"select count(*) from ({sql}) tmp1;";
+                resultSql += pageable != null ?
+                    $"select * from ({sql}) tmp2 limit {pageable.PageSize * (pageable.PageNumber - 1)},{pageable.PageSize}" :
+                    $"select * from ({sql}) tmp2";
             }
-            else if (isEnumerable && !isString)
+            else if (repositoryOption.IsSqlServer)
             {
-                result = queryResult.AsEnumerable();
+                resultSql = $"select count(*) from ({sql}) tmp;select * from ({sql}) tmp2";
             }
             else
             {
-                result = queryResult.FirstOrDefault();
+                throw new Exception("not support");
             }
 
-            return result;
+            return resultSql;
         }
 
         private object ProcessUpdateAttribute(UpdateAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
@@ -184,7 +379,7 @@ namespace SummerBoot.Repository
 
             return updateResult;
         }
-        
+
         private object ProcessDeleteAttribute(DeleteAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
         {
             var sql = attribute.Sql;
@@ -206,5 +401,6 @@ namespace SummerBoot.Repository
 
             return deleteResult;
         }
+
     }
 }

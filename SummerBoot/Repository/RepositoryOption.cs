@@ -34,5 +34,39 @@ namespace SummerBoot.Repository
             }
             get => connectionString;
         }
+
+        public bool IsSqlite
+        {
+            get
+            {
+                var dbName = DbConnectionType.FullName;
+                return dbName.ToLower().IndexOf("sqlite") > -1;
+            }
+        }
+        public bool IsMysql
+        {
+            get
+            {
+                var dbName = DbConnectionType.FullName;
+                return dbName.ToLower().IndexOf("mysql") > -1;
+            }
+        }
+
+        public bool IsSqlServer
+        {
+            get
+            {
+                var dbName = DbConnectionType.FullName;
+                return dbName.ToLower().IndexOf("microsoft") > -1|| dbName.ToLower().IndexOf("system") > -1;
+            }
+        }
+        public bool IsOracle
+        {
+            get
+            {
+                var dbName = DbConnectionType.FullName;
+                return dbName.ToLower().IndexOf("oracle") > -1 ;
+            }
+        }
     }
 }

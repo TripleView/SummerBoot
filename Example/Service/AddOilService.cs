@@ -23,9 +23,9 @@ namespace Example.Service
             cashBalance.Balance -= 95;
             oilQuantity.Quantity += 50;
 
-            CashBalanceRepository.Update(cashBalance);
-            //throw new Exception("throw err");
-            OilQuantityRepository.Update(oilQuantity);
+            //CashBalanceRepository.Update(cashBalance);
+            ////throw new Exception("throw err");
+            //OilQuantityRepository.Update(oilQuantity);
         }
     }
 }

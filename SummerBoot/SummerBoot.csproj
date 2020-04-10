@@ -22,6 +22,9 @@
     <Compile Remove="Cache\CacheOperationContextCollection.cs" />
     <Compile Remove="Cache\CachePutRequest.cs" />
     <Compile Remove="Feign\HeaderAttribute.cs" />
+    <Compile Remove="Repository\RepositoryAspectSupport3.cs" />
+    <Compile Remove="Repository\RepositoryInterceptor.cs" />
+    <Compile Remove="Repository\RepositoryInterceptor2.cs" />
   </ItemGroup>
 
   <ItemGroup>

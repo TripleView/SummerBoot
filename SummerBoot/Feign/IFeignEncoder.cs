@@ -11,7 +11,14 @@ namespace SummerBoot.Feign
     /// </summary>
     public interface IFeignEncoder
     {
+        /// <summary>
+        /// 序列化post中的body数据
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="requestTemplate"></param>
         void Encoder(object obj, RequestTemplate requestTemplate);
+
+        void EncoderFormValue(object obj, RequestTemplate requestTemplate);
         /// <summary>
         /// 默认的序列化器
         /// </summary>
@@ -21,6 +28,13 @@ namespace SummerBoot.Feign
             {
                 var objStr = JsonConvert.SerializeObject(obj);
                 requestTemplate.Body = objStr;
+            }
+
+            public void EncoderFormValue(object obj, RequestTemplate requestTemplate)
+            {
+                var objStr = JsonConvert.SerializeObject(obj);
+                var dic =JsonConvert.DeserializeObject<Dictionary<string, string>>(objStr);
+                requestTemplate.FormValue =dic.ToList();
             }
         }
     }

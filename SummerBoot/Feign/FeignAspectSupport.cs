@@ -153,8 +153,9 @@ namespace SummerBoot.Feign
         private void ProcessParameter(MethodInfo method, object[] args, RequestTemplate requestTemplate, IFeignEncoder encoder)
         {
             var parameterInfos = method.GetParameters();
-            //所有参数里，只能有一个body的注解
+            //所有参数里，body注解和form注解只能有一个
             var hasBodyAttribute = false;
+            var hasFormAttribute = false;
             //参数集合
             var parameters = new Dictionary<string, string>();
             //url
@@ -167,15 +168,13 @@ namespace SummerBoot.Feign
                 var parameterType = parameterInfos[i].ParameterType;
                 var paramAttribute = parameterInfo.GetCustomAttribute<ParamAttribute>();
                 var bodyAttribute = parameterInfo.GetCustomAttribute<BodyAttribute>();
+                var formAttribute = parameterInfo.GetCustomAttribute<FormAttribute>();
                 var parameterName = parameterInfos[i].Name;
 
                 if (paramAttribute != null && bodyAttribute != null)
                 {
                     throw new Exception(parameterType.Name + "can not accept parameterAttrite and bodyAttribute");
                 }
-
-                if (hasBodyAttribute) throw new Exception("bodyAttribute just only one");
-                if (bodyAttribute != null) hasBodyAttribute = true;
 
                 var parameterTypeIsString = parameterType.IsString();
 
@@ -189,7 +188,21 @@ namespace SummerBoot.Feign
                 //处理body类型
                 if (!parameterTypeIsString && parameterType.IsClass && bodyAttribute != null)
                 {
+                    if (hasBodyAttribute) throw new Exception("bodyAttribute just only one");
+                    if (hasFormAttribute) throw new Exception("formAttribute and bodyAttribute can not exist at the same time");
+                    hasBodyAttribute = true;
+                    requestTemplate.IsForm = false;
                     encoder.Encoder(args[i], requestTemplate);
+                }
+
+                //处理form类型
+                if (!parameterTypeIsString && parameterType.IsClass && formAttribute != null)
+                {
+                    if (hasFormAttribute) throw new Exception("formAttribute just only one");
+                    if (hasBodyAttribute)throw new Exception("formAttribute and bodyAttribute can not exist at the same time");
+                    hasFormAttribute = true;
+                    requestTemplate.IsForm = true;
+                    encoder.EncoderFormValue(args[i], requestTemplate);
                 }
             }
 

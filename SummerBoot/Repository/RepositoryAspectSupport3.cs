@@ -8,31 +8,47 @@ using SummerBoot.Core;
 
 namespace SummerBoot.Repository
 {
-    public class RepositoryAspectSupport2
+    public class RepositoryAspectSupport<T>
     {
         //IRepository接口里的固定方法名
         private string[] solidMethodNames = new string[] { "GetAll", "Get", "Insert", "Update", "Delete", "GetAllAsync", "GetAsync", "InsertAsync", "UpdateAsync", "DeleteAsync" };
 
         private IServiceProvider ServiceProvider { set; get; }
 
-        public object Execute( MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        public object Execute(Func<object> invoker, MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
-            ServiceProvider = serviceProvider;
-
             //如果是IRepository接口里的固定方法，则调用BaseRepository获取结果
-            var underlyingType = method.ReturnType.GetUnderlyingType();
-            if (method.DeclaringType?.Name == "IRepository`1" && solidMethodNames.Contains(method.Name) && underlyingType.IsClass)
+            if (method.DeclaringType?.Name == "IRepository`1" && solidMethodNames.Contains(method.Name) && typeof(T).IsClass)
             {
-                var result = ProcessFixedMethodCall(method, args, underlyingType);
+                var result = ProcessFixedMethodCall(method, args);
                 return result;
             }
 
             //如果是自定义方法，则使用dapper获得结果
 
-            //先获得工作单元和数据库工厂以及序列化器
+            //先获得工作单元和数据库工厂
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var db = serviceProvider.GetService<IDbFactory>();
-            var serialization = serviceProvider.GetService<ISerialization>();
+
+            //判断方法返回值是否为异步类型
+            var isAsyncReturnType = method.ReturnType.IsAsyncType();
+            //返回类型
+            var returnTypeTmp = isAsyncReturnType ? method.ReturnType.GenericTypeArguments.First() : method.ReturnType;
+
+            var isGenericType = returnTypeTmp.IsGenericType;
+            var isCollection = returnTypeTmp.IsCollection();
+            var isEnumerable = returnTypeTmp.IsEnumerable();
+            var isQueryable = returnTypeTmp.IsQueryable();
+            var isValueType = returnTypeTmp.IsValueType;
+            var isString = returnTypeTmp.IsString();
+
+            //最底层的返回类型
+            Type returnType = isGenericType ? returnTypeTmp.GetGenericArguments().FirstOrDefault() : returnTypeTmp;
+
+            if (returnType != typeof(T))
+            {
+                return invoker();
+            }
 
             //获得动态参数
             var dbArgs = GetParameters(method, args);
@@ -41,20 +57,14 @@ namespace SummerBoot.Repository
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
-                var sql = selectAttribute.Sql;
-
-                var queryResult = db.ShortDbConnection.Query(underlyingType, sql, dbArgs);
-
-                var tmpResult = method.ReturnType.IsCollection() ? queryResult : queryResult.FirstOrDefault();
-
-                return serialization.DeserializeObject(serialization.SerializeObject(tmpResult), method.ReturnType);
+                return ProcessSelectAttribute(selectAttribute, db, dbArgs, isCollection, isQueryable, isEnumerable, isString);
             }
 
             //处理update逻辑
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
             if (updateAttribute != null)
             {
-                return ProcessUpdateAttribute(updateAttribute, db, dbArgs,uow);
+                return ProcessUpdateAttribute(updateAttribute, db, dbArgs, uow);
             }
 
             //处理delete逻辑
@@ -65,16 +75,16 @@ namespace SummerBoot.Repository
             }
 
 
-            throw new Exception("can not process method name:"+method.Name);
+            throw new Exception("can not process method name:" + method.Name);
         }
 
         /// <summary>
         /// 处理固定方法调用
         /// </summary>
         /// <returns></returns>
-        private object ProcessFixedMethodCall(MethodInfo method, object[] args,Type underlyingType)
+        private object ProcessFixedMethodCall(MethodInfo method, object[] args)
         {
-            var baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(underlyingType);
+            var baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(typeof(T));
 
             var callMethod = baseRepositoryType.GetMethods()
                 .FirstOrDefault(it => it.Name == method.Name && it.ReturnType == method.ReturnType && it.GetGenericArguments() == method.GetGenericArguments());
@@ -125,6 +135,34 @@ namespace SummerBoot.Repository
             return dbArgs;
         }
 
+        private object ProcessSelectAttribute(SelectAttribute attribute, IDbFactory db, DynamicParameters args, bool isCollection, bool isQueryable, bool isEnumerable, bool isString)
+        {
+            var sql = attribute.Sql;
+
+            var queryResult = db.ShortDbConnection.Query<T>(sql, args);
+
+            var result = new object();
+
+            if (isCollection)
+            {
+                result = queryResult;
+            }
+            else if (isQueryable)
+            {
+                result = queryResult.AsQueryable();
+            }
+            else if (isEnumerable && !isString)
+            {
+                result = queryResult.AsEnumerable();
+            }
+            else
+            {
+                result = queryResult.FirstOrDefault();
+            }
+
+            return result;
+        }
+
         private object ProcessUpdateAttribute(UpdateAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
         {
             var sql = attribute.Sql;
@@ -146,7 +184,7 @@ namespace SummerBoot.Repository
 
             return updateResult;
         }
-
+        
         private object ProcessDeleteAttribute(DeleteAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
         {
             var sql = attribute.Sql;
@@ -168,6 +206,5 @@ namespace SummerBoot.Repository
 
             return deleteResult;
         }
-
     }
 }

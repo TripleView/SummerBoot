@@ -16,13 +16,15 @@ namespace Example.Service
 
         public Person InsertPerson(Person person)
         {
-            return IPersonRepository.Insert(person);
+            return new Person();
+            //return IPersonRepository.Insert(person);
         }
 
         [Cacheable("db1", "Person", cacheManager: "redis")]
         public Person FindPerson(string name)
         {
-            return IPersonRepository.GetPersonsByName(name);
+            return new Person();
+            //return IPersonRepository.GetPersonsByName(name);
         }
 
         [CachePut("db1", key: "Person", cacheManager: "redis")]

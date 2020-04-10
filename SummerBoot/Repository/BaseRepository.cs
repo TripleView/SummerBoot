@@ -1,4 +1,5 @@
-﻿using Dapper.Contrib.Extensions;
+﻿using System;
+using Dapper.Contrib.Extensions;
 using SummerBoot.Core;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,17 +11,17 @@ namespace SummerBoot.Repository
     public class BaseRepository<T> : IRepository<T> where T : class
     {
 
-        //public BaseRepository(IUnitOfWork Uow)
-        //{
-        //    this.Uow = Uow;
-        //}
-        [Autowired(true)]
-        public IUnitOfWork Uow { set; get; }
+        public BaseRepository(IUnitOfWork Uow, IDbFactory dbFactory)
+        {
+            this.Uow = Uow;
+            this.DbFactory = dbFactory;
+        }
 
-        [Autowired(true)]
-        public IDbFactory DbFactory { set; get; }
+        private IUnitOfWork Uow { set; get; }
 
-        public IList<T> GetAll()
+        private IDbFactory DbFactory { set; get; }
+
+        public List<T> GetAll()
         {
             var dbcon = DbFactory.ShortDbConnection;
             var result = dbcon.GetAll<T>().ToList();
@@ -57,10 +58,10 @@ namespace SummerBoot.Repository
             return t;
         }
 
-        public IList<T> Insert(IList<T> t)
+        public long BatchInsert(List<T> t)
         {
             var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
-            dbcon.Insert(t, DbFactory.LongDbTransaction);
+            var result = dbcon.Insert(t, DbFactory.LongDbTransaction);
 
             if (Uow.ActiveNumber == 0)
             {
@@ -68,7 +69,7 @@ namespace SummerBoot.Repository
                 dbcon.Dispose();
             }
 
-            return t;
+            return result;
         }
 
         public void Delete(T t)
@@ -81,10 +82,9 @@ namespace SummerBoot.Repository
                 dbcon.Close();
                 dbcon.Dispose();
             }
-
         }
 
-        public void Delete(IList<T> t)
+        public void BatchDelete(List<T> t)
         {
             var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
             dbcon.Delete(t, DbFactory.LongDbTransaction);
@@ -107,10 +107,9 @@ namespace SummerBoot.Repository
                 dbcon.Close();
                 dbcon.Dispose();
             }
-
         }
 
-        public void Update(IList<T> t)
+        public void BatchUpdate(List<T> t)
         {
             var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
             dbcon.Update(t, DbFactory.LongDbTransaction);
@@ -119,98 +118,105 @@ namespace SummerBoot.Repository
                 dbcon.Close();
                 dbcon.Dispose();
             }
-
         }
 
-        public Task<IEnumerable<T>> GetAllAsync()
+        public async Task<List<T>> GetAllAsync()
         {
             var dbcon = DbFactory.ShortDbConnection;
-            var result = dbcon.GetAllAsync<T>();
+            var result = await dbcon.GetAllAsync<T>();
 
-            result.ContinueWith(it =>
-            {
-                dbcon.Close();
-                dbcon.Dispose();
-            });
-       
+            dbcon.Close();
+            dbcon.Dispose();
+
+            return result.ToList();
+        }
+
+        public async Task<T> GetAsync(object id)
+        {
+            var dbcon = DbFactory.ShortDbConnection;
+
+            var result = await dbcon.GetAsync<T>(id);
+
+            dbcon.Close();
+            dbcon.Dispose();
 
             return result;
         }
 
-        public Task<T> GetAsync(object id)
+        public async Task<T> InsertAsync(T t)
         {
-            var dbcon = DbFactory.ShortDbConnection;
+            var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
+            var result = await dbcon.InsertAsync(t, DbFactory.LongDbTransaction);
 
-            var result = dbcon.GetAsync<T>(id);
-
-            result.ContinueWith(it =>
+            if (Uow.ActiveNumber == 0)
             {
                 dbcon.Close();
                 dbcon.Dispose();
-            });
+            }
+
+            return t;
+        }
+
+        public async Task<long> BatchInsertAsync(List<T> t)
+        {
+            var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
+            var result = await dbcon.InsertAsync(t.ToList(), DbFactory.LongDbTransaction);
+
+            if (Uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
 
             return result;
         }
 
-        public Task<T> InsertAsync(T t)
+        public async Task UpdateAsync(T t)
         {
             var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
-            var result= dbcon.InsertAsync(t, DbFactory.LongDbTransaction);
+            var result = await dbcon.UpdateAsync(t, DbFactory.LongDbTransaction);
 
-            result.ContinueWith(it =>
+            if (Uow.ActiveNumber == 0)
             {
-                if (Uow.ActiveNumber == 0)
-                {
-                    dbcon.Close();
-                    dbcon.Dispose();
-                }
-            });
-         
-
-            return Task.FromResult(t);
+                dbcon.Close();
+                dbcon.Dispose();
+            }
         }
 
-        public Task<IEnumerable<T>> InsertAsync(IEnumerable<T> t)
+        public async Task BatchUpdateAsync(List<T> t)
         {
             var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
-            var result = dbcon.InsertAsync(t.ToList(), DbFactory.LongDbTransaction);
+            var result = await dbcon.UpdateAsync(t, DbFactory.LongDbTransaction);
 
-            result.ContinueWith(it =>
+            if (Uow.ActiveNumber == 0)
             {
-                if (Uow.ActiveNumber == 0)
-                {
-                    dbcon.Close();
-                    dbcon.Dispose();
-                }
-            });
-
-
-            return Task.FromResult(t);
+                dbcon.Close();
+                dbcon.Dispose();
+            }
         }
 
-        public Task UpdateAsync(T t)
+        public async Task DeleteAsync(T t)
         {
-            throw new System.NotImplementedException();
+            var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
+            var result = await dbcon.DeleteAsync(t, DbFactory.LongDbTransaction);
+
+            if (Uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
         }
 
-        public Task UpdateAsync(IList<T> t)
+        public async Task BatchDeleteAsync(List<T> t)
         {
-            throw new System.NotImplementedException();
-        }
+            var dbcon = Uow.ActiveNumber == 0 ? DbFactory.ShortDbConnection : DbFactory.LongDbConnection;
+            var result = await dbcon.DeleteAsync(t, DbFactory.LongDbTransaction);
 
-        public Task DeleteAsync(IList<T> t)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task DeleteAsync(T t)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task<IEnumerable<T>> InsertAsync(IList<T> t)
-        {
-            throw new System.NotImplementedException();
+            if (Uow.ActiveNumber == 0)
+            {
+                dbcon.Close();
+                dbcon.Dispose();
+            }
         }
     }
 }

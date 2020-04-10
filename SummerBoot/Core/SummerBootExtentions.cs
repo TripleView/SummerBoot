@@ -9,13 +9,14 @@ using SummerBoot.Cache;
 using SummerBoot.Repository;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Dapper.Contrib.Extensions;
 using SummerBoot.Feign;
 using SummerBoot.Repository.Druid;
 using SummerBoot.Resource;
+using TableAttribute = System.ComponentModel.DataAnnotations.Schema.TableAttribute;
 
 namespace SummerBoot.Core
 {
@@ -937,8 +938,8 @@ namespace SummerBoot.Core
 
             foreach (Type model in returnModels)
             {
-                var requireType = typeof(RepositoryInterceptor<>).MakeGenericType(model);
-                services.AddSbScoped(requireType);
+                //var requireType = typeof(RepositoryInterceptor<>).MakeGenericType(model);
+                //services.AddSbScoped(requireType);
             }
 
             object Factory(IServiceProvider provider)
@@ -946,10 +947,10 @@ namespace SummerBoot.Core
                 var interceptors = new List<IInterceptor>();
                 foreach (Type model in returnModels)
                 {
-                    var requireType = typeof(RepositoryInterceptor<>).MakeGenericType(model);
-                    var repositoryInterceptor = provider.GetService(requireType);
+                    //var requireType = typeof(RepositoryInterceptor<>).MakeGenericType(model);
+                    //var repositoryInterceptor = provider.GetService(requireType);
 
-                    interceptors.Add((IInterceptor)repositoryInterceptor);
+                    //interceptors.Add((IInterceptor)repositoryInterceptor);
                 }
 
                 var proxyGenerator = provider.GetService<ProxyGenerator>();
@@ -1003,31 +1004,8 @@ namespace SummerBoot.Core
             //var f= ResourceManager.Get("err1");
             //Console.WriteLine("进入多语言模式"+f);
             services.AddSingleton<ProxyGenerator>();
-            services.AddSbScoped<IUnitOfWork, UnitOfWork>();
+            services.AddLogging();
             services.AddSbScoped<TransactionalInterceptor>();
-
-            return services;
-        }
-
-        public static IServiceCollection AddSbRepositoryService2(this IServiceCollection services, Type serviceType,
-            ServiceLifetime lifetime)
-        {
-            if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
-
-            object Factory(IServiceProvider provider)
-            {
-                var interceptors = new List<IInterceptor>();
-                var repositoryI = provider.GetService<RepositoryInterceptor2>();
-                interceptors.Add(repositoryI);
-
-                var proxyGenerator = provider.GetService<ProxyGenerator>();
-                var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget(serviceType, Type.EmptyTypes, interceptors.ToArray());
-
-                return proxy;
-            };
-
-            var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
-            services.Add(serviceDescriptor);
 
             return services;
         }
@@ -1044,46 +1022,80 @@ namespace SummerBoot.Core
             action(option);
 
             if (option.ConnectionString.IsNullOrWhiteSpace()) throw new Exception("ConnectionString is Require");
+            
+            SqlMapperExtensions.TableNameMapper = (type) => {
+                return type.Name;
+            };
 
             if (option.DbConnectionType == null) throw new Exception("DbConnectionType is Require");
-
+            services.TryAddScoped<IDbFactory, DbFactory>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddSingleton(t => option);
-
+            services.AddScoped(typeof(BaseRepository<>));
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
+            services.AddScoped<RepositoryService>();
 
-            services.AddSbScoped<RepositoryInterceptor2>();
+            services.TryAddSingleton<IRepositoyProxyBuilder, RepositoryProxyBuilder>();
 
-            services.TryAddSbScoped<IDbFactory, DbFactory>();
+            var types = Assembly.GetCallingAssembly().GetExportedTypes()
+                .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
 
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
-
-            var repositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<RepositoryAttribute>() != null);
+            var repositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<RepositoryAttribute>() != null).ToList();
 
             foreach (var type in repositoryTypes)
             {
-                services.AddSbRepositoryService2(type, ServiceLifetime.Scoped);
+                services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
             }
 
-            services.AddSbRepositoryService(typeof(TransactionalInterceptor));
             return services;
         }
+
+        private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
+            ServiceLifetime lifetime)
+        {
+            if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
+
+            object Factory(IServiceProvider provider)
+            {
+                var repositoyProxyBuilder = provider.GetService<IRepositoyProxyBuilder>();
+                var repositoyService = provider.GetService<RepositoryService>();
+                var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
+                if (repositoryType != null)
+                {
+                    var genericType = repositoryType.GetGenericArguments().First();
+                    var baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(genericType);
+                    var baseRepository = provider.GetService(baseRepositoryType);
+                    var proxy1 = repositoyProxyBuilder.Build(serviceType, repositoyService, provider, baseRepository);
+                    return proxy1;
+                }
+                var proxy = repositoyProxyBuilder.Build(serviceType, repositoyService, provider);
+                return proxy;
+            };
+
+            var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
+            services.Add(serviceDescriptor);
+
+            return services;
+        }
+
         public static IServiceCollection AddSummerBootFeign(this IServiceCollection services)
         {
             services.AddHttpClient();
-            services.TryAddSingleton<IClient,IClient.DefaultFeignClient>();
-            services.TryAddSingleton<IFeignEncoder,IFeignEncoder.DefaultEncoder>();
+            services.TryAddSingleton<IClient, IClient.DefaultFeignClient>();
+            services.TryAddSingleton<IFeignEncoder, IFeignEncoder.DefaultEncoder>();
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
             services.TryAddSingleton<IFeignProxyBuilder, FeignProxyBuilder>();
             services.AddScoped<HttpService>();
             HttpHeaderSupport.Init();
 
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(it => it.GetTypes());
+            var types = Assembly.GetCallingAssembly().GetExportedTypes()
+                .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
 
             var feignTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null);
 
             foreach (var type in feignTypes)
             {
-                CheckFeignFallBack(type,services);
+                CheckFeignFallBack(type, services);
                 services.AddSummerBootFeignService(type, ServiceLifetime.Scoped);
             }
             return services;
@@ -1095,7 +1107,7 @@ namespace SummerBoot.Core
             var fallBack = feignClient.FallBack;
             if (fallBack != null)
             {
-                if(!fallBack.GetInterfaces().Contains(type)) throw new Exception("fallback must implement "+type.Name);
+                if (!fallBack.GetInterfaces().Contains(type)) throw new Exception("fallback must implement " + type.Name);
                 services.AddSbScoped(type, fallBack, type.Name + "FallBack");
             }
         }
@@ -1108,8 +1120,8 @@ namespace SummerBoot.Core
             object Factory(IServiceProvider provider)
             {
                 var feignProxyBuilder = provider.GetService<IFeignProxyBuilder>();
-                var httpService= provider.GetService<HttpService>();
-                var proxy = feignProxyBuilder.Build(serviceType, httpService,provider);
+                var httpService = provider.GetService<HttpService>();
+                var proxy = feignProxyBuilder.Build(serviceType, httpService, provider);
 
                 //var interceptors = new List<IInterceptor>();
                 //var feignInterceptor = provider.GetService<FeignInterceptor>();

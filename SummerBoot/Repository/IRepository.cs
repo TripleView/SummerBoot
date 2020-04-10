@@ -5,28 +5,29 @@ namespace SummerBoot.Repository
 {
     public interface IRepository<T> where T : class
     {
-        IList<T> GetAll();
+        List<T> GetAll();
         T Get(object id);
 
         T Insert(T t);
-        IList<T> Insert(IList<T> t);
+
+        long BatchInsert(List<T> t);
 
         void Update(T t);
-        void Update(IList<T> t);
+        void BatchUpdate(List<T> t);
 
-        void Delete(IList<T> t);
         void Delete(T t);
+        void BatchDelete(List<T> t);
 
-        Task<IEnumerable<T>> GetAllAsync();
+        Task<List<T>> GetAllAsync();
         Task<T> GetAsync(object id);
 
         Task<T> InsertAsync(T t);
-        Task<IEnumerable<T>> InsertAsync(IList<T> t);
+        Task<long> BatchInsertAsync(List<T> t);
 
         Task UpdateAsync(T t);
-        Task UpdateAsync(IList<T> t);
+        Task BatchUpdateAsync(List<T> t);
 
-        Task DeleteAsync(IList<T> t);
         Task DeleteAsync(T t);
+        Task BatchDeleteAsync(List<T> t);
     }
 }
