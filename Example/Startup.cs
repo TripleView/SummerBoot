@@ -11,7 +11,6 @@ using SummerBoot.Core;
 using System;
 using System.Data.Common;
 using System.Linq;
-using Example.DbFile;
 using Example.Feign;
 using Microsoft.Data.Sqlite;
 using SummerBoot.Feign;

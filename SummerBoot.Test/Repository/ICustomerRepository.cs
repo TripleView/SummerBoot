@@ -17,14 +17,18 @@ namespace SummerBoot.Test.Repository
         [Select("select * from customer where age>@age order by id")]
         Task<Page<Customer>> GetCustomerByPageAsync(IPageable pageable, int age);
 
-
-
         [Update("update customer set name=@name where age>@age")]
         Task<int> UpdateCustomerAsync(string name,int age);
         
         [Update("update customer set name=@name where age>@age")]
         Task UpdateCustomerTask(string name, int age);
 
+        [Delete("delete from customer where age>@age")]
+        Task<int> DeleteCustomerAsync( int age);
+
+        [Delete("delete from customer where age>@age")]
+        Task DeleteCustomerTask(int age);
+        
         //同步
         [Select("select od.productName from customer c join orderHeader oh on c.id=oh.customerid" +
                 " join orderDetail od on oh.id=od.OrderHeaderId where c.name=@name")]
@@ -38,5 +42,11 @@ namespace SummerBoot.Test.Repository
 
         [Update("update customer set name=@name where age>@age")]
         void UpdateCustomerVoid(string name, int age);
+
+        [Delete("delete from customer where age>@age")]
+        int DeleteCustomer(int age);
+
+        [Delete("delete from customer where age>@age")]
+        void DeleteCustomerNoReturn(int age);
     }
 }

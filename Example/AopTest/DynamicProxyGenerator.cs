@@ -81,6 +81,7 @@ namespace demo.Service
             FieldBuilder fbModifiedPropertyNames = typeBuilderProxy.DefineField(ModifiedPropertyNamesFieldName,
                 modifiedPropertyNamesType, FieldAttributes.Public);
 
+            var b = 6666;
             /*
              * 构造函数 实例化 ModifiedPropertyNames,生成类似于下面的代码
                ModifiedPropertyNames = new List<string>();

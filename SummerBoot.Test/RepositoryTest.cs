@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using System.Data.SQLite;
 using System.Threading;
+using System.Threading.Tasks;
 using SummerBoot.Repository;
 using SummerBoot.Test.Models;
 using SummerBoot.Test.Repository;
@@ -36,11 +37,33 @@ namespace SummerBoot.Test
             serviceProvider = services.BuildServiceProvider();
             serviceProvider = serviceProvider.CreateScope().ServiceProvider;
         }
-
-        [Fact]
-        public async void TestRepositoryAsync()
+        private void InitAsyncDatabase()
         {
-            InitDatabase();
+            //初始化数据库
+            using (var database = new Db2())    //新增
+            {
+                database.Database.EnsureDeleted();
+                database.Database.EnsureCreated();
+            }
+
+            var services = new ServiceCollection();
+
+            services.AddSummerBoot();
+
+            services.AddSummerBootRepository(it =>
+            {
+                it.DbConnectionType = typeof(SQLiteConnection);
+                it.ConnectionString = @"Data source=./testDbAsync.db";
+            });
+
+            serviceProvider = services.BuildServiceProvider();
+            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+        }
+        
+        [Fact]
+        public async Task TestRepositoryAsync()
+        {
+            InitAsyncDatabase();
 
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -149,8 +172,13 @@ namespace SummerBoot.Test
             var newCount2 = await customerRepository.UpdateCustomerAsync("a", 5);
             await customerRepository.UpdateCustomerTask("b", 5);
             Assert.Equal(94, newCount2);
+            //test delete 
+            var newCount3 = await customerRepository.DeleteCustomerAsync( 5);
+            Assert.Equal(94, newCount3);
+            await customerRepository.DeleteCustomerTask( 5);
+            var newCount4 = await customerRepository.GetAllAsync();
+            Assert.Equal(8, newCount4.Count);
         }
-
         [Fact]
         public void TestRepository()
         {
@@ -263,6 +291,12 @@ namespace SummerBoot.Test
             var newCount2 = customerRepository.UpdateCustomer("a", 5);
             customerRepository.UpdateCustomerTask("b", 5);
             Assert.Equal(94, newCount2);
+            //test delete 
+            var newCount3 =  customerRepository.DeleteCustomer(5);
+            Assert.Equal(94, newCount3);
+            customerRepository.DeleteCustomerNoReturn(5);
+            var newCount4 =  customerRepository.GetAll();
+            Assert.Equal(8, newCount4.Count);
         }
     }
 }
