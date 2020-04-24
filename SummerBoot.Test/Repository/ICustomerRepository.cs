@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SummerBoot.Test.Models;
+using SummerBoot.WebApi.Models;
 
-namespace SummerBoot.Test.Repository
+namespace SummerBoot.WebApi.Repository
 {
     [Repository]
     public interface ICustomerRepository : IRepository<Customer>
@@ -28,6 +28,9 @@ namespace SummerBoot.Test.Repository
 
         [Delete("delete from customer where age>@age")]
         Task DeleteCustomerTask(int age);
+
+        [Select("select CreateTime from orderHeader where OrderNo='fffdsfdsf'")]
+        Task<DateTime> GetDatetime();
         
         //同步
         [Select("select od.productName from customer c join orderHeader oh on c.id=oh.customerid" +

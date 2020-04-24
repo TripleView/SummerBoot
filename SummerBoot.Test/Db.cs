@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SummerBoot.Test;
-using SummerBoot.Test.Models;
+using SummerBoot.WebApi;
+using SummerBoot.WebApi.Models;
 
-namespace SummerBoot.Test
+namespace SummerBoot.WebApi
 {
     public class Db:DbContext
     {

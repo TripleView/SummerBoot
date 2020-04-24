@@ -7,9 +7,9 @@
     <StartupObject />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.1.1</Version>
-    <Description>SummerBoot,将SpringBoot的先进理念与C#的简洁优雅合二为一。github地址:https://github.com/TripleView/SummerBoot</Description>
-    <PackageReleaseNotes>SummerBoot,将SpringBoot的先进理念与C#的简洁优雅合二为一。AOP,一种奇妙的开发理念，能实现许许多多的黑魔法。本库支持普通类级别的精准属性注入，配置值注入，注解式缓存，只需写接口即可实现自定义sql功能等。</PackageReleaseNotes>
+    <Version>1.2.0</Version>
+    <Description>SummerBoot,致力于让新人快速上手net core，将SpringBoot的先进理念与C#的简洁优雅合二为一。github地址:https://github.com/TripleView/SummerBoot</Description>
+    <PackageReleaseNotes>SummerBoot,致力于让新人快速上手net core，将SpringBoot的先进理念与C#的简洁优雅合二为一。github地址:https://github.com/TripleView/SummerBoot</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/TripleView/SummerBoot</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
     <Copyright>MIT</Copyright>

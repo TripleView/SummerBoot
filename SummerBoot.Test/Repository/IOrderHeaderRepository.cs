@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using SummerBoot.Repository;
-using SummerBoot.Test.Models;
+using SummerBoot.WebApi.Models;
 
-namespace SummerBoot.Test.Repository
+namespace SummerBoot.WebApi.Repository
 {
     [Repository]
     public interface IOrderHeaderRepository:IRepository<OrderHeader>

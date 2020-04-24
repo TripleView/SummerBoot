@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using SummerBoot.Core;
 
 namespace SummerBoot.Feign
 {
@@ -43,7 +44,8 @@ namespace SummerBoot.Feign
                     }
                     else
                     {
-                        httpRequest.Content = new StringContent(requestTemplate.Body);
+                        string postData = requestTemplate.Body.HasText() ? requestTemplate.Body : "";
+                        httpRequest.Content = new StringContent(postData);
                     }
                 }
 

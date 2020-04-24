@@ -1,25 +1,21 @@
-using Example.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Example.WebApi.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MySql.Data.MySqlClient;
-using SqlOnline.Utils;
-using SummerBoot.Core;
-using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using Example.Feign;
-using Microsoft.Data.Sqlite;
-using SummerBoot.Feign;
-using Oracle.ManagedDataAccess.Client;
-using System.Data.SqlClient;
-using System.IO;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using SummerBoot.Core;
+using SummerBoot.Feign;
 
-namespace Example
+namespace Example.WebApi
 {
     public class Startup
     {
@@ -33,32 +29,21 @@ namespace Example
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //初始化数据库 initDatabase
-            using (var database = new Db())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
-
             services.AddSummerBoot();
 
             services.AddSummerBootRepository(it =>
             {
                 it.DbConnectionType = typeof(SqliteConnection);
-                it.ConnectionString = "Data source=./mydb.db";
+                it.ConnectionString = "Data source=./Customer.db";
             });
-
-            //添加feign请求拦截器
-            services.AddScoped<IRequestInterceptor,MyRequestInterceptor>();
-            services.AddSummerBootFeign();
-
-            services.AddControllers();
-
-            services.AddSummerBootCache(it =>
+            //初始化数据库 initDatabase
+            using (var database = new Db.Db())    //新增
             {
-                it.UseRedis("129.204.47.226,password=summerBoot");
-            });
-
+                database.Database.EnsureDeleted();
+                database.Database.EnsureCreated();
+                database.Customer.Add(new Customer(){CustomerNo = "A001",Name = "Test",TotalConsumptionAmount = 0});
+                database.SaveChanges();
+            }
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "sukcore后台Api", Version = "v1" });
@@ -95,6 +80,7 @@ namespace Example
                 // 添加控制器层注释，true表示显示控制器注释
                 c.IncludeXmlComments(xmlPath, true);
             });
+            services.AddControllers().AddSummerBootMvcExtention();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -105,21 +91,21 @@ namespace Example
                 app.UseDeveloperExceptionPage();
             }
 
-
             app.UseRouting();
 
             app.UseAuthorization();
+            
             // 添加Swagger有关中间件
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Demo v1");
             });
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
-
         }
     }
 }

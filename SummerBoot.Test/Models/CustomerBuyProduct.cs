@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SummerBoot.Test.Models
+namespace SummerBoot.WebApi.Models
 {
     public class CustomerBuyProduct
     {

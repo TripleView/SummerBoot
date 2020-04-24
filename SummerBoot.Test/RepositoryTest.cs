@@ -6,11 +6,11 @@ using System.Data.SQLite;
 using System.Threading;
 using System.Threading.Tasks;
 using SummerBoot.Repository;
-using SummerBoot.Test.Models;
-using SummerBoot.Test.Repository;
+using SummerBoot.WebApi.Models;
+using SummerBoot.WebApi.Repository;
 using Xunit;
 
-namespace SummerBoot.Test
+namespace SummerBoot.WebApi
 {
     public class RepositoryTest
     {
@@ -64,7 +64,7 @@ namespace SummerBoot.Test
         public async Task TestRepositoryAsync()
         {
             InitAsyncDatabase();
-
+           
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -73,7 +73,9 @@ namespace SummerBoot.Test
             var customer = new Customer() { Name = "testCustomer" };
             await customerRepository.InsertAsync(customer);
 
-            var orderHeader = new OrderHeader();
+            var f = await customerRepository.GetDatetime();
+
+           var orderHeader = new OrderHeader();
             orderHeader.CreateTime = DateTime.UtcNow;
             orderHeader.CustomerId = customer.Id;
             orderHeader.State = 1;

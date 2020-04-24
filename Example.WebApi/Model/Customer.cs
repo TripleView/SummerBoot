@@ -3,14 +3,19 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace SummerBoot.WebApi.Models
+namespace Example.WebApi.Model
 {
+    /// <summary>
+    /// 会员表
+    /// </summary>
     public class Customer
     {
         [Key]
         public int Id { set; get; }
+        /// <summary>
+        /// 会员姓名
+        /// </summary>
         public string Name { set; get; }
-        public int Age { set; get; } = 0;
         /// <summary>
         /// 会员号
         /// </summary>

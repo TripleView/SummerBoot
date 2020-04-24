@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Example.WebApi</name>
+    </assembly>
+    <members>
+        <member name="M:Example.WebApi.Controllers.CustomerController.UpdateCustomerAmount(System.String,System.Decimal)">
+            <summary>
+            根据会员编号更新顾客总消费金额
+            </summary>
+            <param name="customerNo"></param>
+            <param name="amount"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Example.WebApi.Model.Customer">
+            <summary>
+            会员表
+            </summary>
+        </member>
+        <member name="P:Example.WebApi.Model.Customer.Name">
+            <summary>
+            会员姓名
+            </summary>
+        </member>
+        <member name="P:Example.WebApi.Model.Customer.CustomerNo">
+            <summary>
+            会员号
+            </summary>
+        </member>
+        <member name="P:Example.WebApi.Model.Customer.TotalConsumptionAmount">
+            <summary>
+            总消费金额
+            </summary>
+        </member>
+    </members>
+</doc>
