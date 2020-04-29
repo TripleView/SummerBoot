@@ -118,6 +118,29 @@
             <param name="amount"></param>
             <returns></returns>
         </member>
+        <member name="M:Example.Feign.IFeignExampleRepository.TestJson(System.String,Example.Dto.AddOrderDto)">
+            <summary>
+            post(json方式)
+            </summary>
+            <param name="name"></param>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Example.Feign.IFeignExampleRepository.TestForm(Example.Dto.FeignFormDto)">
+            <summary>
+            post(form方式)
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Example.Feign.IFeignExampleRepository.TestGet(System.String,System.Int32)">
+            <summary>
+            get
+            </summary>
+            <param name="name"></param>
+            <param name="age"></param>
+            <returns></returns>
+        </member>
         <member name="T:Example.Models.OrderDetail">
             <summary>
             订单详情表

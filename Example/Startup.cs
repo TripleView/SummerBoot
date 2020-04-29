@@ -56,8 +56,10 @@ namespace Example
 
             services.AddSummerBootCache(it =>
             {
-                it.UseRedis("129.204.47.226,password=summerBoot");
+                it.UseRedis("129.204.47.226,password=summerBoot,abortConnect=false");
             });
+
+            services.AddMemoryCache();
 
             services.AddSwaggerGen(c =>
             {

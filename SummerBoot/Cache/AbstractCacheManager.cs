@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace SummerBoot.Cache
 {

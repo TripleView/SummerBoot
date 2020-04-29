@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Example.Dto;
 using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Core;
 using SummerBoot.Feign;
