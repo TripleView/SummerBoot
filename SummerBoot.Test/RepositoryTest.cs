@@ -15,6 +15,7 @@ namespace SummerBoot.WebApi
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+        [Fact]
         private void InitDatabase()
         {
             //初始化数据库
@@ -181,6 +182,8 @@ namespace SummerBoot.WebApi
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
         }
+
+
         [Fact]
         public void TestRepository()
         {
@@ -299,6 +302,16 @@ namespace SummerBoot.WebApi
             customerRepository.DeleteCustomerNoReturn(5);
             var newCount4 =  customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
+        }
+
+        [Fact]
+        public void Test1()
+        {
+            var con= new SQLiteConnection("Data source=./testDb12.db");
+            con.Open();
+            var trans= con.BeginTransaction();
+            con = null;
+            trans.Commit();
         }
     }
 }

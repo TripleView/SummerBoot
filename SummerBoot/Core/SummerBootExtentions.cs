@@ -1,4 +1,5 @@
 ﻿using Castle.DynamicProxy;
+using Dapper.Contrib.Extensions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,16 +7,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SqlOnline.Utils;
 using StackExchange.Redis;
 using SummerBoot.Cache;
+using SummerBoot.Feign;
 using SummerBoot.Repository;
+using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using Dapper.Contrib.Extensions;
-using SummerBoot.Feign;
-using SummerBoot.Repository.Druid;
-using SummerBoot.Resource;
 using TableAttribute = System.ComponentModel.DataAnnotations.Schema.TableAttribute;
 
 namespace SummerBoot.Core

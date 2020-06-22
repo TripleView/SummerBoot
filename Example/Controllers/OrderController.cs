@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Example.Dto;
 using Example.Feign;
 using Example.Repository;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SummerBoot.Repository;
@@ -30,7 +31,7 @@ namespace Example.Controllers
             IOrderHeaderRepository orderHeaderRepository,
             IOrderDetailRepository orderDetailRepository,
             IUnitOfWork uow
-            )
+        )
         {
             this.CustomerRepository = customerRepository;
             this.OrderHeaderRepository = orderHeaderRepository;

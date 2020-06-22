@@ -2,13 +2,8 @@
 
 namespace SummerBoot.Repository
 {
-    [AttributeUsage(AttributeTargets.Method,Inherited = true)]
-    public class DeleteAttribute : Attribute
+    public class DeleteAttribute : RepositoryActionAttribute
     {
-        public DeleteAttribute(string sql)
-        {
-            this.Sql = sql;
-        }
-        public string Sql { private set; get; }
+        public DeleteAttribute(string sql, string path = "") : base(sql, path) { }
     }
 }

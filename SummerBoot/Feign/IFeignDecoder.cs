@@ -35,6 +35,8 @@ namespace SummerBoot.Feign
                 if (responseTemplate.Body == null) return null;
                 var body = responseTemplate.Body;
                 var str = body.ConvertToString();
+
+                //var json = new JsonSerializer().Deserialize(new JsonTextReader(new StringReader(str)), type)
                 return JsonConvert.DeserializeObject(str, type);
             }
 

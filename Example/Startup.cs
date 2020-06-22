@@ -48,6 +48,9 @@ namespace Example
                 it.ConnectionString = "Data source=./mydb.db";
             });
 
+            services.AddOptions();
+
+
             //ÃÌº”feign«Î«Û¿πΩÿ∆˜
             services.AddScoped<IRequestInterceptor,MyRequestInterceptor>();
             services.AddSummerBootFeign();
