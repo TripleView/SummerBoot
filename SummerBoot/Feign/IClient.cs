@@ -33,6 +33,7 @@ namespace SummerBoot.Feign
             public async Task<ResponseTemplate> ExecuteAsync(RequestTemplate requestTemplate, CancellationToken cancellationToken)
             {
                 var httpClient = HttpClientFactory.CreateClient();
+                httpClient.Timeout=TimeSpan.FromDays(3);
 
                 var httpRequest = new HttpRequestMessage(requestTemplate.HttpMethod, requestTemplate.Url);
 
@@ -75,7 +76,8 @@ namespace SummerBoot.Feign
                     }
                 }
 
-                var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                var httpResponse = await httpClient.SendAsync(httpRequest,cancellationToken);
+
 
                 //把httpResponseMessage转化为responseTemplate
                 var result = await ConvertResponseAsync(httpResponse);

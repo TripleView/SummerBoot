@@ -96,19 +96,20 @@ namespace SummerBoot.Core
         public void RollBack()
         {
             this.ActiveNumber--;
-            if (this.ActiveNumber > 0 && DbFactory.LongDbTransaction != null && EnableUnitOfWork)
+            if (this.ActiveNumber == 0 && DbFactory.LongDbTransaction != null && EnableUnitOfWork)
             {
                 try
                 {
                     DbFactory.LongDbTransaction.Rollback();
+                    this.Dispose();
+                    Logger.LogDebug("回滚事务");
                 }
                 catch (Exception e)
                 {
                     throw;
                 }
             }
-            this.Dispose();
-            Logger.LogDebug("回滚事务");
+           
         }
     }
 }

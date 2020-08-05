@@ -184,3 +184,6 @@ net core 3.1
 * IRepository。自定义仓储接口，框架默认底层实现基于dapper，可重写替换。
 
 * IDbFactory。生成IDbConnection的工厂接口，可重写替换。
+
+## 更新记录
+* 2020-08-05 feign调用接口返回的状态码如果不是200，则抛出错误。feign里默认的client用的httpClient的超时时长改成3天。修复unitofwork里callback方法里的bug。
