@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
 using System.IO;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 
@@ -13,64 +15,77 @@ namespace SummerBoot.Repository
     /// </summary>
     public class DbFactory : IDbFactory
     {
-        //private readonly IDataSource dataSource;
+        private readonly Microsoft.Extensions.Logging.ILogger<IUnitOfWork> log;
+        private readonly IConfiguration configuration;
         private readonly RepositoryOption repositoryOption;
 
-        public DbFactory( RepositoryOption option)
+        public DbFactory(ILogger<IUnitOfWork> log, IConfiguration configuration, RepositoryOption repositoryOption)
         {
-            this.repositoryOption = option;
-        }
-        /// <summary>
-        /// 长连接
-        /// </summary>
-        public IDbConnection LongDbConnection { private set; get; }
-
-        /// <summary>
-        /// 长连接的事物
-        /// </summary>
-        public IDbTransaction LongDbTransaction { private set; get; }
-
-        /// <summary>
-        /// 短链接
-        /// </summary>
-        public IDbConnection ShortDbConnection
-        {
-            get
-            {
-                //var dbConnection=dataSource.GetConnection();
-                var dbConnection =(IDbConnection) repositoryOption.DbConnectionType.CreateInstance(null);
-                dbConnection.ConnectionString = repositoryOption.ConnectionString;
-                dbConnection.Open();
-                return dbConnection;
-            }
+            this.log = log;
+            this.configuration = configuration;
+            this.repositoryOption = repositoryOption;
         }
 
+        private IDbTransaction shareDbTransaction;
         /// <summary>
-        /// 开启事务
+        /// 事务所拥有的那个链接，事务提交后，其实链接还在，需要后期手动关闭
         /// </summary>
-        /// <returns></returns>
-        public void BeginTransaction()
-        {
-            if (LongDbConnection == null)
-            {
-                //LongDbConnection = dataSource.GetConnection();
-                LongDbConnection = (IDbConnection)repositoryOption.DbConnectionType.CreateInstance(null);
-                LongDbConnection.ConnectionString = repositoryOption.ConnectionString;
-                LongDbConnection.Open();
-                LongDbTransaction = LongDbConnection.BeginTransaction();
-            }
-        }
-
+        private IDbConnection shareDbTransactionLinkDbConnection;
         public void Dispose()
         {
-            LongDbTransaction?.Dispose();
-            if (LongDbConnection?.State != ConnectionState.Closed)
+            this.ReleaseDbTransaction();
+            this.ReleaseDbConnection();
+        }
+
+        public IDbConnection GetDbConnection()
+        {
+            var dbConnection = (IDbConnection)repositoryOption.DbConnectionType.CreateInstance(null);
+            dbConnection.ConnectionString = repositoryOption.ConnectionString;
+            dbConnection.Open();
+            return dbConnection;
+        }
+
+        public IDbTransaction GetDbTransaction()
+        {
+            if (shareDbTransaction != null)
             {
-                LongDbConnection?.Close();
+                if (shareDbTransaction.Connection != null)
+                {
+                    return shareDbTransaction;
+                }
+                shareDbTransaction.Dispose();
+                shareDbTransaction = null;
             }
-            LongDbConnection?.Dispose();
-            LongDbTransaction = null;
-            LongDbConnection = null;
+
+            shareDbTransactionLinkDbConnection ??= this.GetDbConnection();
+
+            shareDbTransaction = shareDbTransactionLinkDbConnection.BeginTransaction();
+
+            return shareDbTransaction;
+        }
+
+        /// <summary>
+        /// 释放事务对象
+        /// </summary>
+        private void ReleaseDbTransaction()
+        {
+            shareDbTransaction?.Dispose();
+            shareDbTransaction = null;
+        }
+
+        /// <summary>
+        /// 释放共有链接
+        /// </summary>
+        private void ReleaseDbConnection()
+        {
+            shareDbTransactionLinkDbConnection?.Close();
+            shareDbTransactionLinkDbConnection = null;
+        }
+
+        public void ReleaseResources()
+        {
+            ReleaseDbTransaction();
+            ReleaseDbConnection();
         }
     }
 }

@@ -39,6 +39,10 @@
   <ItemGroup>
     <Folder Include="Repository\DbAdapters\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DatabaseParser\DatabaseParser.csproj" />
+  </ItemGroup>
   
 
 

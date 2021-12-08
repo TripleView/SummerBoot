@@ -35,7 +35,7 @@ namespace SummerBoot.Repository
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection:db.GetDbConnection();
 
                 var result = new Page<T>() { };
                 //oracle这坑逼数据库需要单独处理
@@ -89,7 +89,7 @@ namespace SummerBoot.Repository
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
                 var result = new Page<T>() { };
                 //oracle这坑逼数据库需要单独处理
                 if (repositoryOption.IsOracle)
@@ -144,7 +144,7 @@ namespace SummerBoot.Repository
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection:db.GetDbConnection();
                 if (baseTypeIsSameReturnType)
                 {
                     var queryResult = dbConnection.Query<T>(sql, dbArgs);
@@ -180,7 +180,7 @@ namespace SummerBoot.Repository
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.LongDbConnection : db.ShortDbConnection;
+                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection:db.GetDbConnection();
                 if (baseTypeIsSameReturnType)
                 {
                     var queryResult = await dbConnection.QueryAsync<T>(sql, dbArgs);
@@ -228,12 +228,12 @@ namespace SummerBoot.Repository
             var executeResult = 0;
             if (uow == null)
             {
-                executeResult = db.ShortDbConnection.Execute(sql, dbArgs);
+                executeResult = db.GetDbConnection().Execute(sql, dbArgs);
                 return executeResult;
             }
 
-            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
-            executeResult = dbcon.Execute(sql, dbArgs, db.LongDbTransaction);
+            var dbcon =  uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
+            executeResult = dbcon.Execute(sql, dbArgs, db.GetDbTransaction());
 
             if (uow.ActiveNumber == 0)
             {
@@ -263,12 +263,13 @@ namespace SummerBoot.Repository
             var executeResult = 0;
             if (uow == null)
             {
-                executeResult = await db.ShortDbConnection.ExecuteAsync(sql, dbArgs);
+                executeResult = await db.GetDbConnection().ExecuteAsync(sql, dbArgs);
                 return executeResult;
             }
 
-            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
-            executeResult = await dbcon.ExecuteAsync(sql, dbArgs, db.LongDbTransaction);
+            var dbcon = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
+            executeResult =await dbcon.ExecuteAsync(sql, dbArgs, db.GetDbTransaction());
+
 
             if (uow.ActiveNumber == 0)
             {
@@ -364,12 +365,12 @@ namespace SummerBoot.Repository
             var updateResult = 0;
             if (uow == null)
             {
-                updateResult = db.ShortDbConnection.Execute(sql, args);
+                updateResult = db.GetDbConnection().Execute(sql, args);
                 return updateResult;
             }
 
-            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
-            updateResult = dbcon.Execute(sql, args, db.LongDbTransaction);
+            var dbcon = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
+            updateResult = dbcon.Execute(sql, args, db.GetDbTransaction());
 
             if (uow.ActiveNumber == 0)
             {
@@ -386,12 +387,12 @@ namespace SummerBoot.Repository
             var deleteResult = 0;
             if (uow == null)
             {
-                deleteResult = db.ShortDbConnection.Execute(sql, args);
+                deleteResult = db.GetDbConnection().Execute(sql, args);
                 return deleteResult;
             }
 
-            var dbcon = uow.ActiveNumber == 0 ? db.ShortDbConnection : db.LongDbConnection;
-            deleteResult = dbcon.Execute(sql, args, db.LongDbTransaction);
+            var dbcon = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
+            deleteResult = dbcon.Execute(sql, args, db.GetDbTransaction());
 
             if (uow.ActiveNumber == 0)
             {

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
+using SummerBoot.Repository;
 
 namespace SummerBoot.Core
 {
@@ -13,7 +15,7 @@ namespace SummerBoot.Core
         /// 开启事务
         /// </summary>
         void BeginTransaction();
-        
+
         /// <summary>
         /// 提交
         /// </summary>
@@ -29,5 +31,7 @@ namespace SummerBoot.Core
         /// </summary>
         /// <param name="action"></param>
         void RegisterCallBack(Action action);
+
+        IDbFactory DbFactory { get; }
     }
 }

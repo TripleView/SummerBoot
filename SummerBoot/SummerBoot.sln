@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example", "..\Example\Examp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Test", "..\SummerBoot.Test\SummerBoot.Test.csproj", "{89AF499C-B39C-4F21-B5E4-FF729F571EEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.WebApi", "..\Example.WebApi\Example.WebApi.csproj", "{371CDA5F-B878-4614-9022-2646A78BB5FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.WebApi", "..\Example.WebApi\Example.WebApi.csproj", "{371CDA5F-B878-4614-9022-2646A78BB5FE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseParser", "..\DatabaseParser\DatabaseParser.csproj", "{02869F62-9921-4468-9BC1-8392BF121F76}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{371CDA5F-B878-4614-9022-2646A78BB5FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{371CDA5F-B878-4614-9022-2646A78BB5FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{371CDA5F-B878-4614-9022-2646A78BB5FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02869F62-9921-4468-9BC1-8392BF121F76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02869F62-9921-4468-9BC1-8392BF121F76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02869F62-9921-4468-9BC1-8392BF121F76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02869F62-9921-4468-9BC1-8392BF121F76}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

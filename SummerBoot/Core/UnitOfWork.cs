@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using SqlOnline.Utils;
 using SummerBoot.Repository;
@@ -8,7 +9,7 @@ namespace SummerBoot.Core
 {
     public class UnitOfWork : IUnitOfWork
     {
-
+        public IDbFactory DbFactory { get; }
         public UnitOfWork(ILogger<UnitOfWork> logger, IDbFactory dbFactory)
         {
             this.Logger = logger;
@@ -17,14 +18,12 @@ namespace SummerBoot.Core
         /// <summary>
         /// 回调事件
         /// </summary>
-        private readonly IList<Action> callBackActions = new List<Action>();
+        private readonly IList<Action> _callBackActions = new List<Action>();
 
         /// <summary>
         /// 工作单元引用次数，当次数为0时提交，主要为了防止事物嵌套
         /// </summary>
         public int ActiveNumber { get; set; } = 0;
-
-        private IDbFactory DbFactory { set; get; }
 
         private ILogger<UnitOfWork> Logger { set; get; }
 
@@ -37,79 +36,76 @@ namespace SummerBoot.Core
         {
             if (this.ActiveNumber == 0 && EnableUnitOfWork)
             {
-                DbFactory.BeginTransaction();
+                DbFactory.GetDbTransaction();
 
                 Logger.LogDebug("开启事务");
             }
             this.ActiveNumber++;
         }
 
+
         public void Commit()
         {
             this.ActiveNumber--;
-            if (this.ActiveNumber == 0)
+            if (this.ActiveNumber == 0 && EnableUnitOfWork)
             {
-                if (EnableUnitOfWork && DbFactory.LongDbConnection != null)
+                var isCommitSuccess = false;
+                try
                 {
-                    var isCommitSuccess = false;
-                    try
-                    {
-                        DbFactory.LongDbTransaction.Commit();
-                        isCommitSuccess = true;
-                    }
-                    catch (Exception e)
-                    {
-                        DbFactory.LongDbTransaction.Rollback();
-                        isCommitSuccess = false;
-                        Logger.LogError(e.ToString());
-                    }
-                    finally
-                    {
-                        if (isCommitSuccess && this.callBackActions != null)
-                        {
-                            foreach (Action callBackAction in this.callBackActions)
-                            {
-                                callBackAction();
-                            }
-                        }
-                        this.Dispose();
-                    }
+                    DbFactory.GetDbTransaction().Commit();
+                    isCommitSuccess = true;
                 }
-
-                Logger.LogDebug("提交事务");
+                catch (Exception e)
+                {
+                    DbFactory.GetDbTransaction().Rollback();
+                    isCommitSuccess = false;
+                    Logger.LogError("提交事务失败", e);
+                }
+                finally
+                {
+                    DbFactory.ReleaseResources();
+                    if (isCommitSuccess && this._callBackActions != null)
+                    {
+                        foreach (Action callBackAction in this._callBackActions)
+                        {
+                            callBackAction();
+                        }
+                    }
+                    Logger.LogDebug("提交事务");
+                }
             }
-
         }
 
         public void Dispose()
         {
-            this.callBackActions.Clear();
-
-            if (EnableUnitOfWork) DbFactory.Dispose();
+            this._callBackActions.Clear();
         }
 
         public void RegisterCallBack(Action action)
         {
-            callBackActions.Add(action);
+            _callBackActions.Add(action);
         }
 
         public void RollBack()
         {
             this.ActiveNumber--;
-            if (this.ActiveNumber == 0 && DbFactory.LongDbTransaction != null && EnableUnitOfWork)
+            if (this.ActiveNumber == 0 && EnableUnitOfWork)
             {
+
                 try
                 {
-                    DbFactory.LongDbTransaction.Rollback();
-                    this.Dispose();
+                    DbFactory.GetDbTransaction().Rollback();
                     Logger.LogDebug("回滚事务");
                 }
                 catch (Exception e)
                 {
-                    throw;
+                    Logger.LogError("回滚事务失败", e);
+                }
+                finally
+                {
+                    DbFactory.ReleaseResources();
                 }
             }
-           
         }
     }
 }

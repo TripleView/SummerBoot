@@ -3,26 +3,13 @@ using System.Data;
 
 namespace SummerBoot.Repository
 {
-    public interface IDbFactory:IDisposable
+    public interface IDbFactory : IDisposable
     {
+        IDbTransaction GetDbTransaction();
+        IDbConnection GetDbConnection();
         /// <summary>
-        /// 长链接
+        /// 释放资源
         /// </summary>
-        IDbConnection LongDbConnection { get; }
-
-        /// <summary>
-        /// 长链接的事物
-        /// </summary>
-        IDbTransaction LongDbTransaction { get; }
-
-        /// <summary>
-        /// 短链接
-        /// </summary>
-        IDbConnection ShortDbConnection { get; }
-
-        /// <summary>
-        /// 开启事务
-        /// </summary>
-        void BeginTransaction();
+        void ReleaseResources();
     }
 }
