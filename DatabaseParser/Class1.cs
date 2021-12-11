@@ -71,7 +71,7 @@ namespace DatabaseParser
     //    public int? Skip => _skip;
     //    public string TableName { get; private set; }
     //    public int? Take => _take;
-    //    public string Update => "SET " + string.Join(", ",_update);
+    //    public string InternalUpdate => "SET " + string.Join(", ",_update);
 
     //    public string Where => _where.Count == 0 ? null : "WHERE " + string.Join(" ",_where);
 
@@ -256,12 +256,12 @@ namespace DatabaseParser
     //            //case nameof(Extensions.ToSqlString):
     //            //    return Visit(methodCallExpression.Arguments[0]);
 
-    //            //case nameof(Extensions.Delete):
+    //            //case nameof(Extensions.InternalDelete):
     //            //case nameof(Extensions.DeleteAsync):
     //            //    IsDelete = true;
     //            //    return Visit(methodCallExpression.Arguments[0]);
 
-    //            //case nameof(Extensions.Update):
+    //            //case nameof(Extensions.InternalUpdate):
     //            //    return ParseExpression(methodCallExpression, _update);
 
     //            default:
@@ -341,7 +341,7 @@ namespace DatabaseParser
     //        else                            /**/   yield return Select;
 
     //        if (_update.Count == 0)         /**/   yield return From;
-    //        else if (_update.Count > 0)     /**/   yield return Update;
+    //        else if (_update.Count > 0)     /**/   yield return InternalUpdate;
 
     //        if (Where != null)              /**/   yield return Where;
     //        if (GroupBy != null)            /**/   yield return GroupBy;

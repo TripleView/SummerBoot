@@ -30,13 +30,13 @@ namespace SummerBoot.Cache
         private async Task<object> Execute(Func<object> invoker, MethodInfo method, CacheOperationContexts contexts)
         {
 
-            //var context = contexts.Get(typeof(CacheableOperation)).FirstOrDefault();
+            //var context = contexts.InternalGet(typeof(CacheableOperation)).FirstOrDefault();
             //if (context!=null&&context.IsConditionPassing(CacheOperationExpressionEvaluator.NO_RESULT))
             //{
             //   var key = context.GenerateKey(CacheOperationExpressionEvaluator.NO_RESULT);
             //   var cache = context.Caches.FirstOrDefault();
             //   if(cache==null) return new object();
-            //   return cache.Get<object>(key.ToString(), null);
+            //   return cache.InternalGet<object>(key.ToString(), null);
             //}
             //else
             //{

@@ -7,7 +7,7 @@ using SummerBoot.WebApi.Models;
 namespace SummerBoot.WebApi.Repository
 {
     [Repository]
-    public interface ICustomerRepository : IRepository<Customer>
+    public interface ICustomerRepository : IBaseRepository<Customer>
     {
         //一部
         [Select("select od.productName from customer c join orderHeader oh on c.id=oh.customerid" +

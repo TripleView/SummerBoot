@@ -18,6 +18,18 @@ namespace DatabaseParser.ExpressionParser
             Expression = Expression.Constant(this);
         }
 
+        public Repository()
+        {
+
+        }
+
+        public void Init(DatabaseType databaseType)
+        {
+            Provider = new DbQueryProvider(databaseType);
+            //最后一个表达式将是第一个IQueryable对象的引用。 
+            Expression = Expression.Constant(this);
+        }
+
         public Repository(Expression expression, IQueryProvider provider)
         {
             Provider = provider;
@@ -27,10 +39,10 @@ namespace DatabaseParser.ExpressionParser
 
         public Type ElementType => typeof(T);
 
-        public Expression Expression { get; }
+        public Expression Expression { get; private set; }
 
 
-        public IQueryProvider Provider { get; }
+        public IQueryProvider Provider { get; private set; }
 
         public IEnumerator<T> GetEnumerator()
         {
@@ -58,31 +70,51 @@ namespace DatabaseParser.ExpressionParser
             return null;
         }
 
-        public void Insert(T insertEntity)
+        public DbQueryResult InternalInsert(T insertEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                dbQueryProvider.queryFormatter.Insert(insertEntity);;
+               return dbQueryProvider.queryFormatter.Insert(insertEntity);;
             }
+
+            return null;
         }
 
-        public void Update(T updateEntity)
+        public DbQueryResult InternalUpdate(T updateEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                dbQueryProvider.queryFormatter.Update(updateEntity); ;
+                return dbQueryProvider.queryFormatter.Update(updateEntity); ;
             }
+            return null;
         }
 
-        public void Delete(T deleteEntity)
+        public DbQueryResult InternalDelete(T deleteEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                dbQueryProvider.queryFormatter.Delete(deleteEntity);
+               return dbQueryProvider.queryFormatter.Delete(deleteEntity);
             }
+            return null;
         }
 
-       
+        public DbQueryResult InternalGet(dynamic id)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+               return dbQueryProvider.queryFormatter.Get<T>(id);
+            }
+            return null;
+        }
+
+        public DbQueryResult InternalGetAll()
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+              return dbQueryProvider.queryFormatter.GetAll<T>();
+            }
+            return null;
+        }
     }
 
 }

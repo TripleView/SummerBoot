@@ -1,10 +1,16 @@
-﻿namespace DatabaseParser.ExpressionParser
+﻿using System.Collections.Generic;
+
+namespace DatabaseParser.ExpressionParser
 {
     public interface IDbExecute
     {
-        void Insert<T>(T insertEntity);
-        void Update<T>(T updateEntity);
+        DbQueryResult Insert<T>(T insertEntity);
+        DbQueryResult Update<T>(T updateEntity);
 
-        void Delete<T>(T deleteEntity);
+        DbQueryResult Delete<T>(T deleteEntity);
+
+        DbQueryResult GetAll<T>();
+
+        DbQueryResult Get<T>(dynamic id);
     }
 }

@@ -8,7 +8,7 @@ using SummerBoot.Repository;
 namespace Example.Repository
 {
     [Repository]
-    public interface IOrderHeaderRepository:IRepository<OrderHeader>
+    public interface IOrderHeaderRepository:IBaseRepository<OrderHeader>
     {
         /// <summary>
         /// 取消订单

@@ -24,6 +24,9 @@ namespace DatabaseParser.ExpressionParser
                 case DatabaseType.Oracle:
                     this.queryFormatter = new OracleQueryFormatter();
                     break;
+                case DatabaseType.Sqlite:
+                    this.queryFormatter = new SqliteQueryFormatter();
+                    break;
             }
             
         }

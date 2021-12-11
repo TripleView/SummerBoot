@@ -5,7 +5,7 @@ namespace SummerBoot.Cache
     public interface IRedisCacheWriter
     {
         /// <summary>
-        /// Get the binary value representation from Redis stored for the given key.
+        /// InternalGet the binary value representation from Redis stored for the given key.
         /// </summary>
         /// <param name="name"></param>
         /// <param name="key"></param>

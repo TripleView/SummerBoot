@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.WebApi", "..\Exampl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseParser", "..\DatabaseParser\DatabaseParser.csproj", "{02869F62-9921-4468-9BC1-8392BF121F76}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProject1", "..\TestProject1\TestProject1.csproj", "{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{02869F62-9921-4468-9BC1-8392BF121F76}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02869F62-9921-4468-9BC1-8392BF121F76}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02869F62-9921-4468-9BC1-8392BF121F76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -57,7 +57,7 @@ namespace TestProject1
 
     
 
-    public class EmployeeRepository : BaseRepository<Employee>
+    public class EmployeeRepository : Repository<Employee>
     {
         public EmployeeRepository() : base(DatabaseType.SqlServer)
         {
@@ -65,7 +65,7 @@ namespace TestProject1
         }
     }
 
-    public class HrRepository : BaseRepository<Hr>
+    public class HrRepository : Repository<Hr>
     {
         public HrRepository() : base(DatabaseType.SqlServer)
         {
@@ -73,7 +73,7 @@ namespace TestProject1
         }
     }
 
-    public class PersonRepository : BaseRepository<Person>, IPersonRepository
+    public class PersonRepository : Repository<Person>, IPersonRepository
     {
         public PersonRepository() : base(DatabaseType.SqlServer)
         {
@@ -85,7 +85,7 @@ namespace TestProject1
         }
     }
 
-    public class MysqlPersonRepository : BaseRepository<Person>, IPersonRepository
+    public class MysqlPersonRepository : Repository<Person>, IPersonRepository
     {
         public MysqlPersonRepository() : base(DatabaseType.Mysql)
         {
@@ -1184,19 +1184,19 @@ namespace TestProject1
         public void TestDelete()
         {
             var personRepository = new PersonRepository();
-            var persion = new Person() { Age = 5, HaveChildren = false, Name = "何泽平" };
-            personRepository.Delete(persion);
+            var persion = new Person() { Age = 5, HaveChildren = false, Name = "张三" };
+            personRepository.InternalDelete(persion);
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
-            Assert.Equal("delete from [Person] where [Name]=@Name,[Age]=@Age,[HaveChildren]=@HaveChildren", r1MiddleResult.Sql);
+            Assert.Equal("delete from [Person] where [Name]=@Name and [Age]=@Age and [HaveChildren]=@HaveChildren", r1MiddleResult.Sql);
         }
 
         [Fact]
         public void TestUpdate()
         {
             var employeeRepository = new EmployeeRepository();
-            var persion = new Employee() { Age = 5, HaveChildren = false, Name = "何泽平" };
-            employeeRepository.Update(persion);
+            var persion = new Employee() { Age = 5, HaveChildren = false, Name = "张三" };
+            employeeRepository.InternalUpdate(persion);
             var r1MiddleResult = employeeRepository.GetDbQueryDetail();
 
             Assert.Equal("update [Employee] set [Name]=@Name,[Age]=@Age,[HaveChildren]=@HaveChildren where [Id]=@Id", r1MiddleResult.Sql);
@@ -1206,8 +1206,8 @@ namespace TestProject1
         public void TestUpdate2()
         {
             var hrRepository = new HrRepository();
-            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "何泽平",EmployeNo = "666"};
-            hrRepository.Update(persion);
+            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "张三", EmployeNo = "666"};
+            hrRepository.InternalUpdate(persion);
             var r1MiddleResult = hrRepository.GetDbQueryDetail();
 
             Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@EmployeNo and [Name]=@Name", r1MiddleResult.Sql);
@@ -1217,11 +1217,36 @@ namespace TestProject1
         public void TestInsert()
         {
             var personRepository = new PersonRepository();
-            var persion = new Person() { Age = 5, HaveChildren = false, Name = "何泽平" };
-            personRepository.Insert(persion);
+            var persion = new Person() { Age = 5, HaveChildren = false, Name = "张三" };
+            personRepository.InternalInsert(persion);
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
             Assert.Equal("insert into [Person] ([Name],[Age],[HaveChildren]) values (@Name,@Age,@HaveChildren)", r1MiddleResult.Sql);
+        }
+
+        [Fact]
+        public void TestGet()
+        {
+            var employeeRepository = new EmployeeRepository();
+            employeeRepository.InternalGet(1);
+            var r1MiddleResult = employeeRepository.GetDbQueryDetail();
+
+            Assert.Equal("select [Id],[Name],[Age],[HaveChildren] from [Employee] where [Id]=@y0", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
+
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
+        }
+
+        [Fact]
+        public void TestGetAll()
+        {
+            var employeeRepository = new EmployeeRepository();
+            employeeRepository.InternalGetAll();
+            var r1MiddleResult = employeeRepository.GetDbQueryDetail();
+
+            Assert.Equal("select [Id],[Name],[Age],[HaveChildren] from [Employee]", r1MiddleResult.Sql);
+
         }
     }
 

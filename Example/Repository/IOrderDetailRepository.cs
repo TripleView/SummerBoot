@@ -8,7 +8,7 @@ using SummerBoot.Repository;
 namespace Example.Repository
 {
     [Repository]
-    public interface IOrderDetailRepository : IRepository<OrderDetail>
+    public interface IOrderDetailRepository : IBaseRepository<OrderDetail>
     {
         /// <summary>
         /// 通过会员号获取消费详情

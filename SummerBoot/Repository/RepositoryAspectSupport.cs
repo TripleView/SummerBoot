@@ -19,23 +19,49 @@ namespace SummerBoot.Repository
         private IPageable pageable;
         private IServiceProvider ServiceProvider { set; get; }
 
+        private IDbConnection dbConnection;
+
+        private IDbTransaction dbTransaction;
+
+        private IUnitOfWork uow;
+        private IDbFactory dbFactory;
+
+        private void Init()
+        {
+            //先获得工作单元和数据库工厂以及序列化器
+            uow = ServiceProvider.GetService<IUnitOfWork>();
+            dbFactory = ServiceProvider.GetService<IDbFactory>();
+        }
+
+        protected void OpenDb()
+        {
+            dbConnection = uow.ActiveNumber == 0 ? dbFactory.GetDbConnection() : dbFactory.GetDbTransaction().Connection;
+            dbTransaction = uow.ActiveNumber == 0 ? null : dbFactory.GetDbTransaction();
+        }
+
+        protected void CloseDb()
+        {
+            if (uow.ActiveNumber == 0)
+            {
+                dbConnection.Close();
+                dbConnection.Dispose();
+            }
+        }
+
         public Page<T> PageBaseExecute<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-
-            //先获得工作单元和数据库工厂以及序列化器
-            var uow = serviceProvider.GetService<IUnitOfWork>();
-            var db = serviceProvider.GetService<IDbFactory>();
-            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
-            //获得动态参数
-            var dbArgs = GetParameters(method, args);
-
+            Init();
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
+                var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+                //获得动态参数
+                var dbArgs = GetParameters(method, args);
+
+                OpenDb();
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection:db.GetDbConnection();
 
                 var result = new Page<T>() { };
                 //oracle这坑逼数据库需要单独处理
@@ -67,6 +93,8 @@ namespace SummerBoot.Repository
                     result.PageNumber = pageable.PageNumber;
                 }
 
+                CloseDb();
+
                 return result;
             }
 
@@ -76,20 +104,17 @@ namespace SummerBoot.Repository
         public async Task<Page<T>> PageBaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-
-            //先获得工作单元和数据库工厂以及序列化器
-            var uow = serviceProvider.GetService<IUnitOfWork>();
-            var db = serviceProvider.GetService<IDbFactory>();
-            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
-            //获得动态参数
-            var dbArgs = GetParameters(method, args);
-
+            Init();
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
+                var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+                //获得动态参数
+                var dbArgs = GetParameters(method, args);
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
+
+                OpenDb();
                 var result = new Page<T>() { };
                 //oracle这坑逼数据库需要单独处理
                 if (repositoryOption.IsOracle)
@@ -120,6 +145,8 @@ namespace SummerBoot.Repository
                     result.PageNumber = pageable.PageNumber;
                 }
 
+                CloseDb();
+
                 return result;
             }
 
@@ -129,12 +156,10 @@ namespace SummerBoot.Repository
         public T BaseExecute<T, TBaseType>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
+            Init();
+
             var targetType = typeof(T);
             var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
-
-            //先获得工作单元和数据库工厂以及序列化器
-            var uow = serviceProvider.GetService<IUnitOfWork>();
-            var db = serviceProvider.GetService<IDbFactory>();
 
             //获得动态参数
             var dbArgs = GetParameters(method, args);
@@ -144,7 +169,7 @@ namespace SummerBoot.Repository
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection:db.GetDbConnection();
+                OpenDb();
                 if (baseTypeIsSameReturnType)
                 {
                     var queryResult = dbConnection.Query<T>(sql, dbArgs);
@@ -158,6 +183,7 @@ namespace SummerBoot.Repository
                         return (T)queryResult;
                     }
                 }
+                CloseDb();
             }
 
             throw new Exception("can not process method name:" + method.Name);
@@ -168,19 +194,20 @@ namespace SummerBoot.Repository
             ServiceProvider = serviceProvider;
             var targetType = typeof(T);
             var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
-            //先获得工作单元和数据库工厂以及序列化器
-            var uow = serviceProvider.GetService<IUnitOfWork>();
-            var db = serviceProvider.GetService<IDbFactory>();
-            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
-            //获得动态参数
-            var dbArgs = GetParameters(method, args);
+
+            Init();
 
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
-                var dbConnection = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection:db.GetDbConnection();
+                var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+                //获得动态参数
+                var dbArgs = GetParameters(method, args);
+
+                OpenDb();
+
                 if (baseTypeIsSameReturnType)
                 {
                     var queryResult = await dbConnection.QueryAsync<T>(sql, dbArgs);
@@ -214,9 +241,7 @@ namespace SummerBoot.Repository
         {
             ServiceProvider = serviceProvider;
 
-            //先获得工作单元和数据库工厂
-            var uow = serviceProvider.GetService<IUnitOfWork>();
-            var db = serviceProvider.GetService<IDbFactory>();
+            Init();
 
             //获得动态参数
             var dbArgs = GetParameters(method, args);
@@ -224,22 +249,9 @@ namespace SummerBoot.Repository
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
             if (deleteAttribute == null && updateAttribute == null) return 0;
             var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
-
-            var executeResult = 0;
-            if (uow == null)
-            {
-                executeResult = db.GetDbConnection().Execute(sql, dbArgs);
-                return executeResult;
-            }
-
-            var dbcon =  uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
-            executeResult = dbcon.Execute(sql, dbArgs, db.GetDbTransaction());
-
-            if (uow.ActiveNumber == 0)
-            {
-                dbcon.Close();
-                dbcon.Dispose();
-            }
+            OpenDb();
+            var executeResult = dbConnection.Execute(sql, dbArgs, dbTransaction);
+            CloseDb();
 
             return executeResult;
         }
@@ -248,11 +260,7 @@ namespace SummerBoot.Repository
             IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-
-            //先获得工作单元和数据库工厂以及序列化器
-            var uow = serviceProvider.GetService<IUnitOfWork>();
-            var db = serviceProvider.GetService<IDbFactory>();
-
+            Init();
             //获得动态参数
             var dbArgs = GetParameters(method, args);
             var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
@@ -260,22 +268,9 @@ namespace SummerBoot.Repository
             if (deleteAttribute == null && updateAttribute == null) return 0;
             var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
 
-            var executeResult = 0;
-            if (uow == null)
-            {
-                executeResult = await db.GetDbConnection().ExecuteAsync(sql, dbArgs);
-                return executeResult;
-            }
-
-            var dbcon = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
-            executeResult =await dbcon.ExecuteAsync(sql, dbArgs, db.GetDbTransaction());
-
-
-            if (uow.ActiveNumber == 0)
-            {
-                dbcon.Close();
-                dbcon.Dispose();
-            }
+            OpenDb();
+            var executeResult = await dbConnection.ExecuteAsync(sql, dbArgs, dbTransaction);
+            CloseDb();
 
             return executeResult;
         }
@@ -358,50 +353,5 @@ namespace SummerBoot.Repository
 
             return resultSql;
         }
-
-        private object ProcessUpdateAttribute(UpdateAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
-        {
-            var sql = attribute.Sql;
-            var updateResult = 0;
-            if (uow == null)
-            {
-                updateResult = db.GetDbConnection().Execute(sql, args);
-                return updateResult;
-            }
-
-            var dbcon = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
-            updateResult = dbcon.Execute(sql, args, db.GetDbTransaction());
-
-            if (uow.ActiveNumber == 0)
-            {
-                dbcon.Close();
-                dbcon.Dispose();
-            }
-
-            return updateResult;
-        }
-
-        private object ProcessDeleteAttribute(DeleteAttribute attribute, IDbFactory db, DynamicParameters args, IUnitOfWork uow)
-        {
-            var sql = attribute.Sql;
-            var deleteResult = 0;
-            if (uow == null)
-            {
-                deleteResult = db.GetDbConnection().Execute(sql, args);
-                return deleteResult;
-            }
-
-            var dbcon = uow.ActiveNumber > 0 ? db.GetDbTransaction().Connection : db.GetDbConnection();
-            deleteResult = dbcon.Execute(sql, args, db.GetDbTransaction());
-
-            if (uow.ActiveNumber == 0)
-            {
-                dbcon.Close();
-                dbcon.Dispose();
-            }
-
-            return deleteResult;
-        }
-
     }
 }

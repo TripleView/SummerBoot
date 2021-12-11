@@ -16,13 +16,11 @@ namespace SummerBoot.Repository
     public class DbFactory : IDbFactory
     {
         private readonly Microsoft.Extensions.Logging.ILogger<IUnitOfWork> log;
-        private readonly IConfiguration configuration;
         private readonly RepositoryOption repositoryOption;
 
-        public DbFactory(ILogger<IUnitOfWork> log, IConfiguration configuration, RepositoryOption repositoryOption)
+        public DbFactory(ILogger<IUnitOfWork> log, RepositoryOption repositoryOption)
         {
             this.log = log;
-            this.configuration = configuration;
             this.repositoryOption = repositoryOption;
         }
 

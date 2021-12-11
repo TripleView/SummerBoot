@@ -7,7 +7,7 @@ using SummerBoot.WebApi.Models;
 namespace SummerBoot.WebApi.Repository
 {
     [Repository]
-    public interface IOrderDetailRepository:IRepository<OrderDetail>
+    public interface IOrderDetailRepository:IBaseRepository<OrderDetail>
     {
     }
 }

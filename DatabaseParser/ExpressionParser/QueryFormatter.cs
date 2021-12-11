@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using DatabaseParser.Base;
 using DatabaseParser.Util;
@@ -28,6 +29,12 @@ namespace DatabaseParser.ExpressionParser
         private string parameterPrefix;
         private string leftQuote;
         private string rightQuote;
+
+        
+        protected virtual string GetLastInsertIdSql()
+        {
+            return "";
+        }
 
         public override Expression VisitTable(TableExpression table)
         {
@@ -371,8 +378,15 @@ namespace DatabaseParser.ExpressionParser
             return new TableExpression(type);
         }
 
-        public virtual void Insert<T>(T insertEntity)
+        private void Clear()
         {
+            this._sb.Clear();
+            this.sqlParameters.Clear();
+        }
+
+        public DbQueryResult Insert<T>(T insertEntity)
+        {
+            Clear();
             var table = this.getTableExpression(typeof(T));
             var tableName = BoxTableNameOrColumnName(table.Name);
 
@@ -388,11 +402,26 @@ namespace DatabaseParser.ExpressionParser
             }
 
             _sb.Append($"insert into {tableName} ({string.Join(",",columnNameList)}) values ({string.Join(",",parameterNameList)})");
-            
+
+            var result = new DbQueryResult()
+            {
+                Sql = this._sb.ToString().Trim(),
+                SqlParameters = this.sqlParameters
+            };
+
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id"&&it.MemberInfo is PropertyInfo);
+            if (keyColumn != null)
+            {
+                result.LastInsertIdSql = GetLastInsertIdSql();
+                result.IdKeyPropertyInfo = keyColumn.MemberInfo as PropertyInfo;
+            }
+
+            return result;
         }
 
-        public void Update<T>(T updateEntity)
+        public DbQueryResult Update<T>(T updateEntity)
         {
+            Clear();
             var table = this.getTableExpression(typeof(T));
             var tableName = BoxTableNameOrColumnName(table.Name);
 
@@ -427,11 +456,18 @@ namespace DatabaseParser.ExpressionParser
             }
 
             _sb.Append($"update {tableName} set {string.Join(",",middleList)} where {string.Join(" and ", keyList)}");
-
+            
+            var result = new DbQueryResult()
+            {
+                Sql = this._sb.ToString().Trim(),
+                SqlParameters = this.sqlParameters
+            };
+            return result;
         }
 
-        public void Delete<T>(T deleteEntity)
+        public DbQueryResult Delete<T>(T deleteEntity)
         {
+            Clear();
             var table = this.getTableExpression(typeof(T));
             var tableName = BoxTableNameOrColumnName(table.Name);
 
@@ -447,8 +483,69 @@ namespace DatabaseParser.ExpressionParser
                 middleList.Add(columnName + "=" + parameterName);
             }
 
-            _sb.Append($"delete from {tableName} where {string.Join(",", middleList)}");
+            _sb.Append($"delete from {tableName} where {string.Join(" and ", middleList)}");
 
+            var result = new DbQueryResult()
+            {
+                Sql = this._sb.ToString().Trim(),
+                SqlParameters = this.sqlParameters
+            };
+            return result;
         }
+
+        public DbQueryResult GetAll<T>()
+        {
+            Clear();
+            var table = this.getTableExpression(typeof(T));
+            var tableName = BoxTableNameOrColumnName(table.Name);
+            var columnNameList = new List<string>();
+
+            foreach (var column in table.Columns)
+            {
+                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                columnNameList.Add(columnName);
+            }
+
+            _sb.Append($"select {string.Join(",", columnNameList)} from {tableName}");
+
+            var result = new DbQueryResult()
+            {
+                Sql = this._sb.ToString().Trim(),
+                SqlParameters = this.sqlParameters
+            };
+            return result;
+        }
+
+        public DbQueryResult Get<T>(dynamic id)
+        {
+            Clear();
+            var table = this.getTableExpression(typeof(T));
+            var tableName = BoxTableNameOrColumnName(table.Name);
+            var columnNameList = new List<string>();
+
+            foreach (var column in table.Columns)
+            {
+                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                columnNameList.Add(columnName);
+            }
+
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey&&it.ColumnName.ToLower()=="id");
+            if (keyColumn == null)
+            {
+                throw new Exception("not exist key column like id");
+            }
+
+            var parameterName = BoxParameter(id);
+
+            _sb.Append($"select {string.Join(",", columnNameList)} from {tableName} where {BoxTableNameOrColumnName(keyColumn.ColumnName)}={parameterName}");
+
+            var result = new DbQueryResult()
+            {
+                Sql = this._sb.ToString().Trim(),
+                SqlParameters = this.sqlParameters
+            };
+            return result;
+        }
+
     }
 }

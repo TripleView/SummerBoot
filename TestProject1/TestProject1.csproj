@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DatabaseParser\DatabaseParser.csproj" />
-    <ProjectReference Include="..\SqlParse\SqlParse.csproj" />
   </ItemGroup>
 
 </Project>

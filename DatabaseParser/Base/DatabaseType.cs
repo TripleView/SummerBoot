@@ -11,6 +11,7 @@ namespace DatabaseParser.Base
     {
         SqlServer=1,
         Oracle=2,
-        Mysql=3
+        Mysql=3,
+        Sqlite=4
     }
 }

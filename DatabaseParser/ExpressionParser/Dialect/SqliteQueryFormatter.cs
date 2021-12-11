@@ -1,16 +1,15 @@
 ﻿namespace DatabaseParser.ExpressionParser.Dialect
 {
-    public class MysqlQueryFormatter : QueryFormatter
+    public class SqliteQueryFormatter : QueryFormatter
     {
-        public MysqlQueryFormatter():base("@","`","`")
+        public SqliteQueryFormatter():base(":", "`","`")
         {
             
         }
 
-
         protected override string GetLastInsertIdSql()
         {
-            return "Select LAST_INSERT_ID() id";
+            return "SELECT last_insert_rowid() id";
         }
 
         protected override string GetFunctionAlias(string functionName)
@@ -45,7 +44,7 @@
                 _sb.Append(BoxParameter(0));
             }
 
-            _sb.Append(",");
+            _sb.Append(" offset ");
             var hasTake = select.Take.HasValue;
             if (hasTake)
             {

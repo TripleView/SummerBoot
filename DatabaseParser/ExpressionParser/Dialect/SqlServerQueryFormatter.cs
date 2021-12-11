@@ -12,6 +12,11 @@ namespace DatabaseParser.ExpressionParser.Dialect
 
         }
 
+        protected override string GetLastInsertIdSql()
+        {
+            return "select SCOPE_IDENTITY() id";
+        }
+
         /// <summary>
         /// 有跳过的分页
         /// </summary>

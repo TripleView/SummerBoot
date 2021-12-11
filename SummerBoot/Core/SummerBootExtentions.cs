@@ -576,7 +576,7 @@ namespace SummerBoot.Core
 
             foreach (var type in tableType)
             {
-                var serviceType = typeof(IRepository<>).MakeGenericType(type);
+                var serviceType = typeof(IBaseRepository<>).MakeGenericType(type);
                 var implementType = typeof(BaseRepository<>).MakeGenericType(type);
                 services.AddSbScoped(serviceType, implementType, interceptorTypes);
             }
@@ -1000,11 +1000,12 @@ namespace SummerBoot.Core
             //设置语言
             if (cultureInfo == null) cultureInfo = CultureInfo.CurrentCulture;
             ResourceManager.cultureInfo = cultureInfo;
-            //var f= ResourceManager.Get("err1");
+            //var f= ResourceManager.InternalGet("err1");
             //Console.WriteLine("进入多语言模式"+f);
             services.AddSingleton<ProxyGenerator>();
             services.AddLogging();
             services.AddSbScoped<TransactionalInterceptor>();
+            services.AddLogging();
 
             return services;
         }
@@ -1058,7 +1059,7 @@ namespace SummerBoot.Core
             {
                 var repositoyProxyBuilder = provider.GetService<IRepositoyProxyBuilder>();
                 var repositoyService = provider.GetService<RepositoryService>();
-                var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
+                var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IBaseRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
                 if (repositoryType != null)
                 {
                     var genericType = repositoryType.GetGenericArguments().First();

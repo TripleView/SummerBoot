@@ -76,7 +76,7 @@ namespace SummerBoot.Repository
                 targetMethods.AddRange(iInterface.GetMethods());
                 if (iInterface.IsGenericType)
                 {
-                    isRepository = typeof(IRepository<>).IsAssignableFrom(iInterface.GetGenericTypeDefinition());
+                    isRepository = typeof(IBaseRepository<>).IsAssignableFrom(iInterface.GetGenericTypeDefinition());
                     if (isRepository)
                     {
                         var genericType = iInterface.GetGenericArguments().First();
@@ -134,7 +134,7 @@ namespace SummerBoot.Repository
             ilgCtor.Emit(OpCodes.Stfld, paramterArrField);
             ilgCtor.Emit(OpCodes.Ret); //返回
 
-            var solidMethods = typeof(IRepository<>).GetMethods();
+            var solidMethods = typeof(IBaseRepository<>).GetMethods();
 
             foreach (MethodInfo targetMethod in targetMethods)
             {
@@ -167,10 +167,43 @@ namespace SummerBoot.Repository
                         {
                             ilGen.Emit(OpCodes.Ldarg, i + 1);
                         }
-                        var solidMethod = baseRepositoryType.GetMethods().FirstOrDefault(it =>
+                        var selectSolidMethods = baseRepositoryType.GetMethods().Where(it =>
                             it.Name == methodName
                             && it.ReturnType == targetMethod.ReturnType
-                            && it.GetParameters().Length == targetMethod.GetParameters().Length);
+                            && it.GetParameters().Length == targetMethod.GetParameters().Length).ToList();
+
+                        MethodInfo solidMethod=null;
+
+                        if (methodName == "Update")
+                        {
+                            var c = 12;
+                        }
+
+                        foreach (var selectSolidMethod in selectSolidMethods)
+                        {
+                            var isAllSame = true;
+                            for (var i = 0; i < selectSolidMethod.GetParameters().Length; i++)
+                            {
+                                var selectParameterInfo = selectSolidMethod.GetParameters()[i];
+                                var targetParameterInfo = targetMethod.GetParameters()[i];
+                                if (selectParameterInfo.Name == targetParameterInfo.Name
+                                &&selectParameterInfo.ParameterType==targetParameterInfo.ParameterType)
+                                {
+
+                                }
+                                else
+                                {
+                                    isAllSame = false;
+                                    break;
+                                }
+                            }
+
+                            if (isAllSame)
+                            {
+                                solidMethod = selectSolidMethod;
+                            }
+                        }
+
                         ilGen.Emit(OpCodes.Call, solidMethod);
                     }
                     else
