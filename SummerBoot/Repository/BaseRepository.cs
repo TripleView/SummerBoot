@@ -4,6 +4,7 @@ using SummerBoot.Core;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Dapper;
 using System.Threading.Tasks;
@@ -52,6 +53,49 @@ namespace SummerBoot.Repository
         protected IDbTransaction dbTransaction;
         private DatabaseType databaseType;
         private int cmdTimeOut = 1200;
+
+
+        public override List<TResult> QueryList<TResult>(DbQueryResult param)
+        {
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+
+            var result = dbConnection.Query<TResult>(param.Sql, dynamicParameters, dbTransaction).ToList();
+
+            CloseDb();
+            return result;
+        }
+
+        public override TResult Query<TResult>(DbQueryResult param)
+        {
+            //var isList = false;
+            //var type = typeof(TResult);
+            //if (type.IsArray)
+            //{
+            //    isList = true;
+            //    type = type.GetElementType();
+            //}else if (type.IsGenericType)
+            //{
+            //    var typeInfo = type.GetTypeInfo();
+            //    var isEnumerable = typeInfo.ImplementedInterfaces.Any(x =>
+            //        x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+            //        || typeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            //    if (isEnumerable)
+            //    {
+            //        isList = true;
+            //        type = type.GetGenericArguments().First();
+            //    }
+            //}
+
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+
+            var result = dbConnection.QueryFirst<TResult>(param.Sql, dynamicParameters, dbTransaction);
+
+            CloseDb();
+            return result;
+            //return result.FirstOrDefault();
+        }
 
         protected void OpenDb()
         {

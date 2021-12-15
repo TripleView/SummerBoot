@@ -4,7 +4,7 @@ using DatabaseParser.ExpressionParser;
 
 namespace SummerBoot.Repository
 {
-    public interface IBaseRepository<T>  where T : class
+    public interface IBaseRepository<T>:IRepository<T> where T : class
     {
         T Get(dynamic id);
         List<T> GetAll();

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using System.Data.SQLite;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using SummerBoot.Repository;
@@ -314,6 +316,35 @@ namespace SummerBoot.WebApi
             var trans= con.BeginTransaction();
             con = null;
             trans.Commit();
+        }
+
+        [Fact]
+        public void TestLinq()
+        {
+            InitDatabase();
+
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            //test insert,update,get,delete 
+            var customer = new Customer() { Name = "testCustomer" };
+            customerRepository.Insert(customer);
+
+            var customer2 = new Customer() { Name = "testCustomer2" };
+            customerRepository.Insert(customer2);
+
+            var d = customerRepository.FirstOrDefault();
+            var d1 = customerRepository.Where(it=>it.Name.Contains("testCustomer")).ToList();
+           
+        }
+
+        [Fact]
+        public void ReflactEmit()
+        {
+            var m1 = typeof(IOrderedQueryable<>).GetMethods();
+            //var m2 = typeof(IBaseRepository<Customer>).GetMethod("GetAll");
+            //var c = m1 == m2;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,10 +11,9 @@ namespace DatabaseParser.ExpressionParser
 {
     public class Repository<T> : IRepository<T>
     {
-
         public Repository(DatabaseType databaseType)
         {
-            Provider = new DbQueryProvider(databaseType);
+            Provider = new DbQueryProvider<T>(databaseType,this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
@@ -25,11 +25,25 @@ namespace DatabaseParser.ExpressionParser
 
         public void Init(DatabaseType databaseType)
         {
-            Provider = new DbQueryProvider(databaseType);
+            Provider = new DbQueryProvider<T>(databaseType,this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
 
+        //public object Test(ExecuteFunc<T> t)
+        //{
+
+        //}
+
+        public virtual TResult Query<TResult>(DbQueryResult param)
+        {
+            return default;
+        }
+
+        public virtual List<TResult> QueryList<TResult>(DbQueryResult param)
+        {
+            return default;
+        }
         public Repository(Expression expression, IQueryProvider provider)
         {
             Provider = provider;
@@ -46,13 +60,17 @@ namespace DatabaseParser.ExpressionParser
 
         public IEnumerator<T> GetEnumerator()
         {
-            var result = Provider.Execute<List<T>>(Expression);
-            if (result == null)
-                yield break;
-            foreach (var item in result)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
-                yield return item;
+                var result = dbQueryProvider.ExecuteList<T>(Expression);
+                if (result == null)
+                    yield break;
+                foreach (var item in result)
+                {
+                    yield return item;
+                }
             }
+           
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -62,7 +80,7 @@ namespace DatabaseParser.ExpressionParser
 
         public DbQueryResult GetDbQueryDetail()
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
                 return dbQueryProvider.GetDbQueryDetail();
             }
@@ -72,7 +90,7 @@ namespace DatabaseParser.ExpressionParser
 
         public DbQueryResult InternalInsert(T insertEntity)
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
                return dbQueryProvider.queryFormatter.Insert(insertEntity);;
             }
@@ -82,7 +100,7 @@ namespace DatabaseParser.ExpressionParser
 
         public DbQueryResult InternalUpdate(T updateEntity)
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
                 return dbQueryProvider.queryFormatter.Update(updateEntity); ;
             }
@@ -91,7 +109,7 @@ namespace DatabaseParser.ExpressionParser
 
         public DbQueryResult InternalDelete(T deleteEntity)
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
                return dbQueryProvider.queryFormatter.Delete(deleteEntity);
             }
@@ -100,7 +118,7 @@ namespace DatabaseParser.ExpressionParser
 
         public DbQueryResult InternalGet(dynamic id)
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
                return dbQueryProvider.queryFormatter.Get<T>(id);
             }
@@ -109,7 +127,7 @@ namespace DatabaseParser.ExpressionParser
 
         public DbQueryResult InternalGetAll()
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
               return dbQueryProvider.queryFormatter.GetAll<T>();
             }

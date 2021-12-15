@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DatabaseParser.ExpressionParser;
 using SummerBoot.WebApi.Models;
 
 namespace SummerBoot.WebApi.Repository
 {
     [Repository]
-    public interface ICustomerRepository : IBaseRepository<Customer>
+    public interface ICustomerRepository :IBaseRepository<Customer>
     {
         //一部
         [Select("select od.productName from customer c join orderHeader oh on c.id=oh.customerid" +

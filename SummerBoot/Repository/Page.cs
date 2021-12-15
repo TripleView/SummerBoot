@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 namespace SummerBoot.Repository
 {
     public class Page<T> : IPage<T>
-    { /// <summary>
+    {
+        /// <summary>
         /// 分页总数
         /// </summary>
         public int TotalPages { set; get; }

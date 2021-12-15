@@ -854,6 +854,19 @@ namespace TestProject1
         }
 
         [Fact]
+        public void TestTrue()
+        {
+            var personRepository = new PersonRepository();
+
+            var r1 = personRepository.Where(x=>true).ToList();
+
+            var r1MiddleResult = personRepository.GetDbQueryDetail();
+
+            Assert.Equal("SELECT TOP(1) [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] As [p0]", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.SqlParameters);
+        }
+
+        [Fact]
         public void TestFirstOrDefault()
         {
             var personRepository = new PersonRepository();

@@ -30,7 +30,11 @@ namespace DatabaseParser.ExpressionParser
         private string leftQuote;
         private string rightQuote;
 
-        
+        public PageQueryResult GetByPage(string sql)
+        {
+            var result = new PageQueryResult();
+            return result;
+        }
         protected virtual string GetLastInsertIdSql()
         {
             return "";

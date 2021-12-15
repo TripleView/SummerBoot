@@ -12,5 +12,7 @@ namespace DatabaseParser.ExpressionParser
         DbQueryResult GetAll<T>();
 
         DbQueryResult Get<T>(dynamic id);
+
+        PageQueryResult GetByPage(string sql);
     }
 }

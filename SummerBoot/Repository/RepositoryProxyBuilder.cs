@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Castle.DynamicProxy.Internal;
+using DatabaseParser.ExpressionParser;
 using SummerBoot.Core;
 
 namespace SummerBoot.Repository
@@ -20,7 +22,7 @@ namespace SummerBoot.Repository
             new ConcurrentDictionary<string, Type>();
 
         //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] { "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
+        private string[] solidMethodNames = new string[] { "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
         public object Build(Type interfaceType, params object[] constructor)
         {
             var cacheKey = interfaceType.FullName;
@@ -67,22 +69,38 @@ namespace SummerBoot.Repository
             TypeBuilder typeBuilder = modBuilder.DefineType(typeName, newTypeAttribute, parentType, interfaceTypes);
 
             var allInterfaces = targetType.GetAllInterfaces();
-            List<MethodInfo> targetMethods = new List<MethodInfo>();
+            
+            List<MethodInfo> targetMethods = new List<MethodInfo>(){ };
+            targetMethods.AddRange(targetType.GetMethods());
+            //var originRepositoryInterface = allInterfaces.FirstOrDefault(it =>
+            //    typeof(IEnumerable).IsAssignableFrom(it.GetGenericTypeDefinition()));
+
+            //if (originRepositoryInterface != null)
+            //{
+            //    targetMethods.AddRange(typeof(IEnumerable).GetMethods());
+            //}
 
             var isRepository = false;
             Type baseRepositoryType = null;
             foreach (var iInterface in allInterfaces)
             {
-                targetMethods.AddRange(iInterface.GetMethods());
                 if (iInterface.IsGenericType)
                 {
                     isRepository = typeof(IBaseRepository<>).IsAssignableFrom(iInterface.GetGenericTypeDefinition());
+                    
                     if (isRepository)
                     {
+                        targetMethods.AddRange(iInterface.GetMethods());
                         var genericType = iInterface.GetGenericArguments().First();
                         baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(genericType);
+                        targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
+                        targetMethods.AddRange(typeof(IEnumerable).GetMethods());
+                        targetMethods.AddRange(typeof(IQueryable).GetMethods());
+                        
+                        break;
                     }
                 }
+                
             }
 
             FieldBuilder baseRepositoryField = null;
@@ -153,7 +171,7 @@ namespace SummerBoot.Repository
 
                     var underType = returnType.IsGenericType ? returnType.GetGenericArguments().First() : returnType;
                     var isInterface = underType.IsInterface;
-                    if (isInterface) throw new Exception("return type no support interface");
+                    if (isInterface&& returnType.IsGenericType) throw new Exception("return type no support interface");
                     //通过emit生成方法体
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(targetMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, targetMethod.ReturnType, parameterType);
                     ILGenerator ilGen = methodBuilder.GetILGenerator();
@@ -167,8 +185,8 @@ namespace SummerBoot.Repository
                         {
                             ilGen.Emit(OpCodes.Ldarg, i + 1);
                         }
-                        var selectSolidMethods = baseRepositoryType.GetMethods().Where(it =>
-                            it.Name == methodName
+                        var selectSolidMethods = baseRepositoryType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
+                            it.Name.Split(".").Any(x=>x== methodName)
                             && it.ReturnType == targetMethod.ReturnType
                             && it.GetParameters().Length == targetMethod.GetParameters().Length).ToList();
 
