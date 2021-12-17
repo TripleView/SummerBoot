@@ -2,12 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DatabaseParser.ExpressionParser;
 using SummerBoot.WebApi.Models;
 
-namespace SummerBoot.WebApi.Repository
+namespace SummerBoot.Test.Repository
 {
-    [Repository]
+    [AutoRepository]
     public interface ICustomerRepository :IBaseRepository<Customer>
     {
         //一部

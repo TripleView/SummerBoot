@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using DatabaseParser.ExpressionParser;
+using ExpressionParser.Parser;
 
 namespace SummerBoot.Repository
 {

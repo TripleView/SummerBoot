@@ -4,9 +4,9 @@ using System.Text;
 using SummerBoot.Repository;
 using SummerBoot.WebApi.Models;
 
-namespace SummerBoot.WebApi.Repository
+namespace SummerBoot.Test.Repository
 {
-    [Repository]
+    [AutoRepository]
     public interface IOrderDetailRepository:IBaseRepository<OrderDetail>
     {
     }

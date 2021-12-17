@@ -8,8 +8,8 @@ using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Dapper;
 using System.Threading.Tasks;
-using DatabaseParser.Base;
-using DatabaseParser.ExpressionParser;
+using ExpressionParser.Base;
+using ExpressionParser.Parser;
 
 namespace SummerBoot.Repository
 {

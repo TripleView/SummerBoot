@@ -172,8 +172,8 @@ namespace SummerBoot.Repository
                 OpenDb();
                 if (baseTypeIsSameReturnType)
                 {
-                    var queryResult = dbConnection.Query<T>(sql, dbArgs);
-                    return queryResult.FirstOrDefault();
+                    var queryResult = dbConnection.QueryFirst<T>(sql, dbArgs);
+                    return queryResult;
                 }
                 else
                 {

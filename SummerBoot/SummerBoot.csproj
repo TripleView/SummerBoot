@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DatabaseParser\DatabaseParser.csproj" />
+    <ProjectReference Include="..\DatabaseParser\ExpressionParser.csproj" />
   </ItemGroup>
   
 

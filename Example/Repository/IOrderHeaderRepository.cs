@@ -7,7 +7,7 @@ using SummerBoot.Repository;
 
 namespace Example.Repository
 {
-    [Repository]
+    [AutoRepository]
     public interface IOrderHeaderRepository:IBaseRepository<OrderHeader>
     {
         /// <summary>

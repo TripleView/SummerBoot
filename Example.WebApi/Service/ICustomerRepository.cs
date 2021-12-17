@@ -6,7 +6,7 @@ using Example.WebApi.Model;
 
 namespace Example.WebApi.Service
 {
-    [Repository]
+    [AutoRepository]
     public interface ICustomerRepository : IBaseRepository<Customer>
     {
         [Select("select * from customer where customerNo=@customerNo")]

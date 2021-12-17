@@ -1035,17 +1035,30 @@ namespace SummerBoot.Core
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
             services.AddScoped<RepositoryService>();
 
-            services.TryAddSingleton<IRepositoyProxyBuilder, RepositoryProxyBuilder>();
+            services.TryAddSingleton<IRepositoryProxyBuilder, RepositoryProxyBuilder>();
 
             var types = Assembly.GetCallingAssembly().GetExportedTypes()
                 .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
 
-            var repositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<RepositoryAttribute>() != null).ToList();
+            var autoRepositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<AutoRepositoryAttribute>() != null).ToList();
 
-            foreach (var type in repositoryTypes)
+            foreach (var type in autoRepositoryTypes)
             {
                 services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
             }
+
+            var manualRepositoryTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<ManualRepositoryAttribute>() != null).ToList();
+
+            manualRepositoryTypes.ForEach(it =>
+            {
+                var repositoryAttribute = it.GetCustomAttribute<ManualRepositoryAttribute>();
+                if (repositoryAttribute == null) return;
+                var interfaceType = repositoryAttribute.InterfaceType;
+                if (interfaceType == null) throw new ArgumentNullException("仓储" + it.Name + "对应的接口不能为空");
+                if (!it.GetInterfaces().Contains(interfaceType)) throw new Exception("仓储" + it.Name + "必须继承接口" + interfaceType.Name);
+
+                services.AddScoped(interfaceType, it);
+            });
 
             return services;
         }
@@ -1057,7 +1070,7 @@ namespace SummerBoot.Core
 
             object Factory(IServiceProvider provider)
             {
-                var repositoyProxyBuilder = provider.GetService<IRepositoyProxyBuilder>();
+                var repositoyProxyBuilder = provider.GetService<IRepositoryProxyBuilder>();
                 var repositoyService = provider.GetService<RepositoryService>();
                 var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IBaseRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
                 if (repositoryType != null)

@@ -7,12 +7,11 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Castle.DynamicProxy.Internal;
-using DatabaseParser.ExpressionParser;
 using SummerBoot.Core;
 
 namespace SummerBoot.Repository
 {
-    public class RepositoryProxyBuilder : IRepositoyProxyBuilder
+    public class RepositoryProxyBuilder : IRepositoryProxyBuilder
     {
         public static Dictionary<string, MethodInfo> MethodsCache { get; set; } = new Dictionary<string, MethodInfo>();
 
@@ -111,9 +110,9 @@ namespace SummerBoot.Repository
                 baseRepositoryType, FieldAttributes.Public);
             }
 
-            //定义一个字段存放repositoyService
+            //定义一个字段存放repositoryService
             var repositoryType = typeof(RepositoryService);
-            FieldBuilder repositoryServiceField = typeBuilder.DefineField("repositoyService",
+            FieldBuilder repositoryServiceField = typeBuilder.DefineField("repositoryService",
                 repositoryType, FieldAttributes.Public);
 
             //定义一个字段存放IServiceProvider

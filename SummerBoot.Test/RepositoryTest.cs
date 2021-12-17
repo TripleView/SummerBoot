@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using System.Data.SQLite;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using SummerBoot.Repository;
 using SummerBoot.WebApi.Models;
-using SummerBoot.WebApi.Repository;
+using SummerBoot.Test.Repository;
 using Xunit;
 
 namespace SummerBoot.WebApi
@@ -337,6 +338,43 @@ namespace SummerBoot.WebApi
             var d = customerRepository.FirstOrDefault();
             var d1 = customerRepository.Where(it=>it.Name.Contains("testCustomer")).ToList();
            
+        }
+
+        [Fact]
+        public void TestBaseQuery()
+        {
+            InitDatabase();
+
+            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            //test insert,update,get,delete 
+            var orderHeader = new OrderHeader();
+            orderHeader.CreateTime = DateTime.UtcNow;
+            orderHeader.State = 1;
+            orderHeader.OrderNo = Guid.NewGuid().ToString("N");
+            orderHeaderRepository.Insert(orderHeader);
+
+
+            var orderDetail = new OrderDetail
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "apple",
+                Quantity = 1
+            };
+            orderDetailRepository.Insert(orderDetail);
+
+            var orderDetail2 = new OrderDetail
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "orange",
+                Quantity = 2
+            };
+            orderDetailRepository.Insert(orderDetail2);
+
+            var r1= orderQueryRepository.GetOrderQuery();
+            var r2 = orderQueryRepository.GetOrderQueryList();
         }
 
         [Fact]
