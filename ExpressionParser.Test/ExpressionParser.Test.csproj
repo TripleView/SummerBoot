@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DatabaseParser\ExpressionParser.csproj" />
+    <ProjectReference Include="..\ExpressionParser\ExpressionParser.csproj" />
   </ItemGroup>
 
 </Project>
