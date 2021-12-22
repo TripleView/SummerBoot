@@ -75,14 +75,6 @@ namespace ExpressionParser.Parser
 
             return linkRepository.Query<TResult>(param);
 
-            //if (this.func != null)
-            //{
-            //    var param = queryFormatter.GetDbQueryDetail();
-            //    var result= func(param);
-            //    return (TResult)result;
-            //}
-
-            return default;
         }
 
         public DbQueryResult GetDbQueryDetail()

@@ -107,7 +107,7 @@ namespace Example.Controllers
                     OrderNo = Guid.NewGuid().ToString("N")
                 };
 
-                await OrderHeaderRepository.InsertAsync(orderHeader);
+                OrderHeaderRepository.Insert(orderHeader);
 
                 var orderDetailList = new List<OrderDetail>();
                 //总消费金额
@@ -127,7 +127,7 @@ namespace Example.Controllers
                     totalAmount += it.Quantity * it.Price;
                 });
 
-                await OrderDetailRepository.BatchInsertAsync(orderDetailList);
+                OrderDetailRepository.Insert(orderDetailList);
                 //更新用户消费金额
                 var success = await CustomerRepository.UpdateCustomerAmount(dto.CustomerNo, totalAmount);
                 

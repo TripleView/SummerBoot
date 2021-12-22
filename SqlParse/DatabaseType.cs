@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SqlParse
+namespace SqlParser
 {
     /// <summary>
     /// 数据库类型
@@ -11,6 +11,7 @@ namespace SqlParse
     {
         SqlServer = 1,
         Oracle = 2,
-        Mysql = 3
+        Mysql = 3,
+        Sqlite = 4
     }
 }

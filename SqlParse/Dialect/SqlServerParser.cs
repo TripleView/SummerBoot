@@ -1,7 +1,10 @@
-﻿namespace SqlParse.Dialect
+﻿namespace SqlParser.Dialect
 {
-    public class SqlServerParser
+    public class SqlServerParser:SqlParser
     {
-        
+        public SqlServerParser():base(":", "`", "`")
+        {
+            
+        }
     }
 }

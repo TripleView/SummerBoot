@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using SqlParser.Dto;
 
-namespace SqlParse.Dialect
+namespace SqlParser.Dialect
 {
-    public class MysqlParser:SqlParser
+    public class MysqlParser : SqlParser
     {
         public MysqlParser() : base("@", "`", "`")
         {
@@ -15,5 +16,6 @@ namespace SqlParse.Dialect
 
             return BaseKeyWordList;
         }
+
     }
 }

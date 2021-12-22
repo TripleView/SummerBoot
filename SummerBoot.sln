@@ -1,21 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29609.76
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot", ".\SummerBoot\SummerBoot.csproj", "{72EBAD70-583C-4B9A-A360-7BEB790F436C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot", "SummerBoot\SummerBoot.csproj", "{72EBAD70-583C-4B9A-A360-7BEB790F436C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example", ".\Example\Example.csproj", "{17506BFF-EB20-4E5F-B9D5-B5843BB4FEF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example", "Example\Example.csproj", "{17506BFF-EB20-4E5F-B9D5-B5843BB4FEF8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Test", ".\SummerBoot.Test\SummerBoot.Test.csproj", "{89AF499C-B39C-4F21-B5E4-FF729F571EEE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Test", "SummerBoot.Test\SummerBoot.Test.csproj", "{89AF499C-B39C-4F21-B5E4-FF729F571EEE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.WebApi", ".\Example.WebApi\Example.WebApi.csproj", "{371CDA5F-B878-4614-9022-2646A78BB5FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.WebApi", "Example.WebApi\Example.WebApi.csproj", "{371CDA5F-B878-4614-9022-2646A78BB5FE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExpressionParser", ".\ExpressionParser\ExpressionParser.csproj", "{02869F62-9921-4468-9BC1-8392BF121F76}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExpressionParser", "ExpressionParser\ExpressionParser.csproj", "{02869F62-9921-4468-9BC1-8392BF121F76}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExpressionParser.Test", ".\ExpressionParser.Test\ExpressionParser.Test.csproj", "{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExpressionParser.Test", "ExpressionParser.Test\ExpressionParser.Test.csproj", "{382F8ED5-8F7C-4C6E-987C-0A08D3DACC24}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlParse", ".\SqlParse\SqlParse.csproj", "{AC9AFA96-B800-423C-ABCE-5AAB62C10E31}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlParser", "SqlParse\SqlParser.csproj", "{AC9AFA96-B800-423C-ABCE-5AAB62C10E31}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlParser.Test", "SqlParser.Test\SqlParser.Test.csproj", "{C91A55FD-9B50-4AB8-8ADD-49C7EB9BAC1C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{AC9AFA96-B800-423C-ABCE-5AAB62C10E31}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC9AFA96-B800-423C-ABCE-5AAB62C10E31}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC9AFA96-B800-423C-ABCE-5AAB62C10E31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C91A55FD-9B50-4AB8-8ADD-49C7EB9BAC1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C91A55FD-9B50-4AB8-8ADD-49C7EB9BAC1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C91A55FD-9B50-4AB8-8ADD-49C7EB9BAC1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C91A55FD-9B50-4AB8-8ADD-49C7EB9BAC1C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

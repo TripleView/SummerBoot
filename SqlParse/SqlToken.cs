@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SqlParse
+namespace SqlParser
 {
     /// <summary>
     /// 解析出来的词
@@ -19,11 +19,11 @@ namespace SqlParse
         /// <summary>
         /// 词类型
         /// </summary>
-        public SqlTokenType TokenType {  get; set; }
+        public SqlTokenType TokenType { get; set; }
         /// <summary>
         /// 具体文本
         /// </summary>
-        public string Text { get;  }
+        public string Text { get; }
         /// <summary>
         /// 开始位置
         /// </summary>
@@ -35,7 +35,7 @@ namespace SqlParse
         /// <summary>
         /// 文本长度
         /// </summary>
-        public int Length => EndPosition - StartPosition+1;
+        public int Length => EndPosition - StartPosition + 1;
 
         public override string ToString()
         {

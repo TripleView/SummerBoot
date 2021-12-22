@@ -1,8 +1,7 @@
-﻿using System;
-using System.IO;
-using SqlParse.Dialect;
+﻿using SqlParser.Dialect;
+using System;
 
-namespace SqlParse
+namespace SqlParser
 {
     class Program
     {
