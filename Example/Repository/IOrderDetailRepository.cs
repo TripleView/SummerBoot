@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Example.Models;
 using SummerBoot.Repository;
+using SummerBoot.Repository.Attributes;
 
 namespace Example.Repository
 {

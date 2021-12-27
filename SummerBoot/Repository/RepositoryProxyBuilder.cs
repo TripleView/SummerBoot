@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Castle.DynamicProxy.Internal;
+using SummerBoot.Core;
+using SummerBoot.Repository.Attributes;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,8 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
-using Castle.DynamicProxy.Internal;
-using SummerBoot.Core;
 
 namespace SummerBoot.Repository
 {

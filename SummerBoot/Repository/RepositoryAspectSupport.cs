@@ -14,6 +14,7 @@ using SqlOnline.Utils;
 using SqlParser.Dialect;
 using SqlParser.Dto;
 using SummerBoot.Core;
+using SummerBoot.Repository.Attributes;
 
 namespace SummerBoot.Repository
 {

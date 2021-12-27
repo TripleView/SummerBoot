@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Example.WebApi.Model;
+using SummerBoot.Repository.Attributes;
 
 namespace Example.WebApi.Service
 {

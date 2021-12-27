@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SummerBoot.Repository.Attributes;
 using SummerBoot.WebApi.Models;
 
 namespace SummerBoot.Test.Repository

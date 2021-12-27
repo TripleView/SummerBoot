@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SummerBoot.Repository
+namespace SummerBoot.Repository.Attributes
 {
     public class UpdateAttribute : RepositoryActionAttribute
     {
