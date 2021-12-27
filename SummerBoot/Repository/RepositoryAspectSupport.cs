@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using SqlOnline.Utils;
+using SqlParser.Dialect;
+using SqlParser.Dto;
 using SummerBoot.Core;
 
 namespace SummerBoot.Repository
@@ -59,39 +62,46 @@ namespace SummerBoot.Repository
                 var repositoryOption = serviceProvider.GetService<RepositoryOption>();
                 //获得动态参数
                 var dbArgs = GetParameters(method, args);
+                if (pageable == null)
+                {
+                    throw new Exception("method argument must have pageable");
+                }
 
                 OpenDb();
                 var sql = selectAttribute.Sql;
 
                 var result = new Page<T>() { };
-                //oracle这坑逼数据库需要单独处理
+
+                SqlParser.SqlParser parser;
+
                 if (repositoryOption.IsOracle)
                 {
-                    var countSql = $"select count(*) from ({sql}) ";
-                    var pageSql = pageable != null ?
-                        $"select * from (SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ({sql}) TMP_PAGE)    WHERE ROW_ID <{pageable.PageSize * (pageable.PageNumber) + 1}  AND ROW_ID >={pageable.PageSize * (pageable.PageNumber - 1) + 1}" :
-                        $"select * from ({sql})";
-                    var count = dbConnection.QueryFirst<int>(countSql, dbArgs);
-                    var resultList = dbConnection.Query<T>(pageSql, dbArgs).ToList();
-                    result.TotalPages = count;
-                    result.Data = resultList;
+                    parser = new OracleParser();
+                }
+                else if (repositoryOption.IsSqlServer)
+                {
+                    parser = new SqlServerParser();
+                }
+                else if (repositoryOption.IsMysql)
+                {
+                    parser = new MysqlParser();
                 }
                 else
                 {
-                    sql = GetPageSql(repositoryOption, sql);
-                    var dbResult = dbConnection.QueryMultiple(sql, dbArgs);
-                    var count = dbResult.Read<int>().First();
-                    var resultList = dbResult.Read<T>().ToList();
-
-                    result.TotalPages = count;
-                    result.Data = resultList;
+                    parser = new SqliteParser();
                 }
 
-                if (pageable != null)
-                {
-                    result.PageSize = pageable.PageSize;
-                    result.PageNumber = pageable.PageNumber;
-                }
+                var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
+
+                ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
+
+                var count = dbConnection.QueryFirst<int>(parseResult.CountSql, dbArgs);
+                var resultList = dbConnection.Query<T>(parseResult.PageSql, dbArgs).ToList();
+                result.TotalPages = count;
+                result.Data = resultList;
+
+                result.PageSize = pageable.PageSize;
+                result.PageNumber = pageable.PageNumber;
 
                 CloseDb();
 
@@ -112,38 +122,46 @@ namespace SummerBoot.Repository
                 var repositoryOption = serviceProvider.GetService<RepositoryOption>();
                 //获得动态参数
                 var dbArgs = GetParameters(method, args);
-                var sql = selectAttribute.Sql;
+                if (pageable == null)
+                {
+                    throw new Exception("method argument must have pageable");
+                }
 
                 OpenDb();
+                var sql = selectAttribute.Sql;
+
                 var result = new Page<T>() { };
-                //oracle这坑逼数据库需要单独处理
+
+                SqlParser.SqlParser parser;
+
                 if (repositoryOption.IsOracle)
                 {
-                    var countSql = $"select count(*) from ({sql}) ";
-                    var pageSql = pageable != null ?
-                        $"select * from (SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ({sql}) TMP_PAGE)    WHERE ROW_ID <{pageable.PageSize * (pageable.PageNumber) + 1}  AND ROW_ID >={pageable.PageSize * (pageable.PageNumber - 1) + 1}" :
-                        $"select * from ({sql})";
-                    var count = await dbConnection.QueryFirstAsync<int>(countSql, dbArgs);
-                    var resultList = await dbConnection.QueryAsync<T>(pageSql, dbArgs);
-                    result.TotalPages = count;
-                    result.Data = resultList.ToList();
+                    parser = new OracleParser();
+                }
+                else if (repositoryOption.IsSqlServer)
+                {
+                    parser = new SqlServerParser();
+                }
+                else if (repositoryOption.IsMysql)
+                {
+                    parser = new MysqlParser();
                 }
                 else
                 {
-                    sql = GetPageSql(repositoryOption, sql);
-                    var dbResult = await dbConnection.QueryMultipleAsync(sql, dbArgs);
-                    var count = dbResult.Read<int>().First();
-                    var resultList = dbResult.Read<T>().ToList();
-
-                    result.TotalPages = count;
-                    result.Data = resultList;
+                    parser = new SqliteParser();
                 }
 
-                if (pageable != null)
-                {
-                    result.PageSize = pageable.PageSize;
-                    result.PageNumber = pageable.PageNumber;
-                }
+                var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
+
+                ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
+
+                var count =await dbConnection.QueryFirstAsync<int>(parseResult.CountSql, dbArgs);
+                var resultList =(await dbConnection.QueryAsync<T>(parseResult.PageSql, dbArgs)).ToList();
+                result.TotalPages = count;
+                result.Data = resultList;
+
+                result.PageSize = pageable.PageSize;
+                result.PageNumber = pageable.PageNumber;
 
                 CloseDb();
 
@@ -319,39 +337,18 @@ namespace SummerBoot.Repository
             return dbArgs;
         }
 
-        /// <summary>
-        /// 获得分页数据
-        /// </summary>
-        /// <param name="repositoryOption"></param>
-        /// <param name="sql"></param>
-        /// <returns></returns>
-        private string GetPageSql(RepositoryOption repositoryOption, string sql)
+        protected void ChangeDynamicParameters(List<SqlParameter> originSqlParameters, DynamicParameters dynamicParameters)
         {
-            var resultSql = $"select count(*) from ({sql});";
-            var dbName = repositoryOption.DbConnectionType.FullName;
-            if (repositoryOption.IsSqlite)
+            if (originSqlParameters == null || originSqlParameters.Count == 0)
             {
-                resultSql += pageable != null ?
-                    $"select * from ({sql}) limit {pageable.PageSize} offset {pageable.PageSize * (pageable.PageNumber - 1)}" :
-                    $"select * from ({sql})";
-            }
-            else if (repositoryOption.IsMysql)
-            {
-                resultSql = $"select count(*) from ({sql}) tmp1;";
-                resultSql += pageable != null ?
-                    $"select * from ({sql}) tmp2 limit {pageable.PageSize * (pageable.PageNumber - 1)},{pageable.PageSize}" :
-                    $"select * from ({sql}) tmp2";
-            }
-            else if (repositoryOption.IsSqlServer)
-            {
-                resultSql = $"select count(*) from ({sql}) tmp;select * from ({sql}) tmp2";
-            }
-            else
-            {
-                throw new Exception("not support");
+                return;
             }
 
-            return resultSql;
+            foreach (var parameter in originSqlParameters)
+            {
+                dynamicParameters.Add(parameter.ParameterName, parameter.Value);
+            }
         }
+
     }
 }

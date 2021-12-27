@@ -68,25 +68,6 @@ namespace SummerBoot.Repository
 
         public override TResult Query<TResult>(DbQueryResult param)
         {
-            //var isList = false;
-            //var type = typeof(TResult);
-            //if (type.IsArray)
-            //{
-            //    isList = true;
-            //    type = type.GetElementType();
-            //}else if (type.IsGenericType)
-            //{
-            //    var typeInfo = type.GetTypeInfo();
-            //    var isEnumerable = typeInfo.ImplementedInterfaces.Any(x =>
-            //        x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-            //        || typeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            //    if (isEnumerable)
-            //    {
-            //        isList = true;
-            //        type = type.GetGenericArguments().First();
-            //    }
-            //}
-
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 

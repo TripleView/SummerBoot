@@ -57,7 +57,7 @@ namespace SummerBoot.Repository
             get
             {
                 var dbName = DbConnectionType.FullName;
-                return dbName.ToLower().IndexOf("microsoft") > -1|| dbName.ToLower().IndexOf("system") > -1;
+                return dbName.ToLower().IndexOf("SqlConnection") > -1;
             }
         }
         public bool IsOracle

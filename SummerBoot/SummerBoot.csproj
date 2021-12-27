@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ExpressionParser\ExpressionParser.csproj" />
+    <ProjectReference Include="..\SqlParse\SqlParser.csproj" />
   </ItemGroup>
   
 
