@@ -16,7 +16,7 @@ namespace SummerBoot.Repository
     public class BaseRepository<T> : Repository<T>, IBaseRepository<T> where T : class
     {
 
-        public BaseRepository(IUnitOfWork uow, IDbFactory dbFactory,RepositoryOption repositoryOption) 
+        public BaseRepository(IUnitOfWork uow, IDbFactory dbFactory, RepositoryOption repositoryOption)
         {
             this.uow = uow;
             this.dbFactory = dbFactory;
@@ -93,6 +93,8 @@ namespace SummerBoot.Repository
             }
         }
 
+        #region sync
+
         public void Update(List<T> list)
         {
             this.uow.BeginTransaction();
@@ -120,9 +122,9 @@ namespace SummerBoot.Repository
         public T Insert(T t)
         {
             var internalResult = InternalInsert(t);
-         
+
             OpenDb();
-            
+
             if (databaseType == DatabaseType.Oracle)
             {
 
@@ -133,9 +135,9 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                    dynamicParameters.Add("id",null);
-                    var multiResult=          dbConnection.QueryMultiple(sql, dynamicParameters, transaction: dbTransaction);
-                    var id= multiResult.Read().FirstOrDefault()?.id;
+                    dynamicParameters.Add("id", null);
+                    var multiResult = dbConnection.QueryMultiple(sql, dynamicParameters, transaction: dbTransaction);
+                    var id = multiResult.Read().FirstOrDefault()?.id;
 
                     if (id != null)
                     {
@@ -147,7 +149,7 @@ namespace SummerBoot.Repository
                     dbConnection.Execute(internalResult.Sql, t, transaction: dbTransaction);
                 }
             }
-           
+
             CloseDb();
             return t;
         }
@@ -179,7 +181,7 @@ namespace SummerBoot.Repository
         public void Update(T t)
         {
             var internalResult = InternalUpdate(t);
-          
+
             OpenDb();
             dbConnection.Execute(internalResult.Sql, t);
             CloseDb();
@@ -188,7 +190,7 @@ namespace SummerBoot.Repository
         public void Delete(T t)
         {
             var internalResult = InternalDelete(t);
-           
+
             OpenDb();
             dbConnection.Execute(internalResult.Sql, t);
             CloseDb();
@@ -200,11 +202,131 @@ namespace SummerBoot.Repository
             DbQueryResult internalResult = InternalGet(id);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
-          
+
             var result = dbConnection.QueryFirstOrDefault<T>(internalResult.Sql, dynamicParameters);
             CloseDb();
             return result;
         }
+
+        #endregion sync
+
+        #region async
+
+        public async Task UpdateAsync(List<T> list)
+        {
+            this.uow.BeginTransaction();
+            OpenDb();
+            foreach (var item in list)
+            {
+                await UpdateAsync(item);
+            }
+            CloseDb();
+            this.uow.Commit();
+
+        }
+
+        public async Task DeleteAsync(List<T> list)
+        {
+            this.uow.BeginTransaction();
+            OpenDb();
+            foreach (var item in list)
+            {
+                await DeleteAsync(item);
+            }
+            CloseDb();
+            this.uow.Commit();
+        }
+
+        public async Task<T> InsertAsync(T t)
+        {
+            var internalResult = InternalInsert(t);
+
+            OpenDb();
+
+            if (databaseType == DatabaseType.Oracle)
+            {
+
+            }
+            else if (databaseType == DatabaseType.Sqlite)
+            {
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
+                    var dynamicParameters = new DynamicParameters(t);
+                    dynamicParameters.Add("id", null);
+                    var multiResult = await dbConnection.QueryMultipleAsync(sql, dynamicParameters, transaction: dbTransaction);
+                    var id = multiResult.Read().FirstOrDefault()?.id;
+
+                    if (id != null)
+                    {
+                        internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+                    }
+                }
+                else
+                {
+                    await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
+                }
+            }
+
+            CloseDb();
+            return t;
+        }
+
+        public async Task<List<T>> InsertAsync(List<T> list)
+        {
+            this.uow.BeginTransaction();
+            OpenDb();
+            foreach (var item in list)
+            {
+                await InsertAsync(item);
+            }
+            CloseDb();
+            this.uow.Commit();
+
+            return list;
+        }
+
+        public async Task<List<T>> GetAllAsync()
+        {
+            var internalResult = InternalGetAll();
+            OpenDb();
+            var result = (await dbConnection.QueryAsync<T>(internalResult.Sql)).ToList();
+            CloseDb();
+
+            return result;
+        }
+
+        public async Task UpdateAsync(T t)
+        {
+            var internalResult = InternalUpdate(t);
+
+            OpenDb();
+            await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            CloseDb();
+        }
+
+        public async Task DeleteAsync(T t)
+        {
+            var internalResult = InternalDelete(t);
+
+            OpenDb();
+            await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            CloseDb();
+
+        }
+
+        public async Task<T> GetAsync(dynamic id)
+        {
+            DbQueryResult internalResult = InternalGet(id);
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
+
+            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(internalResult.Sql, dynamicParameters);
+            CloseDb();
+            return result;
+        }
+
+        #endregion async
 
         protected DynamicParameters ChangeDynamicParameters(List<SqlParameter> originSqlParameters)
         {
