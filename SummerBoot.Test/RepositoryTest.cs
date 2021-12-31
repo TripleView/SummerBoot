@@ -1,16 +1,16 @@
+using Microsoft.Extensions.DependencyInjection;
+using Oracle.ManagedDataAccess.Client;
+using SummerBoot.Core;
+using SummerBoot.Repository;
+using SummerBoot.Test;
+using SummerBoot.Test.Repository;
+using SummerBoot.WebApi.Models;
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.DependencyInjection;
-using SummerBoot.Core;
 using System.Data.SQLite;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
-using SummerBoot.Repository;
-using SummerBoot.WebApi.Models;
-using SummerBoot.Test.Repository;
 using Xunit;
 
 namespace SummerBoot.WebApi
@@ -19,56 +19,94 @@ namespace SummerBoot.WebApi
     {
         private IServiceProvider serviceProvider;
         [Fact]
-        private void InitDatabase()
+        public void TestOracle()
         {
-            //初始化数据库
-            using (var database = new Db())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
-
-            var services = new ServiceCollection();
-
-            services.AddSummerBoot();
-
-            services.AddSummerBootRepository(it =>
-            {
-                it.DbConnectionType = typeof(SQLiteConnection);
-                it.ConnectionString = @"Data source=./testDb.db";
-            });
-
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
-        }
-        private void InitAsyncDatabase()
-        {
-            //初始化数据库
-            using (var database = new Db2())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
-
-            var services = new ServiceCollection();
-
-            services.AddSummerBoot();
-
-            services.AddSummerBootRepository(it =>
-            {
-                it.DbConnectionType = typeof(SQLiteConnection);
-                it.ConnectionString = @"Data source=./testDbAsync.db";
-            });
-
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+            InitOracleDatabase();
+            TestRepository();
         }
 
         [Fact]
+        public async Task TestOracleAsync()
+        {
+            return;
+            InitOracleDatabase();
+            await TestRepositoryAsync();
+        }
+        [Fact]
+        public void TestSqlite()
+        {
+            InitSqliteDatabase();
+            TestRepository();
+        }
+
+        [Fact]
+        public async Task TestSqliteAsync()
+        {
+            InitSqliteDatabase();
+            await TestRepositoryAsync();
+        }
+
+        
+        private void InitOracleDatabase()
+        {
+            //初始化数据库
+            using (var database = new OracleDb())    //新增
+            {
+                database.Database.EnsureDeleted();
+                database.Database.EnsureCreated();
+            }
+
+            var services = new ServiceCollection();
+
+            services.AddSummerBoot();
+
+            var connectionString = MyConfiguration.GetConfiguration("oracleDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("oracle connectionString must not be null");
+            }
+
+            services.AddSummerBootRepository(it =>
+            {
+                it.DbConnectionType = typeof(OracleConnection);
+                it.ConnectionString = connectionString;
+            });
+
+            serviceProvider = services.BuildServiceProvider();
+            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+        }
+
+        private void InitSqliteDatabase()
+        {
+            //初始化数据库
+            using (var database = new SqliteDb())    //新增
+            {
+                database.Database.EnsureDeleted();
+                database.Database.EnsureCreated();
+            }
+
+            var services = new ServiceCollection();
+
+            services.AddSummerBoot();
+
+            var connectionString = MyConfiguration.GetConfiguration("sqliteDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlite connectionString must not be null");
+            }
+
+            services.AddSummerBootRepository(it =>
+            {
+                it.DbConnectionType = typeof(SQLiteConnection);
+                it.ConnectionString = connectionString;
+            });
+
+            serviceProvider = services.BuildServiceProvider();
+            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+        }
+
         public async Task TestRepositoryAsync()
         {
-            InitAsyncDatabase();
-
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -186,12 +224,13 @@ namespace SummerBoot.WebApi
             Assert.Equal(8, newCount4.Count);
         }
 
+        private void test(Expression<Func<Customer,object>> exp,object value)
+        {
 
-        [Fact]
+        }
+
         public void TestRepository()
         {
-            InitDatabase();
-
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -199,26 +238,31 @@ namespace SummerBoot.WebApi
             //test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
-            
 
-            var orderHeader = new OrderHeader();
-            orderHeader.CreateTime = DateTime.UtcNow;
-            orderHeader.CustomerId = customer.Id;
-            orderHeader.State = 1;
-            orderHeader.OrderNo = Guid.NewGuid().ToString("N");
+            var orderHeader = new OrderHeader
+            {
+                CreateTime = DateTime.UtcNow,
+                CustomerId = customer.Id,
+                State = 1,
+                OrderNo = Guid.NewGuid().ToString("N")
+            };
             orderHeaderRepository.Insert(orderHeader);
 
 
-            var orderDetail = new OrderDetail();
-            orderDetail.OrderHeaderId = orderHeader.Id;
-            orderDetail.ProductName = "apple";
-            orderDetail.Quantity = 1;
+            var orderDetail = new OrderDetail
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "apple",
+                Quantity = 1
+            };
             orderDetailRepository.Insert(orderDetail);
 
-            var orderDetail2 = new OrderDetail();
-            orderDetail2.OrderHeaderId = orderHeader.Id;
-            orderDetail2.ProductName = "orange";
-            orderDetail2.Quantity = 2;
+            var orderDetail2 = new OrderDetail
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "orange",
+                Quantity = 2
+            };
             orderDetailRepository.Insert(orderDetail2);
 
             var result = customerRepository.QueryAllBuyProductByName("testCustomer");
@@ -264,12 +308,6 @@ namespace SummerBoot.WebApi
                 uow.BeginTransaction();
                 customerRepository.Insert(new Customer() { Name = "testCustomer3" });
                 throw new Exception("testException");
-                var orderDetail4 = new OrderDetail();
-                orderDetail4.OrderHeaderId = orderHeader.Id;
-                orderDetail4.ProductName = "basketball";
-                orderDetail4.Quantity = 4;
-                orderDetailRepository.Insert(orderDetail4);
-                uow.Commit();
             }
             catch (Exception e)
             {
@@ -309,21 +347,8 @@ namespace SummerBoot.WebApi
             Assert.Equal(8, newCount4.Count);
         }
 
-        [Fact]
-        public void Test1()
-        {
-            var con= new SQLiteConnection("Data source=./testDb12.db");
-            con.Open();
-            var trans= con.BeginTransaction();
-            con = null;
-            trans.Commit();
-        }
-
-        [Fact]
         public void TestLinq()
         {
-            InitDatabase();
-
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -340,11 +365,8 @@ namespace SummerBoot.WebApi
            
         }
 
-        [Fact]
         public void TestBaseQuery()
         {
-            InitDatabase();
-
             var uow = serviceProvider.GetService<IUnitOfWork>();
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -377,12 +399,5 @@ namespace SummerBoot.WebApi
             var r2 = orderQueryRepository.GetOrderQueryList();
         }
 
-        [Fact]
-        public void ReflactEmit()
-        {
-            var m1 = typeof(IOrderedQueryable<>).GetMethods();
-            //var m2 = typeof(IBaseRepository<Customer>).GetMethod("GetAll");
-            //var c = m1 == m2;
-        }
     }
 }

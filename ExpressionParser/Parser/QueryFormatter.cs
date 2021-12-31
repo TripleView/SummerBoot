@@ -25,9 +25,9 @@ namespace ExpressionParser.Parser
         private int parameterIndex = 0;
         private int selectIndex = 0;
         
-        private string parameterPrefix;
-        private string leftQuote;
-        private string rightQuote;
+        protected string parameterPrefix;
+        protected string leftQuote;
+        protected string rightQuote;
 
         public PageQueryResult GetByPage(string sql)
         {
@@ -124,6 +124,9 @@ namespace ExpressionParser.Parser
             if (expression is SelectExpression selectExpression)
             {
                 var result = this.VisitSelect(selectExpression);
+            }else if(expression is WhereExpression whereExpression)
+            {
+                var result = this.VisitWhere(whereExpression);
             }
             else
             {
@@ -133,6 +136,20 @@ namespace ExpressionParser.Parser
 
         }
 
+        public void FormatWhere(Expression expression)
+        {
+            _sb.Clear();
+            if (expression is SelectExpression selectExpression)
+            {
+                var result = this.VisitWhere(selectExpression.Where);
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(expression));
+            }
+
+
+        }
         public DbQueryResult GetDbQueryDetail()
         {
             return new DbQueryResult()
@@ -387,7 +404,7 @@ namespace ExpressionParser.Parser
             this.sqlParameters.Clear();
         }
 
-        public DbQueryResult Insert<T>(T insertEntity)
+        public virtual DbQueryResult Insert<T>(T insertEntity)
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
@@ -417,6 +434,7 @@ namespace ExpressionParser.Parser
             {
                 result.LastInsertIdSql = GetLastInsertIdSql();
                 result.IdKeyPropertyInfo = keyColumn.MemberInfo as PropertyInfo;
+                result.IdName = keyColumn.ColumnName;
             }
 
             return result;
@@ -474,14 +492,10 @@ namespace ExpressionParser.Parser
             var table = this.getTableExpression(typeof(T));
             var tableName = BoxTableNameOrColumnName(table.Name);
 
-
-            var columnNameList = new List<string>();
-
             var middleList = new List<string>();
             foreach (var column in table.Columns)
             {
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
-                columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
                 middleList.Add(columnName + "=" + parameterName);
             }
@@ -495,6 +509,32 @@ namespace ExpressionParser.Parser
             };
             return result;
         }
+
+        public DbQueryResult DeleteByExpression<T>(Expression exp)
+        {
+            Clear();
+            var table = this.getTableExpression(typeof(T));
+            var tableName = BoxTableNameOrColumnName(table.Name);
+        
+            var middleResult= this.Visit(exp);
+            this.FormatWhere(middleResult);
+            var whereSql = _sb.ToString();
+            
+           var deleteSql=$"delete from {tableName} where 1=1";
+           if (!string.IsNullOrWhiteSpace(whereSql))
+           {
+               deleteSql += $" and {whereSql}";
+           }
+
+            var result = new DbQueryResult()
+            {
+                Sql = deleteSql.Trim(),
+                SqlParameters = this.sqlParameters
+            };
+            return result;
+        }
+
+        
 
         public DbQueryResult GetAll<T>()
         {

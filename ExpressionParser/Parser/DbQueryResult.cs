@@ -21,5 +21,9 @@ namespace ExpressionParser.Parser
         /// Id 字段的反射属性信息
         /// </summary>
         public PropertyInfo IdKeyPropertyInfo { get; set; }
+        /// <summary>
+        /// id字段的名称，有些数据库大小写敏感
+        /// </summary>
+        public string IdName { get; set; }
     }
 }

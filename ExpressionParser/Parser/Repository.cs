@@ -114,6 +114,15 @@ namespace ExpressionParser.Parser
             return null;
         }
 
+        public DbQueryResult InternalDelete(Expression predicate)
+        {
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            {
+                return dbQueryProvider.queryFormatter.DeleteByExpression<T>(predicate);
+            }
+            return null;
+        }
+        
         public DbQueryResult InternalGet(dynamic id)
         {
             if (Provider is DbQueryProvider<T> dbQueryProvider)
@@ -131,6 +140,7 @@ namespace ExpressionParser.Parser
             }
             return null;
         }
+
     }
 
 }

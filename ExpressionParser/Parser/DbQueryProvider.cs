@@ -7,8 +7,6 @@ using ExpressionParser.Parser.Dialect;
 
 namespace ExpressionParser.Parser
 {
-    public delegate TR ExecuteFunc<out TR>(DbQueryResult parameter);
-
     public class DbQueryProvider<T> : IQueryProvider
     {
         public QueryFormatter queryFormatter;

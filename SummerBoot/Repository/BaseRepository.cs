@@ -4,6 +4,7 @@ using SummerBoot.Core;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Dapper;
@@ -127,7 +128,20 @@ namespace SummerBoot.Repository
 
             if (databaseType == DatabaseType.Oracle)
             {
+                var dynamicParameters = new DynamicParameters(t);
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    dynamicParameters.Add(internalResult.IdName, 0, dbType: DbType.Int32, direction: ParameterDirection.Output);
+                }
+                
+                var sql = internalResult.Sql;
+                dbConnection.Execute(sql, dynamicParameters, transaction: dbTransaction);
 
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    var id = dynamicParameters.Get<int>(internalResult.IdName);
+                    internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+                }
             }
             else if (databaseType == DatabaseType.Sqlite)
             {
@@ -197,6 +211,18 @@ namespace SummerBoot.Repository
 
         }
 
+        public void Delete(Expression<Func<T, bool>> predicate)
+        { 
+            var exp= this.Where(predicate).Expression;
+            var internalResult = InternalDelete(exp);
+            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
+            OpenDb();
+            dbConnection.Execute(internalResult.Sql, dynamicParameters);
+            CloseDb();
+
+        }
+
+       
         public T Get(dynamic id)
         {
             DbQueryResult internalResult = InternalGet(id);
@@ -305,6 +331,16 @@ namespace SummerBoot.Repository
             CloseDb();
         }
 
+        public async Task DeleteAsync(Expression<Func<T, bool>> predicate)
+        {
+            var exp = this.Where(predicate).Expression;
+            var internalResult = InternalDelete(exp);
+            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
+            OpenDb();
+            await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters);
+            CloseDb();
+        }
+
         public async Task DeleteAsync(T t)
         {
             var internalResult = InternalDelete(t);
@@ -326,6 +362,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
+
         #endregion async
 
         protected DynamicParameters ChangeDynamicParameters(List<SqlParameter> originSqlParameters)
@@ -343,5 +380,6 @@ namespace SummerBoot.Repository
 
             return result;
         }
+
     }
 }
