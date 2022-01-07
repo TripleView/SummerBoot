@@ -1,8 +1,7 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SummerBoot.Test;
-using SummerBoot.WebApi;
-using SummerBoot.WebApi.Models;
+using SummerBoot.Test.Models;
+using System;
 
 namespace SummerBoot.WebApi
 {
@@ -15,7 +14,12 @@ namespace SummerBoot.WebApi
             {
                 throw new ArgumentNullException("oracle connectionString must not be null");
             }
-            optionsBuilder.UseOracle(connectionString);      
+            optionsBuilder.UseOracle(connectionString);
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
         }
 
         public DbSet<Customer> Customer { get; set; }

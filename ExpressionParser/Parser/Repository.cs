@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using ExpressionParser.Base;
 
 namespace ExpressionParser.Parser
@@ -33,6 +34,16 @@ namespace ExpressionParser.Parser
 
         //}
 
+        public virtual Task<int> ExecuteAsync(DbQueryResult param)
+        {
+            return default;
+        }
+
+        public virtual int Execute(DbQueryResult param)
+        {
+            return default;
+        }
+
         public virtual TResult Query<TResult>(DbQueryResult param)
         {
             return default;
@@ -42,6 +53,7 @@ namespace ExpressionParser.Parser
         {
             return default;
         }
+
         public Repository(Expression expression, IQueryProvider provider)
         {
             Provider = provider;
@@ -55,12 +67,13 @@ namespace ExpressionParser.Parser
 
 
         public IQueryProvider Provider { get; private set; }
+        public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
 
         public IEnumerator<T> GetEnumerator()
         {
             if (Provider is DbQueryProvider<T> dbQueryProvider)
             {
-                var result = dbQueryProvider.ExecuteList<T>(Expression);
+                var result = dbQueryProvider.QueryList<T>(Expression);
                 if (result == null)
                     yield break;
                 foreach (var item in result)
@@ -141,6 +154,33 @@ namespace ExpressionParser.Parser
             return null;
         }
 
+        public void ExecuteUpdate()
+        {
+            if (this.SelectItems?.Count == 0)
+            {
+                throw new Exception("set value first");
+            }
+
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            {
+               var dbQueryResult=  dbQueryProvider.queryFormatter.ExecuteUpdate(Expression,this.SelectItems);
+               dbQueryProvider.Execute(dbQueryResult);
+            }
+        }
+
+        public async Task ExecuteUpdateAsync()
+        {
+            if (this.SelectItems?.Count == 0)
+            {
+                throw new Exception("set value first");
+            }
+
+            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            {
+                var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
+                dbQueryProvider.Execute(dbQueryResult);
+            }
+        }
     }
 
 }

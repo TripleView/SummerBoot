@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using ExpressionParser.Base;
 using ExpressionParser.Parser.Dialect;
 
@@ -50,7 +51,7 @@ namespace ExpressionParser.Parser
             return null;
         }
 
-        public List<TBaseType> ExecuteList<TBaseType>(Expression expression)
+        public List<TBaseType> QueryList<TBaseType>(Expression expression)
         {
             //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
@@ -60,6 +61,21 @@ namespace ExpressionParser.Parser
             var param = queryFormatter.GetDbQueryDetail();
 
             return linkRepository.QueryList<TBaseType>(param);
+        }
+
+        public int Execute(DbQueryResult queryResult)
+        {
+            return linkRepository.Execute(queryResult);
+        }
+
+        public Task<int> ExecuteAsync(DbQueryResult queryResult)
+        {
+            return linkRepository.ExecuteAsync(queryResult);
+        }
+
+        public DbQueryResult GetDbQueryDetail()
+        {
+            return queryFormatter.GetDbQueryDetail();
         }
 
         public TResult Execute<TResult>(Expression expression)
@@ -72,12 +88,6 @@ namespace ExpressionParser.Parser
             var param = queryFormatter.GetDbQueryDetail();
 
             return linkRepository.Query<TResult>(param);
-
-        }
-
-        public DbQueryResult GetDbQueryDetail()
-        {
-            return queryFormatter.GetDbQueryDetail();
         }
     }
 }

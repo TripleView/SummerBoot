@@ -1,4 +1,4 @@
-﻿namespace SummerBoot.WebApi.Models
+﻿namespace SummerBoot.Test.Models
 {
     public class OrderQueryDto
     {

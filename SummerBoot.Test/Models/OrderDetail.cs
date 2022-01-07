@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace SummerBoot.WebApi.Models
+namespace SummerBoot.Test.Models
 {
     public class OrderDetail
     {

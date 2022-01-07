@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using SummerBoot.Repository;
+﻿using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
-using SummerBoot.WebApi.Models;
+using System.Collections.Generic;
+using SummerBoot.Test.Models;
 
 namespace SummerBoot.Test.Repository
 {

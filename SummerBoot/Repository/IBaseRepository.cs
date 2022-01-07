@@ -14,11 +14,10 @@ namespace SummerBoot.Repository
         List<T> GetAll();
         void Update(T t);
         void Update(List<T> list);
-
         void Delete(T t);
         void Delete(List<T> list);
 
-        void Delete(Expression<Func<T, bool>> predicate);
+        int Delete(Expression<Func<T, bool>> predicate);
 
         T Insert(T t);
         List<T> Insert(List<T> list);
@@ -31,7 +30,7 @@ namespace SummerBoot.Repository
         Task UpdateAsync(List<T> list);
 
         Task DeleteAsync(T t);
-        Task DeleteAsync(Expression<Func<T, bool>> predicate);
+        Task<int> DeleteAsync(Expression<Func<T, bool>> predicate);
         Task DeleteAsync(List<T> list);
 
         Task<T> InsertAsync(T t);

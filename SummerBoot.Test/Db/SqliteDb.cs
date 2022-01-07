@@ -1,8 +1,7 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SummerBoot.Test;
-using SummerBoot.WebApi;
-using SummerBoot.WebApi.Models;
+using SummerBoot.Test.Models;
+using System;
 
 namespace SummerBoot.WebApi
 {

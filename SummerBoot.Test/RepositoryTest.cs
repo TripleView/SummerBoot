@@ -4,13 +4,14 @@ using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Test;
 using SummerBoot.Test.Repository;
-using SummerBoot.WebApi.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using ExpressionParser.Parser;
+using SummerBoot.Test.Models;
 using Xunit;
 
 namespace SummerBoot.WebApi
@@ -46,7 +47,7 @@ namespace SummerBoot.WebApi
             await TestRepositoryAsync();
         }
 
-        
+
         private void InitOracleDatabase()
         {
             //初始化数据库
@@ -115,7 +116,11 @@ namespace SummerBoot.WebApi
             var customer = new Customer() { Name = "testCustomer" };
             await customerRepository.InsertAsync(customer);
 
-            var f = await customerRepository.GetDatetime();
+            await customerRepository.Where(it => it.Name == "testCustomer").SetValue(it => it.Age, 5).ExecuteUpdateAsync();
+
+            var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
+            Assert.Single(age5Customers);
+            Assert.Equal(5, age5Customers[0].Age);
 
             var orderHeader = new OrderHeader();
             orderHeader.CreateTime = DateTime.UtcNow;
@@ -217,14 +222,14 @@ namespace SummerBoot.WebApi
             await customerRepository.UpdateCustomerTask("b", 5);
             Assert.Equal(94, newCount2);
             //test delete 
-            var newCount3 = await customerRepository.DeleteCustomerAsync(5);
+            var newCount3 = await customerRepository.DeleteAsync(it=>it.Age>5);
             Assert.Equal(94, newCount3);
-            await customerRepository.DeleteCustomerTask(5);
+            await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
         }
 
-        private void test(Expression<Func<Customer,object>> exp,object value)
+        private void test(Expression<Func<Customer, object>> exp, object value)
         {
 
         }
@@ -239,6 +244,12 @@ namespace SummerBoot.WebApi
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
+            customerRepository.Where(it=>it.Name == "testCustomer").SetValue(it=>it.Age,5).ExecuteUpdate();
+
+            var age5Customers= customerRepository.Where(it => it.Name == "testCustomer").ToList();
+            Assert.Single(age5Customers);
+            Assert.Equal(5,age5Customers[0].Age);
+
             var orderHeader = new OrderHeader
             {
                 CreateTime = DateTime.UtcNow,
@@ -247,7 +258,6 @@ namespace SummerBoot.WebApi
                 OrderNo = Guid.NewGuid().ToString("N")
             };
             orderHeaderRepository.Insert(orderHeader);
-
 
             var orderDetail = new OrderDetail
             {
@@ -320,7 +330,7 @@ namespace SummerBoot.WebApi
             Assert.Equal(2, allCustomer.Count);
             Assert.Contains(allOrderDetails, t => t.ProductName == "ball");
 
-           // test page
+            // test page
             var customers = new List<Customer>();
             for (int i = 0; i < 100; i++)
             {
@@ -340,9 +350,9 @@ namespace SummerBoot.WebApi
             customerRepository.UpdateCustomerTask("b", 5);
             Assert.Equal(94, newCount2);
             //test delete 
-            var newCount3 = customerRepository.DeleteCustomer(5);
+            var newCount3 = customerRepository.Delete(it => it.Age > 5);
             Assert.Equal(94, newCount3);
-            customerRepository.DeleteCustomerNoReturn(5);
+            customerRepository.Delete(it=>it.Age>5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
         }
@@ -361,8 +371,8 @@ namespace SummerBoot.WebApi
             customerRepository.Insert(customer2);
 
             var d = customerRepository.FirstOrDefault();
-            var d1 = customerRepository.Where(it=>it.Name.Contains("testCustomer")).ToList();
-           
+            var d1 = customerRepository.Where(it => it.Name.Contains("testCustomer")).ToList();
+
         }
 
         public void TestBaseQuery()
@@ -395,7 +405,7 @@ namespace SummerBoot.WebApi
             };
             orderDetailRepository.Insert(orderDetail2);
 
-            var r1= orderQueryRepository.GetOrderQuery();
+            var r1 = orderQueryRepository.GetOrderQuery();
             var r2 = orderQueryRepository.GetOrderQueryList();
         }
 

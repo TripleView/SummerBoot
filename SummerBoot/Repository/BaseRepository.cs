@@ -1,16 +1,13 @@
-﻿using System;
-using Dapper.Contrib.Extensions;
+﻿using Dapper;
+using ExpressionParser.Base;
+using ExpressionParser.Parser;
 using SummerBoot.Core;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Dapper;
 using System.Threading.Tasks;
-using ExpressionParser.Base;
-using ExpressionParser.Parser;
 
 namespace SummerBoot.Repository
 {
@@ -55,6 +52,23 @@ namespace SummerBoot.Repository
         private DatabaseType databaseType;
         private int cmdTimeOut = 1200;
 
+        public override int Execute(DbQueryResult param)
+        {
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+            var result = dbConnection.Execute(param.Sql, dynamicParameters, dbTransaction);
+            CloseDb();
+            return result;
+        }
+
+        public override async Task<int> ExecuteAsync(DbQueryResult param)
+        {
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+            var result =await dbConnection.ExecuteAsync(param.Sql, dynamicParameters, dbTransaction);
+            CloseDb();
+            return result;
+        }
 
         public override List<TResult> QueryList<TResult>(DbQueryResult param)
         {
@@ -211,15 +225,15 @@ namespace SummerBoot.Repository
 
         }
 
-        public void Delete(Expression<Func<T, bool>> predicate)
+        public int Delete(Expression<Func<T, bool>> predicate)
         { 
             var exp= this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            dbConnection.Execute(internalResult.Sql, dynamicParameters);
+            var result= dbConnection.Execute(internalResult.Sql, dynamicParameters);
             CloseDb();
-
+            return result;
         }
 
        
@@ -331,14 +345,15 @@ namespace SummerBoot.Repository
             CloseDb();
         }
 
-        public async Task DeleteAsync(Expression<Func<T, bool>> predicate)
+        public async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
         {
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters);
+           var result=  await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters);
             CloseDb();
+            return result;
         }
 
         public async Task DeleteAsync(T t)
@@ -381,5 +396,9 @@ namespace SummerBoot.Repository
             return result;
         }
 
+        public void Update(Expression<Func<T, bool>> wherePredicate, Expression<Func<T, object>> setExpression)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

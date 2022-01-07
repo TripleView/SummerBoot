@@ -43,7 +43,7 @@ namespace ExpressionParser.Parser
         /// <summary>
         /// 当前处理的方法名称，比如select，where
         /// </summary>
-        private string MethodName => methodCallStack.Peek();
+        private string MethodName => methodCallStack.Count > 0 ? methodCallStack.Peek() : "";
         /// <summary>
         /// 上一次处理的方法名称
         /// </summary>
@@ -553,9 +553,9 @@ namespace ExpressionParser.Parser
                 var result = new SelectExpression(null, "", table.Columns, table);
                 if (methodName == nameof(Queryable.FirstOrDefault) || methodName == nameof(Queryable.First))
                 {
-                    result.Take=1;
+                    result.Take = 1;
                 }
-                else if(methodName == nameof(Queryable.Distinct))
+                else if (methodName == nameof(Queryable.Distinct))
                 {
                     result.ColumnsPrefix = "DISTINCT";
                 }
@@ -563,7 +563,7 @@ namespace ExpressionParser.Parser
                 {
                     throw new NotSupportedException(nameof(firstOrDefaultCall));
                 }
-                
+
                 return result;
             }
             else if (sourceExpression is SelectExpression selectExpression)
@@ -572,7 +572,7 @@ namespace ExpressionParser.Parser
                 {
                     selectExpression = NestSelectExpression(selectExpression);
                 }
-                
+
 
                 if (methodName == nameof(Queryable.FirstOrDefault) || methodName == nameof(Queryable.First))
                 {
@@ -618,7 +618,7 @@ namespace ExpressionParser.Parser
                 throw new ArgumentNullException("count");
             }
 
-            var count =(int) constantExpression.Value;
+            var count = (int)constantExpression.Value;
 
             if (sourceExpression is TableExpression table)
             {
@@ -644,7 +644,7 @@ namespace ExpressionParser.Parser
                 {
                     selectExpression = NestSelectExpression(selectExpression);
                 }
-                
+
                 if (methodName == nameof(Queryable.Skip))
                 {
                     selectExpression.Skip = count;
@@ -774,14 +774,14 @@ namespace ExpressionParser.Parser
             {
                 if (bodyExpression is ColumnExpression columnExpression)
                 {
-                    
+
                     var result = new SelectExpression(null, "", new List<ColumnExpression>() { columnExpression }, table);
 
                     return result;
                 }
                 else if (bodyExpression is ColumnsExpression columnsExpression)
                 {
-                   
+
                     var result = new SelectExpression(null, "", columnsExpression.ColumnExpressions, table);
 
                     return result;

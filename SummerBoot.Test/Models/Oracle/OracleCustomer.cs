@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SummerBoot.Test.Models
 {
-    public class Customer
+    public class OracleCustomer
     {
         [Key,DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { set; get; }

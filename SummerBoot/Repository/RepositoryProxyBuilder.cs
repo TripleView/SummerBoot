@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
+using ExpressionParser.Parser;
 
 namespace SummerBoot.Repository
 {
@@ -22,7 +23,7 @@ namespace SummerBoot.Repository
             new ConcurrentDictionary<string, Type>();
 
         //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] { "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
+        private string[] solidMethodNames = new string[] { "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
         public object Build(Type interfaceType, params object[] constructor)
         {
             var cacheKey = interfaceType.FullName;
@@ -96,7 +97,7 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         targetMethods.AddRange(typeof(IQueryable).GetMethods());
-                        
+                        targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
                         break;
                     }
                 }
@@ -192,7 +193,7 @@ namespace SummerBoot.Repository
 
                         MethodInfo solidMethod=null;
 
-                        if (methodName == "Update")
+                        if (methodName == "set_SelectItems")
                         {
                             var c = 12;
                         }

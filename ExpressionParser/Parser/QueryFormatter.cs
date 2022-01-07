@@ -147,8 +147,6 @@ namespace ExpressionParser.Parser
             {
                 throw new NotSupportedException(nameof(expression));
             }
-
-
         }
         public DbQueryResult GetDbQueryDetail()
         {
@@ -534,7 +532,53 @@ namespace ExpressionParser.Parser
             return result;
         }
 
-        
+        public DbQueryResult ExecuteUpdate<T>(Expression expression,List<SelectItem<T>> selectItems)
+        {
+            Clear();
+            var table = this.getTableExpression(typeof(T));
+            var tableName = BoxTableNameOrColumnName(table.Name);
+
+            var middleResult = this.Visit(expression);
+            this.FormatWhere(middleResult);
+            var whereSql = _sb.ToString();
+            _sb.Clear();
+           
+            var columnSetValueClauses = new List<string>();
+            
+            foreach (var selectItem in selectItems)
+            {
+                if (selectItem.Select.Body is UnaryExpression unaryExpression&&unaryExpression.NodeType==ExpressionType.Convert)
+                {
+                    var body = unaryExpression.Operand;
+                    var bodyResultExpression= this.Visit(body);
+                    if (bodyResultExpression is ColumnExpression columnExpression)
+                    {
+                        this.VisitColumn(columnExpression);
+                        _sb.Append("=");
+                        _sb.Append(BoxParameter(selectItem.Value));
+                        var columnSetValueClause = _sb.ToString();
+                        columnSetValueClauses.Add(columnSetValueClause);
+                        _sb.Clear();
+                    }
+                }
+            }
+            var setValues = string.Join(",", columnSetValueClauses);
+
+            var deleteSql = $"update {tableName} set {setValues} where 1=1";
+            if (!string.IsNullOrWhiteSpace(whereSql))
+            {
+                deleteSql += $" and {whereSql}";
+            }
+
+            var result = new DbQueryResult()
+            {
+                Sql = deleteSql.Trim(),
+                SqlParameters = this.sqlParameters
+            };
+            return result;
+
+        }
+
 
         public DbQueryResult GetAll<T>()
         {

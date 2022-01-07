@@ -1,5 +1,4 @@
 ﻿using Castle.DynamicProxy;
-using Dapper.Contrib.Extensions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -1023,10 +1022,6 @@ namespace SummerBoot.Core
 
             if (option.ConnectionString.IsNullOrWhiteSpace()) throw new Exception("ConnectionString is Require");
             
-            SqlMapperExtensions.TableNameMapper = (type) => {
-                return type.Name;
-            };
-
             if (option.DbConnectionType == null) throw new Exception("DbConnectionType is Require");
             services.TryAddScoped<IDbFactory, DbFactory>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
