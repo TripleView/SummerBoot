@@ -1,9 +1,9 @@
 ﻿using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Test.Oracle.Models;
 using System.Collections.Generic;
-using SummerBoot.Test.Models;
 
-namespace SummerBoot.Test.Repository
+namespace SummerBoot.Test.Oracle.Repository
 {
 
     [AutoRepository]

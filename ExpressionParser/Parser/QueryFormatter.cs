@@ -287,13 +287,13 @@ namespace ExpressionParser.Parser
                 if (select.From is TableExpression table)
                 {
                     _sb.Append(BoxTableNameOrColumnName(table.Name));
-                    _sb.AppendFormat(" As {0}", BoxTableNameOrColumnName(select.Alias));
+                    _sb.AppendFormat(" {0}", BoxTableNameOrColumnName(select.Alias));
                 }
                 else if (select.From is SelectExpression subSelectExpression)
                 {
                     _sb.Append("(");
                     this.VisitSelect(subSelectExpression);
-                    _sb.AppendFormat(") As {0}", BoxTableNameOrColumnName(select.Alias));
+                    _sb.AppendFormat(") {0}", BoxTableNameOrColumnName(select.Alias));
                 }
 
             }

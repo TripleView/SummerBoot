@@ -1,7 +1,7 @@
 ﻿using SummerBoot.Repository;
-using SummerBoot.Test.Models;
+using SummerBoot.Test.Oracle.Models;
 
-namespace SummerBoot.Test.Repository
+namespace SummerBoot.Test.Oracle.Repository
 {
     [AutoRepository]
     public interface IOrderDetailRepository:IBaseRepository<OrderDetail>

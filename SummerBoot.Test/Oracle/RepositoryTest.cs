@@ -1,20 +1,19 @@
+using ExpressionParser.Parser;
 using Microsoft.Extensions.DependencyInjection;
 using Oracle.ManagedDataAccess.Client;
 using SummerBoot.Core;
 using SummerBoot.Repository;
-using SummerBoot.Test;
-using SummerBoot.Test.Repository;
+using SummerBoot.Test.Oracle.Db;
+using SummerBoot.Test.Oracle.Models;
+using SummerBoot.Test.Oracle.Repository;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using ExpressionParser.Parser;
-using SummerBoot.Test.Models;
 using Xunit;
 
-namespace SummerBoot.WebApi
+namespace SummerBoot.Test.Oracle
 {
     public class RepositoryTest
     {
@@ -33,20 +32,7 @@ namespace SummerBoot.WebApi
             InitOracleDatabase();
             await TestRepositoryAsync();
         }
-        [Fact]
-        public void TestSqlite()
-        {
-            InitSqliteDatabase();
-            TestRepository();
-        }
-
-        [Fact]
-        public async Task TestSqliteAsync()
-        {
-            InitSqliteDatabase();
-            await TestRepositoryAsync();
-        }
-
+       
 
         private void InitOracleDatabase()
         {
@@ -70,35 +56,6 @@ namespace SummerBoot.WebApi
             services.AddSummerBootRepository(it =>
             {
                 it.DbConnectionType = typeof(OracleConnection);
-                it.ConnectionString = connectionString;
-            });
-
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
-        }
-
-        private void InitSqliteDatabase()
-        {
-            //初始化数据库
-            using (var database = new SqliteDb())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
-
-            var services = new ServiceCollection();
-
-            services.AddSummerBoot();
-
-            var connectionString = MyConfiguration.GetConfiguration("sqliteDbConnectionString");
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new ArgumentNullException("sqlite connectionString must not be null");
-            }
-
-            services.AddSummerBootRepository(it =>
-            {
-                it.DbConnectionType = typeof(SQLiteConnection);
                 it.ConnectionString = connectionString;
             });
 
@@ -231,11 +188,6 @@ namespace SummerBoot.WebApi
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
-        }
-
-        private void test(Expression<Func<Customer, object>> exp, object value)
-        {
-
         }
 
         public void TestRepository()

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SummerBoot.Test.Models
+namespace SummerBoot.Test.Oracle.Models
 {
     public class CustomerBuyProduct
     {

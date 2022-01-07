@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SummerBoot.Test;
-using SummerBoot.Test.Models;
+using SummerBoot.Test.Oracle.Models;
 using System;
 
-namespace SummerBoot.WebApi
+namespace SummerBoot.Test.Oracle.Db
 {
     public class OracleDb : DbContext
     {

@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace SummerBoot.Test.Models
+namespace SummerBoot.Test.OtherDatabase.Models
 {
-    public class OracleCustomer
+    public class Customer
     {
         [Key,DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { set; get; }

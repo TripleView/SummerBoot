@@ -1,4 +1,4 @@
-﻿namespace SummerBoot.Test.Models
+﻿namespace SummerBoot.Test.OtherDatabase.Models
 {
     public class OrderQueryDto
     {

@@ -1,10 +1,10 @@
 ﻿using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
-using SummerBoot.Test.Models;
+using SummerBoot.Test.Oracle.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SummerBoot.Test.Repository
+namespace SummerBoot.Test.Oracle.Repository
 {
     [AutoRepository]
     public interface ICustomerRepository :IBaseRepository<Customer>

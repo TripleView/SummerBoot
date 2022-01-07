@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SummerBoot.Test;
-using SummerBoot.Test.Models;
+using SummerBoot.Test.OtherDatabase.Models;
 using System;
 
-namespace SummerBoot.WebApi
+namespace SummerBoot.Test.OtherDatabase.Db
 {
     public class SqliteDb:DbContext
     {
