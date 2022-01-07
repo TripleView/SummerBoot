@@ -116,11 +116,15 @@ namespace SummerBoot.WebApi
             var customer = new Customer() { Name = "testCustomer" };
             await customerRepository.InsertAsync(customer);
 
-            await customerRepository.Where(it => it.Name == "testCustomer").SetValue(it => it.Age, 5).ExecuteUpdateAsync();
+            await customerRepository.Where(it => it.Name == "testCustomer")
+                .SetValue(it => it.Age, 5)
+                .SetValue(it => it.TotalConsumptionAmount, 100)
+                .ExecuteUpdateAsync();
 
             var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single(age5Customers);
             Assert.Equal(5, age5Customers[0].Age);
+            Assert.Equal(100, age5Customers[0].TotalConsumptionAmount);
 
             var orderHeader = new OrderHeader();
             orderHeader.CreateTime = DateTime.UtcNow;
@@ -244,11 +248,15 @@ namespace SummerBoot.WebApi
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
-            customerRepository.Where(it=>it.Name == "testCustomer").SetValue(it=>it.Age,5).ExecuteUpdate();
+            customerRepository.Where(it=>it.Name == "testCustomer")
+                .SetValue(it=>it.Age,5)
+                .SetValue(it=>it.TotalConsumptionAmount,100)
+                .ExecuteUpdate();
 
             var age5Customers= customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single(age5Customers);
             Assert.Equal(5,age5Customers[0].Age);
+            Assert.Equal(100, age5Customers[0].TotalConsumptionAmount);
 
             var orderHeader = new OrderHeader
             {
