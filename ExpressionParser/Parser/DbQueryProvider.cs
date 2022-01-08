@@ -8,14 +8,13 @@ using ExpressionParser.Parser.Dialect;
 
 namespace ExpressionParser.Parser
 {
-    public class DbQueryProvider<T> : IQueryProvider
+    public class DbQueryProvider : IQueryProvider
     {
         public QueryFormatter queryFormatter;
 
         private Repository<T> linkRepository;
-        public DbQueryProvider(DatabaseType databaseType, Repository<T> linkRepository)
+        public DbQueryProvider(DatabaseType databaseType)
         {
-            this.linkRepository = linkRepository;
 
             switch (databaseType)
             {
@@ -45,13 +44,7 @@ namespace ExpressionParser.Parser
             return new Repository<TElement>(expression,this);
         }
 
-        public object Execute(Expression expression)
-        {
-           
-            return null;
-        }
-
-        public List<TBaseType> QueryList<TBaseType>(Expression expression)
+        public DbQueryResult GetDbQueryResultByExpression(Expression expression)
         {
             //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
@@ -59,18 +52,7 @@ namespace ExpressionParser.Parser
             //将我们自己的expression转换成sql
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();
-
-            return linkRepository.QueryList<TBaseType>(param);
-        }
-
-        public int Execute(DbQueryResult queryResult)
-        {
-            return linkRepository.Execute(queryResult);
-        }
-
-        public Task<int> ExecuteAsync(DbQueryResult queryResult)
-        {
-            return linkRepository.ExecuteAsync(queryResult);
+            return param;
         }
 
         public DbQueryResult GetDbQueryDetail()
@@ -78,16 +60,14 @@ namespace ExpressionParser.Parser
             return queryFormatter.GetDbQueryDetail();
         }
 
+        public object Execute(Expression expression)
+        {
+            throw new NotImplementedException();
+        }
+
         public TResult Execute<TResult>(Expression expression)
         {
-            //这一步将expression转化成我们自己的expression
-            var dbExpressionVisitor = new DbExpressionVisitor();
-            var middleResult = dbExpressionVisitor.Visit(expression);
-            //将我们自己的expression转换成sql
-            queryFormatter.Format(middleResult);
-            var param = queryFormatter.GetDbQueryDetail();
-
-            return linkRepository.Query<TResult>(param);
+            throw new NotImplementedException();
         }
     }
 }

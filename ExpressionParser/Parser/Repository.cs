@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ExpressionParser.Base;
+using ExpressionParser.Parser.Dialect;
 
 namespace ExpressionParser.Parser
 {
@@ -12,7 +13,7 @@ namespace ExpressionParser.Parser
     {
         public Repository(DatabaseType databaseType)
         {
-            Provider = new DbQueryProvider<T>(databaseType,this);
+            Provider = new DbQueryProvider(databaseType);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
@@ -24,7 +25,7 @@ namespace ExpressionParser.Parser
 
         public void Init(DatabaseType databaseType)
         {
-            Provider = new DbQueryProvider<T>(databaseType,this);
+            Provider = new DbQueryProvider(databaseType);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
@@ -71,9 +72,11 @@ namespace ExpressionParser.Parser
 
         public IEnumerator<T> GetEnumerator()
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var result = dbQueryProvider.QueryList<T>(Expression);
+                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var result=QueryList<T>(dbParam);
+                
                 if (result == null)
                     yield break;
                 foreach (var item in result)
@@ -81,7 +84,6 @@ namespace ExpressionParser.Parser
                     yield return item;
                 }
             }
-           
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -91,7 +93,7 @@ namespace ExpressionParser.Parser
 
         public DbQueryResult GetDbQueryDetail()
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                 return dbQueryProvider.GetDbQueryDetail();
             }
@@ -101,7 +103,7 @@ namespace ExpressionParser.Parser
 
         public DbQueryResult InternalInsert(T insertEntity)
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                return dbQueryProvider.queryFormatter.Insert(insertEntity);;
             }
@@ -111,7 +113,7 @@ namespace ExpressionParser.Parser
 
         public DbQueryResult InternalUpdate(T updateEntity)
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                 return dbQueryProvider.queryFormatter.Update(updateEntity); ;
             }
@@ -120,7 +122,7 @@ namespace ExpressionParser.Parser
 
         public DbQueryResult InternalDelete(T deleteEntity)
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                return dbQueryProvider.queryFormatter.Delete(deleteEntity);
             }
@@ -129,7 +131,7 @@ namespace ExpressionParser.Parser
 
         public DbQueryResult InternalDelete(Expression predicate)
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                 return dbQueryProvider.queryFormatter.DeleteByExpression<T>(predicate);
             }
@@ -138,7 +140,7 @@ namespace ExpressionParser.Parser
         
         public DbQueryResult InternalGet(dynamic id)
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                return dbQueryProvider.queryFormatter.Get<T>(id);
             }
@@ -147,7 +149,7 @@ namespace ExpressionParser.Parser
 
         public DbQueryResult InternalGetAll()
         {
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
               return dbQueryProvider.queryFormatter.GetAll<T>();
             }
@@ -161,10 +163,10 @@ namespace ExpressionParser.Parser
                 throw new Exception("set value first");
             }
 
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                var dbQueryResult=  dbQueryProvider.queryFormatter.ExecuteUpdate(Expression,this.SelectItems);
-               dbQueryProvider.Execute(dbQueryResult);
+               this.Execute(dbQueryResult);
             }
         }
 
@@ -175,10 +177,10 @@ namespace ExpressionParser.Parser
                 throw new Exception("set value first");
             }
 
-            if (Provider is DbQueryProvider<T> dbQueryProvider)
+            if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                dbQueryProvider.Execute(dbQueryResult);
+                await this.ExecuteAsync(dbQueryResult);
             }
         }
     }

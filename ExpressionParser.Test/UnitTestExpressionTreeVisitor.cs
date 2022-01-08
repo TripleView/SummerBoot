@@ -698,6 +698,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.Where(it => it.Name == "hzp").Select(it => new { it.Age, Address = "¸£½¨" }).ToList();
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
+
             Assert.Equal("SELECT [p0].[Age], '¸£½¨' As [Address] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
             Assert.Single(r1MiddleResult.SqlParameters);
 
