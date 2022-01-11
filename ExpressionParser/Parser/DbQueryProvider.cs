@@ -12,10 +12,10 @@ namespace ExpressionParser.Parser
     {
         public QueryFormatter queryFormatter;
 
-        private Repository<T> linkRepository;
-        public DbQueryProvider(DatabaseType databaseType)
+        public IDbExecuteAndQuery linkRepository;
+        public DbQueryProvider(DatabaseType databaseType, IDbExecuteAndQuery linkRepository)
         {
-
+            this.linkRepository = linkRepository;
             switch (databaseType)
             {
                 case DatabaseType.SqlServer:
@@ -67,7 +67,14 @@ namespace ExpressionParser.Parser
 
         public TResult Execute<TResult>(Expression expression)
         {
-            throw new NotImplementedException();
+            //这一步将expression转化成我们自己的expression
+            var dbExpressionVisitor = new DbExpressionVisitor();
+            var middleResult = dbExpressionVisitor.Visit(expression);
+            //将我们自己的expression转换成sql
+            queryFormatter.Format(middleResult);
+            var param = queryFormatter.GetDbQueryDetail();
+
+            return linkRepository.Query<TResult>(param);
         }
     }
 }

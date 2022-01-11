@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
+using Castle.Core.Logging;
 using ExpressionParser.Parser;
 
 namespace SummerBoot.Repository
@@ -23,7 +24,7 @@ namespace SummerBoot.Repository
             new ConcurrentDictionary<string, Type>();
 
         //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] { "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
+        private string[] solidMethodNames = new string[] { "Execute", "ExecuteAsync", "Query", "QueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
         public object Build(Type interfaceType, params object[] constructor)
         {
             var cacheKey = interfaceType.FullName;
@@ -98,6 +99,7 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         targetMethods.AddRange(typeof(IQueryable).GetMethods());
                         targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
+                        targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
                         break;
                     }
                 }
@@ -174,7 +176,17 @@ namespace SummerBoot.Repository
                     var isInterface = underType.IsInterface;
                     if (isInterface&& returnType.IsGenericType) throw new Exception("return type no support interface");
                     //通过emit生成方法体
-                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(targetMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, targetMethod.ReturnType, parameterType);
+
+                    var methodAttributes = MethodAttributes.Public | MethodAttributes.Virtual;
+                    
+                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(targetMethod.Name, methodAttributes, targetMethod.ReturnType, parameterType);
+                    //如果是泛型方法，还需要添加泛型参数
+                    if (targetMethod.IsGenericMethod)
+                    {
+                        var genericArgumentNames = targetMethod.GetGenericArguments().Select(it => it.Name).ToArray();
+                        methodBuilder.DefineGenericParameters(genericArgumentNames);
+                    }
+
                     ILGenerator ilGen = methodBuilder.GetILGenerator();
 
                     if (isRepository && solidMethodNames.Any(it => it == methodName))
@@ -187,43 +199,18 @@ namespace SummerBoot.Repository
                             ilGen.Emit(OpCodes.Ldarg, i + 1);
                         }
                         var selectSolidMethods = baseRepositoryType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
-                            it.Name.Split(".").Any(x=>x== methodName)
-                            && it.ReturnType == targetMethod.ReturnType
-                            && it.GetParameters().Length == targetMethod.GetParameters().Length).ToList();
+                            CompareTwoMethod(it,targetMethod)).ToList();
 
-                        MethodInfo solidMethod=null;
+                        //it.ReturnType?.Name == targetMethod.ReturnType?.Name &&
 
-                        if (methodName == "set_SelectItems")
+                        if (selectSolidMethods.Count > 1)
                         {
-                            var c = 12;
+                            throw new Exception("find two methods:" + targetMethod.Name);
                         }
 
-                        foreach (var selectSolidMethod in selectSolidMethods)
-                        {
-                            var isAllSame = true;
-                            for (var i = 0; i < selectSolidMethod.GetParameters().Length; i++)
-                            {
-                                var selectParameterInfo = selectSolidMethod.GetParameters()[i];
-                                var targetParameterInfo = targetMethod.GetParameters()[i];
-                                if (selectParameterInfo.Name == targetParameterInfo.Name
-                                &&selectParameterInfo.ParameterType==targetParameterInfo.ParameterType)
-                                {
+                        var selectMethod = selectSolidMethods.First();
 
-                                }
-                                else
-                                {
-                                    isAllSame = false;
-                                    break;
-                                }
-                            }
-
-                            if (isAllSame)
-                            {
-                                solidMethod = selectSolidMethod;
-                            }
-                        }
-
-                        ilGen.Emit(OpCodes.Call, solidMethod);
+                        ilGen.Emit(OpCodes.Call, selectMethod);
                     }
                     else
                     {
@@ -343,6 +330,95 @@ namespace SummerBoot.Repository
 
             var resultType = typeBuilder.CreateTypeInfo().AsType();
             return resultType;
+        }
+
+        /// <summary>
+        /// 比较2个方法
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        /// <returns></returns>
+        private bool CompareTwoMethod(MethodInfo first, MethodInfo second)
+        {
+            if (first.Name.Contains("GetEnumerator"))
+            {
+                var c = 123;
+            }
+            if (!first.Name.Split(".").Any(x => x == second.Name))
+            {
+                return false;
+            }
+            if (first == null && second == null)
+            {
+                return true;
+            }
+
+            if (first == null && second != null || (second == null && first != null))
+            {
+                return false;
+            }
+            //判断是否为泛型
+            if (first.IsGenericMethod && !second.IsGenericMethod || (!first.IsGenericMethod&&second.IsGenericMethod))
+            {
+                return false;
+            }
+
+            if (first.ReturnType?.Name != second.ReturnType?.Name)
+            {
+                return false;
+            }
+
+            if (first.IsGenericMethod && second.IsGenericMethod)
+            {
+                var firstGenericArgumentsList = first.GetGenericArguments().ToList();
+                var secondGenericArgumentsList = second.GetGenericArguments().ToList();
+                if (firstGenericArgumentsList.Count != secondGenericArgumentsList.Count)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < firstGenericArgumentsList.Count; i++)
+                {
+                    var firstGenericArgument=firstGenericArgumentsList[i];
+                    var secondGenericArgument=secondGenericArgumentsList[i];
+                    if (firstGenericArgument.Name != secondGenericArgument.Name)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if(!CompareTwoParameterList(first.GetParameters(),second.GetParameters()))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CompareTwoParameterList(ParameterInfo[] first, ParameterInfo[] second)
+        {
+            if (first == null && second == null)
+            {
+                return true;
+            }
+
+            if (first == null && second != null || (first != null && second == null)||(first.Length!=second.Length))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < first.Length; i++)
+            {
+                var firstItem = first[i];
+                var secondItem = second[i];
+                if (firstItem.ParameterType != secondItem.ParameterType|| (firstItem.Name != secondItem.Name))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public T Build<T>(params object[] constructor)

@@ -1,6 +1,6 @@
 ﻿namespace ExpressionParser.Parser
 {
-    public interface IDbExecute
+    public interface IGetDbExecuteSql
     {
         DbQueryResult Insert<T>(T insertEntity);
         DbQueryResult Update<T>(T updateEntity);

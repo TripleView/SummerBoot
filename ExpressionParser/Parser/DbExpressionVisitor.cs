@@ -690,6 +690,14 @@ namespace ExpressionParser.Parser
                     var result = new SelectExpression(null, "", source.Columns, source, whereExpression);
                     return result;
                 }
+                //兼容It=>true这种
+                else if (bodyExpression is ConstantExpression constantExpression && constantExpression.Type==typeof(bool))
+                {
+                    var value =(bool)constantExpression.Value;
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
+                    var result = new SelectExpression(null, "", source.Columns, source, whereTrueFalseValueCondition);
+                    return result;
+                }
                 else
                 {
                     throw new NotSupportedException(nameof(bodyExpression));

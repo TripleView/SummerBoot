@@ -13,7 +13,7 @@ namespace ExpressionParser.Parser
     {
         public Repository(DatabaseType databaseType)
         {
-            Provider = new DbQueryProvider(databaseType);
+            Provider = new DbQueryProvider(databaseType,this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
@@ -25,15 +25,10 @@ namespace ExpressionParser.Parser
 
         public void Init(DatabaseType databaseType)
         {
-            Provider = new DbQueryProvider(databaseType);
+            Provider = new DbQueryProvider(databaseType,this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
-
-        //public object Test(ExecuteFunc<T> t)
-        //{
-
-        //}
 
         public virtual Task<int> ExecuteAsync(DbQueryResult param)
         {
@@ -75,8 +70,8 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
-                var result=QueryList<T>(dbParam);
-                
+                var result = dbQueryProvider.linkRepository.QueryList<T>(dbParam);
+                //var result = new List<T>();
                 if (result == null)
                     yield break;
                 foreach (var item in result)
@@ -166,7 +161,7 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                var dbQueryResult=  dbQueryProvider.queryFormatter.ExecuteUpdate(Expression,this.SelectItems);
-               this.Execute(dbQueryResult);
+                dbQueryProvider.linkRepository.Execute(dbQueryResult);
             }
         }
 
@@ -180,9 +175,10 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                await this.ExecuteAsync(dbQueryResult);
+                await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult);
             }
         }
+
     }
 
 }

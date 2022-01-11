@@ -395,10 +395,5 @@ namespace SummerBoot.Repository
 
             return result;
         }
-
-        public void Update(Expression<Func<T, bool>> wherePredicate, Expression<Func<T, object>> setExpression)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

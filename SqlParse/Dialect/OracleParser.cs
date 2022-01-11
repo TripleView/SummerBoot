@@ -63,7 +63,7 @@ namespace SqlParser.Dialect
 
             var columnsOnly = $"sbInner.* FROM ({sqlOrderByRemoved}) sbInner";
 
-            result.PageSql = $"select * from (select row_number() over ({sqlOrderBy}) pageNo, {columnsOnly}) sbOuter where pageNo > {BoxPageSizeName} and pageNo <= {BoxPageSkipName} + {BoxPageSizeName}";
+            result.PageSql = $"select * from (select row_number() over ({sqlOrderBy}) pageNo, {columnsOnly}) sbOuter where pageNo > {BoxPageSkipName} and pageNo <= {BoxPageSkipName} + {BoxPageSizeName}";
             result.CountSql = $"select count(1) from ({sql}) sbCount";
 
             return result;

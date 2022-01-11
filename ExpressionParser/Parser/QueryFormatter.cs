@@ -8,7 +8,7 @@ using ExpressionParser.Util;
 
 namespace ExpressionParser.Parser
 {
-    public class QueryFormatter : DbExpressionVisitor, IDbExecute
+    public class QueryFormatter : DbExpressionVisitor, IGetDbExecuteSql
     {
 
         public QueryFormatter(string parameterPrefix, string leftQuote, string rightQuote)
@@ -368,7 +368,18 @@ namespace ExpressionParser.Parser
                 this.VisitWhere(whereExpression.Right);
                 _sb.Append(" ");
             }
-
+            else if (whereExpression is WhereTrueFalseValueConditionExpression whereTrueFalseValueCondition)
+            {
+                if (whereTrueFalseValueCondition.Value)
+                {
+                    _sb.Append("1=1");
+                }
+                else
+                {
+                    _sb.Append("1=0");
+                }
+                
+            }
             else if (whereExpression is WhereConditionExpression whereConditionExpression)
             {
                 this.VisitColumn(whereConditionExpression.ColumnExpression);
@@ -560,6 +571,10 @@ namespace ExpressionParser.Parser
                         columnSetValueClauses.Add(columnSetValueClause);
                         _sb.Clear();
                     }
+                }
+                else
+                {
+                    throw new NotSupportedException("setValue only support one property,like it=>it.name");
                 }
             }
             var setValues = string.Join(",", columnSetValueClauses);

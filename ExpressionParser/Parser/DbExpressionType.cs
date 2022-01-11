@@ -9,6 +9,7 @@
         Join,
         Where,
         WhereCondition,
+        WhereTrueCondition,
         FunctionWhereCondition,
         OrderBy,
         GroupBy

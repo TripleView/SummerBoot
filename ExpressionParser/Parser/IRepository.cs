@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExpressionParser.Parser
 {
-    public interface IRepository<T> : IOrderedQueryable<T>
+    public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery
     {
         List<SelectItem<T>> SelectItems { set; get; }
         void ExecuteUpdate();

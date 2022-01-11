@@ -126,7 +126,7 @@ namespace ExpressionParser.Parser.Dialect
                     _sb.Append(tableName);
 
                     tableNameAlias = BoxTableNameOrColumnName(select.Alias);
-                    _sb.AppendFormat(" As {0}", tableNameAlias);
+                    _sb.AppendFormat(" {0}", tableNameAlias);
 
                 }
                 else if (select.From is SelectExpression subSelectExpression)
@@ -136,7 +136,7 @@ namespace ExpressionParser.Parser.Dialect
                     tableNameAlias = BoxTableNameOrColumnName(select.Alias);
                     _sb.Append("(");
                     this.VisitSelect(subSelectExpression);
-                    _sb.AppendFormat(") As {0}", tableNameAlias);
+                    _sb.AppendFormat(") {0}", tableNameAlias);
 
                 }
 
@@ -166,7 +166,7 @@ namespace ExpressionParser.Parser.Dialect
                 }
             }
 
-            _sb.AppendFormat(") AS {0} WHERE {0}.[ROW]>", BoxTableNameOrColumnName(externalAlias));
+            _sb.AppendFormat(") {0} WHERE {0}.[ROW]>", BoxTableNameOrColumnName(externalAlias));
             var hasSkip = select.Skip.HasValue;
             if (hasSkip)
             {
@@ -214,7 +214,7 @@ namespace ExpressionParser.Parser.Dialect
                     _sb.Append(tableName);
 
                     var tableNameAlias = BoxTableNameOrColumnName(select.Alias);
-                    _sb.AppendFormat(" As {0}", tableNameAlias);
+                    _sb.AppendFormat(" {0}", tableNameAlias);
 
                 }
                 else if (select.From is SelectExpression subSelectExpression)
@@ -225,7 +225,7 @@ namespace ExpressionParser.Parser.Dialect
                     this.VisitSelect(subSelectExpression);
                     _sb.Append(")");
                     var tableNameAlias = BoxTableNameOrColumnName(select.Alias);
-                    _sb.AppendFormat(" As {0}", tableNameAlias);
+                    _sb.AppendFormat(" {0}", tableNameAlias);
                 }
 
             }
