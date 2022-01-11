@@ -285,7 +285,20 @@ namespace SummerBoot.Repository
 
             if (databaseType == DatabaseType.Oracle)
             {
+                var dynamicParameters = new DynamicParameters(t);
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    dynamicParameters.Add(internalResult.IdName, 0, dbType: DbType.Int32, direction: ParameterDirection.Output);
+                }
 
+                var sql = internalResult.Sql;
+                await dbConnection.ExecuteAsync(sql, dynamicParameters, transaction: dbTransaction);
+
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    var id = dynamicParameters.Get<int>(internalResult.IdName);
+                    internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+                }
             }
             else if (databaseType == DatabaseType.Sqlite)
             {

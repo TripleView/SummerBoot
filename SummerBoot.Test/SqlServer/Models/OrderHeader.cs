@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
-namespace SummerBoot.Test.OtherDatabase.Models
+namespace SummerBoot.Test.SqlServer.Models
 {
     public class OrderHeader
     {

@@ -1,44 +1,44 @@
-using ExpressionParser.Parser;
-using Microsoft.Extensions.DependencyInjection;
-using Oracle.ManagedDataAccess.Client;
-using SummerBoot.Core;
-using SummerBoot.Repository;
-using SummerBoot.Test.Oracle.Db;
-using SummerBoot.Test.OtherDatabase.Db;
-using SummerBoot.Test.OtherDatabase.Models;
-using SummerBoot.Test.OtherDatabase.Repository;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using ExpressionParser.Parser;
+using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Core;
+using SummerBoot.Repository;
+using SummerBoot.Test.Sqlite.Db;
+using SummerBoot.Test.Sqlite.Models;
+using SummerBoot.Test.Sqlite.Repository;
 using Xunit;
 
-namespace SummerBoot.Test.OtherDatabase
+namespace SummerBoot.Test.Sqlite
 {
+    [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
-       
-        [Fact]
+
+        [Fact,Order(10)]
         public void TestSqlite()
         {
-            InitSqliteDatabase();
+            InitSqliteDatabase("Data Source=./testDb.db");
             TestRepository();
+         
         }
 
-        [Fact]
+        [Fact, Order(2)]
         public async Task TestSqliteAsync()
         {
-            InitSqliteDatabase();
+            InitSqliteDatabase("Data Source=./testAsyncDb.db");
             await TestRepositoryAsync();
         }
 
-        private void InitSqliteDatabase()
+        private void InitSqliteDatabase(string connectionString)
         {
             //初始化数据库
-            using (var database = new SqliteDb())    //新增
+            using (var database = new SqliteDb(connectionString))    //新增
             {
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
@@ -48,7 +48,6 @@ namespace SummerBoot.Test.OtherDatabase
 
             services.AddSummerBoot();
 
-            var connectionString = MyConfiguration.GetConfiguration("sqliteDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentNullException("sqlite connectionString must not be null");
@@ -180,8 +179,8 @@ namespace SummerBoot.Test.OtherDatabase
             Assert.Equal(10, page.Data.Count);
 
             //test update 
-            var newCount2 = await customerRepository.UpdateCustomerAsync("a", 5);
-            await customerRepository.UpdateCustomerTask("b", 5);
+            var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
+                .ExecuteUpdateAsync();
             Assert.Equal(94, newCount2);
             //test delete 
             var newCount3 = await customerRepository.DeleteAsync(it=>it.Age>5);
@@ -312,8 +311,8 @@ namespace SummerBoot.Test.OtherDatabase
             Assert.Equal(10, page.Data.Count);
 
             //test update 
-            var newCount2 = customerRepository.UpdateCustomer("a", 5);
-            customerRepository.UpdateCustomerTask("b", 5);
+            var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
+                .ExecuteUpdate();
             Assert.Equal(94, newCount2);
             //test delete 
             var newCount3 = customerRepository.Delete(it => it.Age > 5);
@@ -321,6 +320,7 @@ namespace SummerBoot.Test.OtherDatabase
             customerRepository.Delete(it=>it.Age>5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
+
         }
 
         public void TestLinq()
@@ -374,6 +374,5 @@ namespace SummerBoot.Test.OtherDatabase
             var r1 = orderQueryRepository.GetOrderQuery();
             var r2 = orderQueryRepository.GetOrderQueryList();
         }
-
     }
 }

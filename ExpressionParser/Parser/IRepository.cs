@@ -9,7 +9,7 @@ namespace ExpressionParser.Parser
     public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery
     {
         List<SelectItem<T>> SelectItems { set; get; }
-        void ExecuteUpdate();
-        Task ExecuteUpdateAsync();
+        int ExecuteUpdate();
+        Task<int> ExecuteUpdateAsync();
     }
 }

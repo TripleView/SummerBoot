@@ -1,6 +1,5 @@
 {
   "oracleDbConnectionString": "",
   "sqlServerDbConnectionString": "",
-  "mysqlDbConnectionString": "",
-  "sqliteDbConnectionString": ""
+  "mysqlDbConnectionString": ""
 }

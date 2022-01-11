@@ -1,13 +1,13 @@
-﻿using SummerBoot.Repository;
-using SummerBoot.Repository.Attributes;
-using SummerBoot.Test.Oracle.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using SummerBoot.Repository;
+using SummerBoot.Repository.Attributes;
+using SummerBoot.Test.Sqlite.Models;
 
-namespace SummerBoot.Test.Oracle.Repository
+namespace SummerBoot.Test.Sqlite.Repository
 {
     [AutoRepository]
-    public interface ICustomerRepository :IBaseRepository<Customer>
+    public interface ICustomerRepository : IBaseRepository<Customer>
     {
         //异步
         [Select("select od.productName from customer c join orderHeader oh on c.id=oh.customerid" +

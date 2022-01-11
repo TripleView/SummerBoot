@@ -151,7 +151,7 @@ namespace ExpressionParser.Parser
             return null;
         }
 
-        public void ExecuteUpdate()
+        public int ExecuteUpdate()
         {
             if (this.SelectItems?.Count == 0)
             {
@@ -161,11 +161,13 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                var dbQueryResult=  dbQueryProvider.queryFormatter.ExecuteUpdate(Expression,this.SelectItems);
-                dbQueryProvider.linkRepository.Execute(dbQueryResult);
+               return dbQueryProvider.linkRepository.Execute(dbQueryResult);
             }
+
+            return 0;
         }
 
-        public async Task ExecuteUpdateAsync()
+        public async Task<int> ExecuteUpdateAsync()
         {
             if (this.SelectItems?.Count == 0)
             {
@@ -175,8 +177,10 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult);
+                return await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult);
             }
+
+            return 0;
         }
 
     }

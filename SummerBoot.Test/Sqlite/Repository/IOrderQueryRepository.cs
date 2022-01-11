@@ -1,9 +1,9 @@
-﻿using SummerBoot.Repository;
+﻿using System.Collections.Generic;
+using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
-using System.Collections.Generic;
-using SummerBoot.Test.OtherDatabase.Models;
+using SummerBoot.Test.Sqlite.Models;
 
-namespace SummerBoot.Test.OtherDatabase.Repository
+namespace SummerBoot.Test.Sqlite.Repository
 {
 
     [AutoRepository]

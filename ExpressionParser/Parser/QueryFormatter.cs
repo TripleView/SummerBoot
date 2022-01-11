@@ -571,6 +571,18 @@ namespace ExpressionParser.Parser
                         columnSetValueClauses.Add(columnSetValueClause);
                         _sb.Clear();
                     }
+                }else if (selectItem.Select.Body is MemberExpression memberExpression)
+                {
+                    var bodyResultExpression = this.Visit(memberExpression);
+                    if (bodyResultExpression is ColumnExpression columnExpression)
+                    {
+                        this.VisitColumn(columnExpression);
+                        _sb.Append("=");
+                        _sb.Append(BoxParameter(selectItem.Value));
+                        var columnSetValueClause = _sb.ToString();
+                        columnSetValueClauses.Add(columnSetValueClause);
+                        _sb.Clear();
+                    }
                 }
                 else
                 {

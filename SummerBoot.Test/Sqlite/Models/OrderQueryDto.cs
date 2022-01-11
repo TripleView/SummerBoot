@@ -1,4 +1,4 @@
-﻿namespace SummerBoot.Test.OtherDatabase.Models
+﻿namespace SummerBoot.Test.Sqlite.Models
 {
     public class OrderQueryDto
     {

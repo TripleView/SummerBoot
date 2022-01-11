@@ -1,7 +1,7 @@
 ﻿using SummerBoot.Repository;
-using SummerBoot.Test.OtherDatabase.Models;
+using SummerBoot.Test.Sqlite.Models;
 
-namespace SummerBoot.Test.OtherDatabase.Repository
+namespace SummerBoot.Test.Sqlite.Repository
 {
     [AutoRepository]
     public interface IOrderDetailRepository:IBaseRepository<OrderDetail>

@@ -1,15 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SummerBoot.Test;
-using SummerBoot.Test.OtherDatabase.Models;
-using System;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
 
-namespace SummerBoot.Test.OtherDatabase.Db
+namespace SummerBoot.Test.SqlServer.Db
 {
     public class SqliteDb:DbContext
     {
+
+        private string connectionString;
+
+        public SqliteDb(string connectionString)
+        {
+            this.connectionString = connectionString;
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var connectionString = MyConfiguration.GetConfiguration("sqliteDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentNullException("sqlite connectionString must not be null");
