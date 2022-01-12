@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 using System.Reflection;
 using ExpressionParser.Util;
@@ -77,6 +78,31 @@ namespace ExpressionParser.Parser
             }
         }
 
+        /// <summary>
+        /// 判断是否为数据库自增
+        /// </summary>
+        public bool IsDatabaseGeneratedIdentity
+        {
+            get
+            {
+                if (MemberInfo == null)
+                {
+                    return false;
+                }
+                var databaseGenerated = MemberInfo.GetCustomAttribute<DatabaseGeneratedAttribute>();
+                if (databaseGenerated != null)
+                {
+                    var databaseGeneratedValue =
+                        databaseGenerated.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity;
+                    if (databaseGeneratedValue)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
         /// <summary>
         /// 判断是否为可空类型
         /// </summary>

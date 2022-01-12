@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using ExpressionParser.Util;
 
@@ -17,6 +20,47 @@ namespace ExpressionParser.Parser.Dialect
             return "select SCOPE_IDENTITY() id";
         }
 
+        public override DbQueryResult Insert<T>(T insertEntity)
+        {
+            Clear();
+            var table = this.getTableExpression(typeof(T));
+            var tableName = BoxTableNameOrColumnName(table.Name);
+
+            var parameterNameList = new List<string>();
+            var columnNameList = new List<string>();
+
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id" && it.MemberInfo is PropertyInfo);
+
+            foreach (var column in table.Columns)
+            {
+                if (keyColumn!=null&& keyColumn == column)
+                {
+                    continue;
+                }
+                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                columnNameList.Add(columnName);
+                var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                parameterNameList.Add(parameterName);
+            }
+
+            _sb.Append($"insert into {tableName} ({string.Join(",", columnNameList)}) values ({string.Join(",", parameterNameList)})");
+
+            var result = new DbQueryResult()
+            {
+                Sql = this._sb.ToString().Trim(),
+                SqlParameters = this.sqlParameters
+            };
+
+          
+            if (keyColumn != null)
+            {
+                result.LastInsertIdSql = GetLastInsertIdSql();
+                result.IdKeyPropertyInfo = keyColumn.MemberInfo as PropertyInfo;
+                result.IdName = keyColumn.ColumnName;
+            }
+
+            return result;
+        }
         /// <summary>
         /// 有跳过的分页
         /// </summary>

@@ -1,21 +1,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ExpressionParser.Parser;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
+using MySql.Data.MySqlClient;
 using SummerBoot.Core;
 using SummerBoot.Repository;
-using SummerBoot.Test.SqlServer.Db;
-using SummerBoot.Test.SqlServer.Models;
-using SummerBoot.Test.SqlServer.Repository;
+using SummerBoot.Test.Mysql.Db;
+using SummerBoot.Test.Mysql.Models;
+using SummerBoot.Test.Mysql.Repository;
 using Xunit;
 
-namespace SummerBoot.Test.SqlServer
+namespace SummerBoot.Test.Mysql
 {
     [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
     public class RepositoryTest
@@ -23,7 +23,7 @@ namespace SummerBoot.Test.SqlServer
         private IServiceProvider serviceProvider;
 
         [Fact,Order(10)]
-        public void TestSqlServer()
+        public void TestMysql()
         {
             InitDatabase();
             TestRepository();
@@ -31,7 +31,7 @@ namespace SummerBoot.Test.SqlServer
         }
 
         [Fact, Order(2)]
-        public async Task TestSqlServerAsync()
+        public async Task TestMysqlAsync()
         {
             InitDatabase();
              await TestRepositoryAsync();
@@ -40,7 +40,7 @@ namespace SummerBoot.Test.SqlServer
         private void InitDatabase()
         {
             //初始化数据库
-            using (var database = new SqlServerDb())    //新增
+            using (var database = new MysqlDb())    //新增
             {
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
@@ -49,15 +49,15 @@ namespace SummerBoot.Test.SqlServer
             var services = new ServiceCollection();
 
             services.AddSummerBoot();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("Sqlserver connectionString must not be null");
+                throw new ArgumentNullException("mysql connectionString must not be null");
             }
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(SqlConnection);
+                it.DbConnectionType = typeof(MySqlConnection);
                 it.ConnectionString = connectionString;
             });
 
@@ -179,7 +179,7 @@ namespace SummerBoot.Test.SqlServer
             //0-99岁，大于5的只有94个
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
-
+            
             //test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
                 .ExecuteUpdateAsync();

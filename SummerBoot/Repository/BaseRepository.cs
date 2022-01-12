@@ -177,6 +177,26 @@ namespace SummerBoot.Repository
                     dbConnection.Execute(internalResult.Sql, t, transaction: dbTransaction);
                 }
             }
+            else if (databaseType == DatabaseType.SqlServer|| databaseType == DatabaseType.Mysql)
+            {
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
+                    var dynamicParameters = new DynamicParameters(t);
+                    //dynamicParameters.Add("id", null);
+                    var multiResult = dbConnection.QueryMultiple(sql, dynamicParameters, transaction: dbTransaction);
+                    var id = multiResult.Read().FirstOrDefault()?.id;
+
+                    if (id != null)
+                    {
+                        internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+                    }
+                }
+                else
+                {
+                    dbConnection.Execute(internalResult.Sql, t, transaction: dbTransaction);
+                }
+            }
 
             CloseDb();
             return t;
@@ -318,6 +338,26 @@ namespace SummerBoot.Repository
                 else
                 {
                     await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
+                }
+            }
+            else if (databaseType == DatabaseType.SqlServer|| databaseType == DatabaseType.Mysql)
+            {
+                if (internalResult.IdKeyPropertyInfo != null)
+                {
+                    var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
+                    var dynamicParameters = new DynamicParameters(t);
+                  
+                    var multiResult =await dbConnection.QueryMultipleAsync(sql, dynamicParameters, transaction: dbTransaction);
+                    var id = multiResult.Read().FirstOrDefault()?.id;
+
+                    if (id != null)
+                    {
+                        internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+                    }
+                }
+                else
+                {
+                   await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
                 }
             }
 

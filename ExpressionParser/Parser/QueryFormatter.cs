@@ -20,7 +20,7 @@ namespace ExpressionParser.Parser
 
         protected readonly StringBuilder _sb = new StringBuilder();
 
-        private readonly List<SqlParameter> sqlParameters = new List<SqlParameter>();
+        protected readonly List<SqlParameter> sqlParameters = new List<SqlParameter>();
 
         private int parameterIndex = 0;
         private int selectIndex = 0;
@@ -402,12 +402,12 @@ namespace ExpressionParser.Parser
             return whereExpression;
         }
 
-        private TableExpression getTableExpression(Type type)
+        protected TableExpression getTableExpression(Type type)
         {
             return new TableExpression(type);
         }
 
-        private void Clear()
+        protected void Clear()
         {
             this._sb.Clear();
             this.sqlParameters.Clear();

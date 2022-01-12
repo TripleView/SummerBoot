@@ -1,7 +1,7 @@
 ﻿using SummerBoot.Repository;
-using SummerBoot.Test.SqlServer.Models;
+using SummerBoot.Test.Mysql.Models;
 
-namespace SummerBoot.Test.SqlServer.Repository
+namespace SummerBoot.Test.Mysql.Repository
 {
     [AutoRepository]
     public interface IOrderHeaderRepository:IBaseRepository<OrderHeader>

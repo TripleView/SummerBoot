@@ -1,25 +1,19 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
+using SummerBoot.Test.Mysql.Models;
 
-namespace SummerBoot.Test.SqlServer.Db
+namespace SummerBoot.Test.Mysql.Db
 {
-    public class SqliteDb:DbContext
+    public class MysqlDb : DbContext
     {
-
-        private string connectionString;
-
-        public SqliteDb(string connectionString)
-        {
-            this.connectionString = connectionString;
-        }
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("sqlite connectionString must not be null");
+                throw new ArgumentNullException("mysql connectionString must not be null");
             }
-            optionsBuilder.UseSqlite(connectionString);
+            optionsBuilder.UseMySQL(connectionString);
         }
 
         public DbSet<Customer> Customer { get; set; }

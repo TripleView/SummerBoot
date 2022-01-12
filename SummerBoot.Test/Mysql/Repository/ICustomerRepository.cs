@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
-using SummerBoot.Test.SqlServer.Models;
+using SummerBoot.Test.Mysql.Models;
 
-namespace SummerBoot.Test.SqlServer.Repository
+namespace SummerBoot.Test.Mysql.Repository
 {
     [AutoRepository]
     public interface ICustomerRepository : IBaseRepository<Customer>

@@ -19,10 +19,12 @@ namespace SqlParser.Dialect
                 SqlParameters = new List<SqlParameter>()
             };
 
-            if (!sql.ToLower().Contains("select"))
+            if (sql.Substring(0,6).ToLower()!="select")
             {
                 throw new NotSupportedException("must be select sql");
             }
+
+            sql = sql.Insert(sql.IndexOf("select") + 6, " TOP 100 PERCENT ");
 
             var pageSkip = (page - 1) * pageSize;
             var sqlOrderBy = GetOrderByClause(sql);
@@ -87,7 +89,8 @@ namespace SqlParser.Dialect
 
             var columnsOnly = $"sbInner.* FROM ({sqlOrderByRemoved}) sbInner";
 
-            result.PageSql = $"select * from (select row_number() over ({sqlOrderBy}) pageNo, {columnsOnly}) sbOuter where pageNo > {BoxPageSizeName} and pageNo <= {BoxPageSkipName} + {BoxPageSizeName}";
+            result.PageSql = $"select * from (select row_number() over ({sqlOrderBy}) pageNo, {columnsOnly}) sbOuter where pageNo > {BoxPageSkipName} and pageNo <= {BoxPageSkipName} + {BoxPageSizeName}";
+            
             result.CountSql = $"select count(1) from ({sql}) sbCount";
 
             return result;
