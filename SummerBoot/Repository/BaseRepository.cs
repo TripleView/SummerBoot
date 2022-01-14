@@ -52,7 +52,7 @@ namespace SummerBoot.Repository
         private DatabaseType databaseType;
         private int cmdTimeOut = 1200;
 
-        public override int Execute(DbQueryResult param)
+        public override int InternalExecute(DbQueryResult param)
         {
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
@@ -61,7 +61,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public override async Task<int> ExecuteAsync(DbQueryResult param)
+        public override async Task<int> InternalExecuteAsync(DbQueryResult param)
         {
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
@@ -70,7 +70,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public override List<TResult> QueryList<TResult>(DbQueryResult param)
+        public override List<TResult> InternalQueryList<TResult>(DbQueryResult param)
         {
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
@@ -81,7 +81,101 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public override TResult Query<TResult>(DbQueryResult param)
+        /// <summary>
+        /// 查询列表
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public List<TResult> QueryList<TResult>(string sql, object param = null)
+        {
+            OpenDb();
+
+            var result = dbConnection.Query<TResult>(sql, param, dbTransaction).ToList();
+
+            CloseDb();
+            return result;
+        }
+
+        /// <summary>
+        /// 查询列表
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public async Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null)
+        {
+            OpenDb();
+            var result =(await dbConnection.QueryAsync<TResult>(sql, param, dbTransaction)).ToList();
+            CloseDb();
+            return result;
+        }
+
+        /// <summary>
+        /// 查询单个结果
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public TResult QueryFirstOrDefault<TResult>(string sql, object param = null)
+        {
+            OpenDb();
+
+            var result = dbConnection.QueryFirstOrDefault<TResult>(sql, param, dbTransaction);
+
+            CloseDb();
+            return result;
+        }
+
+        /// <summary>
+        /// 查询单个结果
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public async Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null)
+        {
+            OpenDb();
+
+            var result =await dbConnection.QueryFirstOrDefaultAsync<TResult>(sql, param, dbTransaction);
+
+            CloseDb();
+            return result;
+        }
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public int Execute(string sql, object param = null)
+        {
+            OpenDb();
+            var result = dbConnection.Execute(sql, param, dbTransaction);
+            CloseDb();
+            return result;
+        }
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public async Task<int> ExecuteAsync(string sql, object param = null)
+        {
+            OpenDb();
+            var result =await dbConnection.ExecuteAsync(sql, param, dbTransaction);
+            CloseDb();
+            return result;
+        }
+
+        public override TResult InternalQuery<TResult>(DbQueryResult param)
         {
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
@@ -226,13 +320,14 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public void Update(T t)
+        public int Update(T t)
         {
             var internalResult = InternalUpdate(t);
 
             OpenDb();
-            dbConnection.Execute(internalResult.Sql, t);
+            var result= dbConnection.Execute(internalResult.Sql, t);
             CloseDb();
+            return result;
         }
 
         public void Delete(T t)
@@ -389,13 +484,14 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task UpdateAsync(T t)
+        public async Task<int> UpdateAsync(T t)
         {
             var internalResult = InternalUpdate(t);
 
             OpenDb();
-            await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            var result= await dbConnection.ExecuteAsync(internalResult.Sql, t);
             CloseDb();
+            return result;
         }
 
         public async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
@@ -409,14 +505,14 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task DeleteAsync(T t)
+        public async Task<int> DeleteAsync(T t)
         {
             var internalResult = InternalDelete(t);
 
             OpenDb();
-            await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            var result= await dbConnection.ExecuteAsync(internalResult.Sql, t);
             CloseDb();
-
+            return result;
         }
 
         public async Task<T> GetAsync(dynamic id)

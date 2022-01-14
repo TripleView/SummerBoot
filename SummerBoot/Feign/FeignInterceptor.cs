@@ -22,12 +22,12 @@ namespace SummerBoot.Feign
             //if (isAsyncType)
             //{
             //    var proceedIno= invocation.CaptureProceedInfo();
-            //    var result= await base.ExecuteAsync(method, args, ServiceProvider);
+            //    var result= await base.InternalExecuteAsync(method, args, ServiceProvider);
             //    invocation.ReturnValue = result;
             //}
             //else
             //{
-            //    invocation.ReturnValue = base.ExecuteAsync(method, args, ServiceProvider).GetAwaiter().GetResult();
+            //    invocation.ReturnValue = base.InternalExecuteAsync(method, args, ServiceProvider).GetAwaiter().GetResult();
             //}
             
         }

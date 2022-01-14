@@ -30,22 +30,22 @@ namespace ExpressionParser.Parser
             Expression = Expression.Constant(this);
         }
 
-        public virtual Task<int> ExecuteAsync(DbQueryResult param)
+        public virtual Task<int> InternalExecuteAsync(DbQueryResult param)
         {
             return default;
         }
 
-        public virtual int Execute(DbQueryResult param)
+        public virtual int InternalExecute(DbQueryResult param)
         {
             return default;
         }
 
-        public virtual TResult Query<TResult>(DbQueryResult param)
+        public virtual TResult InternalQuery<TResult>(DbQueryResult param)
         {
             return default;
         }
 
-        public virtual List<TResult> QueryList<TResult>(DbQueryResult param)
+        public virtual List<TResult> InternalQueryList<TResult>(DbQueryResult param)
         {
             return default;
         }
@@ -70,7 +70,7 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
-                var result = dbQueryProvider.linkRepository.QueryList<T>(dbParam);
+                var result = dbQueryProvider.linkRepository.InternalQueryList<T>(dbParam);
                 //var result = new List<T>();
                 if (result == null)
                     yield break;
@@ -161,7 +161,7 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                var dbQueryResult=  dbQueryProvider.queryFormatter.ExecuteUpdate(Expression,this.SelectItems);
-               return dbQueryProvider.linkRepository.Execute(dbQueryResult);
+               return dbQueryProvider.linkRepository.InternalExecute(dbQueryResult);
             }
 
             return 0;
@@ -177,7 +177,7 @@ namespace ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult);
+                return await dbQueryProvider.linkRepository.InternalExecuteAsync(dbQueryResult);
             }
 
             return 0;

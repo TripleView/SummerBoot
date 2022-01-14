@@ -79,7 +79,9 @@ namespace SummerBoot.Test.SqlServer
                 .SetValue(it => it.Age, 5)
                 .SetValue(it => it.TotalConsumptionAmount, 100)
                 .ExecuteUpdateAsync();
-            
+
+            var ccc = customerRepository.Where(it => it.Name == "testCustomer").Distinct().FirstOrDefault();
+
             var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single((IEnumerable)age5Customers);
             Assert.Equal(5, age5Customers[0].Age);
@@ -123,10 +125,12 @@ namespace SummerBoot.Test.SqlServer
             {
                 uow.BeginTransaction();
                 await customerRepository.InsertAsync(new Customer() { Name = "testCustomer2" });
-                var orderDetail3 = new OrderDetail();
-                orderDetail3.OrderHeaderId = orderHeader.Id;
-                orderDetail3.ProductName = "ball";
-                orderDetail3.Quantity = 3;
+                var orderDetail3 = new OrderDetail
+                {
+                    OrderHeaderId = orderHeader.Id,
+                    ProductName = "ball",
+                    Quantity = 3
+                };
                 await orderDetailRepository.InsertAsync(orderDetail3);
                 uow.Commit();
             }
@@ -180,6 +184,8 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
 
+            //var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).Take(10).ToList();
+
             //test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
                 .ExecuteUpdateAsync();
@@ -203,11 +209,13 @@ namespace SummerBoot.Test.SqlServer
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
             //test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
-
-            customerRepository.Where(it=>it.Name == "testCustomer")
+            
+           var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
                 .SetValue(it=>it.Age,5)
                 .SetValue(it=>it.TotalConsumptionAmount,100)
                 .ExecuteUpdate();

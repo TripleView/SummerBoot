@@ -12,7 +12,7 @@ namespace SummerBoot.Repository
         T Get(dynamic id);
 
         List<T> GetAll();
-        void Update(T t);
+        int Update(T t);
         void Update(List<T> list);
         void Delete(T t);
         void Delete(List<T> list);
@@ -26,10 +26,10 @@ namespace SummerBoot.Repository
         #region async
         Task<T> GetAsync(dynamic id);
         Task<List<T>> GetAllAsync();
-        Task UpdateAsync(T t);
+        Task<int> UpdateAsync(T t);
         Task UpdateAsync(List<T> list);
 
-        Task DeleteAsync(T t);
+        Task<int> DeleteAsync(T t);
         Task<int> DeleteAsync(Expression<Func<T, bool>> predicate);
         Task DeleteAsync(List<T> list);
 

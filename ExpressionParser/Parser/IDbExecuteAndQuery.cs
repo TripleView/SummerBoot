@@ -5,10 +5,10 @@ namespace ExpressionParser.Parser
 {
     public interface IDbExecuteAndQuery
     {
-        int Execute(DbQueryResult param);
-        Task<int> ExecuteAsync(DbQueryResult param);
-        TResult Query<TResult>(DbQueryResult param);
+        int InternalExecute(DbQueryResult param);
+        Task<int> InternalExecuteAsync(DbQueryResult param);
+        TResult InternalQuery<TResult>(DbQueryResult param);
 
-        List<TResult> QueryList<TResult>(DbQueryResult param);
+        List<TResult> InternalQueryList<TResult>(DbQueryResult param);
     }
 }

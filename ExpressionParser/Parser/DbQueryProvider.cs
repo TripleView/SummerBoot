@@ -74,7 +74,7 @@ namespace ExpressionParser.Parser
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();
 
-            return linkRepository.Query<TResult>(param);
+            return linkRepository.InternalQuery<TResult>(param);
         }
     }
 }
