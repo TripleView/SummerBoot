@@ -1,11 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data.SQLite;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using ExpressionParser.Parser;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
@@ -13,6 +5,13 @@ using SummerBoot.Repository;
 using SummerBoot.Test.SqlServer.Db;
 using SummerBoot.Test.SqlServer.Models;
 using SummerBoot.Test.SqlServer.Repository;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using SummerBoot.Repository.ExpressionParser.Parser;
 using Xunit;
 
 namespace SummerBoot.Test.SqlServer

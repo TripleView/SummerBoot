@@ -1,11 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using ExpressionParser.Parser;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using MySql.Data.MySqlClient;
 using SummerBoot.Core;
@@ -13,6 +5,13 @@ using SummerBoot.Repository;
 using SummerBoot.Test.Mysql.Db;
 using SummerBoot.Test.Mysql.Models;
 using SummerBoot.Test.Mysql.Repository;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using SummerBoot.Repository.ExpressionParser.Parser;
 using Xunit;
 
 namespace SummerBoot.Test.Mysql

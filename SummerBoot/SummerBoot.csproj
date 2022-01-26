@@ -51,11 +51,6 @@
     <PackageReference Include="Polly" Version="7.2.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\ExpressionParser\ExpressionParser.csproj" />
-    <ProjectReference Include="..\SqlParse\SqlParser.csproj" />
-  </ItemGroup>
   
 
 

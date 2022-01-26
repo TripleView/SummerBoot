@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Castle.DynamicProxy;
@@ -13,6 +14,11 @@ namespace SummerBoot.Core
             if (enumerable != null)
                 return !enumerable.GetEnumerator().MoveNext();
             return true;
+        }
+
+        public static bool IsNotNullAndNotEmpty<T>(this List<T> list)
+        {
+            return list != null && list.Count > 0;
         }
     }
 }

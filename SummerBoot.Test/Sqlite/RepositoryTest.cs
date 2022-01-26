@@ -1,16 +1,16 @@
+using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Core;
+using SummerBoot.Repository;
+using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Test.Sqlite.Db;
+using SummerBoot.Test.Sqlite.Models;
+using SummerBoot.Test.Sqlite.Repository;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using ExpressionParser.Parser;
-using Microsoft.Extensions.DependencyInjection;
-using SummerBoot.Core;
-using SummerBoot.Repository;
-using SummerBoot.Test.Sqlite.Db;
-using SummerBoot.Test.Sqlite.Models;
-using SummerBoot.Test.Sqlite.Repository;
 using Xunit;
 
 namespace SummerBoot.Test.Sqlite

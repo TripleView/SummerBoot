@@ -21,6 +21,11 @@ namespace SummerBoot.Feign
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
             var feignClientAttribute = interfaceType.GetCustomAttribute<FeignClientAttribute>();
+            if (feignClientAttribute == null)
+            {
+                throw new Exception(method.Name + " have not FeignClientAttribute");
+            }
+
             var name = feignClientAttribute.Name;
             var fallBack = feignClientAttribute.FallBack;
             object interfaceTarget;

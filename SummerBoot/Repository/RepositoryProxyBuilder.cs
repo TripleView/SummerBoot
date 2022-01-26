@@ -1,6 +1,6 @@
-﻿using Castle.DynamicProxy.Internal;
-using SummerBoot.Core;
+﻿using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Repository.ExpressionParser.Parser;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -9,8 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
-using Castle.Core.Logging;
-using ExpressionParser.Parser;
 
 namespace SummerBoot.Repository
 {
@@ -70,7 +68,7 @@ namespace SummerBoot.Repository
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType(typeName, newTypeAttribute, parentType, interfaceTypes);
 
-            var allInterfaces = targetType.GetAllInterfaces();
+            var allInterfaces = targetType.GetInterfaces();
             
             List<MethodInfo> targetMethods = new List<MethodInfo>(){ };
             targetMethods.AddRange(targetType.GetMethods());
@@ -98,7 +96,7 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         targetMethods.AddRange(typeof(IQueryable).GetMethods());
-                        targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
+                        targetMethods.AddRange(typeof(ExpressionParser.Parser.IRepository<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
                         break;
                     }

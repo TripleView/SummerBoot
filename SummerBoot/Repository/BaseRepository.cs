@@ -1,6 +1,4 @@
 ﻿using Dapper;
-using ExpressionParser.Base;
-using ExpressionParser.Parser;
 using SummerBoot.Core;
 using System;
 using System.Collections.Generic;
@@ -8,10 +6,13 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using DatabaseType = SummerBoot.Repository.DatabaseType;
+using DbQueryResult = SummerBoot.Repository.ExpressionParser.Parser.DbQueryResult;
+using SqlParameter = SummerBoot.Repository.ExpressionParser.Parser.SqlParameter;
 
 namespace SummerBoot.Repository
 {
-    public class BaseRepository<T> : Repository<T>, IBaseRepository<T> where T : class
+    public class BaseRepository<T> : ExpressionParser.Parser.Repository<T>, IBaseRepository<T> where T : class
     {
 
         public BaseRepository(IUnitOfWork uow, IDbFactory dbFactory, RepositoryOption repositoryOption)

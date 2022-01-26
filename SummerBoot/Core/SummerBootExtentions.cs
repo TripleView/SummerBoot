@@ -1006,6 +1006,33 @@ namespace SummerBoot.Core
             services.AddSbScoped<TransactionalInterceptor>();
             services.AddLogging();
 
+            var types = Assembly.GetCallingAssembly().GetExportedTypes()
+                .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
+            var autoRegisterTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<AutoRegisterAttribute>() != null).ToList();
+
+            autoRegisterTypes.ForEach(it =>
+            {
+                var autoRegisterAttribute = it.GetCustomAttribute<AutoRegisterAttribute>();
+                if (autoRegisterAttribute == null) return;
+                var interfaceType = autoRegisterAttribute.InterfaceType;
+                if (interfaceType == null) throw new ArgumentNullException(it.Name + "对应的接口不能为空");
+                if (!it.GetInterfaces().Contains(interfaceType)) throw new Exception(it.Name + "必须继承接口" + interfaceType.Name);
+
+                switch (autoRegisterAttribute.ServiceLifetime)
+                {
+                    case ServiceLifetime.Scoped:
+                        services.AddScoped(interfaceType, it);
+                        break;
+                    case ServiceLifetime.Singleton:
+                        services.AddSingleton(interfaceType, it);
+                        break;
+                    case ServiceLifetime.Transient:
+                        services.AddTransient(interfaceType, it);
+                        break;
+                }
+               
+            });
+
             return services;
         }
 
@@ -1041,19 +1068,6 @@ namespace SummerBoot.Core
             {
                 services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
             }
-
-            var manualRepositoryTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<ManualRepositoryAttribute>() != null).ToList();
-
-            manualRepositoryTypes.ForEach(it =>
-            {
-                var repositoryAttribute = it.GetCustomAttribute<ManualRepositoryAttribute>();
-                if (repositoryAttribute == null) return;
-                var interfaceType = repositoryAttribute.InterfaceType;
-                if (interfaceType == null) throw new ArgumentNullException("仓储" + it.Name + "对应的接口不能为空");
-                if (!it.GetInterfaces().Contains(interfaceType)) throw new Exception("仓储" + it.Name + "必须继承接口" + interfaceType.Name);
-
-                services.AddScoped(interfaceType, it);
-            });
 
             return services;
         }

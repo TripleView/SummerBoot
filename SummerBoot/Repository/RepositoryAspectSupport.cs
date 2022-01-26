@@ -11,10 +11,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using SqlOnline.Utils;
-using SqlParser.Dialect;
-using SqlParser.Dto;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Repository.SqlParser.Dialect;
+using SummerBoot.Repository.SqlParser.Dto;
 
 namespace SummerBoot.Repository
 {
