@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 using System.Reflection;
 using SummerBoot.Core;
+using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.ExpressionParser.Util;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
@@ -76,6 +77,22 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 var keyAttribute = MemberInfo.GetCustomAttribute<KeyAttribute>();
                 return keyAttribute != null;
+            }
+        }
+
+        /// <summary>
+        /// 判断update时是否忽略
+        /// </summary>
+        public bool IsIgnoreWhenUpdate
+        {
+            get
+            {
+                if (MemberInfo == null)
+                {
+                    return false;
+                }
+                var ignoreWhenUpdateAttribute = MemberInfo.GetCustomAttribute<IgnoreWhenUpdateAttribute>();
+                return ignoreWhenUpdateAttribute != null;
             }
         }
 

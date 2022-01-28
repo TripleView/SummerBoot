@@ -6,7 +6,7 @@ namespace SummerBoot.Repository.ExpressionParser.Util
     public static class DbQueryUtil
     {
         /// <summary>
-        /// 获取列明
+        /// 获取列名
         /// </summary>
         /// <param name="memberInfo"></param>
         /// <returns></returns>

@@ -18,7 +18,7 @@ namespace SummerBoot.Test.SqlServer.Repository
         Task<int> CustomQueryAsync();
     }
 
-    [ManualRepository(typeof(ICustomCustomerRepository))]
+    [AutoRegister(typeof(ICustomCustomerRepository))]
     public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustomerRepository
     {
         public CustomCustomerRepository(IUnitOfWork uow, IDbFactory dbFactory, RepositoryOption repositoryOption) : base(uow, dbFactory, repositoryOption)

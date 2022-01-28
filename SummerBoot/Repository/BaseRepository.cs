@@ -19,40 +19,20 @@ namespace SummerBoot.Repository
         {
             this.uow = uow;
             this.dbFactory = dbFactory;
+            this.repositoryOption = repositoryOption;
 
-            databaseType = DatabaseType.Mysql;
-
-            if (repositoryOption.IsMysql)
-            {
-                databaseType = DatabaseType.Mysql;
-            }
-
-            if (repositoryOption.IsOracle)
-            {
-                databaseType = DatabaseType.Oracle;
-            }
-
-
-            if (repositoryOption.IsSqlServer)
-            {
-                databaseType = DatabaseType.SqlServer;
-            }
-
-            if (repositoryOption.IsSqlite)
-            {
-                databaseType = DatabaseType.Sqlite;
-            }
+            databaseType = repositoryOption.DatabaseType;
 
             base.Init(databaseType);
         }
 
-        private IUnitOfWork uow;
-        private IDbFactory dbFactory;
+        protected IUnitOfWork uow;
+        protected IDbFactory dbFactory;
         protected IDbConnection dbConnection;
         protected IDbTransaction dbTransaction;
-        private DatabaseType databaseType;
-        private int cmdTimeOut = 1200;
-
+        protected DatabaseType databaseType;
+        protected int cmdTimeOut = 1200;
+        protected RepositoryOption repositoryOption;
         public override int InternalExecute(DbQueryResult param)
         {
             OpenDb();
@@ -66,7 +46,7 @@ namespace SummerBoot.Repository
         {
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-            var result =await dbConnection.ExecuteAsync(param.Sql, dynamicParameters, dbTransaction);
+            var result = await dbConnection.ExecuteAsync(param.Sql, dynamicParameters, dbTransaction);
             CloseDb();
             return result;
         }
@@ -109,7 +89,7 @@ namespace SummerBoot.Repository
         public async Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null)
         {
             OpenDb();
-            var result =(await dbConnection.QueryAsync<TResult>(sql, param, dbTransaction)).ToList();
+            var result = (await dbConnection.QueryAsync<TResult>(sql, param, dbTransaction)).ToList();
             CloseDb();
             return result;
         }
@@ -142,7 +122,7 @@ namespace SummerBoot.Repository
         {
             OpenDb();
 
-            var result =await dbConnection.QueryFirstOrDefaultAsync<TResult>(sql, param, dbTransaction);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<TResult>(sql, param, dbTransaction);
 
             CloseDb();
             return result;
@@ -171,7 +151,7 @@ namespace SummerBoot.Repository
         public async Task<int> ExecuteAsync(string sql, object param = null)
         {
             OpenDb();
-            var result =await dbConnection.ExecuteAsync(sql, param, dbTransaction);
+            var result = await dbConnection.ExecuteAsync(sql, param, dbTransaction);
             CloseDb();
             return result;
         }
@@ -232,6 +212,10 @@ namespace SummerBoot.Repository
         public T Insert(T t)
         {
             var internalResult = InternalInsert(t);
+            if (t is BaseEntity baseEntity && repositoryOption.AutoAddCreateOn)
+            {
+                baseEntity.CreateOn = DateTime.Now;
+            }
 
             OpenDb();
 
@@ -242,7 +226,7 @@ namespace SummerBoot.Repository
                 {
                     dynamicParameters.Add(internalResult.IdName, 0, dbType: DbType.Int32, direction: ParameterDirection.Output);
                 }
-                
+
                 var sql = internalResult.Sql;
                 dbConnection.Execute(sql, dynamicParameters, transaction: dbTransaction);
 
@@ -272,7 +256,7 @@ namespace SummerBoot.Repository
                     dbConnection.Execute(internalResult.Sql, t, transaction: dbTransaction);
                 }
             }
-            else if (databaseType == DatabaseType.SqlServer|| databaseType == DatabaseType.Mysql)
+            else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql)
             {
                 if (internalResult.IdKeyPropertyInfo != null)
                 {
@@ -323,36 +307,47 @@ namespace SummerBoot.Repository
 
         public int Update(T t)
         {
+            if (t is BaseEntity baseEntity && repositoryOption.AutoUpdateLastUpdateOn)
+            {
+                baseEntity.LastUpdateOn = DateTime.Now;
+            }
+
             var internalResult = InternalUpdate(t);
 
             OpenDb();
-            var result= dbConnection.Execute(internalResult.Sql, t);
+            var result = dbConnection.Execute(internalResult.Sql, t);
             CloseDb();
             return result;
         }
 
-        public void Delete(T t)
+        public int Delete(T t)
         {
+            if (t is BaseEntity baseEntity && repositoryOption.IsUseSoftDelete)
+            {
+                baseEntity.Active = 0;
+                return this.Update(t);
+            }
+
             var internalResult = InternalDelete(t);
 
             OpenDb();
-            dbConnection.Execute(internalResult.Sql, t);
-            CloseDb();
-
-        }
-
-        public int Delete(Expression<Func<T, bool>> predicate)
-        { 
-            var exp= this.Where(predicate).Expression;
-            var internalResult = InternalDelete(exp);
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
-            OpenDb();
-            var result= dbConnection.Execute(internalResult.Sql, dynamicParameters);
+            var result = dbConnection.Execute(internalResult.Sql, t);
             CloseDb();
             return result;
         }
 
-       
+        public int Delete(Expression<Func<T, bool>> predicate)
+        {
+            var exp = this.Where(predicate).Expression;
+            var internalResult = InternalDelete(exp);
+            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
+            OpenDb();
+            var result = dbConnection.Execute(internalResult.Sql, dynamicParameters);
+            CloseDb();
+            return result;
+        }
+
+
         public T Get(dynamic id)
         {
             DbQueryResult internalResult = InternalGet(id);
@@ -397,6 +392,11 @@ namespace SummerBoot.Repository
         {
             var internalResult = InternalInsert(t);
 
+            if (t is BaseEntity baseEntity && repositoryOption.AutoAddCreateOn)
+            {
+                baseEntity.CreateOn = DateTime.Now;
+            }
+
             OpenDb();
 
             if (databaseType == DatabaseType.Oracle)
@@ -436,14 +436,14 @@ namespace SummerBoot.Repository
                     await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
                 }
             }
-            else if (databaseType == DatabaseType.SqlServer|| databaseType == DatabaseType.Mysql)
+            else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql)
             {
                 if (internalResult.IdKeyPropertyInfo != null)
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                  
-                    var multiResult =await dbConnection.QueryMultipleAsync(sql, dynamicParameters, transaction: dbTransaction);
+
+                    var multiResult = await dbConnection.QueryMultipleAsync(sql, dynamicParameters, transaction: dbTransaction);
                     var id = multiResult.Read().FirstOrDefault()?.id;
 
                     if (id != null)
@@ -453,7 +453,7 @@ namespace SummerBoot.Repository
                 }
                 else
                 {
-                   await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
+                    await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
                 }
             }
 
@@ -488,9 +488,13 @@ namespace SummerBoot.Repository
         public async Task<int> UpdateAsync(T t)
         {
             var internalResult = InternalUpdate(t);
+            if (t is BaseEntity baseEntity && repositoryOption.AutoUpdateLastUpdateOn)
+            {
+                baseEntity.LastUpdateOn = DateTime.Now;
+            }
 
             OpenDb();
-            var result= await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            var result = await dbConnection.ExecuteAsync(internalResult.Sql, t);
             CloseDb();
             return result;
         }
@@ -501,17 +505,23 @@ namespace SummerBoot.Repository
             var internalResult = InternalDelete(exp);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-           var result=  await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters);
+            var result = await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters);
             CloseDb();
             return result;
         }
 
         public async Task<int> DeleteAsync(T t)
         {
+            if (t is BaseEntity baseEntity && repositoryOption.IsUseSoftDelete)
+            {
+                baseEntity.Active = 0;
+                return await this.UpdateAsync(t);
+            }
+
             var internalResult = InternalDelete(t);
 
             OpenDb();
-            var result= await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            var result = await dbConnection.ExecuteAsync(internalResult.Sql, t);
             CloseDb();
             return result;
         }

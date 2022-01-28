@@ -13,7 +13,7 @@ namespace SummerBoot.Repository
         List<T> GetAll();
         int Update(T t);
         void Update(List<T> list);
-        void Delete(T t);
+        int Delete(T t);
         void Delete(List<T> list);
 
         int Delete(Expression<Func<T, bool>> predicate);

@@ -1,5 +1,5 @@
 # SummerBoot的核心理念
-> 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于让.net开发变得更简单。
+> 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单。
 
 # 加入QQ群反馈建议
 群号:799648362
@@ -14,6 +14,9 @@ net core 3.1,net 5,net 6
 
 ## 说明
 这是一个全声明式框架，用户只需要声明接口，框架会通过Reflection Emit技术，自动生成接口的实现类。
+
+# SummerBoot中的一些人性化的操作
+ 1. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的类型和服务的生命周期ServiceLifetime（周期默认为scope级别）
 
 # SummerBoot 如何操作数据库
 底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码，同时基于工作单元模式实现了事务。不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
@@ -31,11 +34,18 @@ services.AddSummerBootRepository(it =>
     it.DbConnectionType = typeof(SqliteConnection);
     //添加数据库连接字符串
     it.ConnectionString = "Data source=./mydb.db";
+	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity
+	it.AutoUpdateLastUpdateOn = true;
+	//update的时候自动更新最后更新时间字段，数据库实体类必须继承于BaseEntity
+	it.AutoAddCreateOn = true;
+	//启用软删除，数据库实体类必须继承于BaseEntity
+	it.IsUseSoftDelete = true;
 });
 
 ````
 ## 定义一个数据库实体类
-其中注解大部分来自于系统自带的命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等
+其中注解大部分来自于系统自带的命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
+同时SummerBoot自带了一个基础实体类BaseEntity，实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
 
 ````
 public class Customer
@@ -58,6 +68,7 @@ public class Customer
     public decimal TotalConsumptionAmount { set; get; }
 }
 ````
+
 ## 定义接口，并继承于IBaseRepository，同时添加AutoRepository注解表示让框架自动注册并生成实现类
 ````
 [AutoRepository]
@@ -136,7 +147,7 @@ customerRepository.Delete(customerList);
  var deleteCount = customerRepository.Delete(it => it.Age > 5);
 ````
 ### 改
-#### 1.1 接口自带了Update方法，可以更新单个实体，或者实体列表
+#### 1.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。
 ````
 customerRepository.Update(customer);
 
@@ -188,7 +199,7 @@ public interface ICustomCustomerRepository : IBaseRepository<Customer>
     Task<int> CustomQueryAsync();
 }
 ````
-#### 1.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加ManualRepository注解，注解的参数为这个类对应的自定义接口的类型，添加ManualRepository注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
+#### 1.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解，注解的参数为这个类对应的自定义接口的类型和服务的声明周期ServiceLifetime（周期默认为scope级别），添加AutoRegister注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
 
 ````
 [ManualRepository(typeof(ICustomCustomerRepository))]

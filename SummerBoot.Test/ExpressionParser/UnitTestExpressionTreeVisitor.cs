@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using SummerBoot.Repository;
+using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using Xunit;
@@ -42,6 +43,9 @@ namespace ExpressionParser.Test
         public string Name { get; set; }
         public int Age { get; set; }
         public bool HaveChildren { get; set; }
+
+        [IgnoreWhenUpdate]
+        public DateTime CreateOn { set; get; }
     }
     public class Pet
     {
@@ -1226,6 +1230,25 @@ namespace ExpressionParser.Test
             var r1MiddleResult = hrRepository.GetDbQueryDetail();
 
             Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@EmployeNo and [Name]=@Name", r1MiddleResult.Sql);
+        }
+
+        [Fact]
+        public void TestIgnoreWhenUpdate()
+        {
+            var hrRepository = new HrRepository();
+            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "ÕÅÈý", EmployeNo = "666",CreateOn = DateTime.Now};
+
+            hrRepository.InternalInsert(persion);
+
+            var r1MiddleResult = hrRepository.GetDbQueryDetail();
+
+            Assert.Equal("insert into [Hr2] ([hrEmployeeNo],[Name],[Age],[HaveChildren],[CreateOn]) values (@EmployeNo,@Name,@Age,@HaveChildren,@CreateOn)", r1MiddleResult.Sql);
+
+            hrRepository.InternalUpdate(persion);
+
+            var r2MiddleResult = hrRepository.GetDbQueryDetail();
+
+            Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@EmployeNo and [Name]=@Name", r2MiddleResult.Sql);
         }
 
         [Fact]

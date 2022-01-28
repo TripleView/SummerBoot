@@ -25,7 +25,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         private int parameterIndex = 0;
         private int selectIndex = 0;
-        
+
         protected string parameterPrefix;
         protected string leftQuote;
         protected string rightQuote;
@@ -79,14 +79,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         protected void RenameSelectExpressionInternalAlias(SelectExpression selectExpression)
         {
             var newAlias = this.GetNewAlias();
-            selectExpression.Columns.ForEach(it=>it.TableAlias=newAlias);
+            selectExpression.Columns.ForEach(it => it.TableAlias = newAlias);
             selectExpression.Alias = newAlias;
-            selectExpression.GroupBy.Select(it=>it.ColumnExpression).ToList().ForEach(it=>it.TableAlias=newAlias);
+            selectExpression.GroupBy.Select(it => it.ColumnExpression).ToList().ForEach(it => it.TableAlias = newAlias);
             selectExpression.OrderBy.Select(it => it.ColumnExpression).ToList().ForEach(it => it.TableAlias = newAlias);
             RenameWhereColumnsAlias(selectExpression.Where, newAlias);
         }
 
-        private void RenameWhereColumnsAlias(WhereExpression whereExpression,string alias)
+        private void RenameWhereColumnsAlias(WhereExpression whereExpression, string alias)
         {
             if (whereExpression == null)
             {
@@ -95,8 +95,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             if (whereExpression.Left != null && whereExpression.Right != null)
             {
-                this.RenameWhereColumnsAlias(whereExpression.Left,alias);
-             
+                this.RenameWhereColumnsAlias(whereExpression.Left, alias);
+
                 this.RenameWhereColumnsAlias(whereExpression.Right, alias);
             }
 
@@ -125,7 +125,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (expression is SelectExpression selectExpression)
             {
                 var result = this.VisitSelect(selectExpression);
-            }else if(expression is WhereExpression whereExpression)
+            }
+            else if (expression is WhereExpression whereExpression)
             {
                 var result = this.VisitWhere(whereExpression);
             }
@@ -225,7 +226,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             else
             {
-                if (!columnExpression.TableAlias.IsNullOrWhiteSpace()&&columnExpression.ColumnName!= "*")
+                if (!columnExpression.TableAlias.IsNullOrWhiteSpace() && columnExpression.ColumnName != "*")
                 {
                     tempStringBuilder.AppendFormat("{0}.{1}", BoxTableNameOrColumnName(columnExpression.TableAlias), BoxTableNameOrColumnName(columnExpression.ColumnName));
                 }
@@ -323,7 +324,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
             }
 
-            if (select.OrderBy.IsNotNullAndNotEmpty()&&!select.IsIgnoreOrderBy)
+            if (select.OrderBy.IsNotNullAndNotEmpty() && !select.IsIgnoreOrderBy)
             {
                 _sb.Append(" ORDER BY ");
                 for (var i = 0; i < select.OrderBy.Count; i++)
@@ -379,7 +380,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     _sb.Append("1=0");
                 }
-                
+
             }
             else if (whereExpression is WhereConditionExpression whereConditionExpression)
             {
@@ -431,7 +432,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 parameterNameList.Add(parameterName);
             }
 
-            _sb.Append($"insert into {tableName} ({string.Join(",",columnNameList)}) values ({string.Join(",",parameterNameList)})");
+            _sb.Append($"insert into {tableName} ({string.Join(",", columnNameList)}) values ({string.Join(",", parameterNameList)})");
 
             var result = new DbQueryResult()
             {
@@ -439,7 +440,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 SqlParameters = this.sqlParameters
             };
 
-            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id"&&it.MemberInfo is PropertyInfo);
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id" && it.MemberInfo is PropertyInfo);
             if (keyColumn != null)
             {
                 result.LastInsertIdSql = GetLastInsertIdSql();
@@ -459,7 +460,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var columnNameList = new List<string>();
             var keyColumnNameList = new List<string>();
 
-            var columns = table.Columns.Where(it => !it.IsKey).ToList();
+            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
 
             var keyColumnExpression = table.Columns.Where(it => it.IsKey).ToList();
 
@@ -474,7 +475,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
-                middleList.Add(columnName + "="+ parameterName);
+                middleList.Add(columnName + "=" + parameterName);
             }
 
             var keyList = new List<string>();
@@ -486,8 +487,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 keyList.Add(columnName + "=" + parameterName);
             }
 
-            _sb.Append($"update {tableName} set {string.Join(",",middleList)} where {string.Join(" and ", keyList)}");
-            
+            _sb.Append($"update {tableName} set {string.Join(",", middleList)} where {string.Join(" and ", keyList)}");
+
             var result = new DbQueryResult()
             {
                 Sql = this._sb.ToString().Trim(),
@@ -525,16 +526,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             Clear();
             var table = this.getTableExpression(typeof(T));
             var tableName = BoxTableNameOrColumnName(table.Name);
-        
-            var middleResult= this.Visit(exp);
+
+            var middleResult = this.Visit(exp);
             this.FormatWhere(middleResult);
             var whereSql = _sb.ToString();
-            
-           var deleteSql=$"delete from {tableName} where 1=1";
-           if (!string.IsNullOrWhiteSpace(whereSql))
-           {
-               deleteSql += $" and {whereSql}";
-           }
+
+            var deleteSql = $"delete from {tableName} where 1=1";
+            if (!string.IsNullOrWhiteSpace(whereSql))
+            {
+                deleteSql += $" and {whereSql}";
+            }
 
             var result = new DbQueryResult()
             {
@@ -544,7 +545,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return result;
         }
 
-        public DbQueryResult ExecuteUpdate<T>(Expression expression,List<SelectItem<T>> selectItems)
+        public DbQueryResult ExecuteUpdate<T>(Expression expression, List<SelectItem<T>> selectItems)
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
@@ -554,15 +555,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.FormatWhere(middleResult);
             var whereSql = _sb.ToString();
             _sb.Clear();
-           
+
             var columnSetValueClauses = new List<string>();
-            
+
             foreach (var selectItem in selectItems)
             {
-                if (selectItem.Select.Body is UnaryExpression unaryExpression&&unaryExpression.NodeType==ExpressionType.Convert)
+                if (selectItem.Select.Body is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
                 {
                     var body = unaryExpression.Operand;
-                    var bodyResultExpression= this.Visit(body);
+                    var bodyResultExpression = this.Visit(body);
                     if (bodyResultExpression is ColumnExpression columnExpression)
                     {
                         this.VisitColumn(columnExpression);
@@ -572,7 +573,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         columnSetValueClauses.Add(columnSetValueClause);
                         _sb.Clear();
                     }
-                }else if (selectItem.Select.Body is MemberExpression memberExpression)
+                }
+                else if (selectItem.Select.Body is MemberExpression memberExpression)
                 {
                     var bodyResultExpression = this.Visit(memberExpression);
                     if (bodyResultExpression is ColumnExpression columnExpression)
@@ -644,7 +646,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 columnNameList.Add(columnName);
             }
 
-            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey&&it.ColumnName.ToLower()=="id");
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id");
             if (keyColumn == null)
             {
                 throw new Exception("not exist key column like id");
