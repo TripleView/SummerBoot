@@ -83,7 +83,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return base.Visit(exp);
         }
 
-
         public virtual Expression VisitQuery(QueryExpression queryExpression)
         {
             return queryExpression;
@@ -878,6 +877,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected override Expression VisitUnary(UnaryExpression unaryExpression)
         {
+            //兼容active?可空类型=1这种情况
+            if (unaryExpression.NodeType == ExpressionType.Convert&& unaryExpression.Operand is ConstantExpression constantExpression)
+            {
+                return constantExpression;
+            }
+
             var operatorString = nodeTypeMappings[unaryExpression.NodeType];
 
             var operand = unaryExpression.Operand;
