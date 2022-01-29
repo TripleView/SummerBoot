@@ -15,7 +15,17 @@ using Xunit;
 
 namespace ExpressionParser.Test
 {
-
+    [Table("PERSON")]
+    public class OraclePerson
+    {
+        [Column("NAME")]
+        public string Name { get; set; }
+        [Key]
+        [Column("AGE")]
+        public int Age { get; set; }
+        [Column("HAVECHILDREN")]
+        public bool HaveChildren { get; set; }
+    }
     public class Person
     {
         public string Name { get; set; }
@@ -93,6 +103,21 @@ namespace ExpressionParser.Test
     public class MysqlPersonRepository : Repository<Person>, IPersonRepository
     {
         public MysqlPersonRepository() : base(DatabaseType.Mysql)
+        {
+
+        }
+        public void ExecuteDelete()
+        {
+
+        }
+    }
+    public interface IOraclePersonRepository : IRepository<OraclePerson>
+    {
+     
+    }
+    public class OraclePersonRepository : Repository<OraclePerson>, IOraclePersonRepository
+    {
+        public OraclePersonRepository() : base(DatabaseType.Oracle)
         {
 
         }
@@ -931,6 +956,25 @@ namespace ExpressionParser.Test
         }
 
         [Fact]
+        public void TestOracleFirstOrDefault()
+        {
+            var personRepository = new OraclePersonRepository();
+
+            var r1 = personRepository.FirstOrDefault();
+
+            var r1MiddleResult = personRepository.GetDbQueryDetail();
+
+            Assert.Equal("SELECT \"p1\".\"NAME\", \"p1\".\"AGE\", \"p1\".\"HAVECHILDREN\" FROM (SELECT \"p0\".\"NAME\", \"p0\".\"AGE\", \"p0\".\"HAVECHILDREN\",ROW_NUMBER() OVER( ORDER BY  null ) AS pageNo FROM \"PERSON\" \"p0\") \"p1\" WHERE \"p1\".pageNo>:y0 AND \"p1\".pageNo<=:y1", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
+
+            Assert.Equal(":y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(0, r1MiddleResult.SqlParameters[0].Value);
+
+            Assert.Equal(":y1", r1MiddleResult.SqlParameters[1].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[1].Value);
+        }
+
+        [Fact]
         public void TestMysqlFirstOrDefault2()
         {
             var personRepository = new MysqlPersonRepository();
@@ -977,6 +1021,24 @@ namespace ExpressionParser.Test
             Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
 
             Assert.Equal("@y1", r1MiddleResult.SqlParameters[1].ParameterName);
+            Assert.Equal(2, r1MiddleResult.SqlParameters[1].Value);
+        }
+
+        [Fact]
+        public void OracleTestSkipAndTake()
+        {
+            var personRepository = new OraclePersonRepository();
+            var r1 = personRepository.Skip(1).Take(1).ToList();
+
+            var r1MiddleResult = personRepository.GetDbQueryDetail();
+
+            Assert.Equal("SELECT \"p1\".\"NAME\", \"p1\".\"AGE\", \"p1\".\"HAVECHILDREN\" FROM (SELECT \"p0\".\"NAME\", \"p0\".\"AGE\", \"p0\".\"HAVECHILDREN\",ROW_NUMBER() OVER( ORDER BY  null ) AS pageNo FROM \"PERSON\" \"p0\") \"p1\" WHERE \"p1\".pageNo>:y0 AND \"p1\".pageNo<=:y1", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
+
+            Assert.Equal(":y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
+
+            Assert.Equal(":y1", r1MiddleResult.SqlParameters[1].ParameterName);
             Assert.Equal(2, r1MiddleResult.SqlParameters[1].Value);
         }
 

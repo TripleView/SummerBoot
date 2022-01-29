@@ -39,6 +39,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
+        public virtual Task<Page<TResult>> InternalQueryPageAsync<TResult>(DbQueryResult param)
+        {
+            return default;
+        }
+
+        public virtual Page<TResult> InternalQueryPage<TResult>(DbQueryResult param)
+        {
+            return default;
+        }
+
         public virtual TResult InternalQuery<TResult>(DbQueryResult param)
         {
             return default;
@@ -182,6 +192,28 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return 0;
         }
 
+        public Page<T> ToPage()
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var result = dbQueryProvider.linkRepository.InternalQueryPage<T>(dbParam);
+                return result;
+            }
+
+            return default;
+        }
+
+        public async Task<Page<T>> ToPageAsync()
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var result =await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
+                return result;
+            }
+            return default;
+        }
     }
 
 }

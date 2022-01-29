@@ -25,6 +25,7 @@
         protected override void HandlingPaging(SelectExpression select)
         {
             base.HandlingNormal(select);
+            countSqlSb.Append($"select count(1) from ({_sb}) sbCount");
             BoxPagination(select);
         }
 

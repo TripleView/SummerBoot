@@ -15,8 +15,33 @@ net core 3.1,net 5,net 6
 ## 说明
 这是一个全声明式框架，用户只需要声明接口，框架会通过Reflection Emit技术，自动生成接口的实现类。
 
-# SummerBoot中的一些人性化的操作
- 1. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的类型和服务的生命周期ServiceLifetime（周期默认为scope级别）
+# SummerBoot中的人性化的设计
+ 1. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的type和服务的生命周期ServiceLifetime（周期默认为scope级别），使用方式如下:
+````
+ public interface ITest
+    {
+
+    }
+
+    [AutoRegister(typeof(ITest),ServiceLifetime.Transient)]
+    public class Test:ITest
+    {
+
+    }
+````
+ 2. ApiResult 接口返回值包装类，包含 code，msg和data，3个字段，让整个系统的返回值统一有序，有利于前端的统一拦截，统一操作。使用方式如下:
+ ````
+[HttpPost("CreateServerConfigAsync")]
+public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
+{
+		var result = await serverConfigService.CreateServerConfigAsync(dto);
+		return ApiResult<bool>.Ok(result);
+}
+ ````
+ 3. GlobalExceptionFilter 全局错误拦截器，配合ApiResult，使系统报错，也能统一返回，使用方式如下,在startUp中注册mvc的时候带上该参数即可:
+ ````
+ services.AddControllersWithViews(it=>it.Filters.Add<GlobalExceptionFilter>());
+ ````
 
 # SummerBoot 如何操作数据库
 底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码，同时基于工作单元模式实现了事务。不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
@@ -34,18 +59,22 @@ services.AddSummerBootRepository(it =>
     it.DbConnectionType = typeof(SqliteConnection);
     //添加数据库连接字符串
     it.ConnectionString = "Data source=./mydb.db";
-	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity
+	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
 	it.AutoUpdateLastUpdateOn = true;
-	//update的时候自动更新最后更新时间字段，数据库实体类必须继承于BaseEntity
+	//插入的时候自动添加创建时间，使用utc时间
+	it.AutoUpdateLastUpdateOnUseUtc = false;
+	//update的时候自动更新最后更新时间字段，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
 	it.AutoAddCreateOn = true;
-	//启用软删除，数据库实体类必须继承于BaseEntity
+	//update的时候自动更新最后更新时间字段,使用utc时间
+	it.AutoAddCreateOnUseUtc = false;
+	//启用软删除，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
 	it.IsUseSoftDelete = true;
 });
 
 ````
 ## 定义一个数据库实体类
 其中注解大部分来自于系统自带的命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
-同时SummerBoot自带了一个基础实体类BaseEntity，实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
+同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
 
 ````
 public class Customer
@@ -78,11 +107,14 @@ public interface ICustomerRepository : IBaseRepository<Customer>
 ````
 ## 增删改查操作，均支持异步同步
 
-### 1. 查，支持正常查询与分页查询
-通过IOC注入获得接口以后，就可以开始查了，支持2种方式。
+### 1. 查
+通过IOC注入获得接口以后，就可以开始查了，支持正常查询与分页查询，查询有2种方式。
 #### 1.1 IQueryable链式语法查询。
 ````
+//常规查询
 var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).Take(10).ToList();
+//分页
+var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
 ````
 
 #### 1.2 直接在接口里定义方法，并且在方法上加上注解Select,然后在Select里写sql语句
@@ -117,7 +149,7 @@ var result = await customerRepository.QueryAllBuyProductByNameAsync("testCustome
 var pageable = new Pageable(1, 10);
 var page = customerRepository.GetCustomerByPage(pageable, 5);
 ````
-#### 1.3 注意：方式2查询里的分页支持，方法的返回值由Page这个类包裹，同时方法参数里必须包含 IPageable这个分页参数，sql语句里也要有order by，例如:
+#### 1.3 注意：1.2查询里的分页支持，方法的返回值由Page这个类包裹，同时方法参数里必须包含 IPageable这个分页参数，sql语句里也要有order by，例如:
 ````
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);

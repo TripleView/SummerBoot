@@ -158,6 +158,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             //加入row_number开窗函数
 
             _sb.AppendFormat(",ROW_NUMBER() OVER({0}) AS [ROW] FROM ", orderByString);
+            oldSb = _sb.ToString();
+            _sb.Clear();
 
             if (select.From != null)
             {
@@ -189,10 +191,39 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 throw new ArgumentException("loss from");
             }
 
+            var hasWhere = false;
             if (select.Where != null)
             {
+                hasWhere = true;
                 _sb.Append(" WHERE ");
                 this.VisitWhere(select.Where);
+            }
+
+            var tempSb= _sb.ToString();
+            _sb.Clear();
+            _sb.Append(oldSb);
+            _sb.Append(tempSb);
+
+            countSqlSb.Append( $"select count(1) from {tempSb}");
+
+            //添加软删除过滤逻辑
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && select.From is TableExpression tablex && (
+                    typeof(BaseEntity).IsAssignableFrom(tablex.Type) || typeof(OracleBaseEntity).IsAssignableFrom(tablex.Type)))
+            {
+                var softDeleteColumn = tablex.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
+                if (softDeleteColumn != null)
+                {
+                    var softDeleteParameterName = BoxParameter(1);
+                    if (!hasWhere)
+                    {
+                        _sb.Append(" WHERE ");
+                    }
+                    else
+                    {
+                        _sb.Append(" and ");
+                    }
+                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                }
             }
 
             if (select.GroupBy.IsNotNullAndNotEmpty())
@@ -277,10 +308,32 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 throw new ArgumentException("loss from");
             }
 
+            var hasWhere = false;
             if (select.Where != null)
             {
+                hasWhere = true;
                 _sb.Append(" WHERE ");
                 this.VisitWhere(select.Where);
+            }
+
+            //添加软删除过滤逻辑
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && select.From is TableExpression tablex && (
+                    typeof(BaseEntity).IsAssignableFrom(tablex.Type) || typeof(OracleBaseEntity).IsAssignableFrom(tablex.Type)))
+            {
+                var softDeleteColumn = tablex.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
+                if (softDeleteColumn != null)
+                {
+                    var softDeleteParameterName = BoxParameter(1);
+                    if (!hasWhere)
+                    {
+                        _sb.Append(" WHERE ");
+                    }
+                    else
+                    {
+                        _sb.Append(" and ");
+                    }
+                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                }
             }
 
             if (select.GroupBy.IsNotNullAndNotEmpty())

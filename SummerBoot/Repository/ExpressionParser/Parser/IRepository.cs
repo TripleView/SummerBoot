@@ -9,5 +9,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         List<SelectItem<T>> SelectItems { set; get; }
         int ExecuteUpdate();
         Task<int> ExecuteUpdateAsync();
+        /// <summary>
+        /// 生成经过分页的结果
+        /// </summary>
+        /// <returns></returns>
+        Page<T> ToPage();
+        /// <summary>
+        /// 生成经过分页的结果
+        /// </summary>
+        /// <returns></returns>
+        Task<Page<T>> ToPageAsync();
     }
 }

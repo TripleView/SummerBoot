@@ -51,6 +51,40 @@ namespace SummerBoot.Repository
             return result;
         }
 
+        public override Page<TResult> InternalQueryPage<TResult>(DbQueryResult param)
+        {
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+
+            var count = dbConnection.QueryFirst<int>(param.CountSql, dynamicParameters, dbTransaction);
+            var item = dbConnection.Query<TResult>(param.Sql, dynamicParameters, dbTransaction);
+            CloseDb();
+            var result = new Page<TResult>()
+            {
+                Data = item.ToList(),
+                TotalPages = count
+            };
+            return result;
+        }
+
+        public override async Task<Page<TResult>> InternalQueryPageAsync<TResult>(DbQueryResult param)
+        {
+
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+
+            var count = await dbConnection.QueryFirstAsync<int>(param.CountSql, dynamicParameters, dbTransaction);
+            var item = await dbConnection.QueryAsync<TResult>(param.Sql, dynamicParameters, dbTransaction);
+            CloseDb();
+            var result = new Page<TResult>()
+            {
+                Data = item.ToList(),
+                TotalPages = count
+            };
+            return result;
+        }
+
+
         public override List<TResult> InternalQueryList<TResult>(DbQueryResult param)
         {
             OpenDb();
@@ -212,9 +246,19 @@ namespace SummerBoot.Repository
         public T Insert(T t)
         {
             var internalResult = InternalInsert(t);
-            if (t is BaseEntity baseEntity && repositoryOption.AutoAddCreateOn)
+            if (repositoryOption.AutoAddCreateOn)
             {
-                baseEntity.CreateOn = DateTime.Now;
+
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    baseEntity.Active = 1;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    oracleBaseEntity.Active = 1;
+                }
             }
 
             OpenDb();
@@ -307,9 +351,17 @@ namespace SummerBoot.Repository
 
         public int Update(T t)
         {
-            if (t is BaseEntity baseEntity && repositoryOption.AutoUpdateLastUpdateOn)
+            if (repositoryOption.AutoUpdateLastUpdateOn)
             {
-                baseEntity.LastUpdateOn = DateTime.Now;
+
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.LastUpdateOn = repositoryOption.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.LastUpdateOn = repositoryOption.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                }
             }
 
             var internalResult = InternalUpdate(t);
@@ -392,9 +444,19 @@ namespace SummerBoot.Repository
         {
             var internalResult = InternalInsert(t);
 
-            if (t is BaseEntity baseEntity && repositoryOption.AutoAddCreateOn)
+            if (repositoryOption.AutoAddCreateOn)
             {
-                baseEntity.CreateOn = DateTime.Now;
+
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    baseEntity.Active = 1;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    oracleBaseEntity.Active = 1;
+                }
             }
 
             OpenDb();

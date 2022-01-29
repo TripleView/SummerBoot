@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -18,7 +19,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (!(source2 is IRepository<T> source))
             {
-                throw new Exception("123");
+                throw new Exception("only support IRepository");
             }
             if(source==null) throw new ArgumentNullException("source");
             if(select==null) throw new ArgumentNullException("select"); 
@@ -31,6 +32,42 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return source;
         }
 
-       
+        /// <summary>
+        /// 分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static Page<T> ToPage<T>(this IQueryable<T> source2)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+            
+            return source.ToPage();
+        }
+
+        /// <summary>
+        /// 异步分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<Page<T>> ToPageAsync<T>(this IQueryable<T> source2)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return  await source.ToPageAsync();
+        }
     }
 }

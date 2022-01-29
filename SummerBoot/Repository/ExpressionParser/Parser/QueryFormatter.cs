@@ -20,6 +20,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
         protected readonly StringBuilder _sb = new StringBuilder();
+        protected readonly StringBuilder countSqlSb = new StringBuilder();
 
         protected readonly List<SqlParameter> sqlParameters = new List<SqlParameter>();
 
@@ -155,7 +156,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return new DbQueryResult()
             {
                 Sql = this._sb.ToString().Trim(),
-                SqlParameters = this.sqlParameters
+                SqlParameters = this.sqlParameters,
+                CountSql = countSqlSb.ToString().Trim()
             };
         }
 
@@ -304,10 +306,32 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 throw new ArgumentException("loss from");
             }
 
+            var hasWhere = false;
             if (select.Where != null)
             {
+                hasWhere = true;
                 _sb.Append(" WHERE ");
                 this.VisitWhere(select.Where);
+            }
+
+            //添加软删除过滤逻辑
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && select.From is TableExpression tablex && (
+                    typeof(BaseEntity).IsAssignableFrom(tablex.Type) || typeof(OracleBaseEntity).IsAssignableFrom(tablex.Type)))
+            {
+                var softDeleteColumn = tablex.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
+                if (softDeleteColumn != null)
+                {
+                    var softDeleteParameterName = BoxParameter(1);
+                    if (!hasWhere)
+                    {
+                        _sb.Append(" WHERE ");
+                    }
+                    else
+                    {
+                        _sb.Append(" and ");
+                    }
+                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                }
             }
 
             if (select.GroupBy.IsNotNullAndNotEmpty())
@@ -625,6 +649,19 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             _sb.Append($"select {string.Join(",", columnNameList)} from {tableName}");
 
+            //添加软删除过滤逻辑
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && (
+                    typeof(BaseEntity).IsAssignableFrom(typeof(T)) || typeof(OracleBaseEntity).IsAssignableFrom(typeof(T))))
+            {
+                var softDeleteColumn = table.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
+                if (softDeleteColumn != null)
+                {
+                    var softDeleteParameterName = BoxParameter(1);
+                    _sb.Append($" where {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                }
+
+            }
+
             var result = new DbQueryResult()
             {
                 Sql = this._sb.ToString().Trim(),
@@ -655,6 +692,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var parameterName = BoxParameter(id);
 
             _sb.Append($"select {string.Join(",", columnNameList)} from {tableName} where {BoxTableNameOrColumnName(keyColumn.ColumnName)}={parameterName}");
+            //添加软删除过滤逻辑
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && (
+                typeof(BaseEntity).IsAssignableFrom(typeof(T)) || typeof(OracleBaseEntity).IsAssignableFrom(typeof(T))))
+            {
+                var softDeleteColumn = table.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
+                if (softDeleteColumn != null)
+                {
+                    var softDeleteParameterName = BoxParameter(1);
+                    _sb.Append($" and {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                }
+            }
 
             var result = new DbQueryResult()
             {

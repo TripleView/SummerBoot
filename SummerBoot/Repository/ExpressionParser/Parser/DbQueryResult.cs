@@ -10,6 +10,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// </summary>
         public string Sql { get; set; }
         /// <summary>
+        /// 计算总数的sql
+        /// </summary>
+        public string CountSql { get; set; }
+        /// <summary>
         /// 参数
         /// </summary>
         public List<SqlParameter> SqlParameters { get; set; }

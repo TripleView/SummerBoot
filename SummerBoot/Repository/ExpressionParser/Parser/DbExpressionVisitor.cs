@@ -1027,7 +1027,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     //获取所有列
                     this.VisitParameter(parameterExpression);
                     //找到要获取的那一列
-                    var column = _lastColumns.Values.FirstOrDefault(it => it.MemberInfo == memberExpression.Member);
+                    var column = _lastColumns.Values.FirstOrDefault(it => it.MemberInfo.Name == memberExpression.Member.Name);
                     if (column == null)
                     {
                         throw new NotSupportedException(memberExpression.Member.Name);

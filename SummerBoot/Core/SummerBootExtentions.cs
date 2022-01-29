@@ -1053,6 +1053,8 @@ namespace SummerBoot.Core
             services.TryAddScoped<IDbFactory, DbFactory>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddSingleton(t => option);
+            RepositoryOption.Instance = option;
+
             services.AddScoped(typeof(BaseRepository<>));
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
             services.AddScoped<RepositoryService>();

@@ -312,7 +312,6 @@ namespace SummerBoot.Repository
                 if (typeof(IPageable).IsAssignableFrom(parameterType))
                 {
                     pageable = (IPageable)args[i];
-                    continue;
                 }
                 //如果是值类型或者字符串直接添加到参数里
                 if (parameterType.IsValueType || parameterTypeIsString)
@@ -322,7 +321,7 @@ namespace SummerBoot.Repository
                 //如果是类，则读取属性值，然后添加到参数里
                 else if (parameterType.IsClass)
                 {
-                    var properties = parameterType.GetTypeInfo().DeclaredProperties;
+                    var properties = parameterType.GetProperties();
                     foreach (PropertyInfo info in properties)
                     {
                         var propertyType = info.PropertyType;

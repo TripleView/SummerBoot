@@ -15,6 +15,17 @@ using Xunit;
 
 namespace SummerBoot.Test.Sqlite
 {
+    public interface ITest
+    {
+
+    }
+
+    [AutoRegister(typeof(ITest),ServiceLifetime.Transient)]
+    public class Test:ITest
+    {
+
+    }
+
     [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
     public class RepositoryTest
     {
@@ -25,7 +36,6 @@ namespace SummerBoot.Test.Sqlite
         {
             InitSqliteDatabase("Data Source=./testDb.db");
             TestRepository();
-         
         }
 
         [Fact, Order(2)]
@@ -177,6 +187,9 @@ namespace SummerBoot.Test.Sqlite
             //0-99岁，大于5的只有94个
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
+            var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
+            Assert.Equal(94, page2.TotalPages);
+            Assert.Equal(10, page2.Data.Count);
 
             //test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
@@ -188,11 +201,6 @@ namespace SummerBoot.Test.Sqlite
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
-        }
-
-        private void test(Expression<Func<Customer, object>> exp, object value)
-        {
-
         }
 
         public void TestRepository()
@@ -309,6 +317,9 @@ namespace SummerBoot.Test.Sqlite
             //0-99岁，大于5的只有94个
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
+            var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
+            Assert.Equal(94, page2.TotalPages);
+            Assert.Equal(10, page2.Data.Count);
 
             //test update 
             var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")

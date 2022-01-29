@@ -182,6 +182,9 @@ namespace SummerBoot.Test.SqlServer
             //0-99岁，大于5的只有94个
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
+            var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
+            Assert.Equal(94, page2.TotalPages);
+            Assert.Equal(10, page2.Data.Count);
 
             //var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).Take(10).ToList();
 
@@ -318,6 +321,9 @@ namespace SummerBoot.Test.SqlServer
             //0-99岁，大于5的只有94个
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
+            var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
+            Assert.Equal(94, page2.TotalPages);
+            Assert.Equal(10, page2.Data.Count);
 
             //test update 
             var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
