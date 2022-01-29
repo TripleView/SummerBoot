@@ -64,13 +64,20 @@ namespace ExpressionParser.Test
         public string Address;
     }
 
-    public class Dog : Pet
+    public class Dog 
     {
-
+        public string Name { get; set; }
+        public int? Active { get; set; }
     }
 
+    public class DogRepository : Repository<Dog>
+    {
+        public DogRepository() : base(DatabaseType.SqlServer)
+        {
 
-    
+        }
+    }
+
 
     public class EmployeeRepository : Repository<Employee>
     {
@@ -132,6 +139,30 @@ namespace ExpressionParser.Test
     }
     public class UnitTestExpressionTreeVisitor
     {
+        [Fact]
+        public void TestNullable()
+        {
+            var dogRepository = new DogRepository();
+            var r1 = dogRepository.Where(it=>it.Active==1).ToList();
+            var r1MiddleResult = dogRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Active] = @y0 )", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
+        }
+        [Fact]
+        public void TestNullable2()
+        {
+            var dogRepository = new DogRepository();
+            var r1 = dogRepository.Where(it => it.Active == 1&&it.Name=="hzp").ToList();
+            var r1MiddleResult = dogRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ( ([p0].[Active] = @y0 ) AND  ([p0].[Name] = @y1 )  )", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
+            Assert.Equal("@y1", r1MiddleResult.SqlParameters[1].ParameterName);
+            Assert.Equal("hzp", r1MiddleResult.SqlParameters[1].Value);
+        }
         [Fact]
         public void TestSelect()
         {
