@@ -14,6 +14,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Microsoft.AspNetCore.Mvc;
+using SummerBoot.Core.MvcExtension;
 using TableAttribute = System.ComponentModel.DataAnnotations.Schema.TableAttribute;
 
 namespace SummerBoot.Core
@@ -1032,6 +1034,38 @@ namespace SummerBoot.Core
                 }
                
             });
+
+            return services;
+        }
+
+        /// <summary>
+        /// 对mvc进行增强操作
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public static IServiceCollection AddSummerBootMvcExtension(this IServiceCollection services, Action<SummerBootMvcOption> action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            var option = new SummerBootMvcOption();
+            
+            action(option);
+
+            if (option.UseGlobalExceptionHandle)
+            {
+                services.Configure<MvcOptions>(it => it.Filters.Add<GlobalExceptionFilter>());
+            }
+
+            if (option.UseValidateParameterHandle)
+            {
+                // 关闭netcore自动处理参数校验机制
+                services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
+                services.Configure<MvcOptions>(it => it.Filters.Add<ValidateParameterActionFilter>());
+            }
 
             return services;
         }

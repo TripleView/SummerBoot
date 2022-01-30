@@ -38,10 +38,65 @@ public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
 		return ApiResult<bool>.Ok(result);
 }
  ````
- 3. GlobalExceptionFilter 全局错误拦截器，配合ApiResult，使系统报错，也能统一返回，使用方式如下,在startUp中注册mvc的时候带上该参数即可:
+ 3. 对net core mvc的一些增强操作，包括全局错误拦截器，和接口参数校验失败后的处理，配合ApiResult，使得系统报错时，也能统一返回，使用方式如下,首先在startUp里注册该服务，注意，要放在mvc注册之后:
  ````
- services.AddControllersWithViews(it=>it.Filters.Add<GlobalExceptionFilter>());
+services.AddControllersWithViews();
+services.AddSummerBootMvcExtension(it =>
+{
+		//是否启用全局错误处理
+		it.UseGlobalExceptionHandle = true;
+		//是否启用参数校验处理
+		it.UseValidateParameterHandle = true;
+});
  ````
+3.1 全局错误拦截器使用后的效果
+ 我们可以直接在业务代码里抛出错误，全局错误拦截器会捕捉到该错误，然后使用统一格式返回给前端，业务代码如下:
+````
+private void ValidateData(EnvConfigDto dto)
+{
+		if (dto == null)
+		{
+			throw new ArgumentNullException("参数不能为空");
+		}
+		if(dto.ServerConfigs==null|| dto.ServerConfigs.Count==0)
+		{
+			throw new ArgumentNullException("环境下没有配置服务器");
+		}
+}
+````
+如果业务代码里报错,则返回值如下:
+````
+{
+  "code": 40000,
+  "msg": "Value cannot be null. (Parameter '环境下没有配置服务器')",
+  "data": null
+}
+````
+3.2 接口参数校验失败后的处理的效果
+我们在接口的参数dto里添加校验注解，代码如下
+````
+public class EnvConfigDto : BaseEntity
+{
+		/// <summary>
+		/// 环境名
+		/// </summary>
+		[Required(AllowEmptyStrings = false, ErrorMessage = "环境名称不能为空")]
+		public string Name { get; set; }
+		/// <summary>
+		/// 环境下对应的服务器
+		/// </summary>
+		[NotMapped]
+		public List<int> ServerConfigs { get; set; }
+}
+````
+如果参数校验不通过,则返回值如下:
+````
+{
+  "code": 40000,
+  "msg": "环境名称不能为空",
+  "data": null
+}
+````
 
 # SummerBoot 如何操作数据库
 底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码，同时基于工作单元模式实现了事务。不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
@@ -55,10 +110,10 @@ services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
 {
-    //注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
-    it.DbConnectionType = typeof(SqliteConnection);
-    //添加数据库连接字符串
-    it.ConnectionString = "Data source=./mydb.db";
+	//注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
+	it.DbConnectionType = typeof(SqliteConnection);
+	//添加数据库连接字符串
+	it.ConnectionString = "Data source=./mydb.db";
 	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
 	it.AutoUpdateLastUpdateOn = true;
 	//插入的时候自动添加创建时间，使用utc时间
@@ -335,14 +390,6 @@ services.AddSummerBootFeign();
          Task<DateTime> TestGet(string name,int age);
      }
 ````
-### 注入即可直接调用
-
-## 框架中的一些接口
-* IUnitOfWork。工作单元接口，熟悉工作单元的，可重写该接口，并注入到框架中。
-
-* IRepository。自定义仓储接口，框架默认底层实现基于dapper，可重写替换。
-
-* IDbFactory。生成IDbConnection的工厂接口，可重写替换。
 
 ## 更新记录
 * 2020-08-05 feign调用接口返回的状态码如果不是200，则抛出错误。feign里默认的client用的httpClient的超时时长改成3天。修复unitofwork里callback方法里的bug。

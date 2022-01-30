@@ -191,6 +191,7 @@ namespace SummerBoot.Test.Oracle
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
+
         }
 
         public void TestRepository()
