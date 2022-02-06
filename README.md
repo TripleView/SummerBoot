@@ -1,5 +1,5 @@
-<a href="https://jb.gg/OpenSourceSupport">![image](https://github.com/TripleView/SummerBoot/blob/master/jb_beam.png)</a>
 
+![image](https://github.com/TripleView/SummerBoot/blob/master/jb_beam.png)
 
 # SummerBoot的核心理念
 > 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单。
