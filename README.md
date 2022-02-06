@@ -1,4 +1,4 @@
-<a href="https://jb.gg/OpenSourceSupport">![avatar](./jb_beam.png)</a>
+<a href="https://jb.gg/OpenSourceSupport">![image](https://github.com/TripleView/SummerBoot/blob/master/jb_beam.png)</a>
 
 
 # SummerBoot的核心理念
