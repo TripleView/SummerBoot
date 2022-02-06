@@ -1,4 +1,5 @@
-Request ID = 30012022/8711129
+<a href="https://jb.gg/OpenSourceSupport">![avatar](./jb_beam.png)</a>
+
 
 # SummerBoot的核心理念
 > 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单。
@@ -394,4 +395,4 @@ services.AddSummerBootFeign();
 ````
 
 ## 更新记录
-* 2020-08-05 feign调用接口返回的状态码如果不是200，则抛出错误。feign里默认的client用的httpClient的超时时长改成3天。修复unitofwork里callback方法里的bug。
+* 2020-08-05 feign调用接口返回的状态码如果不是200，则抛出错误。feign里默认的client用的httpClient的超时时长改成3天。修复unitOfWork里callback方法里的bug。
