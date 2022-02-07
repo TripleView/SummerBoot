@@ -493,7 +493,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var result = new WhereExpression(@operator);
                 var rightExpression = this.Visit(binaryExpression.Right);
 
-
                 var leftExpression = this.Visit(binaryExpression.Left);
 
                 if (leftExpression is ColumnExpression leftColumnExpression && rightExpression is ConstantExpression rightConstantExpression)
@@ -506,20 +505,24 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return new WhereConditionExpression(rightColumnExpression, @operator,
                         leftConstantExpression.Value);
                 }
+               
                 else if (leftExpression is ColumnExpression leftColumnExpression2 && leftColumnExpression2.Type == typeof(bool) && rightExpression is WhereExpression rightWhereExpression2)
                 {
+                    //如果是column类型的bool值，默认为true
                     var left = new WhereConditionExpression(leftColumnExpression2, "=", 1);
                     result.Left = left;
                     result.Right = rightWhereExpression2;
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression2 && rightExpression.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression2)
                 {
+                    //如果是column类型的bool值，默认为true
                     var right = new WhereConditionExpression(rightColumnExpression2, "=", 1);
                     result.Left = leftWhereExpression2;
                     result.Right = right;
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression3 && rightExpression.Type == typeof(bool) && leftExpression is ColumnExpression leftColumnExpression3 && leftColumnExpression3.Type == typeof(bool))
                 {
+                    //如果是column类型的bool值，默认为true
                     var right = new WhereConditionExpression(rightColumnExpression3, "=", 1);
                     var left = new WhereConditionExpression(leftColumnExpression3, "=", 1);
                     result.Left = left;
@@ -531,6 +534,22 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     result.Left = leftWhereExpression;
                     result.Right = rightWhereExpression;
 
+                }
+                //兼容It=>true这种
+                else if (leftExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(bool) && rightExpression is WhereExpression whereExpression)
+                {
+                    var value = (bool)constantExpression.Value;
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
+                    result.Left = whereTrueFalseValueCondition;
+                    result.Right = whereExpression;
+                }
+                //兼容It=>true这种
+                else if (rightExpression is ConstantExpression rightConstantExpression3 && rightConstantExpression3.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression3)
+                {
+                    var value = (bool)rightConstantExpression3.Value;
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
+                    result.Left = leftWhereExpression3;
+                    result.Right = whereTrueFalseValueCondition;
                 }
                 else
                 {
@@ -691,9 +710,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return result;
                 }
                 //兼容It=>true这种
-                else if (bodyExpression is ConstantExpression constantExpression && constantExpression.Type==typeof(bool))
+                else if (bodyExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(bool))
                 {
-                    var value =(bool)constantExpression.Value;
+                    var value = (bool)constantExpression.Value;
                     var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
                     var result = new SelectExpression(null, "", source.Columns, source, whereTrueFalseValueCondition);
                     return result;
@@ -878,7 +897,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         protected override Expression VisitUnary(UnaryExpression unaryExpression)
         {
             //兼容active?可空类型=1这种情况
-            if (unaryExpression.NodeType == ExpressionType.Convert&& unaryExpression.Operand is ConstantExpression constantExpression)
+            if (unaryExpression.NodeType == ExpressionType.Convert && unaryExpression.Operand is ConstantExpression constantExpression)
             {
                 return constantExpression;
             }

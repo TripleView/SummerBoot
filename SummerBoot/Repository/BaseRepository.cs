@@ -342,8 +342,9 @@ namespace SummerBoot.Repository
         public List<T> GetAll()
         {
             var internalResult = InternalGetAll();
+            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = dbConnection.Query<T>(internalResult.Sql).ToList();
+            var result = dbConnection.Query<T>(internalResult.Sql, dynamicParameters, dbTransaction).ToList();
             CloseDb();
 
             return result;
@@ -540,8 +541,9 @@ namespace SummerBoot.Repository
         public async Task<List<T>> GetAllAsync()
         {
             var internalResult = InternalGetAll();
+            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = (await dbConnection.QueryAsync<T>(internalResult.Sql)).ToList();
+            var result = (await dbConnection.QueryAsync<T>(internalResult.Sql, dynamicParameters,transaction:dbTransaction)).ToList();
             CloseDb();
 
             return result;

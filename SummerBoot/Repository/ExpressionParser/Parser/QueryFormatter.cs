@@ -554,18 +554,40 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var middleResult = this.Visit(exp);
             this.FormatWhere(middleResult);
             var whereSql = _sb.ToString();
-
-            var deleteSql = $"delete from {tableName} where 1=1";
-            if (!string.IsNullOrWhiteSpace(whereSql))
-            {
-                deleteSql += $" and {whereSql}";
-            }
-
             var result = new DbQueryResult()
             {
-                Sql = deleteSql.Trim(),
                 SqlParameters = this.sqlParameters
             };
+
+
+            //判断是否软删除
+            //软删除
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete&&typeof(BaseEntity).IsAssignableFrom(typeof(T)))
+            {
+                var column = table.Columns.FirstOrDefault(it => it.MemberInfo.Name == "Active");
+                if (column != null)
+                {
+                    var updateSql = $"update {tableName} set {BoxTableNameOrColumnName(column.ColumnName)}=0 where 1=1";
+                    if (!string.IsNullOrWhiteSpace(whereSql))
+                    {
+                        updateSql += $" and {whereSql}";
+                    }
+                    result.Sql = updateSql;
+                }
+            }
+            //正常删除
+            else
+            {
+                var deleteSql = $"delete from {tableName} where 1=1";
+                if (!string.IsNullOrWhiteSpace(whereSql))
+                {
+                    deleteSql += $" and {whereSql}";
+                }
+
+                result.Sql= deleteSql;
+
+            }
+
             return result;
         }
 

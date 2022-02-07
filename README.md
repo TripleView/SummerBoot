@@ -100,6 +100,38 @@ public class EnvConfigDto : BaseEntity
 }
 ````
 
+4. QueryCondition，lambda查询条件组合，解决前端传条件过来进行过滤查询的痛点，除了基本的And和Or方法，还添加了更人性化的方法，一般前端传过来的dto里的属性，有字符串类型，如果他们有值则添加到查询条件里，所以特地提取了2个方法，包括了AndIfStringIsNotEmpty（如果字符串不为空则进行and操作，否则返回原表达式），OrIfStringIsNotEmpty（如果字符串不为空则进行or操作，否则返回原表达式），
+同时dto里的属性，还有可能是nullable类型，即可空类型，比如 int? test代表用户是否填写某个过滤条件，如果hasValue则添加到查询条件里，所以特地提取了2个方法，AndIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式），OrIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式）用法如下:
+````
+//dto
+public class ServerConfigPageDto : IPageable
+{
+	public int PageNumber { get; set; }
+	public int PageSize { get; set; }
+	/// <summary>
+	/// ip地址
+	/// </summary>
+	public string Ip { get; set; }
+	/// <summary>
+	/// 连接名
+	/// </summary>
+	public string ConnectionName { get; set; }
+	
+	public int? Test { get; set; }
+}
+//condition
+ var queryCondition = QueryCondition.True<ServerConfig>()
+	.And(it => it.Active == 1)
+	//如果字符串不为空则进行and操作，否则返回原表达式
+	.AndIfStringIsNotEmpty(dto.Ip, it => it.Ip.Contains(dto.Ip))
+	//如果可空值不为空则进行and操作，否则返回原表达式
+	.AndIfNullableHasValue(dto.Test,it=>it.Test==dto.Test)
+	.AndIfStringIsNotEmpty(dto.ConnectionName,it=>it.ConnectionName.Contains(dto.ConnectionName));
+				
+ var queryResult = await serverConfigRepository.Where(queryCondition)
+	.Skip((dto.PageNumber - 1) * dto.PageSize).Take(dto.PageSize).ToPageAsync();
+````
+
 # SummerBoot 如何操作数据库
 底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码，同时基于工作单元模式实现了事务。不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
 

@@ -64,7 +64,7 @@ namespace ExpressionParser.Test
         public string Address;
     }
 
-    public class Dog 
+    public class Dog
     {
         public string Name { get; set; }
         public int? Active { get; set; }
@@ -120,7 +120,7 @@ namespace ExpressionParser.Test
     }
     public interface IOraclePersonRepository : IRepository<OraclePerson>
     {
-     
+
     }
     public class OraclePersonRepository : Repository<OraclePerson>, IOraclePersonRepository
     {
@@ -143,7 +143,7 @@ namespace ExpressionParser.Test
         public void TestNullable()
         {
             var dogRepository = new DogRepository();
-            var r1 = dogRepository.Where(it=>it.Active==1).ToList();
+            var r1 = dogRepository.Where(it => it.Active == 1).ToList();
             var r1MiddleResult = dogRepository.GetDbQueryDetail();
             Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Active] = @y0 )", r1MiddleResult.Sql);
             Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
@@ -154,7 +154,7 @@ namespace ExpressionParser.Test
         public void TestNullable2()
         {
             var dogRepository = new DogRepository();
-            var r1 = dogRepository.Where(it => it.Active == 1&&it.Name=="hzp").ToList();
+            var r1 = dogRepository.Where(it => it.Active == 1 && it.Name == "hzp").ToList();
             var r1MiddleResult = dogRepository.GetDbQueryDetail();
             Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ( ([p0].[Active] = @y0 ) AND  ([p0].[Name] = @y1 )  )", r1MiddleResult.Sql);
             Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
@@ -785,6 +785,40 @@ namespace ExpressionParser.Test
         }
 
         [Fact]
+        public void TestCombineSelectAndWhere4()
+        {
+            var personRepository = new PersonRepository();
+            var r1 = personRepository.Where(it => true && it.Name == "hzp" && it.HaveChildren).Select(it => new { it.Age, it.HaveChildren }).ToList();
+            var r1MiddleResult = personRepository.GetDbQueryDetail();
+
+            Assert.Equal("SELECT [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( (1=1 ) AND  ([p0].[Name] = @y0 )  ) AND  ([p0].[HaveChildren] = @y1 )  )", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
+
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal("hzp", r1MiddleResult.SqlParameters[0].Value);
+
+            Assert.Equal("@y1", r1MiddleResult.SqlParameters[1].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[1].Value);
+        }
+
+        [Fact]
+        public void TestCombineSelectAndWhere5()
+        {
+            var personRepository = new PersonRepository();
+            var r1 = personRepository.Where(it => it.Name == "hzp" && true && it.HaveChildren).Select(it => new { it.Age, it.HaveChildren }).ToList();
+            var r1MiddleResult = personRepository.GetDbQueryDetail();
+
+            Assert.Equal("SELECT [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( ([p0].[Name] = @y0 ) AND  (1=1 )  ) AND  ([p0].[HaveChildren] = @y1 )  )", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
+
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal("hzp", r1MiddleResult.SqlParameters[0].Value);
+
+            Assert.Equal("@y1", r1MiddleResult.SqlParameters[1].ParameterName);
+            Assert.Equal(1, r1MiddleResult.SqlParameters[1].Value);
+        }
+
+        [Fact]
         public void TestOrderBy()
         {
             var personRepository = new PersonRepository();
@@ -920,7 +954,7 @@ namespace ExpressionParser.Test
         {
             var personRepository = new PersonRepository();
 
-            var r1 = personRepository.Where(x=>true).ToList();
+            var r1 = personRepository.Where(x => true).ToList();
 
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
@@ -959,14 +993,14 @@ namespace ExpressionParser.Test
         {
             var personRepository = new PersonRepository();
 
-            var r1 = personRepository.Distinct().FirstOrDefault(); 
+            var r1 = personRepository.Distinct().FirstOrDefault();
 
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
             Assert.Equal("SELECT TOP(1) [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM (SELECT DISTINCT [p1].[Name], [p1].[Age], [p1].[HaveChildren] FROM [Person] [p1]) [p0]", r1MiddleResult.Sql);
             Assert.Empty(r1MiddleResult.SqlParameters);
         }
-       
+
         [Fact]
         public void TestMysqlFirstOrDefault()
         {
@@ -1082,7 +1116,7 @@ namespace ExpressionParser.Test
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
             Assert.Equal("SELECT TOP(1) [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0]", r1MiddleResult.Sql);
-            Assert.Empty( r1MiddleResult.SqlParameters);
+            Assert.Empty(r1MiddleResult.SqlParameters);
 
         }
         [Fact]
@@ -1092,7 +1126,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.Where(it => it.Name == "hzp").OrderBy(it => it.Age).Select(it => it.HaveChildren).Skip(1).Take(1).ToList();
 
             var r1MiddleResult = personRepository.GetDbQueryDetail();
-                
+
             Assert.Equal("SELECT [p1].[HaveChildren] FROM (SELECT [p0].[Age], [p0].[HaveChildren],ROW_NUMBER() OVER( ORDER BY [p0].[Age]) AS [ROW] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )) [p1] WHERE [p1].[ROW]>@y1 AND [p1].[ROW]<=@y2", r1MiddleResult.Sql);
             Assert.Equal(3, r1MiddleResult.SqlParameters.Count);
 
@@ -1110,12 +1144,12 @@ namespace ExpressionParser.Test
         public void TestSkipAndTake4()
         {
             var personRepository = new PersonRepository();
-            var r1 = personRepository.OrderBy(it=>it.Age).Take(1).ToList();
+            var r1 = personRepository.OrderBy(it => it.Age).Take(1).ToList();
 
             var r1MiddleResult = personRepository.GetDbQueryDetail();
 
             Assert.Equal("SELECT TOP(1) [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] ORDER BY [p0].[Age]", r1MiddleResult.Sql);
-            Assert.Empty( r1MiddleResult.SqlParameters);
+            Assert.Empty(r1MiddleResult.SqlParameters);
 
         }
 
@@ -1168,7 +1202,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.Skip(1).Take(1).ToList();
             var r1MiddleResult = personRepository.GetDbQueryDetail();
             Assert.Equal("SELECT `p0`.`Name`, `p0`.`Age`, `p0`.`HaveChildren` FROM `Person` `p0` LIMIT @y0,@y1", r1MiddleResult.Sql);
-            Assert.Equal(2,r1MiddleResult.SqlParameters.Count);
+            Assert.Equal(2, r1MiddleResult.SqlParameters.Count);
 
             Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
             Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
@@ -1176,7 +1210,7 @@ namespace ExpressionParser.Test
             Assert.Equal("@y1", r1MiddleResult.SqlParameters[1].ParameterName);
             Assert.Equal(1, r1MiddleResult.SqlParameters[1].Value);
         }
-        
+
         [Fact]
         public void TestMysqlSkipAndTake2()
         {
@@ -1318,7 +1352,7 @@ namespace ExpressionParser.Test
         public void TestUpdate2()
         {
             var hrRepository = new HrRepository();
-            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "张三", EmployeNo = "666"};
+            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "张三", EmployeNo = "666" };
             hrRepository.InternalUpdate(persion);
             var r1MiddleResult = hrRepository.GetDbQueryDetail();
 
@@ -1329,7 +1363,7 @@ namespace ExpressionParser.Test
         public void TestIgnoreWhenUpdate()
         {
             var hrRepository = new HrRepository();
-            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "张三", EmployeNo = "666",CreateOn = DateTime.Now};
+            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "张三", EmployeNo = "666", CreateOn = DateTime.Now };
 
             hrRepository.InternalInsert(persion);
 
@@ -1400,7 +1434,7 @@ namespace ExpressionParser.Test
         }
     }
 
-   
+
     public class SqlServerDbContext : DbContext
     {
         public static readonly LoggerFactory LoggerFactory = new LoggerFactory(new[] { new DebugLoggerProvider() });
