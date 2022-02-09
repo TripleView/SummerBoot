@@ -25,5 +25,21 @@ namespace SummerBoot.Test.SqlServer.Repository
         [Select("select * from customer where age>@age order by id")]
         Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 
+        /// <summary>
+        /// where构造条件
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [Select("select * from customer where 1=1 {{ and name=@name}}{{ and age=@age}}")]
+        Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync([BindWhere] string name, [BindWhere()] int? age);
+
+        [Select("select * from customer where 1=1 {{ and name=@name}}{{ and age=@age}} order by id")]
+        Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, [BindWhere] string name, [BindWhere()] int? age);
+
+        [Select("select * from customer where 1=1 {{ and name=@name}}{{ and age=@age}}")]
+        List<CustomerBuyProduct> GetCustomerByCondition([BindWhere] string name, [BindWhere()] int? age);
+
+        [Select("select * from customer where 1=1 {{ and name=@name}}{{ and age=@age}} order by id")]
+        Page<Customer> GetCustomerByPageByCondition(IPageable pageable, [BindWhere] string name, [BindWhere()] int? age);
     }
 }

@@ -106,7 +106,7 @@ namespace SummerBoot.Test.Mysql
             var result = await customerRepository.QueryAllBuyProductByNameAsync("testCustomer");
             Assert.Contains(result, t => t.ProductName == "apple");
             Assert.Contains(result, t => t.ProductName == "orange");
-
+            
             orderDetail.Quantity = 2;
             await orderDetailRepository.UpdateAsync(orderDetail);
             var orderDetailTmp = await orderDetailRepository.GetAsync(orderDetail.Id);
@@ -181,6 +181,23 @@ namespace SummerBoot.Test.Mysql
             var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //测试bindWhere构造条件
+            var bindResult = await customerRepository.GetCustomerByConditionAsync("page5",null);
+            Assert.Single(bindResult);
+            var bindResult2 = await customerRepository.GetCustomerByConditionAsync("", null);
+            Assert.Equal(102, bindResult2.Count);
+            var bindResult3 = await customerRepository.GetCustomerByConditionAsync("", 5);
+            Assert.Equal(2, bindResult3.Count);
+            var bindResult4 = await customerRepository.GetCustomerByConditionAsync("page5", 5);
+            Assert.Single(bindResult4);
+            var bindResult5 = await customerRepository.GetCustomerByPageByConditionAsync(pageable,"page5", null);
+            Assert.Single(bindResult5.Data);
+            var bindResult6 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "", null);
+            Assert.Equal(10, bindResult6.Data.Count);
+            var bindResult7 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "", 5);
+            Assert.Equal(2, bindResult7.Data.Count);
+            var bindResult8 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "page5", 5);
+            Assert.Single(bindResult8.Data);
 
             //test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
@@ -316,6 +333,23 @@ namespace SummerBoot.Test.Mysql
             var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //测试bindWhere构造条件
+            var bindResult = customerRepository.GetCustomerByCondition("page5", null);
+            Assert.Single(bindResult);
+            var bindResult2 = customerRepository.GetCustomerByCondition("", null);
+            Assert.Equal(102, bindResult2.Count);
+            var bindResult3 = customerRepository.GetCustomerByCondition("", 5);
+            Assert.Equal(2, bindResult3.Count);
+            var bindResult4 = customerRepository.GetCustomerByCondition("page5", 5);
+            Assert.Single(bindResult4);
+            var bindResult5 = customerRepository.GetCustomerByPageByCondition(pageable, "page5", null);
+            Assert.Single(bindResult5.Data);
+            var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, "", null);
+            Assert.Equal(10, bindResult6.Data.Count);
+            var bindResult7 = customerRepository.GetCustomerByPageByCondition(pageable, "", 5);
+            Assert.Equal(2, bindResult7.Data.Count);
+            var bindResult8 = customerRepository.GetCustomerByPageByCondition(pageable, "page5", 5);
+            Assert.Single(bindResult8.Data);
 
             //test update 
             var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")

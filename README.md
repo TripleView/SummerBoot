@@ -18,7 +18,14 @@ net core 3.1,net 5,net 6
 这是一个全声明式框架，用户只需要声明接口，框架会通过Reflection Emit技术，自动生成接口的实现类。
 
 # SummerBoot中的人性化的设计
- 1. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的type和服务的生命周期ServiceLifetime（周期默认为scope级别），使用方式如下:
+ 1.先说一个net core mvc自带的功能，如果我们想要在appsettings.json里配置web应用的ip和port该怎么办？在appsettings.json里直接写
+ ````
+ {
+     "urls":"http://localhost:7002;http://localhost:7012"
+ }
+ ````
+
+ 2. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的type和服务的生命周期ServiceLifetime（周期默认为scope级别），使用方式如下:
 ````
  public interface ITest
     {
@@ -31,7 +38,7 @@ net core 3.1,net 5,net 6
 
     }
 ````
- 2. ApiResult 接口返回值包装类，包含 code，msg和data，3个字段，让整个系统的返回值统一有序，有利于前端的统一拦截，统一操作。使用方式如下:
+ 3. ApiResult 接口返回值包装类，包含 code，msg和data，3个字段，让整个系统的返回值统一有序，有利于前端的统一拦截，统一操作。使用方式如下:
  ````
 [HttpPost("CreateServerConfigAsync")]
 public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
@@ -40,7 +47,7 @@ public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
 		return ApiResult<bool>.Ok(result);
 }
  ````
- 3. 对net core mvc的一些增强操作，包括全局错误拦截器，和接口参数校验失败后的处理，配合ApiResult，使得系统报错时，也能统一返回，使用方式如下,首先在startUp里注册该服务，注意，要放在mvc注册之后:
+ 4. 对net core mvc的一些增强操作，包括全局错误拦截器，和接口参数校验失败后的处理，配合ApiResult，使得系统报错时，也能统一返回，使用方式如下,首先在startUp里注册该服务，注意，要放在mvc注册之后:
  ````
 services.AddControllersWithViews();
 services.AddSummerBootMvcExtension(it =>
@@ -51,7 +58,7 @@ services.AddSummerBootMvcExtension(it =>
 		it.UseValidateParameterHandle = true;
 });
  ````
-3.1 全局错误拦截器使用后的效果
+4.1 全局错误拦截器使用后的效果
  我们可以直接在业务代码里抛出错误，全局错误拦截器会捕捉到该错误，然后使用统一格式返回给前端，业务代码如下:
 ````
 private void ValidateData(EnvConfigDto dto)
@@ -74,7 +81,7 @@ private void ValidateData(EnvConfigDto dto)
   "data": null
 }
 ````
-3.2 接口参数校验失败后的处理的效果
+4.2 接口参数校验失败后的处理的效果
 我们在接口的参数dto里添加校验注解，代码如下
 ````
 public class EnvConfigDto : BaseEntity
@@ -100,7 +107,7 @@ public class EnvConfigDto : BaseEntity
 }
 ````
 
-4. QueryCondition，lambda查询条件组合，解决前端传条件过来进行过滤查询的痛点，除了基本的And和Or方法，还添加了更人性化的方法，一般前端传过来的dto里的属性，有字符串类型，如果他们有值则添加到查询条件里，所以特地提取了2个方法，包括了AndIfStringIsNotEmpty（如果字符串不为空则进行and操作，否则返回原表达式），OrIfStringIsNotEmpty（如果字符串不为空则进行or操作，否则返回原表达式），
+5. QueryCondition，lambda查询条件组合，解决前端传条件过来进行过滤查询的痛点，除了基本的And和Or方法，还添加了更人性化的方法，一般前端传过来的dto里的属性，有字符串类型，如果他们有值则添加到查询条件里，所以特地提取了2个方法，包括了AndIfStringIsNotEmpty（如果字符串不为空则进行and操作，否则返回原表达式），OrIfStringIsNotEmpty（如果字符串不为空则进行or操作，否则返回原表达式），
 同时dto里的属性，还有可能是nullable类型，即可空类型，比如 int? test代表用户是否填写某个过滤条件，如果hasValue则添加到查询条件里，所以特地提取了2个方法，AndIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式），OrIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式）用法如下:
 ````
 //dto
@@ -238,12 +245,22 @@ var result = await customerRepository.QueryAllBuyProductByNameAsync("testCustome
 var pageable = new Pageable(1, 10);
 var page = customerRepository.GetCustomerByPage(pageable, 5);
 ````
-#### 1.3 注意：1.2查询里的分页支持，方法的返回值由Page这个类包裹，同时方法参数里必须包含 IPageable这个分页参数，sql语句里也要有order by，例如:
+> 注意：1.2查询里的分页支持，方法的返回值由Page这个类包裹，同时方法参数里必须包含 IPageable这个分页参数，sql语句里也要有order by，例如:
 ````
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 ````
-#### 1.4 接口同时自带了Get方法，通过id获取结果，和GetAll(),获取表里的所有结果集。
+> 如果select这种查询方式需要拼接where查询条件怎么办？答案是将条件用{{}}包裹起来，同时在定义方法的时候，将条件变量用注解BindWhere标注，这样summerboot就会自动处理查询条件，处理规则如下
+> 如果是string类型，为空则不查询此条件，如果是可空类型，比如int?，如果为null则不查询此条件，不查询的意思就是sql语句中{{ }}包裹的查询条件自动替换为空字符串，使用例子如下所示：
+````
+[Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}}")]
+Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync([BindWhere] string name, [BindWhere()] int? age);
+
+[Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}} order by id")]
+Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, [BindWhere] string name, [BindWhere()] int? age);
+````
+
+#### 1.3 接口同时自带了Get方法，通过id获取结果，和GetAll(),获取表里的所有结果集。
 
 ### 增
 #### 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。

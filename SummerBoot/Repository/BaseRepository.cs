@@ -344,7 +344,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalGetAll();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = dbConnection.Query<T>(internalResult.Sql, dynamicParameters, dbTransaction).ToList();
+            var result = dbConnection.Query<T>(internalResult.Sql, dynamicParameters, transaction: dbTransaction).ToList();
             CloseDb();
 
             return result;
@@ -368,7 +368,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalUpdate(t);
 
             OpenDb();
-            var result = dbConnection.Execute(internalResult.Sql, t);
+            var result = dbConnection.Execute(internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -384,7 +384,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalDelete(t);
 
             OpenDb();
-            var result = dbConnection.Execute(internalResult.Sql, t);
+            var result = dbConnection.Execute(internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -395,7 +395,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalDelete(exp);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = dbConnection.Execute(internalResult.Sql, dynamicParameters);
+            var result = dbConnection.Execute(internalResult.Sql, dynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -407,7 +407,7 @@ namespace SummerBoot.Repository
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
 
-            var result = dbConnection.QueryFirstOrDefault<T>(internalResult.Sql, dynamicParameters);
+            var result = dbConnection.QueryFirstOrDefault<T>(internalResult.Sql, dynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -551,14 +551,23 @@ namespace SummerBoot.Repository
 
         public async Task<int> UpdateAsync(T t)
         {
-            var internalResult = InternalUpdate(t);
-            if (t is BaseEntity baseEntity && repositoryOption.AutoUpdateLastUpdateOn)
+            if (repositoryOption.AutoUpdateLastUpdateOn)
             {
-                baseEntity.LastUpdateOn = DateTime.Now;
+
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.LastUpdateOn = repositoryOption.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.LastUpdateOn = repositoryOption.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                }
             }
 
+            var internalResult = InternalUpdate(t);
+            
             OpenDb();
-            var result = await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            var result = await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -569,7 +578,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalDelete(exp);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters);
+            var result = await dbConnection.ExecuteAsync(internalResult.Sql, dynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -585,7 +594,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalDelete(t);
 
             OpenDb();
-            var result = await dbConnection.ExecuteAsync(internalResult.Sql, t);
+            var result = await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -596,7 +605,7 @@ namespace SummerBoot.Repository
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(internalResult.Sql, dynamicParameters);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(internalResult.Sql, dynamicParameters,transaction:dbTransaction);
             CloseDb();
             return result;
         }

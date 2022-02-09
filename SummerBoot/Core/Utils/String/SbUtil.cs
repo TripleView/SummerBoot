@@ -87,6 +87,21 @@ namespace SummerBoot.Core
             return str.IsNullOrWhiteSpace() ? defaultValue : str;
         }
 
+        /// <summary>
+        /// 获取经过包装的like字符串
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string GetLikeString(this string str)
+        {
+            if (str.HasText())
+            {
+                return $"%{str}%";
+            }
+
+            return str;
+        }
+
         public static string ToJson(this object obj)
         {
             return JsonConvert.SerializeObject(obj);

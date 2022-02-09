@@ -11,23 +11,20 @@ namespace SummerBoot.Core
     {
         public static IWebHostBuilder UseSummerBoot(this IWebHostBuilder webHostBuilder)
         {
-            
             var env = webHostBuilder.GetSetting("ENVIRONMENT");
-            
             var port = 5000;
             var configJsonFile = "appsettings.json";
-            if (env.ToLower() != "production")
+            if (!string.IsNullOrWhiteSpace(env) && env.ToLower() != "production")
             {
                 configJsonFile = $"appsettings.{env}.json";
             }
-           
-            
-            var configuration = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory)
+
+            var configuration = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile(configJsonFile)
                 .Build();
 
             //server
-            var ip = configuration.GetSection("server:ip")?.Value??"*";
+            var ip = configuration.GetSection("server:ip")?.Value ?? "*";
 
             //端口号
             var portString = configuration.GetSection("server:port")?.Value;
