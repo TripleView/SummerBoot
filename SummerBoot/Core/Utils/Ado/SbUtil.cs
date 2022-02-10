@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Data;
-using System.Linq;
-using System.Text;
-using Castle.DynamicProxy;
-using Microsoft.Extensions.Logging;
 
 namespace SummerBoot.Core
 {

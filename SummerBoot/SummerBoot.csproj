@@ -27,9 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Cache\CacheOperationContext.cs" />
-    <Compile Remove="Cache\CacheOperationContextCollection.cs" />
-    <Compile Remove="Cache\CachePutRequest.cs" />
     <Compile Remove="Feign\HeaderAttribute.cs" />
     <Compile Remove="Repository\RepositoryAspectSupport3.cs" />
     <Compile Remove="Repository\RepositoryInterceptor.cs" />
@@ -44,12 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Castle.Core" Version="4.4.0" />
     <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="DynamicExpresso.Core" Version="2.3.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Polly" Version="7.2.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
+    <PackageReference Include="Polly" Version="7.2.3" />
   </ItemGroup>
   
 

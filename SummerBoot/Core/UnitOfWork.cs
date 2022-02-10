@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using SqlOnline.Utils;
+﻿using Microsoft.Extensions.Logging;
 using SummerBoot.Repository;
+using System;
+using System.Collections.Generic;
 
 namespace SummerBoot.Core
 {

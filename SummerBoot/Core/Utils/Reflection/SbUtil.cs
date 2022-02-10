@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections;
-using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using Castle.DynamicProxy;
 
 namespace SummerBoot.Core
 {

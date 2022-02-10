@@ -195,7 +195,7 @@ namespace SummerBoot.Repository
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
-            var result = dbConnection.QueryFirst<TResult>(param.Sql, dynamicParameters, dbTransaction);
+            var result = dbConnection.QueryFirstOrDefault<TResult>(param.Sql, dynamicParameters, dbTransaction);
 
             CloseDb();
             return result;

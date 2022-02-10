@@ -483,7 +483,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if (MethodName == nameof(Queryable.Where))
+            else if (MethodName == nameof(Queryable.Where)||MethodName==nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -566,6 +566,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             var methodName = firstOrDefaultCall.Method.Name;
             var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
+            WhereExpression where = null;
+            if (firstOrDefaultCall.Arguments.Count == 2)
+            {
+                var lambda = (LambdaExpression)this.StripQuotes(firstOrDefaultCall.Arguments[1]);
+                where = this.Visit(lambda.Body) as WhereExpression;
+            }
 
             if (sourceExpression is TableExpression table)
             {
@@ -581,6 +587,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 else
                 {
                     throw new NotSupportedException(nameof(firstOrDefaultCall));
+                }
+
+                if (where != null)
+                {
+                    result.Where=where;
                 }
 
                 return result;
@@ -605,6 +616,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     throw new NotSupportedException(nameof(firstOrDefaultCall));
                 }
+
+                if (where != null)
+                {
+                    selectExpression.Where = where;
+                }
+
                 return selectExpression;
             }
             else

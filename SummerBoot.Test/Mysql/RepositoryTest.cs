@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using Xunit;
 
@@ -198,7 +199,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal(2, bindResult7.Data.Count);
             var bindResult8 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "page5", 5);
             Assert.Single(bindResult8.Data);
-
+            
             //test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
                 .ExecuteUpdateAsync();
@@ -350,6 +351,11 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal(2, bindResult7.Data.Count);
             var bindResult8 = customerRepository.GetCustomerByPageByCondition(pageable, "page5", 5);
             Assert.Single(bindResult8.Data);
+            //²âÊÔfirstOrDefault
+            var firstOrDefaultResult = customerRepository.FirstOrDefault(it => it.Name == "page5");
+            Assert.NotNull(firstOrDefaultResult);
+            var firstOrDefaultResult2 = customerRepository.First(it => it.Name == "page5");
+            Assert.NotNull(firstOrDefaultResult2);
 
             //test update 
             var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")

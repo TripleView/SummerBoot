@@ -360,7 +360,11 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(2, bindResult7.Data.Count);
             var bindResult8 = customerRepository.GetCustomerByPageByCondition(pageable, "page5", 5);
             Assert.Single(bindResult8.Data);
-
+            //²âÊÔfirstOrDefault
+            var firstOrDefaultResult = customerRepository.FirstOrDefault(it => it.Name == "page5");
+            Assert.NotNull(firstOrDefaultResult);
+            var firstOrDefaultResult2 = customerRepository.First(it => it.Name == "page5");
+            Assert.NotNull(firstOrDefaultResult2);
 
             //test update 
             var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")

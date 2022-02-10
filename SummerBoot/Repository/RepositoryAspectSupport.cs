@@ -1,21 +1,16 @@
-﻿using System;
+﻿using Dapper;
+using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Core;
+using SummerBoot.Repository.Attributes;
+using SummerBoot.Repository.SqlParser.Dialect;
+using SummerBoot.Repository.SqlParser.Dto;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
-using Castle.DynamicProxy.Internal;
-using Dapper;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using SqlOnline.Utils;
-using SummerBoot.Core;
-using SummerBoot.Repository.Attributes;
-using SummerBoot.Repository.SqlParser.Dialect;
-using SummerBoot.Repository.SqlParser.Dto;
 
 namespace SummerBoot.Repository
 {
@@ -143,7 +138,7 @@ namespace SummerBoot.Repository
                 {
                     throw new Exception("method argument must have pageable");
                 }
-                
+
                 OpenDb();
                 var sql = selectAttribute.Sql;
                 if (!sql.Contains("order by", StringComparison.OrdinalIgnoreCase))
@@ -352,7 +347,7 @@ namespace SummerBoot.Repository
                 {
                     var parameterName = parameterPrefix + name;
                     var matchResult = Regex.Match(matchValue, $"{parameterPrefix}\\w*");
-                    if (matchResult.Success&& matchResult.Value.ToLower()==parameterName.ToLower())
+                    if (matchResult.Success && matchResult.Value.ToLower() == parameterName.ToLower())
                     {
                         hasFind = true;
                     }
@@ -412,7 +407,7 @@ namespace SummerBoot.Repository
                 }
 
                 //如果是值类型或者字符串直接添加到参数里
-                if (parameterType.IsValueType || parameterTypeIsString)
+                if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
                 {
                     dbArgs.Add(parameterInfos[i].Name, args[i]);
                 }
@@ -424,7 +419,7 @@ namespace SummerBoot.Repository
                     {
                         var propertyType = info.PropertyType;
                         var propertyTypeIsString = propertyType.GetTypeInfo() == typeof(string);
-                        if (propertyType.IsValueType || propertyTypeIsString)
+                        if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
                         {
                             dbArgs.Add(info.Name, info.GetValue(args[i]));
                         }

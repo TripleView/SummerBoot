@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Castle.DynamicProxy;
+using System.Reflection;
 
 namespace SummerBoot.Core
 {
@@ -20,5 +18,7 @@ namespace SummerBoot.Core
         {
             return list != null && list.Count > 0;
         }
+
+        
     }
 }

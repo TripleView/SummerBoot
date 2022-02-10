@@ -1,23 +1,15 @@
-using Example.Models;
+using Example.Feign;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MySql.Data.MySqlClient;
-using SqlOnline.Utils;
+using Microsoft.OpenApi.Models;
 using SummerBoot.Core;
+using SummerBoot.Feign;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using Example.Feign;
-using Microsoft.Data.Sqlite;
-using SummerBoot.Feign;
-using Oracle.ManagedDataAccess.Client;
-using System.Data.SqlClient;
-using System.IO;
-using Microsoft.OpenApi.Models;
 
 namespace Example
 {
@@ -56,11 +48,6 @@ namespace Example
             services.AddSummerBootFeign();
 
             services.AddControllers();
-
-            services.AddSummerBootCache(it =>
-            {
-                it.UseRedis("129.204.47.226,password=summerBoot,abortConnect=false");
-            });
 
             services.AddMemoryCache();
 

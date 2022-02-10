@@ -34,23 +34,6 @@ namespace SummerBoot.Feign
             var logFactory = serviceProvider.GetService<ILoggerFactory>();
             var log = logFactory.CreateLogger<HttpService>();
 
-            if (fallBack != null)
-            {
-                policy = policy.WrapAsync(Policy<T>.Handle<Exception>()
-                      .FallbackAsync<T>(async (x) =>
-                      {
-                          interfaceTarget = serviceProvider.GetServiceByName(interfaceType.Name + "FallBack", interfaceType);
-                          var fallBackMethod = interfaceTarget.GetType().GetMethods().First(it => it.ReturnType == method.ReturnType && it.Name == method.Name);
-                          var fallBackTask = fallBackMethod.Invoke(interfaceTarget, args.ToArray()) as Task<T>;
-                          if (fallBackTask == null) throw new Exception("fallBack method ReturnValue error");
-                          return await fallBackTask;
-                      },(result =>
-                      {
-                          log.LogError($"feign客户端{name}进入回退,当前时间:" + DateTime.Now);
-                          return Task.CompletedTask;
-                      } )));
-            }
-
             var pollyAttribute = interfaceType.GetCustomAttribute<PollyAttribute>();
 
             if (pollyAttribute != null)
