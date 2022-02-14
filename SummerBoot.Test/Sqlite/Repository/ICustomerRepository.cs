@@ -31,15 +31,15 @@ namespace SummerBoot.Test.Sqlite.Repository
         /// <param name="name"></param>
         /// <returns></returns>
         [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}}")]
-        Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync([BindWhere] string name, [BindWhere()] int? age);
+        Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync(WhereItem name, WhereItem age);
 
         [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}} order by id")]
-        Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, [BindWhere] string name, [BindWhere()] int? age);
+        Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, WhereItem name, WhereItem age);
 
         [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}}")]
-        List<CustomerBuyProduct> GetCustomerByCondition([BindWhere] string name, [BindWhere()] int? age);
+        List<CustomerBuyProduct> GetCustomerByCondition(WhereItem name, WhereItem age);
 
         [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}} order by id")]
-        Page<Customer> GetCustomerByPageByCondition(IPageable pageable, [BindWhere] string name, [BindWhere()] int? age);
+        Page<Customer> GetCustomerByPageByCondition(IPageable pageable, WhereItem name, WhereItem age);
     }
 }

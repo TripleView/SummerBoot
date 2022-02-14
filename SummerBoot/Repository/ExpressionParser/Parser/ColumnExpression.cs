@@ -12,7 +12,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     /// <summary>
     /// 列表达式
     /// </summary>
-    public class ColumnExpression : DbBaseExpression
+     public class ColumnExpression : DbBaseExpression
     {
 
         public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index) : base((ExpressionType)DbExpressionType.Column, type)

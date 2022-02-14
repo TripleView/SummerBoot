@@ -250,14 +250,14 @@ var page = customerRepository.GetCustomerByPage(pageable, 5);
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 ````
-> 如果select这种查询方式需要拼接where查询条件怎么办？答案是将条件用{{}}包裹起来，同时在定义方法的时候，将条件变量用注解BindWhere标注，这样summerboot就会自动处理查询条件，处理规则如下
-> 如果是string类型，为空则不查询此条件，如果是可空类型，比如int?，如果为null则不查询此条件，不查询的意思就是sql语句中{{ }}包裹的查询条件自动替换为空字符串，使用例子如下所示：
+> 如果select这种查询方式需要拼接where查询条件怎么办？答案是将条件用{{}}包裹起来，同时在定义方法的时候，条件变量用WhereItem传入，这样summerboot就会自动处理查询条件，处理规则如下
+> 如果whereItem的active为true，即激活该条件，则sql语句中{{ }}包裹的查询条件会展开，如果active为false，则sql语句中{{ }}包裹的查询条件自动替换为空字符串，使用例子如下所示：
 ````
 [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}}")]
-Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync([BindWhere] string name, [BindWhere()] int? age);
+Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync(WhereItem name, WhereItem int? age);
 
 [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}} order by id")]
-Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, [BindWhere] string name, [BindWhere()] int? age);
+Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, WhereItem string name, WhereItem int? age);
 ````
 
 #### 1.3 接口同时自带了Get方法，通过id获取结果，和GetAll(),获取表里的所有结果集。

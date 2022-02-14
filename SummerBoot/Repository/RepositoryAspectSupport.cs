@@ -382,15 +382,21 @@ namespace SummerBoot.Repository
                 //如果是分页参数直接跳过
                 if (typeof(IPageable).IsAssignableFrom(parameterType))
                 {
+                    if (pageable != null)
+                    {
+                        throw new NotSupportedException("2 IPageable parameters are not supported");
+                    }
                     pageable = (IPageable)args[i];
                 }
+
                 //查找所有条件语句替换
-                var bindWhere = parameterInfos[i].GetCustomAttribute<BindWhereAttribute>();
-                if (bindWhere != null)
+                var bindWhere = typeof(WhereItem).IsAssignableFrom(parameterType);
+                if (bindWhere)
                 {
+                    var paramAttribute = parameterInfos[i].GetCustomAttribute<ParamAttribute>();
                     var argValue = args[i];
-                    var parameterName = bindWhere.ParameterName.HasText()
-                        ? bindWhere.ParameterName
+                    var parameterName = paramAttribute != null && paramAttribute.Alias.HasText()
+                        ? paramAttribute.Alias
                         : parameterInfos[i].Name;
 
                     if (parameterName.IsNullOrWhiteSpace())
@@ -398,54 +404,69 @@ namespace SummerBoot.Repository
                         throw new ArgumentNullException(nameof(argValue));
                     }
 
-                    //如果是字符串类型且不为空，
-                    if (parameterTypeIsString && argValue != null && argValue.ToString().HasText() ||
-                        (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(Nullable<>) && argValue != null))
+                    if (parameterName.IsNullOrWhiteSpace())
                     {
-                        parameterDictionary.Add(parameterName, argValue);
+                        throw new ArgumentNullException(nameof(argValue));
+                    }
+
+                    var arg = argValue as WhereItem;
+                    if (arg != null && arg.Active)
+                    {
+                        parameterDictionary.Add(parameterName, arg.Value);
+                        dbArgs.Add(parameterName, arg.Value);
+                    }
+                }
+                else
+                {
+                    //如果是值类型或者字符串直接添加到参数里
+                    if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
+                    {
+                        dbArgs.Add(parameterInfos[i].Name, args[i]);
+                    }
+                    //如果是类，则读取属性值，然后添加到参数里
+                    else if (parameterType.IsClass)
+                    {
+                        var properties = parameterType.GetProperties();
+                        foreach (PropertyInfo info in properties)
+                        {
+                            var propertyType = info.PropertyType;
+                            var propertyTypeIsString = propertyType.GetTypeInfo() == typeof(string);
+                            if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
+                            {
+                                dbArgs.Add(info.Name, info.GetValue(args[i]));
+                            }
+                            //查找所有条件语句替换
+                            var propertyBindWhere = typeof(WhereItem).IsAssignableFrom(propertyType);
+                            if (propertyBindWhere)
+                            {
+                                var paramAttribute = parameterInfos[i].GetCustomAttribute<ParamAttribute>();
+                                var argValue = info.GetValue(args[i]);
+                                var parameterName = paramAttribute != null && paramAttribute.Alias.HasText()
+                                    ? paramAttribute.Alias
+                                    : parameterInfos[i].Name;
+
+                                if (parameterName.IsNullOrWhiteSpace())
+                                {
+                                    throw new ArgumentNullException(nameof(argValue));
+                                }
+
+                                if (parameterName.IsNullOrWhiteSpace())
+                                {
+                                    throw new ArgumentNullException(nameof(argValue));
+                                }
+
+                                var arg = argValue as WhereItem;
+                                if ( arg != null && arg.Active)
+                                {
+                                    parameterDictionary.Add(parameterName, arg.Value);
+                                    dbArgs.Add(parameterName, arg.Value);
+                                }
+                            }
+                        }
                     }
                 }
 
-                //如果是值类型或者字符串直接添加到参数里
-                if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
-                {
-                    dbArgs.Add(parameterInfos[i].Name, args[i]);
-                }
-                //如果是类，则读取属性值，然后添加到参数里
-                else if (parameterType.IsClass)
-                {
-                    var properties = parameterType.GetProperties();
-                    foreach (PropertyInfo info in properties)
-                    {
-                        var propertyType = info.PropertyType;
-                        var propertyTypeIsString = propertyType.GetTypeInfo() == typeof(string);
-                        if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
-                        {
-                            dbArgs.Add(info.Name, info.GetValue(args[i]));
-                        }
-                        //查找所有条件语句替换
-                        var propertyBindWhere = propertyType.GetCustomAttribute<BindWhereAttribute>();
-                        if (propertyBindWhere != null)
-                        {
-                            var argValue = info.GetValue(args[i]);
-                            var parameterName = propertyBindWhere.ParameterName.HasText()
-                                ? propertyBindWhere.ParameterName
-                                : propertyType.Name;
 
-                            if (parameterName.IsNullOrWhiteSpace())
-                            {
-                                throw new ArgumentNullException(nameof(argValue));
-                            }
-
-                            //如果是字符串类型且不为空，
-                            if (propertyTypeIsString && argValue != null && argValue.ToString().HasText() ||
-                                (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>) && argValue != null))
-                            {
-                                parameterDictionary.Add(parameterName, argValue);
-                            }
-                        }
-                    }
-                }
             }
 
             return dbArgs;

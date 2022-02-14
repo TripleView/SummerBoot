@@ -183,7 +183,9 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
             //测试bindWhere构造条件
-            var bindResult = await customerRepository.GetCustomerByConditionAsync("page5",null);
+            var ageOfFalseWhereItem = WhereItem.Of(false, 0);
+            var nameOfTrueWhereItem = WhereItem.Of(true, "page5");
+            var bindResult = await customerRepository.GetCustomerByConditionAsync(nameOfTrueWhereItem, ageOfFalseWhereItem);
             Assert.Single(bindResult);
             var bindResult2 = await customerRepository.GetCustomerByConditionAsync("", null);
             Assert.Equal(102, bindResult2.Count);
