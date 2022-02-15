@@ -42,6 +42,7 @@ namespace SummerBoot.Repository
             dbFactory = ServiceProvider.GetService<IDbFactory>();
             repositoryOption = ServiceProvider.GetService<RepositoryOption>();
             parameterDictionary.Clear();
+            pageable = null;
         }
 
         protected void OpenDb()
@@ -390,7 +391,7 @@ namespace SummerBoot.Repository
                 }
 
                 //查找所有条件语句替换
-                var bindWhere = typeof(WhereItem).IsAssignableFrom(parameterType);
+                var bindWhere = parameterType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(parameterType.GetGenericTypeDefinition());
                 if (bindWhere)
                 {
                     var paramAttribute = parameterInfos[i].GetCustomAttribute<ParamAttribute>();
@@ -409,11 +410,13 @@ namespace SummerBoot.Repository
                         throw new ArgumentNullException(nameof(argValue));
                     }
 
-                    var arg = argValue as WhereItem;
-                    if (arg != null && arg.Active)
+                    var value = parameterType.GetProperty("Value").GetValue(argValue);
+                    var active = (bool)parameterType.GetProperty("Active").GetValue(argValue);
+
+                    if (value != null && active)
                     {
-                        parameterDictionary.Add(parameterName, arg.Value);
-                        dbArgs.Add(parameterName, arg.Value);
+                        parameterDictionary.Add(parameterName, value);
+                        dbArgs.Add(parameterName, value);
                     }
                 }
                 else
@@ -436,7 +439,7 @@ namespace SummerBoot.Repository
                                 dbArgs.Add(info.Name, info.GetValue(args[i]));
                             }
                             //查找所有条件语句替换
-                            var propertyBindWhere = typeof(WhereItem).IsAssignableFrom(propertyType);
+                            var propertyBindWhere = propertyType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition());
                             if (propertyBindWhere)
                             {
                                 var paramAttribute = parameterInfos[i].GetCustomAttribute<ParamAttribute>();
@@ -455,11 +458,13 @@ namespace SummerBoot.Repository
                                     throw new ArgumentNullException(nameof(argValue));
                                 }
 
-                                var arg = argValue as WhereItem;
-                                if ( arg != null && arg.Active)
+                                var value = propertyType.GetProperty("Value").GetValue(argValue);
+                                var active = (bool)propertyType.GetProperty("Active").GetValue(argValue);
+
+                                if (value != null && active)
                                 {
-                                    parameterDictionary.Add(parameterName, arg.Value);
-                                    dbArgs.Add(parameterName, arg.Value);
+                                    parameterDictionary.Add(parameterName, value);
+                                    dbArgs.Add(parameterName, value);
                                 }
                             }
                         }

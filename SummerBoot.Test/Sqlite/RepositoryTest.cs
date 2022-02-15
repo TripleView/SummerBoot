@@ -192,21 +192,26 @@ namespace SummerBoot.Test.Sqlite
             Assert.Equal(10, page2.Data.Count);
 
             //测试bindWhere构造条件
-            var bindResult = await customerRepository.GetCustomerByConditionAsync("page5", null);
+            var nameEmpty = WhereBuilder.Empty<string>();
+            var ageEmpty = WhereBuilder.Empty<int>();
+            var nameWhereItem = WhereBuilder.HasValue("page5");
+            var ageWhereItem = WhereBuilder.HasValue(5);
+
+            var bindResult = await customerRepository.GetCustomerByConditionAsync(nameWhereItem, ageEmpty);
             Assert.Single(bindResult);
-            var bindResult2 = await customerRepository.GetCustomerByConditionAsync("", null);
+            var bindResult2 = await customerRepository.GetCustomerByConditionAsync(nameEmpty, ageEmpty);
             Assert.Equal(102, bindResult2.Count);
-            var bindResult3 = await customerRepository.GetCustomerByConditionAsync("", 5);
+            var bindResult3 = await customerRepository.GetCustomerByConditionAsync(nameEmpty, ageWhereItem);
             Assert.Equal(2, bindResult3.Count);
-            var bindResult4 = await customerRepository.GetCustomerByConditionAsync("page5", 5);
+            var bindResult4 = await customerRepository.GetCustomerByConditionAsync(nameWhereItem, ageWhereItem);
             Assert.Single(bindResult4);
-            var bindResult5 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "page5", null);
+            var bindResult5 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, nameWhereItem, ageEmpty);
             Assert.Single(bindResult5.Data);
-            var bindResult6 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "", null);
+            var bindResult6 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, nameEmpty, ageEmpty);
             Assert.Equal(10, bindResult6.Data.Count);
-            var bindResult7 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "", 5);
+            var bindResult7 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, nameEmpty, ageWhereItem);
             Assert.Equal(2, bindResult7.Data.Count);
-            var bindResult8 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, "page5", 5);
+            var bindResult8 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, nameWhereItem, ageWhereItem);
             Assert.Single(bindResult8.Data);
 
             //test update 
@@ -340,22 +345,29 @@ namespace SummerBoot.Test.Sqlite
             Assert.Equal(10, page2.Data.Count);
 
             //测试bindWhere构造条件
-            var bindResult = customerRepository.GetCustomerByCondition("page5", null);
+            var nameEmpty = WhereBuilder.Empty<string>();
+            var ageEmpty = WhereBuilder.Empty<int>();
+            var nameWhereItem = WhereBuilder.HasValue("page5");
+            var ageWhereItem = WhereBuilder.HasValue(5);
+
+            var bindResult = customerRepository.GetCustomerByCondition(nameWhereItem, ageEmpty);
             Assert.Single(bindResult);
-            var bindResult2 = customerRepository.GetCustomerByCondition("", null);
+            var bindResult2 = customerRepository.GetCustomerByCondition(nameEmpty, ageEmpty);
             Assert.Equal(102, bindResult2.Count);
-            var bindResult3 = customerRepository.GetCustomerByCondition("", 5);
+            var bindResult3 = customerRepository.GetCustomerByCondition(nameEmpty, ageWhereItem);
             Assert.Equal(2, bindResult3.Count);
-            var bindResult4 = customerRepository.GetCustomerByCondition("page5", 5);
+            var bindResult4 = customerRepository.GetCustomerByCondition(nameWhereItem, ageWhereItem);
             Assert.Single(bindResult4);
-            var bindResult5 = customerRepository.GetCustomerByPageByCondition(pageable, "page5", null);
+            var bindResult5 = customerRepository.GetCustomerByPageByCondition(pageable, nameWhereItem, ageEmpty);
             Assert.Single(bindResult5.Data);
-            var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, "", null);
+            var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, nameEmpty, ageEmpty);
             Assert.Equal(10, bindResult6.Data.Count);
-            var bindResult7 = customerRepository.GetCustomerByPageByCondition(pageable, "", 5);
+            var bindResult7 = customerRepository.GetCustomerByPageByCondition(pageable, nameEmpty, ageWhereItem);
             Assert.Equal(2, bindResult7.Data.Count);
-            var bindResult8 = customerRepository.GetCustomerByPageByCondition(pageable, "page5", 5);
+            var bindResult8 = customerRepository.GetCustomerByPageByCondition(pageable, nameWhereItem, ageWhereItem);
             Assert.Single(bindResult8.Data);
+
+
             //测试firstOrDefault
             var firstOrDefaultResult = customerRepository.FirstOrDefault(it => it.Name == "page5");
             Assert.NotNull(firstOrDefaultResult);

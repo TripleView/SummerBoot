@@ -250,20 +250,42 @@ var page = customerRepository.GetCustomerByPage(pageable, 5);
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 ````
-> 如果select这种查询方式需要拼接where查询条件怎么办？答案是将条件用{{}}包裹起来，同时在定义方法的时候，条件变量用WhereItem传入，这样summerboot就会自动处理查询条件，处理规则如下
-> 如果whereItem的active为true，即激活该条件，则sql语句中{{ }}包裹的查询条件会展开，如果active为false，则sql语句中{{ }}包裹的查询条件自动替换为空字符串，使用例子如下所示：
+> 如果select这种查询方式需要拼接where查询条件怎么办？答案是将条件用{{}}包裹起来，一个条件里只能包括一个变量，同时在定义方法的时候，条件变量用WhereItem<T>,T为泛型参数，代表真正的值的类型传入，这样summerboot就会自动处理查询条件，处理规则如下
+> 如果whereItem的active为true，即激活该条件，则sql语句中{{ }}包裹的查询条件会展开并参与查询，如果active为false，则sql语句中{{ }}包裹的查询条件自动替换为空字符串，不参与查询，为了使用whereItem更方便，提供了WhereBuilder这种方式，使用例子如下所示：
 ````
-[Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}}")]
-Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync(WhereItem name, WhereItem int? age);
+//definition
+[AutoRepository]
+public interface ICustomerRepository : IBaseRepository<Customer>
+{
+[Select("select * from customer where 1=1 {{ and name=@name}}{{ and age=@age}}")]
+Task<List<CustomerBuyProduct>> GetCustomerByConditionAsync(WhereItem<string> name, WhereItem<int> age);
 
-[Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}} order by id")]
-Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, WhereItem string name, WhereItem int? age);
+[Select("select * from customer where 1=1 {{ and name=@name}}{{ and age=@age}} order by id")]
+Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, WhereItem<string> name, WhereItem<int> age);
+}
+
+//use
+var nameEmpty = WhereBuilder.Empty<string>();//var nameEmpty =  WhereBuilder.Of(false,"")
+var ageEmpty = WhereBuilder.Empty<int>();
+var nameWhereItem = WhereBuilder.HasValue("page5");//var nameWhereItem =  WhereBuilder.Of(true,"page5")
+var ageWhereItem = WhereBuilder.HasValue(5);
+var pageable = new Pageable(1, 10);
+
+var bindResult = customerRepository.GetCustomerByCondition(nameWhereItem, ageEmpty);
+Assert.Single(bindResult);
+var bindResult2 = customerRepository.GetCustomerByCondition(nameEmpty, ageEmpty);
+Assert.Equal(102, bindResult2.Count);
+var bindResult5 = customerRepository.GetCustomerByPageByCondition(pageable, nameWhereItem, ageEmpty);
+Assert.Single(bindResult5.Data);
+var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, nameEmpty, ageEmpty);
 ````
+
+>如果还有更复杂的自定义查询怎么办？参考 6.如果有些特殊情况要求自己手写实现类怎么办?
 
 #### 1.3 接口同时自带了Get方法，通过id获取结果，和GetAll(),获取表里的所有结果集。
 
-### 增
-#### 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。
+### 2. 增
+#### 2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。
 ````
 var customer = new Customer() { Name = "testCustomer" };
 customerRepository.Insert(customer);
@@ -273,25 +295,25 @@ var customer3 = new Customer() { Name = "testCustomer3" };
 var customerList = new List<Customer>() { customer2, customer3 };
 customerRepository.Insert(customerList);
 ````
-### 删
-#### 1.1 接口自带了Delete方法，可以删除单个实体，或者实体列表
+### 3.删
+#### 3.1 接口自带了Delete方法，可以删除单个实体，或者实体列表
 ````
 customerRepository.Delete(customer);
 
 customerRepository.Delete(customerList);
 ````
-#### 1.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如
+#### 3.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如
 ````
  var deleteCount = customerRepository.Delete(it => it.Age > 5);
 ````
-### 改
-#### 1.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。
+### 4.改
+#### 4.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。
 ````
 customerRepository.Update(customer);
 
 customerRepository.Update(customerList);
 ````
-#### 1.2 同时还支持基于IQueryable链式语法的更新方式，返回受影响的行数，例如
+#### 4.2 同时还支持基于IQueryable链式语法的更新方式，返回受影响的行数，例如
 ````
 var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 .SetValue(it=>it.Age,5)
@@ -299,8 +321,8 @@ var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 .ExecuteUpdate();
 ````
 
-### 事务支持
-#### 事务支持，需要在使用的时候注入自定义仓储接口的同时，也注入框架自带的IUnitOfWork接口，用法如下
+### 5.事务支持
+#### 5.1 事务支持，需要在使用的时候注入自定义仓储接口的同时，也注入框架自带的IUnitOfWork接口，用法如下
 
 ````
 //uow is IUnitOfWork interface
@@ -323,8 +345,8 @@ catch (Exception e)
 }
 ````
 
-### 如果有些特殊情况要求自己手写实现类怎么办?
-#### 1.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法，注意，此时该接口无需添加AutoRepository注解
+### 6.如果有些特殊情况要求自己手写实现类怎么办?
+#### 6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法，注意，此时该接口无需添加AutoRepository注解
 ````
 public interface ICustomCustomerRepository : IBaseRepository<Customer>
 {
@@ -337,7 +359,7 @@ public interface ICustomCustomerRepository : IBaseRepository<Customer>
     Task<int> CustomQueryAsync();
 }
 ````
-#### 1.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解，注解的参数为这个类对应的自定义接口的类型和服务的声明周期ServiceLifetime（周期默认为scope级别），添加AutoRegister注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
+#### 6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解，注解的参数为这个类对应的自定义接口的类型和服务的声明周期ServiceLifetime（周期默认为scope级别），添加AutoRegister注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
 
 ````
 [ManualRepository(typeof(ICustomCustomerRepository))]
