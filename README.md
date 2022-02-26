@@ -362,7 +362,7 @@ public interface ICustomCustomerRepository : IBaseRepository<Customer>
 #### 6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解，注解的参数为这个类对应的自定义接口的类型和服务的声明周期ServiceLifetime（周期默认为scope级别），添加AutoRegister注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
 
 ````
-[ManualRepository(typeof(ICustomCustomerRepository))]
+[AutoRegister(typeof(ICustomCustomerRepository))]
 public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustomerRepository
 {
     public CustomCustomerRepository(IUnitOfWork uow, IDbFactory dbFactory, RepositoryOption repositoryOption) : base(uow, dbFactory, repositoryOption)
