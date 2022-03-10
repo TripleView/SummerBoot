@@ -968,7 +968,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             //如果缓存中没有任何列
             if (_lastColumns.Count == 0) return base.VisitParameter(param);
 
-            //根据_lastColumns中生成newColumns,Value = Expression.Constant(oldColumn)也就是对oldColumn的一个引用
+            //根据_lastColumns中生成newColumns,Name = Expression.Constant(oldColumn)也就是对oldColumn的一个引用
             var newColumns = _lastColumns.Values.Select(oldColumn =>
                 new ColumnExpression(oldColumn.Type,
                     oldColumn.TableAlias,
@@ -1158,7 +1158,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 //else if (argument is MethodCallExpression methodCallExpression)
                 //{
-                //    var value = constantExpression.Value;
+                //    var value = constantExpression.Name;
                 //    var newColumn = new ColumnExpression(constantExpression.Type, "", memberInfo, i, value);
                 //    newColumns.Add(newColumn);
                 //}

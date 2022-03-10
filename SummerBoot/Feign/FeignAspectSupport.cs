@@ -1,20 +1,29 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration.EnvironmentVariables;
+using Newtonsoft.Json;
+using SummerBoot.Feign.Attributes;
 
 namespace SummerBoot.Feign
 {
     public class FeignAspectSupport
     {
         private IServiceProvider _serviceProvider;
+        /// <summary>
+        /// 解析方法的参数以及值
+        /// </summary>
+        private Dictionary<string, string> parameters = new Dictionary<string, string>();
 
         public async Task<T> BaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
@@ -29,25 +38,37 @@ namespace SummerBoot.Feign
             //接口类型
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
+
             var feignClientAttribute = interfaceType.GetCustomAttribute<FeignClientAttribute>();
+            if (feignClientAttribute == null) throw new Exception(nameof(feignClientAttribute));
+
             var url = feignClientAttribute.Url;
-            var path = feignClientAttribute.Path;
-            var path2 = string.Empty;
-            var clientName = feignClientAttribute.Name;
-            var requestPath = url + path;
-            var requestTemplate = new RequestTemplate();
+
+            var clientName = feignClientAttribute.Name.GetValueOrDefault(interfaceType.FullName);
+            var requestPath = url;
+            var requestTemplate = new RequestTemplate()
+            {
+                ClientName = clientName
+            };
 
             //获得请求拦截器
             var requestInterceptor = serviceProvider.GetService<IRequestInterceptor>();
-            
+
+            //处理参数
+            ProcessParameter(method, args, requestTemplate, encoder);
+
             //处理请求头逻辑
             ProcessHeaders(method, requestTemplate);
 
+            var path = "";
+
+            var mappingCount = 0;
             //处理get逻辑
             var getMappingAttribute = method.GetCustomAttribute<GetMappingAttribute>();
             if (getMappingAttribute != null)
             {
-                path2 = getMappingAttribute.Value;
+                mappingCount++;
+                path = getMappingAttribute.Value;
                 requestTemplate.HttpMethod = HttpMethod.Get;
             }
 
@@ -55,22 +76,45 @@ namespace SummerBoot.Feign
             var postMappingAttribute = method.GetCustomAttribute<PostMappingAttribute>();
             if (postMappingAttribute != null)
             {
-                path2 = postMappingAttribute.Value;
+                mappingCount++;
+                path = postMappingAttribute.Value;
                 requestTemplate.HttpMethod = HttpMethod.Post;
             }
 
-            var urlTemp = (requestPath + path2).ToLower();
-            
-            requestTemplate.Url = GetUrl(urlTemp);
+            //处理put逻辑
+            var putMappingAttribute = method.GetCustomAttribute<PutMappingAttribute>();
+            if (putMappingAttribute != null)
+            {
+                mappingCount++;
+                path = putMappingAttribute.Value;
+                requestTemplate.HttpMethod = HttpMethod.Put;
+            }
 
-            //处理参数,因为有些参数需要拼接到url里，所以要在url处理完毕后才能处理参数
-            ProcessParameter(method, args, requestTemplate, encoder);
+            //处理Delete逻辑
+            var deleteMappingAttribute = method.GetCustomAttribute<DeleteMappingAttribute>();
+            if (deleteMappingAttribute != null)
+            {
+                mappingCount++;
+                path = deleteMappingAttribute.Value;
+                requestTemplate.HttpMethod = HttpMethod.Delete;
+            }
+
+            if (mappingCount > 1)
+            {
+                throw new NotSupportedException("only support one httpMapping");
+            }
+
+            var urlTemp = requestPath + path;
+
+            urlTemp = GetUrl(urlTemp);
+
+            requestTemplate.Url = ReplaceVariable(urlTemp);
 
             //如果存在拦截器，则进行拦截
-            if(requestInterceptor!=null) requestInterceptor.Apply(requestTemplate);
+            if (requestInterceptor != null) requestInterceptor.Apply(requestTemplate);
 
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
-           
+
             //判断方法返回值是否为异步类型
             var isAsyncReturnType = method.ReturnType.IsAsyncType();
             //返回类型
@@ -83,19 +127,19 @@ namespace SummerBoot.Feign
 
         private string GetUrl(string urlTemp)
         {
-            Func<string,string> func = (string s) =>
-            {
-                s = s.Replace("//", "/");
-                s = s.Replace("///", "/");
-                s = "http://" + s;
-                return s;
-            };
+            Func<string, string> func = (string s) =>
+             {
+                 s = s.Replace("//", "/");
+                 s = s.Replace("///", "/");
+                 s = "http://" + s;
+                 return s;
+             };
 
             if (urlTemp.Length < 8)
             {
                 return func(urlTemp);
             }
-            
+
             var isHttp = urlTemp.Substring(0, 7) == "http://";
             var isHttps = urlTemp.Substring(0, 8) == "https://";
             if (!isHttp && !isHttps)
@@ -111,7 +155,7 @@ namespace SummerBoot.Feign
 
             if (isHttps)
             {
-                urlTemp=urlTemp.Substring(8, urlTemp.Length - 8);
+                urlTemp = urlTemp.Substring(8, urlTemp.Length - 8);
                 urlTemp = urlTemp.Replace("//", "/");
                 urlTemp = urlTemp.Replace("///", "/");
                 urlTemp = "https://" + urlTemp;
@@ -138,6 +182,10 @@ namespace SummerBoot.Feign
                         var headerParamArr = headerParam.Split(":");
                         var key = headerParamArr[0].Trim();
                         var keyValue = headerParamArr[1];
+                        //替换变量
+                        key = ReplaceVariable(key);
+                        keyValue = ReplaceVariable(keyValue);
+
                         var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
                         if (!hasHeaderKey) keyList = new List<string>();
                         keyList.Add(keyValue.Trim());
@@ -147,68 +195,125 @@ namespace SummerBoot.Feign
             }
         }
 
+        private string ReplaceVariable(string str)
+        {
+            if (string.IsNullOrWhiteSpace(str))
+            {
+                return str;
+            }
+
+            foreach (var pair in parameters)
+            {
+                str = str.Replace($"{{{pair.Key}}}", pair.Value);
+            }
+
+            return str;
+        }
+
         /// <summary>
         /// 处理参数
         /// </summary>
         private void ProcessParameter(MethodInfo method, object[] args, RequestTemplate requestTemplate, IFeignEncoder encoder)
         {
             var parameterInfos = method.GetParameters();
-            //所有参数里，body注解和form注解只能有一个
-            var hasBodyAttribute = false;
-            var hasFormAttribute = false;
-            //参数集合
-            var parameters = new Dictionary<string, string>();
-            //url
-            var url = requestTemplate.Url;
 
             for (var i = 0; i < parameterInfos.Length; i++)
             {
                 var arg = args[i];
                 var parameterInfo = parameterInfos[i];
                 var parameterType = parameterInfos[i].ParameterType;
-                var paramAttribute = parameterInfo.GetCustomAttribute<ParamAttribute>();
+                var aliasAsAttribute = parameterInfo.GetCustomAttribute<AliasAsAttribute>();
                 var bodyAttribute = parameterInfo.GetCustomAttribute<BodyAttribute>();
-                var formAttribute = parameterInfo.GetCustomAttribute<FormAttribute>();
-                var parameterName = parameterInfos[i].Name;
 
-                if (paramAttribute != null && bodyAttribute != null)
-                {
-                    throw new Exception(parameterType.Name + "can not accept parameterAttrite and bodyAttribute");
-                }
-
-                var parameterTypeIsString = parameterType.IsString();
-
-                //处理param类型
-                if ((parameterTypeIsString || parameterType.IsValueType) && bodyAttribute == null)
-                {
-                    parameterName = paramAttribute != null? paramAttribute.Value.GetValueOrDefault(parameterName):parameterName;
-                    parameters.Add(parameterName, arg.ToString());
-                }
+                var parameterName = aliasAsAttribute != null ? aliasAsAttribute.Name : parameterInfos[i].Name;
 
                 //处理body类型
-                if (!parameterTypeIsString && parameterType.IsClass && bodyAttribute != null)
+                if (bodyAttribute != null)
                 {
-                    if (hasBodyAttribute) throw new Exception("bodyAttribute just only one");
-                    if (hasFormAttribute) throw new Exception("formAttribute and bodyAttribute can not exist at the same time");
-                    hasBodyAttribute = true;
-                    requestTemplate.IsForm = false;
-                    encoder.Encoder(args[i], requestTemplate);
-                }
+                    switch (bodyAttribute.SerializationKind)
+                    {
+                        case BodySerializationKind.Json:
+                            requestTemplate.HttpContent = encoder.Encoder(args[i]);
 
-                //处理form类型
-                if (!parameterTypeIsString && parameterType.IsClass && formAttribute != null)
+                            break;
+                        case BodySerializationKind.Form:
+
+                            if (arg is string str)
+                            {
+                                requestTemplate.HttpContent = new StringContent(Uri.EscapeDataString(str),
+                                    Encoding.UTF8, "application/x-www-form-urlencoded");
+                            }
+                            else
+                            {
+                                var dictionary = new Dictionary<string, string>();
+
+                                if (arg is IDictionary tempDictionary)
+                                {
+                                    foreach (var key in tempDictionary.Keys)
+                                    {
+                                        var value = tempDictionary[key];
+                                        if (value != null)
+                                        {
+                                            dictionary.Add(key.ToString(), value?.ToString());
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    var parameterPropertyInfos = parameterType.GetProperties();
+                                    foreach (var propertyInfo in parameterPropertyInfos)
+                                    {
+                                        var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
+
+                                        var key = propertyAliasAsAttribute != null
+                                            ? propertyAliasAsAttribute.Name
+                                            : propertyInfo.Name;
+
+                                        var value = propertyInfo.GetValue(arg);
+                                        if (value != null)
+                                        {
+                                            dictionary.Add(key.ToString(), value?.ToString());
+                                        }
+                                    }
+                                }
+                                requestTemplate.HttpContent = new FormUrlEncodedContent(dictionary);
+                            }
+
+                            break;
+                    }
+
+                }
+                else
                 {
-                    if (hasFormAttribute) throw new Exception("formAttribute just only one");
-                    if (hasBodyAttribute)throw new Exception("formAttribute and bodyAttribute can not exist at the same time");
-                    hasFormAttribute = true;
-                    requestTemplate.IsForm = true;
-                    encoder.EncoderFormValue(args[i], requestTemplate);
+                    if (arg != null)
+                    {
+                        if (arg is string str || parameterType.IsValueType)
+                        {
+                            parameters.Add(parameterName, arg.ToString());
+                        }
+                        else if (parameterType.IsClass)
+                        {
+                            var parameterPropertyInfos = parameterType.GetProperties();
+                            foreach (var propertyInfo in parameterPropertyInfos)
+                            {
+                                var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
+
+                                var key = propertyAliasAsAttribute != null
+                                    ? propertyAliasAsAttribute.Name
+                                    : propertyInfo.Name;
+
+                                var value = propertyInfo.GetValue(arg);
+                                if (value != null)
+                                {
+                                    parameters.Add(key, value.ToString());
+                                }
+                            }
+                        }
+
+                    }
                 }
             }
 
-            var strParam = string.Join("&", parameters.Select(o => o.Key + "=" + o.Value));
-            if (strParam.HasText()) url = string.Concat(url, '?', strParam);
-            requestTemplate.Url = url;
         }
     }
 }

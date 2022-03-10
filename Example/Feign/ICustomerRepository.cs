@@ -6,13 +6,14 @@ using Example.Dto;
 using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Core;
 using SummerBoot.Feign;
+using SummerBoot.Feign.Attributes;
 
 namespace Example.Feign
 {
     /// <summary>
     /// 会员接口
     /// </summary>
-    [FeignClient(name: "CustomerService", url: "http://localhost:5001/", fallBack: typeof(CustomerFallBack))]
+    [FeignClient(Name = "CustomerService",Url = "http://localhost:5001/", FallBack = typeof(CustomerFallBack))]
     [Polly(retry:3,timeout:2000,retryInterval:1000)]
     public interface ICustomerRepository
     {

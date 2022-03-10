@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using demo.Service;
 using Example.Feign;
@@ -18,7 +19,9 @@ namespace Example
     {
         public static void Main(string[] args)
         {
-            
+            var Username = "token-zpz5g";
+            var Password = "l5v5r8v2j5f47cvd9lqxvhn5t4grr2np676jxxcj4bj6p4x8jx2vf4";
+            //var d = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{Username}:{Password}"));
             CreateHostBuilder(args).Build().Run();
         }
 

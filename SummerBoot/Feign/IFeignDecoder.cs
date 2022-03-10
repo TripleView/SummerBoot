@@ -36,9 +36,7 @@ namespace SummerBoot.Feign
                 
                 var body = responseTemplate.Body;
                 var str = body.ConvertToString();
-                if (responseTemplate.HttpStatusCode != HttpStatusCode.OK) throw new Exception(str);
-                
-                //var json = new JsonSerializer().Deserialize(new JsonTextReader(new StringReader(str)), type)
+
                 return JsonConvert.DeserializeObject(str, type);
             }
 

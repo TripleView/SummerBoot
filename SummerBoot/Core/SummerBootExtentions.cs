@@ -10,30 +10,14 @@ using SummerBoot.Resource;
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
+using SummerBoot.Feign.Attributes;
 
 namespace SummerBoot.Core
 {
     public static class SummerBootExtentions
     {
-        /// <summary>
-        /// 添加summer boot扩展
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        public static IMvcBuilder AddSummerBootMvcExtention(this IMvcBuilder builder)
-        {
-            if (builder == null)
-                throw new ArgumentNullException(nameof(builder));
-            ControllerFeature feature = new ControllerFeature();
-            builder.PartManager.PopulateFeature<ControllerFeature>(feature);
-            foreach (Type type in feature.Controllers.Select<TypeInfo, Type>((Func<TypeInfo, Type>)(c => c.AsType())))
-                builder.Services.TryAddTransient(type, type);
-           
-
-            return builder;
-        }
-
         public static IServiceCollection AddSummerBoot(this IServiceCollection services, CultureInfo cultureInfo = null)
         {
             //设置语言
@@ -67,7 +51,7 @@ namespace SummerBoot.Core
                         services.AddTransient(interfaceType, it);
                         break;
                 }
-               
+
             });
 
             return services;
@@ -87,7 +71,7 @@ namespace SummerBoot.Core
             }
 
             var option = new SummerBootMvcOption();
-            
+
             action(option);
 
             if (option.UseGlobalExceptionHandle)
@@ -117,7 +101,7 @@ namespace SummerBoot.Core
             action(option);
 
             if (option.ConnectionString.IsNullOrWhiteSpace()) throw new Exception("ConnectionString is Require");
-            
+
             if (option.DbConnectionType == null) throw new Exception("DbConnectionType is Require");
             services.TryAddScoped<IDbFactory, DbFactory>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -174,6 +158,7 @@ namespace SummerBoot.Core
         public static IServiceCollection AddSummerBootFeign(this IServiceCollection services)
         {
             services.AddHttpClient();
+
             services.TryAddSingleton<IClient, IClient.DefaultFeignClient>();
             services.TryAddSingleton<IFeignEncoder, IFeignEncoder.DefaultEncoder>();
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
@@ -184,27 +169,16 @@ namespace SummerBoot.Core
             var types = Assembly.GetCallingAssembly().GetExportedTypes()
                 .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
 
-            var feignTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null);
+            var feignTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null).ToList();
 
             foreach (var type in feignTypes)
             {
-                CheckFeignFallBack(type, services);
                 services.AddSummerBootFeignService(type, ServiceLifetime.Scoped);
             }
             return services;
         }
 
-        private static void CheckFeignFallBack(Type type, IServiceCollection services)
-        {
-            var feignClient = type.GetCustomAttribute<FeignClientAttribute>();
-            var fallBack = feignClient.FallBack;
-            if (fallBack != null)
-            {
-                if (!fallBack.GetInterfaces().Contains(type)) throw new Exception("fallback must implement " + type.Name);
-                services.AddScoped(type, fallBack);
-            }
-        }
-
+        
         private static IServiceCollection AddSummerBootFeignService(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime)
         {
@@ -218,6 +192,38 @@ namespace SummerBoot.Core
 
                 return proxy;
             };
+
+            var feignClient = serviceType.GetCustomAttribute<FeignClientAttribute>();
+            if (feignClient == null)
+            {
+                throw new ArgumentNullException(nameof(serviceType));
+            }
+
+            var fallBack = feignClient.FallBack;
+            if (fallBack != null)
+            {
+                if (!fallBack.GetInterfaces().Contains(serviceType)) throw new Exception("fallback must implement " + serviceType.Name);
+                services.AddScoped(serviceType, fallBack);
+            }
+
+            feignClient.Name = feignClient.Name.GetValueOrDefault(serviceType.FullName);
+
+            var httpClient = services.AddHttpClient(feignClient.Name, it =>
+            {
+                if (feignClient.Timeout.HasValue)
+                {
+                    it.Timeout = TimeSpan.FromSeconds(feignClient.Timeout.Value);
+                }
+            });
+            //忽略https证书
+            if (feignClient.IsIgnoreHttpsCertificateValidate)
+            {
+                httpClient.ConfigurePrimaryHttpMessageHandler(it => new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                });
+            }
+
 
             var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
             services.Add(serviceDescriptor);

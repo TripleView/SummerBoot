@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Feign.Attributes;
 
 namespace SummerBoot.Feign
 {

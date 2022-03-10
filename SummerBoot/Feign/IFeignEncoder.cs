@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -15,27 +17,21 @@ namespace SummerBoot.Feign
         /// 序列化post中的body数据
         /// </summary>
         /// <param name="obj"></param>
-        /// <param name="requestTemplate"></param>
-        void Encoder(object obj, RequestTemplate requestTemplate);
+        HttpContent Encoder(object obj);
 
-        void EncoderFormValue(object obj, RequestTemplate requestTemplate);
+
         /// <summary>
         /// 默认的序列化器
         /// </summary>
         public class DefaultEncoder : IFeignEncoder
         {
-            public void Encoder(object obj, RequestTemplate requestTemplate)
+            public HttpContent Encoder(object obj)
             {
-                var objStr = JsonConvert.SerializeObject(obj);
-                requestTemplate.Body = objStr;
+                var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
+
+                return content;
             }
 
-            public void EncoderFormValue(object obj, RequestTemplate requestTemplate)
-            {
-                var objStr = JsonConvert.SerializeObject(obj);
-                var dic =JsonConvert.DeserializeObject<Dictionary<string, string>>(objStr);
-                requestTemplate.FormValue =dic.ToList();
-            }
         }
     }
 }

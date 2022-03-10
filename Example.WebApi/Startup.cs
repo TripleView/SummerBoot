@@ -1,19 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Example.WebApi.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using SummerBoot.Core;
-using SummerBoot.Feign;
+using System;
+using System.Collections.Generic;
 
 namespace Example.WebApi
 {
@@ -31,19 +25,16 @@ namespace Example.WebApi
         {
             services.AddSummerBoot();
 
+            //添加跨域
+            services.AddCors(it => it.AddPolicy("all", policy => policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true)));
+
+
             services.AddSummerBootRepository(it =>
             {
                 it.DbConnectionType = typeof(SqliteConnection);
                 it.ConnectionString = "Data source=./Customer.db";
             });
-            //初始化数据库 initDatabase
-            using (var database = new Db.Db())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-                database.Customer.Add(new Customer(){CustomerNo = "A001",Name = "Test",TotalConsumptionAmount = 0});
-                database.SaveChanges();
-            }
+            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "sukcore后台Api", Version = "v1" });
@@ -80,7 +71,7 @@ namespace Example.WebApi
                 // 添加控制器层注释，true表示显示控制器注释
                 c.IncludeXmlComments(xmlPath, true);
             });
-            services.AddControllers().AddSummerBootMvcExtention();
+            services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -92,6 +83,8 @@ namespace Example.WebApi
             }
 
             app.UseRouting();
+            
+            app.UseCors("all");
 
             app.UseAuthorization();
             

@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using SummerBoot.Core;
 
@@ -32,27 +33,15 @@ namespace SummerBoot.Feign
 
             public async Task<ResponseTemplate> ExecuteAsync(RequestTemplate requestTemplate, CancellationToken cancellationToken)
             {
-                var httpClient = HttpClientFactory.CreateClient();
-                httpClient.Timeout=TimeSpan.FromDays(3);
-
+                var httpClient = HttpClientFactory.CreateClient(requestTemplate.ClientName);
+                
                 var httpRequest = new HttpRequestMessage(requestTemplate.HttpMethod, requestTemplate.Url);
-
-                if (requestTemplate.HttpMethod == HttpMethod.Post)
-                {
-                    if (requestTemplate.IsForm)
-                    {
-                        httpRequest.Content = new FormUrlEncodedContent(requestTemplate.FormValue);
-                    }
-                    else
-                    {
-                        string postData = requestTemplate.Body.HasText() ? requestTemplate.Body : "";
-                        httpRequest.Content = new StringContent(postData);
-                    }
-                }
+                httpRequest.Content = requestTemplate.HttpContent;
 
                 //处理header
                 foreach (var requestTemplateHeader in requestTemplate.Headers)
                 {
+                    //HeaderNames
                     var uppperKey = requestTemplateHeader.Key.ToUpper();
 
                     var key = uppperKey.Replace("-", "");
@@ -78,6 +67,7 @@ namespace SummerBoot.Feign
 
                 var httpResponse = await httpClient.SendAsync(httpRequest,cancellationToken);
 
+                httpResponse.EnsureSuccessStatusCode();
 
                 //把httpResponseMessage转化为responseTemplate
                 var result = await ConvertResponseAsync(httpResponse);

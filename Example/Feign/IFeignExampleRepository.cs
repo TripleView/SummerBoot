@@ -6,10 +6,11 @@ using Example.Dto;
 using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Core;
 using SummerBoot.Feign;
+using SummerBoot.Feign.Attributes;
 
 namespace Example.Feign
 {
-    [FeignClient(name: "testFeign", url: "http://localhost:5001/")]
+    [FeignClient(Name = "testFeign", Url = "http://localhost:5001/")]
     [Polly(retry:3,timeout:2000,retryInterval:1000)]
     public interface IFeignExampleRepository
     {
@@ -29,7 +30,7 @@ namespace Example.Feign
         /// <param name="dto"></param>
         /// <returns></returns>
         [PostMapping("/demo/TestForm")]
-        Task<bool> TestForm([Form]FeignFormDto dto);
+        Task<bool> TestForm([Body(BodySerializationKind.Form)]FeignFormDto dto);
 
         /// <summary>
         /// get
