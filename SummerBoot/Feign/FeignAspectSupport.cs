@@ -115,12 +115,7 @@ namespace SummerBoot.Feign
 
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
 
-            //判断方法返回值是否为异步类型
-            var isAsyncReturnType = method.ReturnType.IsAsyncType();
-            //返回类型
-            var returnType = isAsyncReturnType ? method.ReturnType.GenericTypeArguments.First() : method.ReturnType;
-
-            var resultTmp = (T)decoder.Decoder(responseTemplate, returnType);
+            var resultTmp = decoder.Decoder<T>(responseTemplate);
 
             return resultTmp;
         }
@@ -290,6 +285,11 @@ namespace SummerBoot.Feign
                         if (arg is string str || parameterType.IsValueType)
                         {
                             parameters.Add(parameterName, arg.ToString());
+                        }else if (arg is MultipartItem multipartItem)
+                        {
+                            var multipartFormDataContent= new MultipartFormDataContent();
+                            multipartFormDataContent.Add(multipartItem.Content,multipartItem.Name, multipartItem.FileName);
+                            requestTemplate.HttpContent = multipartFormDataContent;
                         }
                         else if (parameterType.IsClass)
                         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
 namespace Example.WebApi.Controllers
@@ -22,6 +23,12 @@ namespace Example.WebApi.Controllers
         public IActionResult form([FromForm]test t)
         {
             return Content(JsonConvert.SerializeObject(t));
+        }
+
+        [HttpPost("multipart")]
+        public IActionResult multipart([FromForm] test t, [FromForm] IFormFile file)
+        {
+            return Content(JsonConvert.SerializeObject(t) + file.FileName);
         }
     }
 }
