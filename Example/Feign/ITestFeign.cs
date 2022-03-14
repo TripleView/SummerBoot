@@ -24,5 +24,9 @@ namespace Example.Feign
         Task<dynamic> Test([Body(BodySerializationKind.Form)] test tt);
         [PostMapping("/{methodName}")]
         Task<dynamic> Test2([Body(BodySerializationKind.Form)] test tt, poco poco);
+        
+        [Multipart]
+        [PostMapping("/multipart")]
+        Task<dynamic> MultipartTest([Body(BodySerializationKind.Form)] test tt,MultipartItem item);
     }
 }

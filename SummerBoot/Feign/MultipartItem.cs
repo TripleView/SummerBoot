@@ -9,29 +9,30 @@ namespace SummerBoot.Feign
     public class MultipartItem
     {
         
-        public string Name { get; set; }
-        public string FileName { get; set; }
+        public string Name { get;  }
+        public string FileName { get;}
 
         public HttpContent Content { get; }
 
-        public MultipartItem(Stream stream)
+        public MultipartItem(Stream stream, string name, string fileName)
         {
             this.Content = new StreamContent(stream);
+            this.Name = name;
+            this.FileName = fileName;
         }
 
-        public MultipartItem(FileInfo fileInfo)
+        public MultipartItem(FileInfo fileInfo, string name, string fileName)
         {
             this.Content = new StreamContent(fileInfo.OpenRead());
+            this.Name = name;
+            this.FileName = fileName;
         }
 
-        public MultipartItem(byte[] bytes)
+        public MultipartItem(byte[] bytes, string name, string fileName)
         {
-            this.Content =  new ByteArrayContent(bytes);
-        }
-
-        public MultipartItem(string str)
-        {
-            this.Content = new StringContent(str);
+            this.Content =new ByteArrayContent(bytes);
+            this.Name = name;
+            this.FileName = fileName;
         }
     }
 }

@@ -1,38 +1,48 @@
-﻿using Example.Feign;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using Example.Feign;
 using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Feign;
 
 namespace Example.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [Route("[controller]")]
     public class HomeController : Controller
     {
-        private readonly IRancherFeign feign;
         private readonly ITestFeign testFeign;
+        private readonly IRancherFeign rancherFeign;
 
-        public HomeController(IRancherFeign feign, ITestFeign testFeign)
+        public HomeController(ITestFeign testFeign, IRancherFeign rancherFeign)
         {
-            this.feign = feign;
             this.testFeign = testFeign;
+            this.rancherFeign = rancherFeign;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
         [HttpGet("index")]
         public IActionResult Index()
         {
-            //var Username = "token-zpz5g";
-            //var Password = "l5v5r8v2j5f47cvd9lqxvhn5t4grr2np676jxxcj4bj6p4x8jx2vf4";
-            //var c = "/v3/project/c-nkv2m:p-tbtrv/workloads/daemonset:default:tt2?action=redeploy";
-            //var bas = new BasicAuthorization(Username,Password);
-            //var d=feign.Redeploy(bas.GetBaseAuthString(), "c-nkv2m:p-tbtrv", "default:tt2").GetAwaiter().GetResult();
-            //var d= testFeign.Test(new test() { Name = "hzp", Age = 10 }).GetAwaiter().GetResult();
-
-            var d2 = testFeign.Test2(new test() { Name = "hzp2", Age = 10 },new poco(){Name = "form"}).GetAwaiter().GetResult();
+            var d3 = testFeign.MultipartTest(new test() { Name = "hzp2", Age = 10 }, new MultipartItem(System.IO.File.OpenRead(@"D:\2.jpg"), "file", "2.jpg")).GetAwaiter().GetResult();
             return Content("ok");
         }
+        [HttpGet("form")]
+        public IActionResult form()
+        {
+            var d2 = testFeign.Test2(new test() { Name = "hzp2", Age = 10 }, new poco() { Name = "form" }).GetAwaiter().GetResult();
+          
+            return Content(d2.ToString());
+        }
+
+        [HttpGet("auth")]
+        public IActionResult auth()
+        {
+            var Username = "token-zpz5g";
+            var Password = "l5v5r8v2j5f47cvd9lqxvhn5t4grr2np676jxxcj4bj6p4x8jx2vf4";
+            var d2 = testFeign.Test2(new test() { Name = "hzp2", Age = 10 }, new poco() { Name = "form" }).GetAwaiter().GetResult();
+            var d = rancherFeign.Redeploy(new BasicAuthorization(Username,Password), "c-nkv2m:p-tbtrv", "default:tt2").GetAwaiter().GetResult();
+
+            return Content(d2.ToString());
+        }
     }
+
 }

@@ -26,19 +26,19 @@ namespace Example
         public void ConfigureServices(IServiceCollection services)
         {
             //初始化数据库 initDatabase
-            using (var database = new Db())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
+            //using (var database = new Db())    //新增
+            //{
+            //    database.Database.EnsureDeleted();
+            //    database.Database.EnsureCreated();
+            //}
 
-            services.AddSummerBoot();
+            //services.AddSummerBoot();
 
-            services.AddSummerBootRepository(it =>
-            {
-                it.DbConnectionType = typeof(SqliteConnection);
-                it.ConnectionString = "Data source=./mydb.db";
-            });
+            //services.AddSummerBootRepository(it =>
+            //{
+            //    it.DbConnectionType = typeof(SqliteConnection);
+            //    it.ConnectionString = "Data source=./mydb.db";
+            //});
 
             services.AddOptions();
 
@@ -49,43 +49,43 @@ namespace Example
 
             services.AddControllers();
 
-            services.AddMemoryCache();
+            //services.AddMemoryCache();
 
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "sukcore后台Api", Version = "v1" });
                 var security = new Dictionary<string, IEnumerable<string>>
                     { { "sukcore", new string[] { } }};
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
-                {
-                    Description = "JWT授权token前面需要加上字段Bearer与一个空格,如Bearer token",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey,
-                    BearerFormat = "JWT",
-                    Scheme = "Bearer"
-                });
+                //c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+                //{
+                //    Description = "JWT授权token前面需要加上字段Bearer与一个空格,如Bearer token",
+                //    Name = "Authorization",
+                //    In = ParameterLocation.Header,
+                //    Type = SecuritySchemeType.ApiKey,
+                //    BearerFormat = "JWT",
+                //    Scheme = "Bearer"
+                //});
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] { }
-                    }
-                });
+                //c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                //{
+                //    {
+                //        new OpenApiSecurityScheme
+                //        {
+                //            Reference = new OpenApiReference {
+                //                Type = ReferenceType.SecurityScheme,
+                //                Id = "Bearer"
+                //            }
+                //        },
+                //        new string[] { }
+                //    }
+                //});
 
-                // 获取xml文件名
-                var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                // 获取xml文件路径
-                var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
-                // 添加控制器层注释，true表示显示控制器注释
-                c.IncludeXmlComments(xmlPath, true);
+                //// 获取xml文件名
+                //var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                //// 获取xml文件路径
+                //var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+                //// 添加控制器层注释，true表示显示控制器注释
+                //c.IncludeXmlComments(xmlPath, true);
             });
         }
 
@@ -100,7 +100,7 @@ namespace Example
 
             app.UseRouting();
 
-            app.UseAuthorization();
+            //app.UseAuthorization();
             // 添加Swagger有关中间件
             app.UseSwagger();
             app.UseSwaggerUI(c =>

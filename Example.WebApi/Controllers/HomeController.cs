@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.IO;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
@@ -20,7 +22,7 @@ namespace Example.WebApi.Controllers
         }
 
         [HttpPost("form")]
-        public IActionResult form([FromForm]test t)
+        public IActionResult form([FromForm] test t)
         {
             return Content(JsonConvert.SerializeObject(t));
         }
@@ -28,7 +30,17 @@ namespace Example.WebApi.Controllers
         [HttpPost("multipart")]
         public IActionResult multipart([FromForm] test t, [FromForm] IFormFile file)
         {
-            return Content(JsonConvert.SerializeObject(t) + file.FileName);
+           
+            using (FileStream stream = new FileStream(@"D:\test1\" + file.FileName, FileMode.Create))
+            {
+                var c= file.OpenReadStream().Length;
+                Console.WriteLine($"长度为{c},是否为null{stream==null}");
+                file.CopyTo(stream);
+         
+            }
+
+            t.Name += "-" + file.FileName;
+            return Content(JsonConvert.SerializeObject(t));
         }
     }
 }

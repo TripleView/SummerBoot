@@ -224,6 +224,14 @@ namespace SummerBoot.Core
                 });
             }
 
+            httpClient
+                .ConfigureHttpMessageHandlerBuilder(it =>
+                {
+                    //it.AdditionalHandlers.Add(new LoggingHandler());
+                });
+
+            //httpClient.ConfigurePrimaryHttpMessageHandler<LoggingHandler>();
+
 
             var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
             services.Add(serviceDescriptor);

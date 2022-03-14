@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -12,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using SummerBoot.Feign.Attributes;
 
@@ -115,9 +117,20 @@ namespace SummerBoot.Feign
 
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
 
-            var resultTmp = decoder.Decoder<T>(responseTemplate);
+            Exception ex;
+            try
+            {
+                var resultTmp = decoder.Decoder<T>(responseTemplate);
 
-            return resultTmp;
+                return resultTmp;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            responseTemplate.Body.Seek(0, SeekOrigin.Begin);
+            throw new Exception($@"response Decoder error,content is {responseTemplate.Body.ConvertToString()}", ex);
         }
 
         private string GetUrl(string urlTemp)
@@ -178,13 +191,21 @@ namespace SummerBoot.Feign
                         var key = headerParamArr[0].Trim();
                         var keyValue = headerParamArr[1];
                         //替换变量
-                        key = ReplaceVariable(key);
-                        keyValue = ReplaceVariable(keyValue);
+                        key = ReplaceVariable(key).Trim();
+                        keyValue = ReplaceVariable(keyValue).Trim();
 
                         var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
-                        if (!hasHeaderKey) keyList = new List<string>();
-                        keyList.Add(keyValue.Trim());
-                        if (!hasHeaderKey) requestTemplate.Headers.Add(key, keyList);
+
+                        if (!hasHeaderKey)
+                        {
+                            keyList = new List<string>();
+                            keyList.Add(keyValue);
+                            requestTemplate.Headers.Add(key, keyList);
+                        }
+                        else
+                        {
+                            keyList.Add(keyValue);
+                        }
                     }
                 }
             }
@@ -211,6 +232,9 @@ namespace SummerBoot.Feign
         private void ProcessParameter(MethodInfo method, object[] args, RequestTemplate requestTemplate, IFeignEncoder encoder)
         {
             var parameterInfos = method.GetParameters();
+            var multipartAttribute = method.GetCustomAttribute<MultipartAttribute>();
+            var multipartFormDataContent = new MultipartFormDataContent();
+
 
             for (var i = 0; i < parameterInfos.Length; i++)
             {
@@ -271,7 +295,19 @@ namespace SummerBoot.Feign
                                         }
                                     }
                                 }
-                                requestTemplate.HttpContent = new FormUrlEncodedContent(dictionary);
+
+                                if (multipartAttribute == null)
+                                {
+                                    requestTemplate.HttpContent = new FormUrlEncodedContent(dictionary);
+                                }
+                                else
+                                {
+                                    foreach (KeyValuePair<string, string> pair in dictionary)
+                                    {
+                                        multipartFormDataContent.Add(new StringContent(pair.Value), pair.Key);
+                                    }
+                                }
+
                             }
 
                             break;
@@ -285,11 +321,37 @@ namespace SummerBoot.Feign
                         if (arg is string str || parameterType.IsValueType)
                         {
                             parameters.Add(parameterName, arg.ToString());
-                        }else if (arg is MultipartItem multipartItem)
+                        }
+                        else if (arg is BasicAuthorization baseAuthorization)
                         {
-                            var multipartFormDataContent= new MultipartFormDataContent();
-                            multipartFormDataContent.Add(multipartItem.Content,multipartItem.Name, multipartItem.FileName);
-                            requestTemplate.HttpContent = multipartFormDataContent;
+                            var baseAuthString = baseAuthorization.GetBaseAuthString();
+                            if (baseAuthString.HasText())
+                            {
+                                var key = HeaderNames.Authorization.ToUpper();
+                                var keyValue = baseAuthString;
+                                var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
+
+                                if (!hasHeaderKey)
+                                {
+                                    keyList = new List<string>();
+                                    keyList.Add(keyValue);
+                                    requestTemplate.Headers.Add(key, keyList);
+                                }
+                                else
+                                {
+                                    keyList.Add(keyValue);
+                                }
+                            }
+                        }
+                        else if (arg is MultipartItem multipartItem)
+                        {
+
+                            var itemName = aliasAsAttribute != null ? aliasAsAttribute.Name : multipartItem.Name;
+                            multipartFormDataContent.Add(multipartItem.Content, itemName, multipartItem.FileName);
+                            if (multipartAttribute == null)
+                            {
+                                requestTemplate.HttpContent = multipartFormDataContent;
+                            }
                         }
                         else if (parameterType.IsClass)
                         {
@@ -313,7 +375,10 @@ namespace SummerBoot.Feign
                     }
                 }
             }
-
+            if (multipartAttribute != null)
+            {
+                requestTemplate.HttpContent = multipartFormDataContent;
+            }
         }
     }
 }

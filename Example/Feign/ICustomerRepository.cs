@@ -13,7 +13,7 @@ namespace Example.Feign
     /// <summary>
     /// 会员接口
     /// </summary>
-    [FeignClient(Name = "CustomerService",Url = "http://localhost:5001/", FallBack = typeof(CustomerFallBack))]
+    [FeignClient(Url = "http://localhost:5001/", FallBack = typeof(CustomerFallBack))]
     [Polly(retry:3,timeout:2000,retryInterval:1000)]
     public interface ICustomerRepository
     {

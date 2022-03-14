@@ -10,7 +10,7 @@ using SummerBoot.Feign.Attributes;
 
 namespace Example.Feign
 {
-    [FeignClient(Name = "testFeign", Url = "http://localhost:5001/")]
+    [FeignClient( Url = "http://localhost:5001/")]
     [Polly(retry:3,timeout:2000,retryInterval:1000)]
     public interface IFeignExampleRepository
     {
