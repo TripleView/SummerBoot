@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Security.Policy;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using SummerBoot.Feign;
 using SummerBoot.Feign.Attributes;
 
-namespace Example.Feign
+namespace SummerBoot.Test.Feign
 {
     public class test
     {

@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using Microsoft.Extensions.Http;
 using SummerBoot.Feign.Attributes;
 
 namespace SummerBoot.Core
@@ -159,11 +160,11 @@ namespace SummerBoot.Core
         {
             services.AddHttpClient();
 
-            services.TryAddSingleton<IClient, IClient.DefaultFeignClient>();
+            services.TryAddTransient<IClient, IClient.DefaultFeignClient>();
             services.TryAddSingleton<IFeignEncoder, IFeignEncoder.DefaultEncoder>();
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
             services.TryAddSingleton<IFeignProxyBuilder, FeignProxyBuilder>();
-            services.AddScoped<HttpService>();
+            services.TryAddTransient<HttpService>();
             HttpHeaderSupport.Init();
 
             var types = Assembly.GetCallingAssembly().GetExportedTypes()
@@ -173,7 +174,7 @@ namespace SummerBoot.Core
 
             foreach (var type in feignTypes)
             {
-                services.AddSummerBootFeignService(type, ServiceLifetime.Scoped);
+                services.AddSummerBootFeignService(type, ServiceLifetime.Transient);
             }
             return services;
         }
@@ -203,10 +204,21 @@ namespace SummerBoot.Core
             if (fallBack != null)
             {
                 if (!fallBack.GetInterfaces().Contains(serviceType)) throw new Exception("fallback must implement " + serviceType.Name);
-                services.AddScoped(serviceType, fallBack);
+                services.AddTransient(serviceType, fallBack);
             }
 
             feignClient.Name = feignClient.Name.GetValueOrDefault(serviceType.FullName);
+
+
+            if (feignClient.InterceptorType != null)
+            {
+                if (!feignClient.InterceptorType.GetInterfaces().Any(it => typeof(IRequestInterceptor) == it))
+                {
+                    throw new Exception($"{serviceType.FullName} must inherit from interface IRequestInterceptor"  );
+                }
+
+                services.AddTransient(feignClient.InterceptorType);
+            }
 
             var httpClient = services.AddHttpClient(feignClient.Name, it =>
             {
@@ -224,14 +236,16 @@ namespace SummerBoot.Core
                 });
             }
 
-            httpClient
-                .ConfigureHttpMessageHandlerBuilder(it =>
-                {
-                    //it.AdditionalHandlers.Add(new LoggingHandler());
-                });
-
             //httpClient.ConfigurePrimaryHttpMessageHandler<LoggingHandler>();
+            //httpClient.ConfigurePrimaryHttpMessageHandler((e) =>
+            //{
+            //    return new LoggingHandler();
+            //});
 
+            //httpClient.Services.Configure<HttpClientFactoryOptions>(httpClient.Name, options =>
+            //{
+            //    options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler =(HttpMessageHandler)b.Services.GetRequiredService(typeof(string)));
+            //});
 
             var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
             services.Add(serviceDescriptor);

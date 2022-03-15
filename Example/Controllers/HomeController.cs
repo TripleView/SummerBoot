@@ -22,7 +22,7 @@ namespace Example.Controllers
         [HttpGet("index")]
         public IActionResult Index()
         {
-            var d3 = testFeign.MultipartTest(new test() { Name = "hzp2", Age = 10 }, new MultipartItem(System.IO.File.OpenRead(@"D:\2.jpg"), "file", "2.jpg")).GetAwaiter().GetResult();
+            var d3 =testFeign.MultipartTest(new test() { Name = "hzp2", Age = 10 }, new MultipartItem(System.IO.File.OpenRead(@"D:\2.jpg"), "file", "2.jpg")).GetAwaiter().GetResult();
             return Content("ok");
         }
         [HttpGet("form")]
@@ -32,7 +32,18 @@ namespace Example.Controllers
           
             return Content(d2.ToString());
         }
+        [HttpGet("TestHeaderColloction")]
+        public IActionResult TestHeaderColloction()
+        {
+            var a = new HeaderCollection
+            {
+                new KeyValuePair<string, string>("a", "a"),
+                new KeyValuePair<string, string>("b", "b")
+            };
+            var d2 = testFeign.TestHeaderColloction(new test() { Name = "hzp2", Age = 10 },a ).GetAwaiter().GetResult();
 
+            return Content(d2.ToString());
+        }
         [HttpGet("auth")]
         public IActionResult auth()
         {

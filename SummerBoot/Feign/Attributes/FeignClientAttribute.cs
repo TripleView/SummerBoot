@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
 
 namespace SummerBoot.Feign.Attributes
 {
@@ -28,5 +30,9 @@ namespace SummerBoot.Feign.Attributes
         /// http request timeout，unit second， http请求超时时间，单位秒
         /// </summary>
         public int? Timeout { set; get; }
+        /// <summary>
+        /// 定义拦截器
+        /// </summary>
+        public Type InterceptorType { set; get; }
     }
 }

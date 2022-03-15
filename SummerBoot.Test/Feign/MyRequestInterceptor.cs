@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using SummerBoot.Feign;
 
-namespace Example.Feign
+namespace SummerBoot.Test.Feign
 {
     public class MyRequestInterceptor : IRequestInterceptor
     {

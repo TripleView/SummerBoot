@@ -53,9 +53,6 @@ namespace SummerBoot.Feign
                 ClientName = clientName
             };
 
-            //获得请求拦截器
-            var requestInterceptor = serviceProvider.GetService<IRequestInterceptor>();
-
             //处理参数
             ProcessParameter(method, args, requestTemplate, encoder);
 
@@ -113,7 +110,14 @@ namespace SummerBoot.Feign
             requestTemplate.Url = ReplaceVariable(urlTemp);
 
             //如果存在拦截器，则进行拦截
-            if (requestInterceptor != null) requestInterceptor.Apply(requestTemplate);
+            var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
+
+            if (feignClientAttribute.InterceptorType != null && ignoreInterceptorAttribute == null)
+            {
+                //获得请求拦截器
+                var requestInterceptor = (IRequestInterceptor)serviceProvider.GetService(feignClientAttribute.InterceptorType);
+                await requestInterceptor.ApplyAsync(requestTemplate);
+            }
 
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
 
@@ -342,6 +346,28 @@ namespace SummerBoot.Feign
                                     keyList.Add(keyValue);
                                 }
                             }
+                        }
+                        else if (arg is HeaderCollection headerCollection)
+                        {
+                            foreach (var keyValuePair in headerCollection)
+                            {
+                                var key = keyValuePair.Key;
+                                var keyValue=keyValuePair.Value;
+
+                                var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
+
+                                if (!hasHeaderKey)
+                                {
+                                    keyList = new List<string>();
+                                    keyList.Add(keyValue);
+                                    requestTemplate.Headers.Add(key, keyList);
+                                }
+                                else
+                                {
+                                    keyList.Add(keyValue);
+                                }
+                            }
+                           
                         }
                         else if (arg is MultipartItem multipartItem)
                         {
