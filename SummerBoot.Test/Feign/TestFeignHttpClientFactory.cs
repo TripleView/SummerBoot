@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using RichardSzalay.MockHttp;
 using SummerBoot.Feign;
 
@@ -26,10 +29,47 @@ namespace SummerBoot.Test.Feign
             var mockHttp = new MockHttpMessageHandler();
 
             // Setup a respond for the user api (including a wildcard in the URL)
-            mockHttp.When("http://localhost/api/user/*")
-                .Respond("application/json", "{'name' : 'Test McGee'}"); // Respond with JSON
+            mockHttp.When("http://localhost:5001/home/form").WithFormData(new List<KeyValuePair<string, string>>()
+                {
+                    new KeyValuePair<string, string>("Name","sb"),
+                    new KeyValuePair<string, string>("Age","3"),
+                }).With(it=>it.Method==HttpMethod.Post)
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
 
-        
+            mockHttp.When("http://localhost:5001/home/form").WithFormData(new List<KeyValuePair<string, string>>()
+                {
+                    new KeyValuePair<string, string>("Name","sb"),
+                    new KeyValuePair<string, string>("Age","3"),
+                }).With(it => it.Method == HttpMethod.Post)
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+
+            // Setup a respond for the user api (including a wildcard in the URL)
+            mockHttp.When("http://localhost:5001/home/testHeaderCollection").WithFormData(new List<KeyValuePair<string, string>>()
+                {
+                    new KeyValuePair<string, string>("Name","sb"),
+                    new KeyValuePair<string, string>("Age","3"),
+                }).With(it => it.Method == HttpMethod.Post).WithHeaders(new List<KeyValuePair<string, string>>(){new KeyValuePair<string, string>("a","a"), new KeyValuePair<string, string>("b", "b") })
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+
+            mockHttp.When("http://localhost:5001/home/testInterceptor").WithFormData(new List<KeyValuePair<string, string>>()
+                {
+                    new KeyValuePair<string, string>("Name","sb"),
+                    new KeyValuePair<string, string>("Age","3"),
+                }).With(it => it.Method == HttpMethod.Post).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("d", "d") })
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+            
+
+            mockHttp.When("http://localhost:5001/home/json")
+                .WithContent("{\"Name\":\"sb\",\"Age\":3}")
+                .With(it => it.Method == HttpMethod.Post)
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+
+            mockHttp.When("http://localhost:5001/home/uploadPart")
+                .WithContent("{\"Name\":\"sb\",\"Age\":3}")
+                
+                .With(it => it.Method == HttpMethod.Post)
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();
             
@@ -38,27 +78,6 @@ namespace SummerBoot.Test.Feign
             {
                 action(client);
             }
-
-            var dd = new xxx();
-            var f = (HttpMessageHandlerBuilder)serviceProvider.GetService(typeof(HttpMessageHandlerBuilder));
-            Action<HttpMessageHandlerBuilder> fff;
-            foreach (var action in moniOptions.HttpMessageHandlerBuilderActions)
-            {
-                action(f);
-            }
-
-            
-            var handler = f.Build();
-            var a1= new WrapDelegate()
-            {
-                InnerHandler = handler
-            };
-
-            var a2 = new WrapDelegate()
-            {
-                InnerHandler = a1
-            };
-
 
             return client;
         }

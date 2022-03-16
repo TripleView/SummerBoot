@@ -71,7 +71,7 @@ namespace SummerBoot.Test.Mysql
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-            //test insert,update,get,delete 
+            //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             await customerRepository.InsertAsync(customer);
 
@@ -118,7 +118,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Single(result2);
             Assert.Contains(result2, t => t.ProductName == "apple");
 
-            //test unitOfWork
+            //Test unitOfWork
             try
             {
                 uow.BeginTransaction();
@@ -165,7 +165,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal(2, allCustomer.Count);
             Assert.Contains(allOrderDetails, t => t.ProductName == "ball");
 
-            //test page
+            //Test page
             var customers = new List<Customer>();
             for (int i = 0; i < 100; i++)
             {
@@ -205,11 +205,11 @@ namespace SummerBoot.Test.Mysql
             var bindResult8 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, nameWhereItem, ageWhereItem);
             Assert.Single(bindResult8.Data);
             
-            //test update 
+            //Test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
                 .ExecuteUpdateAsync();
             Assert.Equal(94, newCount2);
-            //test delete 
+            //Test delete 
             var newCount3 = await customerRepository.DeleteAsync(it=>it.Age>5);
             Assert.Equal(94, newCount3);
             await customerRepository.DeleteAsync(it => it.Age > 5);
@@ -228,7 +228,7 @@ namespace SummerBoot.Test.Mysql
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-            //test insert,update,get,delete 
+            //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
@@ -281,7 +281,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Single(result2);
             Assert.Contains(result2, t => t.ProductName == "apple");
 
-            //test unitOfWork
+            //Test unitOfWork
             try
             {
                 uow.BeginTransaction();
@@ -322,7 +322,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal(2, allCustomer.Count);
             Assert.Contains(allOrderDetails, t => t.ProductName == "ball");
 
-            // test page
+            // Test page
             var customers = new List<Customer>();
             for (int i = 0; i < 100; i++)
             {
@@ -369,11 +369,11 @@ namespace SummerBoot.Test.Mysql
             var firstOrDefaultResult2 = customerRepository.First(it => it.Name == "page5");
             Assert.NotNull(firstOrDefaultResult2);
 
-            //test update 
+            //Test update 
             var newCount2 = customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
                 .ExecuteUpdate();
             Assert.Equal(94, newCount2);
-            //test delete 
+            //Test delete 
             var newCount3 = customerRepository.Delete(it => it.Age > 5);
             Assert.Equal(94, newCount3);
             customerRepository.Delete(it=>it.Age>5);
@@ -388,7 +388,7 @@ namespace SummerBoot.Test.Mysql
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-            //test insert,update,get,delete 
+            //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
@@ -406,7 +406,7 @@ namespace SummerBoot.Test.Mysql
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-            //test insert,update,get,delete 
+            //Test insert,update,get,delete 
             var orderHeader = new OrderHeader();
             orderHeader.CreateTime = DateTime.UtcNow;
             orderHeader.State = 1;

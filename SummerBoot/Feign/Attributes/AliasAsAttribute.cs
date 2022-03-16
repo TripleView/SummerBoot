@@ -6,5 +6,10 @@ namespace SummerBoot.Feign.Attributes
     public class AliasAsAttribute : Attribute
     {
         public string Name { get; set; }
+
+        public AliasAsAttribute(string name)
+        {
+            Name = name;
+        }
     }
 }

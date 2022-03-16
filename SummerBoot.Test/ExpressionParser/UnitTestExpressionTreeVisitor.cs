@@ -1423,7 +1423,7 @@ namespace ExpressionParser.Test
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseLoggerFactory(LoggerFactory);
-            optionsBuilder.UseMySQL("server=localhost;userid=root;password=123456;database=test;");
+            optionsBuilder.UseMySQL("server=localhost;userid=root;password=123456;database=Test;");
             base.OnConfiguring(optionsBuilder);
         }
 

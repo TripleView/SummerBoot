@@ -232,7 +232,12 @@ namespace SummerBoot.Core
             {
                 httpClient.ConfigurePrimaryHttpMessageHandler(it => new HttpClientHandler
                 {
-                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    ServerCertificateCustomValidationCallback =
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                });
+                httpClient.AddHttpMessageHandler(() =>
+                {
+                    return new LoggingHandler();
                 });
             }
 

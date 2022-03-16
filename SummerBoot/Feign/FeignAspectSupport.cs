@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
@@ -222,10 +223,27 @@ namespace SummerBoot.Feign
                 return str;
             }
 
-            foreach (var pair in parameters)
+            str = Regex.Replace(str, "\\{[^\\}]*\\}", match =>
             {
-                str = str.Replace($"{{{pair.Key}}}", pair.Value);
-            }
+                string matchValue = match.Value;
+                foreach (var pair in parameters)
+                {
+                    if (matchValue.Replace(" ", "") == $"{{{pair.Key}}}")
+                    {
+                        return pair.Value;
+                    }
+                }
+                
+                return "";
+
+            }, RegexOptions.Compiled);
+
+            //foreach (var pair in parameters)
+            //{
+                
+               
+            //    str = str.Replace($"{{{pair.Key}}}", pair.Value);
+            //}
 
             return str;
         }
