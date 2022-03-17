@@ -28,6 +28,11 @@ namespace SummerBoot.Feign
         /// </summary>
         private Dictionary<string, string> parameters = new Dictionary<string, string>();
 
+        /// <summary>
+        /// 解析需要添加到url的参数以及值
+        /// </summary>
+        private Dictionary<string, string> urlParameters = new Dictionary<string, string>();
+
         public async Task<T> BaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
@@ -107,6 +112,7 @@ namespace SummerBoot.Feign
             var urlTemp = requestPath + path;
 
             urlTemp = GetUrl(urlTemp);
+            urlTemp = AddUrlParameter(urlTemp);
 
             requestTemplate.Url = ReplaceVariable(urlTemp);
 
@@ -248,6 +254,33 @@ namespace SummerBoot.Feign
             return str;
         }
 
+        private string AddUrlParameter(string url)
+        {
+            if (urlParameters.Count == 0)
+            {
+                return url;
+            }
+
+            var valueList = new List<string>();
+            foreach (var pair in urlParameters)
+            {
+
+                var value= Uri.EscapeDataString(pair.Value);
+                var urlPair = $"{pair.Key}={value}";
+                valueList.Add(urlPair);
+            }
+            var urlString = string.Join("&", valueList.ToArray());
+
+            var reg = new Regex(".*\\?.*=.*");
+
+            if (reg.IsMatch(url))
+            {
+                return url + "&" + urlString;
+            }
+
+            return url + "?" + urlString;
+        }
+
         /// <summary>
         /// 处理参数
         /// </summary>
@@ -265,7 +298,7 @@ namespace SummerBoot.Feign
                 var parameterType = parameterInfos[i].ParameterType;
                 var aliasAsAttribute = parameterInfo.GetCustomAttribute<AliasAsAttribute>();
                 var bodyAttribute = parameterInfo.GetCustomAttribute<BodyAttribute>();
-
+                var queryAttribute = parameterInfo.GetCustomAttribute<QueryAttribute>();
                 var parameterName = aliasAsAttribute != null ? aliasAsAttribute.Name : parameterInfos[i].Name;
 
                 //处理body类型
@@ -335,6 +368,35 @@ namespace SummerBoot.Feign
                             break;
                     }
 
+                }
+                else if (queryAttribute != null)
+                {
+                    if (arg != null)
+                    {
+                        if (arg is string str || parameterType.IsValueType)
+                        {
+                            urlParameters.Add(parameterName, arg.ToString());
+                        }
+                        else if (parameterType.IsClass)
+                        {
+                            var parameterPropertyInfos = parameterType.GetProperties();
+                            foreach (var propertyInfo in parameterPropertyInfos)
+                            {
+                                var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
+
+                                var key = propertyAliasAsAttribute != null
+                                    ? propertyAliasAsAttribute.Name
+                                    : propertyInfo.Name;
+
+                                var value = propertyInfo.GetValue(arg);
+                                if (value != null)
+                                {
+                                    urlParameters.Add(key, value.ToString());
+                                }
+                            }
+                        }
+
+                    }
                 }
                 else
                 {

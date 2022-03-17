@@ -32,6 +32,14 @@ namespace Example.Controllers
           
             return Content(d2.ToString());
         }
+        [HttpGet("query")]
+        public IActionResult query()
+        {
+            var d2 = testFeign.TestQuery("何泽平").GetAwaiter().GetResult();
+
+            return Content(d2.ToString());
+        }
+
         [HttpGet("TestHeaderColloction")]
         public IActionResult TestHeaderColloction()
         {

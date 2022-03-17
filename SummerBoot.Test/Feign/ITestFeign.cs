@@ -24,8 +24,20 @@ namespace SummerBoot.Test.Feign
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor))]
     public interface ITestFeign
     {
+        [GetMapping("/QueryWithEscapeData")]
+        Task<Test> TestQueryWithEscapeData([Query] Test tt);
+
+        [GetMapping("/queryWithExistCondition?age=3")]
+        Task<Test> TestQueryWithExistCondition([Query] string name);
+
+        [GetMapping("/query")]
+        Task<Test> TestQuery([Query] Test tt);
+
         [PostMapping("/form")]
         Task<Test> TestForm([Body(BodySerializationKind.Form)] Test tt);
+
+        [PostMapping("//form")]
+        Task<Test> TestUrlError([Body(BodySerializationKind.Form)] Test tt);
 
         [PostMapping("/testInterceptor")]
         Task<Test> TestInterceptor([Body(BodySerializationKind.Form)] Test tt);

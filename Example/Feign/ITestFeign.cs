@@ -16,12 +16,18 @@ namespace Example.Feign
 
     public class poco
     {
-        [AliasAs(Name = "methodName")]
+        [AliasAs("methodName")]
         public string Name { get; set; }
     }
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor))]
     public interface ITestFeign
     {
+        [PostMapping("/query")]
+        Task<dynamic> TestQuery([Query] string name);
+
+        [PostMapping("/query")]
+        Task<dynamic> TestQuery([Query] test tt);
+
         [IgnoreInterceptor]
         [PostMapping("/form")]
         Task<dynamic> Test([Body(BodySerializationKind.Form)] test tt);

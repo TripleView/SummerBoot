@@ -21,6 +21,12 @@ namespace Example.WebApi.Controllers
             return Content("ok");
         }
 
+        [HttpPost("query")]
+        public IActionResult query([FromQuery] test t)
+        {
+            return Content(JsonConvert.SerializeObject(t));
+        }
+
         [HttpPost("form")]
         public IActionResult form([FromForm] test t)
         {
