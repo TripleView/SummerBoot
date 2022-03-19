@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
 using SummerBoot.Feign;
 using Xunit;
+using System.Collections.Specialized;
 
 namespace SummerBoot.Test.Feign
 {

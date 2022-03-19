@@ -1,3 +1,6 @@
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/dotnetcore/CAP/master/LICENSE.txt)
+
+# 感谢jetbrain提供ide的许可证
 <a href="https://jb.gg/OpenSourceSupport"> <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png?_ga=2.140768178.1037783001.1644161957-503565267.1643800664&_gl=1*1rs8z57*_ga*NTAzNTY1MjY3LjE2NDM4MDA2NjQ.*_ga_V0XZL7QHEB*MTY0NDE2MTk1Ny4zLjEuMTY0NDE2NTE2Mi4w" width = "200" height = "200" alt="" align=center /></a>
 
 # SummerBoot的核心理念
@@ -16,128 +19,6 @@ net core 3.1,net 5,net 6
 
 ## 说明
 这是一个全声明式框架，用户只需要声明接口，框架会通过Reflection Emit技术，自动生成接口的实现类。
-
-# SummerBoot中的人性化的设计
- 1.先说一个net core mvc自带的功能，如果我们想要在appsettings.json里配置web应用的ip和port该怎么办？在appsettings.json里直接写
- ````
- {
-     "urls":"http://localhost:7002;http://localhost:7012"
- }
- ````
-
- 2. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的type和服务的生命周期ServiceLifetime（周期默认为scope级别），使用方式如下:
-````
- public interface ITest
-    {
-
-    }
-
-    [AutoRegister(typeof(ITest),ServiceLifetime.Transient)]
-    public class Test:ITest
-    {
-
-    }
-````
- 3. ApiResult 接口返回值包装类，包含 code，msg和data，3个字段，让整个系统的返回值统一有序，有利于前端的统一拦截，统一操作。使用方式如下:
- ````
-[HttpPost("CreateServerConfigAsync")]
-public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
-{
-		var result = await serverConfigService.CreateServerConfigAsync(dto);
-		return ApiResult<bool>.Ok(result);
-}
- ````
- 4. 对net core mvc的一些增强操作，包括全局错误拦截器，和接口参数校验失败后的处理，配合ApiResult，使得系统报错时，也能统一返回，使用方式如下,首先在startUp里注册该服务，注意，要放在mvc注册之后:
- ````
-services.AddControllersWithViews();
-services.AddSummerBootMvcExtension(it =>
-{
-		//是否启用全局错误处理
-		it.UseGlobalExceptionHandle = true;
-		//是否启用参数校验处理
-		it.UseValidateParameterHandle = true;
-});
- ````
-4.1 全局错误拦截器使用后的效果
- 我们可以直接在业务代码里抛出错误，全局错误拦截器会捕捉到该错误，然后使用统一格式返回给前端，业务代码如下:
-````
-private void ValidateData(EnvConfigDto dto)
-{
-		if (dto == null)
-		{
-			throw new ArgumentNullException("参数不能为空");
-		}
-		if(dto.ServerConfigs==null|| dto.ServerConfigs.Count==0)
-		{
-			throw new ArgumentNullException("环境下没有配置服务器");
-		}
-}
-````
-如果业务代码里报错,则返回值如下:
-````
-{
-  "code": 40000,
-  "msg": "Value cannot be null. (Parameter '环境下没有配置服务器')",
-  "data": null
-}
-````
-4.2 接口参数校验失败后的处理的效果
-我们在接口的参数dto里添加校验注解，代码如下
-````
-public class EnvConfigDto : BaseEntity
-{
-		/// <summary>
-		/// 环境名
-		/// </summary>
-		[Required(AllowEmptyStrings = false, ErrorMessage = "环境名称不能为空")]
-		public string Name { get; set; }
-		/// <summary>
-		/// 环境下对应的服务器
-		/// </summary>
-		[NotMapped]
-		public List<int> ServerConfigs { get; set; }
-}
-````
-如果参数校验不通过,则返回值如下:
-````
-{
-  "code": 40000,
-  "msg": "环境名称不能为空",
-  "data": null
-}
-````
-
-5. QueryCondition，lambda查询条件组合，解决前端传条件过来进行过滤查询的痛点，除了基本的And和Or方法，还添加了更人性化的方法，一般前端传过来的dto里的属性，有字符串类型，如果他们有值则添加到查询条件里，所以特地提取了2个方法，包括了AndIfStringIsNotEmpty（如果字符串不为空则进行and操作，否则返回原表达式），OrIfStringIsNotEmpty（如果字符串不为空则进行or操作，否则返回原表达式），
-同时dto里的属性，还有可能是nullable类型，即可空类型，比如 int? test代表用户是否填写某个过滤条件，如果hasValue则添加到查询条件里，所以特地提取了2个方法，AndIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式），OrIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式）用法如下:
-````
-//dto
-public class ServerConfigPageDto : IPageable
-{
-	public int PageNumber { get; set; }
-	public int PageSize { get; set; }
-	/// <summary>
-	/// ip地址
-	/// </summary>
-	public string Ip { get; set; }
-	/// <summary>
-	/// 连接名
-	/// </summary>
-	public string ConnectionName { get; set; }
-	
-	public int? Test { get; set; }
-}
-//condition
- var queryCondition = QueryCondition.True<ServerConfig>()
-	.And(it => it.Active == 1)
-	//如果字符串不为空则进行and操作，否则返回原表达式
-	.AndIfStringIsNotEmpty(dto.Ip, it => it.Ip.Contains(dto.Ip))
-	//如果可空值不为空则进行and操作，否则返回原表达式
-	.AndIfNullableHasValue(dto.Test,it=>it.Test==dto.Test)
-	.AndIfStringIsNotEmpty(dto.ConnectionName,it=>it.ConnectionName.Contains(dto.ConnectionName));
-				
- var queryResult = await serverConfigRepository.Where(queryCondition)
-	.Skip((dto.PageNumber - 1) * dto.PageSize).Take(dto.PageSize).ToPageAsync();
-````
 
 # SummerBoot 如何操作数据库
 底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码，同时基于工作单元模式实现了事务。不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
@@ -400,68 +281,139 @@ public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustome
 }
 ````
 
-## SummerBoot如何操作http调用，我们使用Feign
+## SummerBoot中如何进行http调用? 我们使用Feign
 
 ### 在startup.cs类中注册服务
 ````
 services.AddSummerBoot();
-
-//添加feign请求拦截器
-services.AddScoped<IRequestInterceptor,MyRequestInterceptor>();
 services.AddSummerBootFeign();
 ````
 
 ### 编写接口,包括get，post(json方式),post(form表单形式),异常处理包括超时重试回退降级等
 ````
-/// <summary>
-    /// 会员接口
-    /// </summary>
-    [FeignClient(name: "CustomerService", url: "http://localhost:5001/", fallBack: typeof(CustomerFallBack))]
-    [Polly(retry:3,timeout:2000,retryInterval:1000)]
-    public interface ICustomerRepository
+
+````
+
+# SummerBoot中的人性化的设计
+ 1.先说一个net core mvc自带的功能，如果我们想要在appsettings.json里配置web应用的ip和port该怎么办？在appsettings.json里直接写
+ ````
+ {
+     "urls":"http://localhost:7002;http://localhost:7012"
+ }
+ ````
+
+ 2. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的type和服务的生命周期ServiceLifetime（周期默认为scope级别），使用方式如下:
+````
+ public interface ITest
     {
-        /// <summary>
-        /// 更新会员总消费金额
-        /// </summary>
-        /// <param name="customerNo"></param>
-        /// <param name="amount"></param>
-        /// <returns></returns>
-        [PostMapping("/Customer/UpdateCustomerAmount")]
-        [Headers("Content-Type:application/json", "Accept:application/json", "Charset:utf-8")]
-        Task<bool> UpdateCustomerAmount(string customerNo, decimal amount);
+
     }
+
+    [AutoRegister(typeof(ITest),ServiceLifetime.Transient)]
+    public class Test:ITest
+    {
+
+    }
+````
+ 3. ApiResult 接口返回值包装类，包含 code，msg和data，3个字段，让整个系统的返回值统一有序，有利于前端的统一拦截，统一操作。使用方式如下:
+ ````
+[HttpPost("CreateServerConfigAsync")]
+public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
+{
+		var result = await serverConfigService.CreateServerConfigAsync(dto);
+		return ApiResult<bool>.Ok(result);
+}
+ ````
+ 4. 对net core mvc的一些增强操作，包括全局错误拦截器，和接口参数校验失败后的处理，配合ApiResult，使得系统报错时，也能统一返回，使用方式如下,首先在startUp里注册该服务，注意，要放在mvc注册之后:
+ ````
+services.AddControllersWithViews();
+services.AddSummerBootMvcExtension(it =>
+{
+		//是否启用全局错误处理
+		it.UseGlobalExceptionHandle = true;
+		//是否启用参数校验处理
+		it.UseValidateParameterHandle = true;
+});
+ ````
+4.1 全局错误拦截器使用后的效果
+ 我们可以直接在业务代码里抛出错误，全局错误拦截器会捕捉到该错误，然后使用统一格式返回给前端，业务代码如下:
+````
+private void ValidateData(EnvConfigDto dto)
+{
+		if (dto == null)
+		{
+			throw new ArgumentNullException("参数不能为空");
+		}
+		if(dto.ServerConfigs==null|| dto.ServerConfigs.Count==0)
+		{
+			throw new ArgumentNullException("环境下没有配置服务器");
+		}
+}
+````
+如果业务代码里报错,则返回值如下:
+````
+{
+  "code": 40000,
+  "msg": "Value cannot be null. (Parameter '环境下没有配置服务器')",
+  "data": null
+}
+````
+4.2 接口参数校验失败后的处理的效果
+我们在接口的参数dto里添加校验注解，代码如下
+````
+public class EnvConfigDto : BaseEntity
+{
+		/// <summary>
+		/// 环境名
+		/// </summary>
+		[Required(AllowEmptyStrings = false, ErrorMessage = "环境名称不能为空")]
+		public string Name { get; set; }
+		/// <summary>
+		/// 环境下对应的服务器
+		/// </summary>
+		[NotMapped]
+		public List<int> ServerConfigs { get; set; }
+}
+````
+如果参数校验不通过,则返回值如下:
+````
+{
+  "code": 40000,
+  "msg": "环境名称不能为空",
+  "data": null
+}
+````
+
+5. QueryCondition，lambda查询条件组合，解决前端传条件过来进行过滤查询的痛点，除了基本的And和Or方法，还添加了更人性化的方法，一般前端传过来的dto里的属性，有字符串类型，如果他们有值则添加到查询条件里，所以特地提取了2个方法，包括了AndIfStringIsNotEmpty（如果字符串不为空则进行and操作，否则返回原表达式），OrIfStringIsNotEmpty（如果字符串不为空则进行or操作，否则返回原表达式），
+同时dto里的属性，还有可能是nullable类型，即可空类型，比如 int? test代表用户是否填写某个过滤条件，如果hasValue则添加到查询条件里，所以特地提取了2个方法，AndIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式），OrIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式）用法如下:
+````
+//dto
+public class ServerConfigPageDto : IPageable
+{
+	public int PageNumber { get; set; }
+	public int PageSize { get; set; }
+	/// <summary>
+	/// ip地址
+	/// </summary>
+	public string Ip { get; set; }
+	/// <summary>
+	/// 连接名
+	/// </summary>
+	public string ConnectionName { get; set; }
 	
- [FeignClient(name: "testFeign", url: "http://localhost:5001/")]
-     [Polly(retry:3,timeout:2000,retryInterval:1000)]
-     public interface IFeignExampleRepository
-     {
-         /// <summary>
-         /// post(json方式)
-         /// </summary>
-         /// <param name="name"></param>
-         /// <param name="dto"></param>
-         /// <returns></returns>
-         [PostMapping("/demo/TestJson")]
-         [Headers("Content-Type:application/json", "Accept:application/json", "Charset:utf-8")]
-         Task<int> TestJson(string name,[Body]AddOrderDto dto);
- 
-         /// <summary>
-         /// post(form方式)
-         /// </summary>
-         /// <param name="dto"></param>
-         /// <returns></returns>
-         [PostMapping("/demo/TestForm")]
-         Task<bool> TestForm([Form]FeignFormDto dto);
- 
-         /// <summary>
-         /// get
-         /// </summary>
-         /// <param name="name"></param>
-         /// <param name="age"></param>
-         /// <returns></returns>
-         [GetMapping("/demo/GetTest")]
-         Task<DateTime> TestGet(string name,int age);
-     }
+	public int? Test { get; set; }
+}
+//condition
+ var queryCondition = QueryCondition.True<ServerConfig>()
+	.And(it => it.Active == 1)
+	//如果字符串不为空则进行and操作，否则返回原表达式
+	.AndIfStringIsNotEmpty(dto.Ip, it => it.Ip.Contains(dto.Ip))
+	//如果可空值不为空则进行and操作，否则返回原表达式
+	.AndIfNullableHasValue(dto.Test,it=>it.Test==dto.Test)
+	.AndIfStringIsNotEmpty(dto.ConnectionName,it=>it.ConnectionName.Contains(dto.ConnectionName));
+				
+ var queryResult = await serverConfigRepository.Where(queryCondition)
+	.Skip((dto.PageNumber - 1) * dto.PageSize).Take(dto.PageSize).ToPageAsync();
 ````
 
 ## 更新记录
