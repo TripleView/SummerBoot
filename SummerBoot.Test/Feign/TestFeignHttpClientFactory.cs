@@ -123,7 +123,19 @@ namespace SummerBoot.Test.Feign
                 })
                 .Respond("application/json", "{\"Name\": \"哈哈哈\",\"Age\": 3}"); // Respond with JSON
 
-            
+            mockHttp.When("http://localhost:5001/home/testHeadersWithInterfaceAndMethod").WithFormData(new List<KeyValuePair<string, string>>()
+                {
+                    new KeyValuePair<string, string>("Name","sb"),
+                    new KeyValuePair<string, string>("Age","3"),
+                }).With(it => it.Method == HttpMethod.Post).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("a", "a"), new KeyValuePair<string, string>("b", "b"), new KeyValuePair<string, string>("c", "c") })
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+
+            mockHttp.When("http://localhost:5001/home/testHeadersWithInterface").WithFormData(new List<KeyValuePair<string, string>>()
+                {
+                    new KeyValuePair<string, string>("Name","sb"),
+                    new KeyValuePair<string, string>("Age","3"),
+                }).With(it => it.Method == HttpMethod.Post).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("a", "a"), new KeyValuePair<string, string>("b", "b") })
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
 
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();

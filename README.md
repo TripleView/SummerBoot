@@ -6,6 +6,10 @@
 # SummerBoot的核心理念
 > 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单。
 
+## 说明
+这是一个注解 + 接口的方式实现各种调用的全声明式框架，框架会通过Reflection Emit技术，自动生成接口的实现类。
+
+
 # 加入QQ群反馈建议
 群号:799648362
 
@@ -15,10 +19,8 @@
  
  ```PM> Install-Package SummerBoot```
 ## 支持框架
-net core 3.1,net 5,net 6
+net core 3.1,net 6
 
-## 说明
-这是一个全声明式框架，用户只需要声明接口，框架会通过Reflection Emit技术，自动生成接口的实现类。
 
 # SummerBoot 如何操作数据库
 底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码，同时基于工作单元模式实现了事务。不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
@@ -288,11 +290,153 @@ public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustome
 services.AddSummerBoot();
 services.AddSummerBootFeign();
 ````
+### 1.定义接口
+####  定义一个接口，并且在接口上添加FeignClient注解，FeignClient里可以自定义接口名称-Name，http接口的url的公共部分-url（整个接口请求的url由FeignClient里的url加上方法里的path组成）,是否忽略远程接口的https证书校验-IsIgnoreHttpsCertificateValidate,接口超时时间-Timeout（单位s），自定义拦截器-InterceptorType。
 
-### 编写接口,包括get，post(json方式),post(form表单形式),异常处理包括超时重试回退降级等
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+   
+}
 ````
 
+#### 接口上可以选择添加Headers注解，代表这个接口下所有http请求都带上注解里的请求头。Headers的参数为变长的string类型的参数，同时Headers也可以添加在方法上，代表该方法调用的时候，会加该请求头，接口上的Headers参数可与方法上的Headers参数互相叠加，如
 ````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+[Headers("a:a","b:b")]
+public interface ITestFeign
+{
+	[GetMapping("/testGet")]
+	Task<Test> TestAsync();
+	
+	[GetMapping("/testGetWithHeaders")]
+	[Headers("c:c")]
+	Task<Test> TestWithHeadersAsync();
+}
+
+await TestFeign.TestAsync()
+>>> get, http://localhost:5001/home/testGet,header为 "a,a" 和 "b,b"
+
+await TestFeign.TestWithHeadersAsync()
+>>> get, http://localhost:5001/home/testGetWithHeaders,header为 "a,a" ,"b,b"和 "c,c"
+````
+
+### 定义方法
+#### 每个方法都应该添加注解代表发起请求的类型和要访问的url，有4个内置注解， GetMapping，PostMapping，PutMapping，DeleteMapping，同时方法的返回值必须是Task<>类型
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	[GetMapping("/testGet")]
+	Task<Test> TestAsync();
+	
+	[PostMapping("/testPost")]
+	Task<Test> TestPostAsync();
+	
+	[PutMapping("/testPut")]
+	Task<Test> TestPutAsync();
+	
+	[DeleteMapping("/testDelete")]
+	Task<Test> TestDeleteAsync();
+}
+````
+
+#### 方法里的参数，如果没有特殊注解，或者不是特殊类，均作为动态参数参与url，header里变量的替换，(参数如果为类，则读取类的属性值)，url和header中的变量使用占位符{}，如果变量名和参数名不一致，则可以使用AliasAs注解（可以用在参数或者类的属性上）来指定别名，如
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	//url替换
+	[PostMapping("/{methodName}")]
+	Task<Test> TestAsync(string methodName);	
+	
+	//header替换
+	[Headers("a:{methodName}")]
+	[PostMapping("/abc")]
+	Task<Test> TestHeaderAsync(string methodName);
+	
+	
+	//AliasAs指定别名
+	[Headers("a:{methodName}")]
+	[PostMapping("/abc")]
+	Task<Test> TestAliasAsAsync([AliasAs("methodName")] string name);
+}
+
+await TestFeign.TestAsync("abc");
+>>> post to http://localhost:5001/home/abc
+
+await TestFeign.TestAliasAsAsync("abc");
+>>> post, http://localhost:5001/home/abc
+
+await TestFeign.TestHeaderAsync("abc");
+>>> post, http://localhost:5001/home/abc，同时请求头为 "a:abc"
+````
+
+#### 方法里的特殊参数
+##### 1.参数添加Query注解，则参数值将以key1=value1&key2=value2的方式添加到url后面。
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	 [GetMapping("/TestQuery")]
+	 Task<Test> TestQuery([Query] string name);
+	 
+	 [GetMapping("/TestQueryWithClass")]
+	 Task<Test> TestQueryWithClass([Query]Test tt);
+}
+
+await TestFeign.TestQuery("abc");
+>>> get, http://localhost:5001/home/TestQuery?name=abc
+
+await TestFeign.TestQueryWithClass(new Test() { Name = "abc", Age = 3 });
+>>> get, http://localhost:5001/home/TestQueryWithClass?Name=abc&Age=3
+````
+
+##### 2.参数添加Body(BodySerializationKind.Form)注解，相当于模拟html里的form提交，参数值将被URL编码后，以key1=value1&key2=value2的方式添加到载荷（body）里。
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	 [PostMapping("/form")]
+	 Task<Test> TestForm([Body(BodySerializationKind.Form)] Test tt);
+}
+
+await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
+>>> post, http://localhost:5001/home/form,同时body里的值为Name=abc&Age=3
+````
+
+##### 3.参数添加Body(BodySerializationKind.Json)注解，即以application/json的方式提交，参数值将会被json序列化后添加到载荷（body）里。
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	 [PostMapping("/json")]
+	 Task<Test> TestJson([Body(BodySerializationKind.Json)] Test tt);
+}
+
+await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 });
+>>> post, http://localhost:5001/home/json,同时body里的值为{"Name":"abc","Age":3}
+````
+
+##### 4.使用类HeaderCollection，即可通过方法参数批量添加请求头
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	 [PostMapping("/json")]
+	 Task<Test> TestJson([Body(BodySerializationKind.Json)] Test tt, HeaderCollection headers);
+}
+
+ var headerCollection = new HeaderCollection()
+                { new KeyValuePair<string, string>("a", "a"), 
+                    new KeyValuePair<string, string>("b", "b") };
+					
+await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 },headerCollection);
+>>> post, http://localhost:5001/home/json,同时body里的值为{"Name":"abc","Age":3},header为 "a,a" 和 "b,b"
+````
+
+
 
 # SummerBoot中的人性化的设计
  1.先说一个net core mvc自带的功能，如果我们想要在appsettings.json里配置web应用的ip和port该怎么办？在appsettings.json里直接写

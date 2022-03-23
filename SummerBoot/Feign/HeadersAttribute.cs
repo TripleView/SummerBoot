@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Feign
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method|AttributeTargets.Interface)]
     public class HeadersAttribute:Attribute
     {
         public string[] Param { get; }

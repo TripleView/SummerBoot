@@ -222,9 +222,9 @@ namespace SummerBoot.Core
 
             var httpClient = services.AddHttpClient(feignClient.Name, it =>
             {
-                if (feignClient.Timeout.HasValue)
+                if (feignClient.Timeout!=0)
                 {
-                    it.Timeout = TimeSpan.FromSeconds(feignClient.Timeout.Value);
+                    it.Timeout = TimeSpan.FromSeconds(feignClient.Timeout);
                 }
             });
             //忽略https证书

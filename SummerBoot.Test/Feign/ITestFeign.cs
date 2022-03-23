@@ -21,7 +21,21 @@ namespace SummerBoot.Test.Feign
         public string methodName { get; set; }
     }
 
-    [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor))]
+    [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true,
+        InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
+
+    [Headers("a:a","b:b")]
+    public interface ITestFeignWithHeader
+    {
+        [Headers("c:c")]
+        [PostMapping("/testHeadersWithInterfaceAndMethod")]
+        Task<Test> TestHeadersWithInterfaceAndMethod([Body(BodySerializationKind.Form)] Test tt);
+
+        [PostMapping("/testHeadersWithInterface")]
+        Task<Test> TestHeadersWithInterface([Body(BodySerializationKind.Form)] Test tt);
+    }
+
+    [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
     public interface ITestFeign
     {
         [GetMapping("/QueryWithEscapeData")]

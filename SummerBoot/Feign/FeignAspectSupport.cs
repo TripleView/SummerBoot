@@ -63,7 +63,7 @@ namespace SummerBoot.Feign
             ProcessParameter(method, args, requestTemplate, encoder);
 
             //处理请求头逻辑
-            ProcessHeaders(method, requestTemplate);
+            ProcessHeaders(method, requestTemplate, interfaceType);
 
             var path = "";
 
@@ -188,34 +188,49 @@ namespace SummerBoot.Feign
         /// </summary>
         /// <param name="method"></param>
         /// <param name="requestTemplate"></param>
-        private void ProcessHeaders(MethodInfo method, RequestTemplate requestTemplate)
+        private void ProcessHeaders(MethodInfo method, RequestTemplate requestTemplate,Type interfaceType)
         {
-            var headersAttribute = method.GetCustomAttribute<HeadersAttribute>();
-            if (headersAttribute != null)
+            var headersAttributes = new List<HeadersAttribute>();
+            var methodHeadersAttribute = method.GetCustomAttribute<HeadersAttribute>();
+            var interfaceHeadersAttribute = interfaceType.GetCustomAttribute<HeadersAttribute>();
+            if (methodHeadersAttribute != null)
             {
-                var headerParams = headersAttribute.Param;
-                foreach (var headerParam in headerParams)
+                headersAttributes.Add(methodHeadersAttribute);
+            }
+
+            if (interfaceHeadersAttribute != null)
+            {
+                headersAttributes.Add(interfaceHeadersAttribute);
+            }
+
+            foreach (var headersAttribute in headersAttributes)
+            {
+                if (headersAttribute != null)
                 {
-                    if (headerParam.HasIndexOf(':'))
+                    var headerParams = headersAttribute.Param;
+                    foreach (var headerParam in headerParams)
                     {
-                        var headerParamArr = headerParam.Split(":");
-                        var key = headerParamArr[0].Trim();
-                        var keyValue = headerParamArr[1];
-                        //替换变量
-                        key = ReplaceVariable(key).Trim();
-                        keyValue = ReplaceVariable(keyValue).Trim();
-
-                        var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
-
-                        if (!hasHeaderKey)
+                        if (headerParam.HasIndexOf(':'))
                         {
-                            keyList = new List<string>();
-                            keyList.Add(keyValue);
-                            requestTemplate.Headers.Add(key, keyList);
-                        }
-                        else
-                        {
-                            keyList.Add(keyValue);
+                            var headerParamArr = headerParam.Split(":");
+                            var key = headerParamArr[0].Trim();
+                            var keyValue = headerParamArr[1];
+                            //替换变量
+                            key = ReplaceVariable(key).Trim();
+                            keyValue = ReplaceVariable(keyValue).Trim();
+
+                            var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
+
+                            if (!hasHeaderKey)
+                            {
+                                keyList = new List<string>();
+                                keyList.Add(keyValue);
+                                requestTemplate.Headers.Add(key, keyList);
+                            }
+                            else
+                            {
+                                keyList.Add(keyValue);
+                            }
                         }
                     }
                 }

@@ -11,13 +11,12 @@ using Microsoft.Extensions.Http;
 using SummerBoot.Feign;
 using Xunit;
 using System.Collections.Specialized;
+using Newtonsoft.Json;
 
 namespace SummerBoot.Test.Feign
 {
     public class FeignTest
     {
-        
-
         [Fact]
         public async Task TestQueryWithEscapeData()
         {
@@ -384,6 +383,40 @@ namespace SummerBoot.Test.Feign
             Assert.Equal(3, result.Age);
         }
 
-      
+        [Fact]
+        public async Task TestHeadersWithInterfaceAndMethod()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeignWithHeader>();
+
+            var result = await testFeign.TestHeadersWithInterfaceAndMethod(new Test() { Name = "sb", Age = 3 });
+            Assert.Equal("sb", result.Name);
+            Assert.Equal(3, result.Age);
+        }
+
+        [Fact]
+        public async Task TestHeadersWithInterface()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeignWithHeader>();
+
+            var result = await testFeign.TestHeadersWithInterface(new Test() { Name = "sb", Age = 3 });
+            Assert.Equal("sb", result.Name);
+            Assert.Equal(3, result.Age);
+        }
     }
 }

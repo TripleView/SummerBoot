@@ -29,7 +29,7 @@ namespace SummerBoot.Feign.Attributes
         /// <summary>
         /// http request timeout，unit second， http请求超时时间，单位秒
         /// </summary>
-        public int? Timeout { set; get; }
+        public int Timeout { set; get; }
         /// <summary>
         /// 定义拦截器
         /// </summary>
