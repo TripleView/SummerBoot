@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
 using SummerBoot.Feign;
 using SummerBoot.Feign.Attributes;
 
@@ -38,6 +40,15 @@ namespace SummerBoot.Test.Feign
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
     public interface ITestFeign
     {
+        [GetMapping("/downLoadWithStream")]
+        Task<Stream> TestDownLoadWithStream();
+
+        [GetMapping("/downLoadWithStream")]
+        Task<HttpResponseMessage> TestDownLoadWithOriginResonse();
+
+        [PostMapping("/form")]
+        Task<HttpResponseMessage> TestOriginResponse([Body(BodySerializationKind.Form)] Test tt);
+
         [GetMapping("/QueryWithEscapeData")]
         Task<Test> TestQueryWithEscapeData([Query] Test tt);
 
@@ -100,5 +111,9 @@ namespace SummerBoot.Test.Feign
 
         [PostMapping("/testHeaderCollection")]
         Task<Test> TestHeaderCollection([Body(BodySerializationKind.Form)] Test tt, HeaderCollection headers );
+
+        [GetMapping("/testBasicAuthorization")]
+        Task<Test> TestBasicAuthorization(BasicAuthorization basicAuthorization);
+        
     }
 }

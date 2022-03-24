@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace SummerBoot.Feign
@@ -15,9 +16,7 @@ namespace SummerBoot.Feign
 
         public IDictionary<string, IEnumerable<string>> Headers { get; set; } = new Dictionary<string, IEnumerable<string>>();
 
-        public void EnsureSuccessStatusCode()
-        {
-            if (this.HttpStatusCode < HttpStatusCode.OK || this.HttpStatusCode > (HttpStatusCode)299) throw new Exception("httpError");
-        }
+        public HttpResponseMessage OrignHttpResponseMessage { set; get; }
+
     }
 }

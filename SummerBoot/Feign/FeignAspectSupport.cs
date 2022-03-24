@@ -127,6 +127,16 @@ namespace SummerBoot.Feign
             }
 
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
+            //直接返回文件流
+            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+            {
+                return (T)(object)responseTemplate.Body;
+            }
+            //返回原始信息
+            if (typeof(HttpResponseMessage).IsAssignableFrom(typeof(T)))
+            {
+                return (T)(object)responseTemplate.OrignHttpResponseMessage;
+            }
 
             Exception ex;
             try
@@ -434,7 +444,7 @@ namespace SummerBoot.Feign
                                 {
                                     keyList = new List<string>();
                                     keyList.Add(keyValue);
-                                    requestTemplate.Headers.Add(key, keyList);
+                                    requestTemplate.Headers.Add(HeaderNames.Authorization, keyList);
                                 }
                                 else
                                 {

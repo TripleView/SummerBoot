@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -53,6 +57,11 @@ namespace SummerBoot.Test.Feign
                 }).With(it => it.Method == HttpMethod.Post).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("a", "a"), new KeyValuePair<string, string>("b", "b") })
                 .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
 
+            mockHttp.When("http://localhost:5001/home/testBasicAuthorization")
+             .With(it => it.Method == HttpMethod.Get).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Authorization", "Basic YWJjOjEyMw==") })
+                .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+            
+
             mockHttp.When("http://localhost:5001/home/testInterceptor").WithFormData(new List<KeyValuePair<string, string>>()
                 {
                     new KeyValuePair<string, string>("Name","sb"),
@@ -100,6 +109,41 @@ namespace SummerBoot.Test.Feign
                     return false;
                 })
                 .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
+
+            mockHttp.When("http://localhost:5001/home/downLoadWithStream").With(it =>
+                {
+                    if (it.Method == HttpMethod.Get)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .Respond( () =>
+                {
+                    var basePath = Path.Combine(AppContext.BaseDirectory, "123.txt");
+                    
+                    var response = new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StreamContent(new FileInfo(basePath).OpenRead()),
+                    };
+
+                    response.Content.Headers.ContentType =MediaTypeHeaderValue.Parse( "application/octet-stream");
+                    response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment")
+                    {
+                        DispositionType = "attachment",
+                        FileName = "123.txt",
+                        FileNameStar = "123.txt",
+                        Parameters = {  }
+                    };
+
+                    //response.Content.Headers.ContentDisposition.Parameters.Add(new NameValueHeaderValue("filename", "123.txt"));
+                    //response.Content.Headers.ContentDisposition.Parameters.Add(new NameValueHeaderValue("filename", "UTF-8''123.txt"));
+
+                    return Task.FromResult<HttpResponseMessage>(response);
+                }); // Respond with JSON
+
+            
 
             mockHttp.When("http://localhost:5001/home/queryWithExistCondition").With(it =>
                 {

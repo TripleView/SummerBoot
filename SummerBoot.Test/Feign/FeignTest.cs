@@ -11,12 +11,42 @@ using Microsoft.Extensions.Http;
 using SummerBoot.Feign;
 using Xunit;
 using System.Collections.Specialized;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace SummerBoot.Test.Feign
 {
+    public interface t1
+    {
+
+    }
+
+    public class tt1 : t1
+    {
+
+    }
+
+    public interface t2:t1
+    {
+
+    }
+
+    public class tt2 : t2
+    {
+
+    }
     public class FeignTest
     {
+
+        [Fact]
+        public async Task Test()
+        {
+            t1 d = new tt1();
+            t2 d2= new tt2();
+            var c = d is t1;
+            var c1 = d2 is t1;
+        }
+
         [Fact]
         public async Task TestQueryWithEscapeData()
         {
@@ -384,6 +414,25 @@ namespace SummerBoot.Test.Feign
         }
 
         [Fact]
+        public async Task TestBasicAuthorization()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+
+            var result = await testFeign.TestBasicAuthorization(new BasicAuthorization("abc","123"));
+            Assert.Equal("sb", result.Name);
+            Assert.Equal(3, result.Age);
+        }
+        
+
+        [Fact]
         public async Task TestHeadersWithInterfaceAndMethod()
         {
             var services = new ServiceCollection();
@@ -417,6 +466,44 @@ namespace SummerBoot.Test.Feign
             var result = await testFeign.TestHeadersWithInterface(new Test() { Name = "sb", Age = 3 });
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
+        }
+
+        [Fact]
+        public async Task TestOriginResponse()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+
+            var result = await testFeign.TestOriginResponse(new Test() { Name = "sb", Age = 3 });
+
+            var resultContent =await result.Content.ReadAsStringAsync();
+            Assert.Equal("{\"Name\": \"sb\",\"Age\": 3}", resultContent);
+        }
+
+        [Fact]
+        public async Task TestDownLoadWithStream()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+
+            var result = await testFeign.TestDownLoadWithStream();
+
+            var resultContent = result.ConvertToString();
+            Assert.Equal("456", resultContent);
         }
     }
 }

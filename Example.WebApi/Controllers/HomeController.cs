@@ -2,6 +2,7 @@
 using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using Newtonsoft.Json;
 
 namespace Example.WebApi.Controllers
@@ -25,6 +26,17 @@ namespace Example.WebApi.Controllers
         public IActionResult query([FromQuery] test t)
         {
             return Content(JsonConvert.SerializeObject(t));
+        }
+
+        [HttpGet("file")]
+        public IActionResult file()
+        {
+            var basePath = Path.Combine(AppContext.BaseDirectory, "123.txt");
+            //获取文件的ContentType
+            var provider = new FileExtensionContentTypeProvider();
+           var fileExt= Path.GetExtension(basePath);
+            var memi = provider.Mappings[fileExt];
+            return File(new FileInfo(basePath).OpenRead(), "application/octet-stream", "123.txt");
         }
 
         [HttpPost("form")]

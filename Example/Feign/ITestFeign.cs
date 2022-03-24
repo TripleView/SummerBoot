@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Security.Policy;
 using System.Threading.Tasks;
@@ -20,8 +21,17 @@ namespace Example.Feign
         public string Name { get; set; }
     }
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor))]
+
     public interface ITestFeign
     {
+        [IgnoreInterceptor]
+        [PostMapping("/form")]
+        Task<HttpResponseMessage> TestOriginResponse([Body(BodySerializationKind.Form)] test tt);
+
+        [IgnoreInterceptor]
+        [GetMapping("/file")]
+        Task<Stream> TestDownLoadStream();
+
         [PostMapping("/query")]
         Task<dynamic> TestQuery([Query] string name);
 

@@ -84,7 +84,8 @@ namespace SummerBoot.Feign
             {
                 var responseTemplate = new ResponseTemplate
                 {
-                    HttpStatusCode = responseMessage.StatusCode
+                    HttpStatusCode = responseMessage.StatusCode,
+                    OrignHttpResponseMessage = responseMessage
                 };
 
                 var headers = responseMessage.Headers;
