@@ -20,7 +20,7 @@
 # 支持框架
 net core 3.1,net 6
 
-## 目录
+# 文档目录
 - [感谢jetbrain提供的ide许可证](#感谢jetbrain提供的ide许可证)
 - [SummerBoot的核心理念](#summerboot的核心理念)
 - [框架说明](#框架说明)
@@ -28,7 +28,7 @@ net core 3.1,net 6
 - [Getting Started](#getting-started)
 	- [Nuget](#nuget)
 - [支持框架](#支持框架)
-	- [目录](#目录)
+- [文档目录](#文档目录)
 - [SummerBoot中操作数据库](#summerboot中操作数据库)
 	- [准备工作](#准备工作)
 	- [1.首先在startup.cs类中注册服务](#1首先在startupcs类中注册服务)
@@ -38,7 +38,8 @@ net core 3.1,net 6
 		- [4.1 查](#41-查)
 			- [4.1.1 IQueryable链式语法查询。](#411-iqueryable链式语法查询)
 			- [4.1.2 直接在接口里定义方法，并且在方法上加上注解Select,然后在Select里写sql语句](#412-直接在接口里定义方法并且在方法上加上注解select然后在select里写sql语句)
-			- [1.3 接口同时自带了Get方法，通过id获取结果，和GetAll(),获取表里的所有结果集。](#13-接口同时自带了get方法通过id获取结果和getall获取表里的所有结果集)
+			- [4.1.3 select注解这种方式拼接where查询条件](#413-select注解这种方式拼接where查询条件)
+			- [4.1.4 IBaseRepository接口自带的查方法](#414-ibaserepository接口自带的查方法)
 		- [4.2 增](#42-增)
 			- [4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。](#421-接口自带了insert方法可以插入单个实体或者实体列表如果实体类的主键名称为id且有key注解并且是自增的那么插入后框架会自动为实体的id这个字段赋值值为自增的id值)
 		- [4.3 删](#43-删)
@@ -48,7 +49,6 @@ net core 3.1,net 6
 			- [4.4.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。](#441-接口自带了update方法可以更新单个实体或者实体列表联合主键的话数据库实体类对应的多字段都添加key注解即可)
 			- [4.4.2 同时还支持基于IQueryable链式语法的更新方式，返回受影响的行数，例如](#442-同时还支持基于iqueryable链式语法的更新方式返回受影响的行数例如)
 		- [4.5.事务支持](#45事务支持)
-			- [4.5.1 事务支持，需要在使用的时候注入自定义仓储接口的同时，也注入框架自带的IUnitOfWork接口，用法如下](#451-事务支持需要在使用的时候注入自定义仓储接口的同时也注入框架自带的iunitofwork接口用法如下)
 		- [4.6 如果有些特殊情况需要自己手写实现类怎么办?](#46-如果有些特殊情况需要自己手写实现类怎么办)
 			- [4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#461-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
 			- [4.6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#462-添加一个实现类继承于baserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
@@ -57,7 +57,6 @@ net core 3.1,net 6
 		- [2.定义接口](#2定义接口)
 		- [3.设置请求头(header)](#3设置请求头header)
 			- [4.自定义拦截器](#4自定义拦截器)
-				- [忽略拦截器，有时候我们接口中的某些方法，是不需要拦截器的，那么就可以在方法上添加注解IgnoreInterceptor，那么该方法发起的请求，就会忽略拦截器，如](#忽略拦截器有时候我们接口中的某些方法是不需要拦截器的那么就可以在方法上添加注解ignoreinterceptor那么该方法发起的请求就会忽略拦截器如)
 			- [5.定义方法](#5定义方法)
 				- [5.1方法里的普通参数](#51方法里的普通参数)
 				- [5.2方法里的特殊参数](#52方法里的特殊参数)
@@ -183,8 +182,9 @@ var page = customerRepository.GetCustomerByPage(pageable, 5);
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 ````
-> 如果select这种查询方式需要拼接where查询条件怎么办？答案是将条件用{{}}包裹起来，一个条件里只能包括一个变量，同时在定义方法的时候，条件变量用WhereItem<T>,T为泛型参数，代表真正的值的类型传入，这样summerboot就会自动处理查询条件，处理规则如下
-> 如果whereItem的active为true，即激活该条件，则sql语句中{{ }}包裹的查询条件会展开并参与查询，如果active为false，则sql语句中{{ }}包裹的查询条件自动替换为空字符串，不参与查询，为了使用whereItem更方便，提供了WhereBuilder这种方式，使用例子如下所示：
+
+#### 4.1.3 select注解这种方式拼接where查询条件
+将单个查询条件用{{}}包裹起来，一个条件里只能包括一个变量，同时在定义方法的时候，参数定义为WhereItem\<T\>,T为泛型参数，表示真正的参数类型，这样summerboot就会自动处理查询条件，处理规则如下，如果whereItem的active为true，即激活该条件，则sql语句中{{ }}包裹的查询条件会展开并参与查询，如果active为false，则sql语句中{{ }}包裹的查询条件自动替换为空字符串，不参与查询，为了使whereItem更好用，提供了WhereBuilder这种方式，使用例子如下所示：
 ````
 //definition
 [AutoRepository]
@@ -198,9 +198,10 @@ Task<Page<Customer>> GetCustomerByPageByConditionAsync(IPageable pageable, Where
 }
 
 //use
-var nameEmpty = WhereBuilder.Empty<string>();//var nameEmpty =  WhereBuilder.Of(false,"")
+var nameEmpty = WhereBuilder.Empty<string>();//var nameEmpty =  new WhereItem<string>(false,"");
+
 var ageEmpty = WhereBuilder.Empty<int>();
-var nameWhereItem = WhereBuilder.HasValue("page5");//var nameWhereItem =  WhereBuilder.Of(true,"page5")
+var nameWhereItem = WhereBuilder.HasValue("page5");//var nameWhereItem =WhereItem<string>(true,"page5"); 
 var ageWhereItem = WhereBuilder.HasValue(5);
 var pageable = new Pageable(1, 10);
 
@@ -215,7 +216,8 @@ var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, name
 
 >如果还有更复杂的自定义查询怎么办？参考 6.如果有些特殊情况要求自己手写实现类怎么办?
 
-#### 1.3 接口同时自带了Get方法，通过id获取结果，和GetAll(),获取表里的所有结果集。
+#### 4.1.4 IBaseRepository接口自带的查方法
+Get方法，通过id获取结果，GetAll(),获取表里的所有结果集。
 
 ### 4.2 增
 #### 4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。
@@ -255,7 +257,7 @@ var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 ````
 
 ### 4.5.事务支持
-#### 4.5.1 事务支持，需要在使用的时候注入自定义仓储接口的同时，也注入框架自带的IUnitOfWork接口，用法如下
+事务支持，需要在注入自定义仓储接口的同时，也注入框架自带的IUnitOfWork接口，用法如下
 
 ````
 //uow is IUnitOfWork interface
@@ -436,7 +438,7 @@ await TestFeign.TestAsync();
 >>> get to http://localhost:5001/home/testGet,header为 "Authorization:Bearer abc"
 
 ````
-##### 忽略拦截器，有时候我们接口中的某些方法，是不需要拦截器的，那么就可以在方法上添加注解IgnoreInterceptor，那么该方法发起的请求，就会忽略拦截器，如
+忽略拦截器，有时候我们接口中的某些方法，是不需要拦截器的，那么就可以在方法上添加注解IgnoreInterceptor，那么该方法发起的请求，就会忽略拦截器，如
 ````
 //定义访问业务接口的testFegn客户端，在客户端上定义拦截器为loginInterceptor
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(LoginInterceptor),Timeout = 100)]
