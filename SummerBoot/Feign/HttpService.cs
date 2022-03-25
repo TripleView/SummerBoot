@@ -4,6 +4,7 @@ using SummerBoot.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,8 +77,12 @@ namespace SummerBoot.Feign
             }
 
             return await base.BaseExecuteAsync<T>(method, args.ToArray(), serviceProvider);
+        }
 
-
+        public async Task ExecuteNoReturnAsync(List<object> originArgs, MethodInfo method,
+            IServiceProvider serviceProvider)
+        {
+            await this.ExecuteAsync<HttpResponseMessage>(originArgs, method, serviceProvider);
         }
     }
 }

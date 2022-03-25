@@ -17,12 +17,12 @@ namespace SummerBoot.Feign
 
         private static ConcurrentDictionary<string, Type> TargetTypeCache { set; get; } =
             new ConcurrentDictionary<string, Type>();
-        
+
 
         public object Build(Type interfaceType, params object[] constructor)
         {
             var cacheKey = interfaceType.FullName;
-            var resultType = TargetTypeCache.GetOrAdd(cacheKey, (s)=> BuildTargetType(interfaceType, constructor));
+            var resultType = TargetTypeCache.GetOrAdd(cacheKey, (s) => BuildTargetType(interfaceType, constructor));
             var result = Activator.CreateInstance(resultType, args: constructor);
             return result;
         }
@@ -68,7 +68,7 @@ namespace SummerBoot.Feign
             var httpType = typeof(HttpService);
             FieldBuilder httpServiceField = typeBuilder.DefineField("httpService",
                 httpType, FieldAttributes.Public);
-            
+
             //定义一个字段存放IServiceProvider
             var iServiceProviderType = typeof(IServiceProvider);
             FieldBuilder serviceProviderField = typeBuilder.DefineField("iServiceProvider",
@@ -120,15 +120,25 @@ namespace SummerBoot.Feign
                     ILGenerator ilGen = methodBuilder.GetILGenerator();
 
                     MethodInfo executeMethod = null;
-                    var methodTmp = httpType.GetMethod("ExecuteAsync");
+                    if (returnType == typeof(Task))
+                    {
+                        var methodTmp = httpType.GetMethod("ExecuteNoReturnAsync");
+                        if (methodTmp == null) throw new Exception("找不到执行方法");
+                        executeMethod = methodTmp;
+                    }
+                    else
+                    {
+                        var methodTmp = httpType.GetMethod("ExecuteAsync");
 
-                    if (methodTmp == null) throw new Exception("找不到执行方法");
-                    executeMethod = methodTmp.IsGenericMethod ? methodTmp.MakeGenericMethod(underType) : methodTmp;
+                        if (methodTmp == null) throw new Exception("找不到执行方法");
+                        executeMethod = methodTmp.IsGenericMethod ? methodTmp.MakeGenericMethod(underType) : methodTmp;
+                    }
+
 
                     // 栈底放这玩意，加载字段前要加载类实例，即Ldarg_0
                     ilGen.Emit(OpCodes.Ldarg_0);
                     ilGen.Emit(OpCodes.Ldfld, httpServiceField);
-                    
+
                     //把所有参数都放到list<object>里
                     ilGen.Emit(OpCodes.Ldarg_0);
                     ilGen.Emit(OpCodes.Ldfld, paramterArrField);

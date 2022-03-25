@@ -40,6 +40,9 @@ namespace SummerBoot.Test.Feign
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
     public interface ITestFeign
     {
+        [PostMapping("/json")]
+        Task TestReturnTask([Body(BodySerializationKind.Json)] Test tt);
+        
         [GetMapping("/downLoadWithStream")]
         Task<Stream> TestDownLoadWithStream();
 

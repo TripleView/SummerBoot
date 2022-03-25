@@ -42,6 +42,7 @@ namespace Example.Controllers
             using var streamResult =await testFeign.TestDownLoadStream();
             using var newfile = new FileInfo("D:\\123.txt").OpenWrite();
             streamResult.CopyTo(newfile);
+
             return Content("ok");
         }
 

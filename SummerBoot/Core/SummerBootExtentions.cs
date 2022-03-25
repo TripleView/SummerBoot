@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Http;
 using SummerBoot.Feign.Attributes;
 
@@ -199,6 +200,15 @@ namespace SummerBoot.Core
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
+
+            //判断方法返回类型是不是task<>
+             foreach (var methodInfo in serviceType.GetMethods())
+             {
+                 if (!typeof(Task<>).IsAssignableFrom(methodInfo.ReturnType)&& !typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
+                 {
+                     throw new ArgumentException($"{methodInfo.Name} must return task<>");
+                 }
+             }
 
             var fallBack = feignClient.FallBack;
             if (fallBack != null)

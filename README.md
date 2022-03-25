@@ -52,22 +52,23 @@ net core 3.1,net 6
 		- [4.6 如果有些特殊情况需要自己手写实现类怎么办?](#46-如果有些特殊情况需要自己手写实现类怎么办)
 			- [4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#461-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
 			- [4.6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#462-添加一个实现类继承于baserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
-	- [SummerBoot中使用feign进行http调用](#summerboot中使用feign进行http调用)
-		- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务)
-		- [2.定义接口](#2定义接口)
-		- [3.设置请求头(header)](#3设置请求头header)
-			- [4.自定义拦截器](#4自定义拦截器)
-			- [5.定义方法](#5定义方法)
-				- [5.1方法里的普通参数](#51方法里的普通参数)
-				- [5.2方法里的特殊参数](#52方法里的特殊参数)
-					- [5.2.1参数添加Query注解](#521参数添加query注解)
-					- [5.2.2参数添加Body(BodySerializationKind.Form)注解](#522参数添加bodybodyserializationkindform注解)
-					- [5.2.3参数添加Body(BodySerializationKind.Json)注解](#523参数添加bodybodyserializationkindjson注解)
-					- [5.2.4使用特殊类HeaderCollection作为方法参数，即可批量添加请求头](#524使用特殊类headercollection作为方法参数即可批量添加请求头)
-					- [5.2.5使用特殊类BasicAuthorization作为方法参数，即可添加basic认证的Authorization请求头](#525使用特殊类basicauthorization作为方法参数即可添加basic认证的authorization请求头)
-					- [5.2.6使用特殊类MultipartItem作为方法参数，并且在方法上标注Multipart注解，即可上传附件](#526使用特殊类multipartitem作为方法参数并且在方法上标注multipart注解即可上传附件)
-					- [5.2.7使用类Stream作为方法返回类型，即可接收流式数据，比如下载文件。](#527使用类stream作为方法返回类型即可接收流式数据比如下载文件)
-					- [5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。](#528使用类httpresponsemessage作为方法返回类型即可获得最原始的响应消息)
+- [SummerBoot中使用feign进行http调用](#summerboot中使用feign进行http调用)
+	- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务)
+	- [2.定义接口](#2定义接口)
+	- [3.设置请求头(header)](#3设置请求头header)
+	- [4.自定义拦截器](#4自定义拦截器)
+	- [5.定义方法](#5定义方法)
+		- [5.1方法里的普通参数](#51方法里的普通参数)
+		- [5.2方法里的特殊参数](#52方法里的特殊参数)
+			- [5.2.1参数添加Query注解](#521参数添加query注解)
+			- [5.2.2参数添加Body(BodySerializationKind.Form)注解](#522参数添加bodybodyserializationkindform注解)
+			- [5.2.3参数添加Body(BodySerializationKind.Json)注解](#523参数添加bodybodyserializationkindjson注解)
+			- [5.2.4使用特殊类HeaderCollection作为方法参数，即可批量添加请求头](#524使用特殊类headercollection作为方法参数即可批量添加请求头)
+			- [5.2.5使用特殊类BasicAuthorization作为方法参数，即可添加basic认证的Authorization请求头](#525使用特殊类basicauthorization作为方法参数即可添加basic认证的authorization请求头)
+			- [5.2.6使用特殊类MultipartItem作为方法参数，并且在方法上标注Multipart注解，即可上传附件](#526使用特殊类multipartitem作为方法参数并且在方法上标注multipart注解即可上传附件)
+			- [5.2.7使用类Stream作为方法返回类型，即可接收流式数据，比如下载文件。](#527使用类stream作为方法返回类型即可接收流式数据比如下载文件)
+			- [5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。](#528使用类httpresponsemessage作为方法返回类型即可获得最原始的响应消息)
+			- [5.2.9使用类Task作为方法返回类型，即无需返回值。](#529使用类task作为方法返回类型即无需返回值)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
 # SummerBoot中操作数据库
@@ -337,15 +338,15 @@ public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustome
 }
 ````
 
-## SummerBoot中使用feign进行http调用
+# SummerBoot中使用feign进行http调用
 >我们使用Feign，feign底层基于httpClient。
 
-### 1.在startup.cs类中注册服务
+## 1.在startup.cs类中注册服务
 ````
 services.AddSummerBoot();
 services.AddSummerBootFeign();
 ````
-### 2.定义接口
+## 2.定义接口
  定义一个接口，并且在接口上添加FeignClient注解，FeignClient注解里可以自定义接口名称-Name，http接口url的公共部分-url（整个接口请求的url由FeignClient里的url加上方法里的path组成）,是否忽略远程接口的https证书校验-IsIgnoreHttpsCertificateValidate,接口超时时间-Timeout（单位s），自定义拦截器-InterceptorType。
 
 ````
@@ -356,7 +357,7 @@ public interface ITestFeign
 }
 ````
 
-### 3.设置请求头(header)
+## 3.设置请求头(header)
 接口上可以选择添加Headers注解，代表这个接口下所有http请求都带上注解里的请求头。Headers的参数为变长的string类型的参数，同时Headers也可以添加在方法上，代表该方法调用的时候，会加该请求头，接口上的Headers参数可与方法上的Headers参数互相叠加，同时headers里可以使用变量，变量的占位符为{}，如
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
@@ -386,7 +387,7 @@ await TestFeign.TestHeaderAsync("abc");
 >>> post, http://localhost:5001/home/abc，同时请求头为 "a:abc"
 ````
 
-#### 4.自定义拦截器
+## 4.自定义拦截器
 自定义拦截器对接口下的所有方法均生效，拦截器的应用场景主要是在请求前做一些操作，比如请求第三方业务接口前，需要先登录第三方系统，那么就可以在拦截器里先请求第三方登录接口，获取到凭证以后，放到header里，拦截器需要实现IRequestInterceptor接口，例子如下
 ````
 //先定义一个用来登录的loginFeign客户端
@@ -454,7 +455,7 @@ await TestFeign.TestAsync();
 
 ````
 
-#### 5.定义方法
+## 5.定义方法
 每个方法都应该添加注解代表发起请求的类型和要访问的url，有4个内置注解， GetMapping，PostMapping，PutMapping，DeleteMapping，同时方法的返回值必须是Task<>类型
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
@@ -474,7 +475,7 @@ public interface ITestFeign
 }
 ````
 
-##### 5.1方法里的普通参数
+### 5.1方法里的普通参数
 参数如果没有特殊注解，或者不是特殊类，均作为动态参数参与url，header里变量的替换，(参数如果为类，则读取类的属性值)，url和header中的变量使用占位符{}，如果变量名和参数名不一致，则可以使用AliasAs注解（可以用在参数或者类的属性上）来指定别名，如
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
@@ -506,8 +507,8 @@ await TestFeign.TestHeaderAsync("abc");
 >>> post, http://localhost:5001/home/abc，同时请求头为 "a:abc"
 ````
 
-##### 5.2方法里的特殊参数
-###### 5.2.1参数添加Query注解
+### 5.2方法里的特殊参数
+#### 5.2.1参数添加Query注解
 参数添加query注解后参数值将以key1=value1&key2=value2的方式添加到url后面。
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
@@ -527,7 +528,7 @@ await TestFeign.TestQueryWithClass(new Test() { Name = "abc", Age = 3 });
 >>> get, http://localhost:5001/home/TestQueryWithClass?Name=abc&Age=3
 ````
 
-###### 5.2.2参数添加Body(BodySerializationKind.Form)注解
+#### 5.2.2参数添加Body(BodySerializationKind.Form)注解
 相当于模拟html里的form提交，参数值将被URL编码后，以key1=value1&key2=value2的方式添加到载荷（body）里。
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
@@ -541,7 +542,7 @@ await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
 >>> post, http://localhost:5001/home/form,同时body里的值为Name=abc&Age=3
 ````
 
-###### 5.2.3参数添加Body(BodySerializationKind.Json)注解
+#### 5.2.3参数添加Body(BodySerializationKind.Json)注解
 即以application/json的方式提交，参数值将会被json序列化后添加到载荷（body）里。
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
@@ -555,7 +556,7 @@ await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 });
 >>> post, http://localhost:5001/home/json,同时body里的值为{"Name":"abc","Age":3}
 ````
 
-###### 5.2.4使用特殊类HeaderCollection作为方法参数，即可批量添加请求头
+#### 5.2.4使用特殊类HeaderCollection作为方法参数，即可批量添加请求头
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
@@ -572,7 +573,7 @@ await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 },headerCollection);
 >>> post, http://localhost:5001/home/json,同时body里的值为{"Name":"abc","Age":3},header为 "a:a" 和 "b:b"
 ````
 
-###### 5.2.5使用特殊类BasicAuthorization作为方法参数，即可添加basic认证的Authorization请求头
+#### 5.2.5使用特殊类BasicAuthorization作为方法参数，即可添加basic认证的Authorization请求头
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
@@ -588,7 +589,7 @@ await TestFeign.TestBasicAuthorization(new BasicAuthorization(username,password)
 >>> get, http://localhost:5001/home/testBasicAuthorization,header为 "Authorization:Basic YWJjOjEyMw=="
 ````
 
-###### 5.2.6使用特殊类MultipartItem作为方法参数，并且在方法上标注Multipart注解，即可上传附件
+#### 5.2.6使用特殊类MultipartItem作为方法参数，并且在方法上标注Multipart注解，即可上传附件
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
@@ -637,7 +638,7 @@ var result = await testFeign.MultipartTest(new MultipartItem(new FileInfo(basePa
   >>> post, http://localhost:5001/home/multipart,同时body里的值为Name=abc&Age=3，并且带有附件
 ````
 
-###### 5.2.7使用类Stream作为方法返回类型，即可接收流式数据，比如下载文件。
+#### 5.2.7使用类Stream作为方法返回类型，即可接收流式数据，比如下载文件。
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
@@ -653,7 +654,7 @@ streamResult.CopyTo(newfile);
 >>> get, http://localhost:5001/home/downLoadWithStream,返回值为流式数据，然后就可以保存为文件。
 ````
 
-###### 5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。
+#### 5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
@@ -665,6 +666,20 @@ public interface ITestFeign
 var rawResult =await testFeign.Test();
 
 >>> get, http://localhost:5001/home/Test,返回值为httpclient的原始返回数据。
+````
+
+#### 5.2.9使用类Task作为方法返回类型，即无需返回值。
+````
+[FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
+public interface ITestFeign
+{
+	[GetMapping("/test")]
+	Task Test();
+}
+				 
+await testFeign.Test();
+
+>>> get, http://localhost:5001/home/Test,忽略返回值
 ````
 
 # SummerBoot中的人性化的设计

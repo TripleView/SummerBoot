@@ -41,10 +41,28 @@ namespace SummerBoot.Test.Feign
         [Fact]
         public async Task Test()
         {
+
             t1 d = new tt1();
             t2 d2= new tt2();
             var c = d is t1;
             var c1 = d2 is t1;
+        }
+        
+
+        [Fact]
+        public async Task TestReturnTask()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+
+            await testFeign.TestReturnTask(new Test() { Name = "sb", Age = 3 });
+        
         }
 
         [Fact]
