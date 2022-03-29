@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>E:\github\myOpenSource\SummerBoot\Example\Example.xml</DocumentationFile>
+   
   </PropertyGroup>
 
 

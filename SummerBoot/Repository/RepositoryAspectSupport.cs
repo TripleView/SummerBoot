@@ -410,7 +410,7 @@ namespace SummerBoot.Repository
                         throw new ArgumentNullException(nameof(argValue));
                     }
 
-                    var value = parameterType.GetProperty("Name").GetValue(argValue);
+                    var value = parameterType.GetProperty("Value").GetValue(argValue);
                     var active = (bool)parameterType.GetProperty("Active").GetValue(argValue);
 
                     if (value != null && active)
