@@ -6,14 +6,15 @@ using SummerBoot.Repository.Attributes;
 
 namespace SummerBoot.Test.SqlServer.Models
 {
+    [Description("NullableTable")]
     public class NullableTable
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Key]
         public int Id { get; set; }
-        [Description("这是一个测试")]
+        [Description("Int2")]
         public int? Int2 { get; set; }
-    
+        [Description("Long2")]
         public long? Long2 { get; set; }
 
         public float? Float2 { get; set; }

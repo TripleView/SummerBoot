@@ -16,13 +16,23 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             this.dbFactory = dbFactory;
         }
 
-        public string CreateTable(string tableName, List<DatabaseFieldInfoDto> fieldInfos)
+        public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
         {
-            var result = new StringBuilder();
-            result.AppendLine($"CREATE TABLE {tableName} (");
+            var tableName = tableInfo.Name;
+            var fieldInfos = tableInfo.FieldInfos;
+
+            var body = new StringBuilder();
+            body.AppendLine($"CREATE TABLE {tableName} (");
             //主键
             var keyField = "";
             var hasKeyField = fieldInfos.Any(it => it.IsKey);
+            //数据库注释
+            var databaseDescriptions = new List<string>();
+            if (tableInfo.Description.HasText())
+            {
+                databaseDescriptions.Add($"EXEC sp_addextendedproperty 'MS_Description', N'{tableInfo.Description}', 'schema', N'dbo', 'table', N'{tableInfo.Name}'");
+            }
+
             for (int i = 0; i < fieldInfos.Count; i++)
             {
                 var fieldInfo = fieldInfos[i];
@@ -54,24 +64,39 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                         $"decimal({fieldInfo.DecimalPrecision.Precision},{fieldInfo.DecimalPrecision.Scale})";
                 }
 
-                result.AppendLine($"    [{fieldInfo.ColumnName}] {columnDataType} {identityString} {nullableString}{lastComma}");
+                body.AppendLine($"    [{fieldInfo.ColumnName}] {columnDataType} {identityString} {nullableString}{lastComma}");
                 if (fieldInfo.IsKey)
                 {
                     keyField = fieldInfo.ColumnName;
+                }
+
+                //添加行注释
+                if (fieldInfo.Description.HasText())
+                {
+                    databaseDescriptions.Add($"EXEC sp_addextendedproperty 'MS_Description', N'{fieldInfo.Description}', 'schema', N'dbo', 'table', N'{tableName}', 'column', N'{fieldInfo.ColumnName}'");
                 }
             }
 
             if (keyField.HasText())
             {
-                result.AppendLine($"    CONSTRAINT PK_{tableName} PRIMARY KEY ({keyField})");
+                body.AppendLine($"    CONSTRAINT PK_{tableName} PRIMARY KEY ({keyField})");
             }
-            
-            result.AppendLine($")");
-            return result.ToString();
+
+            body.AppendLine($")");
+
+
+            var result = new GenerateDatabaseSqlResult()
+            {
+                Body = body.ToString(),
+                Descriptions = databaseDescriptions
+            };
+
+            return result;
         }
 
-        public List<DatabaseFieldInfoDto> GetTableInfoByName(string tableName)
+        public DatabaseTableInfoDto GetTableInfoByName(string tableName)
         {
+            var dbConnection = dbFactory.GetDbConnection();
             var sql = @"select c.name as columnName,t.name as columnDataType
                  ,convert(bit,c.IsNullable)  as isNullable
                  ,convert(bit,case when exists(select 1 from sysobjects where xtype='PK' and parent_obj=c.id and name in (
@@ -89,7 +114,21 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                left join sys.extended_properties ETP on ETP.major_id = c.id and ETP.minor_id = c.colid and ETP.name ='MS_Description' 
                left join syscomments CM on c.cdefault=CM.id
                where c.id = object_id(@tableName) ";
-            var result = dbFactory.GetDbConnection().Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
+            var FieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
+
+            var tableDescriptionSql = @"select etp.value from SYS.OBJECTS c
+                    left join sys.extended_properties ETP on ETP.major_id = c.object_id   
+                    where c.name =@tableName and minor_id =0";
+
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName });
+
+            var result=new DatabaseTableInfoDto()
+            {
+                Name = tableName,
+                Description = tableDescription,
+                FieldInfos = FieldInfos
+            };
+
             return result;
         }
     }

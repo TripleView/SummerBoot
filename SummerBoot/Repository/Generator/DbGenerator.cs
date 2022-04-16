@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Dapper;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.Generator.Dto;
@@ -23,6 +24,16 @@ namespace SummerBoot.Repository.Generator
             this.databaseFieldMapping = databaseFieldMapping;
             this.dbFactory = dbFactory;
             this.databaseInfo = databaseInfo;
+        }
+
+        public void ExecuteGenerateSql(GenerateDatabaseSqlResult generateDatabaseSqlResult)
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            dbConnection.Execute(generateDatabaseSqlResult.Body);
+            foreach (var description in generateDatabaseSqlResult.Descriptions)
+            {
+                dbConnection.Execute(description);
+            }
         }
 
         public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace)
@@ -46,11 +57,20 @@ namespace SummerBoot.Repository.Generator
             var result = new List<string>();
             foreach (var tableName in tableNames)
             {
-                var columnInfos = databaseInfo.GetTableInfoByName(tableName);
+                var tableInfo = databaseInfo.GetTableInfoByName(tableName);
+                var columnInfos = tableInfo.FieldInfos;
                 var sb = new StringBuilder();
+                sb.AppendLine("using System;");
+                sb.AppendLine("using System.ComponentModel.DataAnnotations;");
                 sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
                 sb.AppendLine("namespace " + classNameSpace);
                 sb.AppendLine("{");
+                if (tableInfo.Description.HasText())
+                {
+                    sb.AppendLine("   /// <summary>");
+                    sb.AppendLine($"   ///{tableInfo.Description}");
+                    sb.AppendLine("   /// </summary>");
+                }
                 sb.AppendLine($"   [Table(\"{tableName}\")]");
                 sb.AppendLine($"   public class {tableName}");
                 sb.AppendLine("   {");
@@ -84,13 +104,16 @@ namespace SummerBoot.Repository.Generator
             return result;
         }
 
-        public List<string> GenerateSql(List<Type> types)
+        public List<GenerateDatabaseSqlResult> GenerateSql(List<Type> types)
         {
-            var result = new List<string>();
+            var result = new List<GenerateDatabaseSqlResult>();
             foreach (var type in types)
             {
                 var tableAttribute = type.GetCustomAttribute<TableAttribute>();
+                var tableDescriptionAttribute = type.GetCustomAttribute<DescriptionAttribute>();
                 var tableName = tableAttribute != null ? tableAttribute.Name : type.Name;
+                var tableDescription = tableDescriptionAttribute?.Description ?? "";
+
                 var propertys = type.GetProperties();
                 var fieldInfos = new List<DatabaseFieldInfoDto>();
                 foreach (var propertyInfo in propertys)
@@ -152,8 +175,13 @@ namespace SummerBoot.Repository.Generator
                     fieldInfos.Add(fieldInfo);
                 }
 
-                var sql = databaseInfo.CreateTable(tableName, fieldInfos);
-                result.Add(sql);
+                var item = databaseInfo.CreateTable(new DatabaseTableInfoDto()
+                {
+                    Description = tableDescription,
+                    Name = tableName,
+                    FieldInfos = fieldInfos
+                });
+                result.Add(item);
             }
 
             return result;

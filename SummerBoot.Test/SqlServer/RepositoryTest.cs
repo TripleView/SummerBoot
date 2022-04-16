@@ -33,6 +33,8 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(3, result.Count);
 
             var sb = new StringBuilder();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
             sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
             sb.AppendLine("namespace abc");
             sb.AppendLine("{");
@@ -58,9 +60,14 @@ namespace SummerBoot.Test.SqlServer
                 , result[0]);
 
             sb.Clear();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
             sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
             sb.AppendLine("namespace abc");
             sb.AppendLine("{");
+            sb.AppendLine("   /// <summary>");
+            sb.AppendLine("   ///NullableTable");
+            sb.AppendLine("   /// </summary>");
             sb.AppendLine("   [Table(\"NullableTable\")]");
             sb.AppendLine("   public class NullableTable");
             sb.AppendLine("   {");
@@ -69,10 +76,13 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("      [Column(\"Id\")]");
             sb.AppendLine("      public int Id { get; set; }");
             sb.AppendLine("      /// <summary>");
-            sb.AppendLine("      ///test NullableTable");
+            sb.AppendLine("      ///Int2");
             sb.AppendLine("      /// </summary>");
             sb.AppendLine("      [Column(\"Int2\")]");
             sb.AppendLine("      public int? Int2 { get; set; }");
+            sb.AppendLine("      /// <summary>");
+            sb.AppendLine("      ///Long2");
+            sb.AppendLine("      /// </summary>");
             sb.AppendLine("      [Column(\"Long2\")]");
             sb.AppendLine("      public long? Long2 { get; set; }");
             sb.AppendLine("      [Column(\"Float2\")]");
@@ -106,9 +116,14 @@ namespace SummerBoot.Test.SqlServer
                 , result[1]);
 
             sb.Clear();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
             sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
             sb.AppendLine("namespace abc");
             sb.AppendLine("{");
+            sb.AppendLine("   /// <summary>");
+            sb.AppendLine("   ///NotNullableTable");
+            sb.AppendLine("   /// </summary>");
             sb.AppendLine("   [Table(\"NotNullableTable\")]");
             sb.AppendLine("   public class NotNullableTable");
             sb.AppendLine("   {");
@@ -117,10 +132,13 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("      [Column(\"Id\")]");
             sb.AppendLine("      public int Id { get; set; }");
             sb.AppendLine("      /// <summary>");
-            sb.AppendLine("      ///test NotNullableTable");
+            sb.AppendLine("      ///Int2");
             sb.AppendLine("      /// </summary>");
             sb.AppendLine("      [Column(\"Int2\")]");
             sb.AppendLine("      public int Int2 { get; set; }");
+            sb.AppendLine("      /// <summary>");
+            sb.AppendLine("      ///Long2");
+            sb.AppendLine("      /// </summary>");
             sb.AppendLine("      [Column(\"Long2\")]");
             sb.AppendLine("      public long Long2 { get; set; }");
             sb.AppendLine("      [Column(\"Float2\")]");
@@ -186,7 +204,14 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
-                , result[0]);
+                , result[0].Body);
+
+            Assert.Equal(3, result[0].Descriptions.Count);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'NullableTable', 'schema', N'dbo', 'table', N'NullableTable'", result[0].Descriptions[0]);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'Int2'", result[0].Descriptions[1]);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Long2', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'Long2'", result[0].Descriptions[2]);
+            //dbGenerator.ExecuteGenerateSql(result[0]);
+
 
             sb.Clear();
             sb.AppendLine("CREATE TABLE NotNullableTable (");
@@ -209,7 +234,7 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
-                , result[1]);
+                , result[1].Body);
         }
 
         [Fact,Order(10)]
