@@ -15,6 +15,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Http;
 using SummerBoot.Feign.Attributes;
+using SummerBoot.Repository.Generator;
+using SummerBoot.Repository.Generator.Dialect;
+using SummerBoot.Repository.Generator.Dialect.SqlServer;
 
 namespace SummerBoot.Core
 {
@@ -113,6 +116,12 @@ namespace SummerBoot.Core
             services.AddScoped(typeof(BaseRepository<>));
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
             services.AddScoped<RepositoryService>();
+            if (option.IsSqlServer)
+            {
+                services.AddScoped<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
+                services.AddScoped<IDatabaseInfo, SqlServerDatabaseInfo>();
+                services.AddScoped<IDbGenerator, DbGenerator>();
+            }
 
             services.TryAddSingleton<IRepositoryProxyBuilder, RepositoryProxyBuilder>();
 

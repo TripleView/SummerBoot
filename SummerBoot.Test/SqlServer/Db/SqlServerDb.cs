@@ -13,11 +13,25 @@ namespace SummerBoot.Test.SqlServer.Db
             {
                 throw new ArgumentNullException("sqlServer connectionString must not be null");
             }
+
             optionsBuilder.UseSqlServer(connectionString);
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<NullableTable>().Property("Int2").HasComment("test NullableTable");
+            modelBuilder.Entity<NotNullableTable>().Property("Int2").HasComment("test NotNullableTable");
+            modelBuilder.Entity<NullableTable>().Property(it=>it.Decimal3).HasPrecision(20,4);
+            modelBuilder.Entity<NotNullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
         }
 
         public DbSet<Customer> Customer { get; set; }
         public DbSet<OrderHeader> OrderHeader { get; set; }
         public DbSet<OrderDetail> OrderDetail { get; set; }
+
+        public DbSet<NullableTable> NullableTable { get; set; }
+        public DbSet<NotNullableTable> NotNullableTable { get; set; }
     }
 }
