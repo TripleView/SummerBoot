@@ -372,7 +372,7 @@ public interface ITestFeign
 	Task<Test> TestWithHeadersAsync();
 	
 	//header替换
-	[Headers("a:{methodName}")]
+	[Headers("a:{{methodName}}")]
 	[PostMapping("/abc")]
 	Task<Test> TestHeaderAsync(string methodName);
 }
@@ -476,23 +476,23 @@ public interface ITestFeign
 ````
 
 ### 5.1方法里的普通参数
-参数如果没有特殊注解，或者不是特殊类，均作为动态参数参与url，header里变量的替换，(参数如果为类，则读取类的属性值)，url和header中的变量使用占位符{}，如果变量名和参数名不一致，则可以使用AliasAs注解（可以用在参数或者类的属性上）来指定别名，如
+参数如果没有特殊注解，或者不是特殊类，均作为动态参数参与url，header里变量的替换，(参数如果为类，则读取类的属性值)，url和header中的变量使用占位符{{}}，如果变量名和参数名不一致，则可以使用AliasAs注解（可以用在参数或者类的属性上）来指定别名，如
 ````
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
 	//url替换
-	[PostMapping("/{methodName}")]
+	[PostMapping("/{{methodName}}")]
 	Task<Test> TestAsync(string methodName);	
 	
 	//header替换
-	[Headers("a:{methodName}")]
+	[Headers("a:{{methodName}}")]
 	[PostMapping("/abc")]
 	Task<Test> TestHeaderAsync(string methodName);
 	
 	
 	//AliasAs指定别名
-	[Headers("a:{methodName}")]
+	[Headers("a:{{methodName}}")]
 	[PostMapping("/abc")]
 	Task<Test> TestAliasAsAsync([AliasAs("methodName")] string name);
 }

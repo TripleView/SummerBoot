@@ -137,7 +137,11 @@ namespace SummerBoot.Repository.Generator
                     {
                         isNullable = false;
                     }
-
+                    //如果是枚举类型，统一转为int
+                    if (propertyInfo.PropertyType.IsEnum)
+                    {
+                        fieldTypeName = typeof(int);
+                    }
 
                     var keyAttribute = propertyInfo.GetCustomAttribute<KeyAttribute>();
                     var databaseGeneratedAttribute = propertyInfo.GetCustomAttribute<DatabaseGeneratedAttribute>();

@@ -22,9 +22,17 @@ namespace SummerBoot.Feign
         public object Build(Type interfaceType, params object[] constructor)
         {
             var cacheKey = interfaceType.FullName;
-            var resultType = TargetTypeCache.GetOrAdd(cacheKey, (s) => BuildTargetType(interfaceType, constructor));
+            //var resultType = TargetTypeCache.GetOrAdd(cacheKey, (s) => BuildTargetType(interfaceType, constructor));
+            TargetTypeCache.TryGetValue(cacheKey, out var resultType);
             var result = Activator.CreateInstance(resultType, args: constructor);
             return result;
+        }
+
+        public void InitInterface(Type interfaceType)
+        {
+            var cacheKey = interfaceType.FullName;
+            var resultType = BuildTargetType(interfaceType);
+            TargetTypeCache.TryAdd(cacheKey, resultType);
         }
 
         /// <summary>

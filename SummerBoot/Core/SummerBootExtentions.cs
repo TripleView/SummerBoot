@@ -123,7 +123,7 @@ namespace SummerBoot.Core
                 services.AddScoped<IDbGenerator, DbGenerator>();
             }
 
-            services.TryAddSingleton<IRepositoryProxyBuilder, RepositoryProxyBuilder>();
+            var repositoryProxyBuilder = new RepositoryProxyBuilder();
 
             var types = Assembly.GetCallingAssembly().GetExportedTypes()
                 .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
@@ -132,8 +132,11 @@ namespace SummerBoot.Core
 
             foreach (var type in autoRepositoryTypes)
             {
+                repositoryProxyBuilder.InitInterface(type);
                 services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
             }
+
+            services.TryAddSingleton<IRepositoryProxyBuilder>(it => repositoryProxyBuilder);
 
             return services;
         }
@@ -173,10 +176,11 @@ namespace SummerBoot.Core
             services.TryAddTransient<IClient, IClient.DefaultFeignClient>();
             services.TryAddSingleton<IFeignEncoder, IFeignEncoder.DefaultEncoder>();
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
-            services.TryAddSingleton<IFeignProxyBuilder, FeignProxyBuilder>();
+            
             services.TryAddTransient<HttpService>();
             HttpHeaderSupport.Init();
 
+            var feignProxyBuilder = new FeignProxyBuilder();
             var types = Assembly.GetCallingAssembly().GetExportedTypes()
                 .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
 
@@ -184,8 +188,10 @@ namespace SummerBoot.Core
 
             foreach (var type in feignTypes)
             {
+                feignProxyBuilder.InitInterface(type);
                 services.AddSummerBootFeignService(type, ServiceLifetime.Transient);
             }
+            services.TryAddSingleton<IFeignProxyBuilder>(it=> feignProxyBuilder);
             return services;
         }
 

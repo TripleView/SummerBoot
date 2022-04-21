@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SummerBoot.Repository
@@ -15,8 +16,9 @@ namespace SummerBoot.Repository
     public class RepositoryProxyBuilder : IRepositoryProxyBuilder
     {
         public static Dictionary<string, MethodInfo> MethodsCache { get; set; } = new Dictionary<string, MethodInfo>();
-
+        private static ConcurrentDictionary<string, object> LockObjCache { get; set; } = new ConcurrentDictionary<string, object>();
         private Type targetType;
+        private readonly object lockObj = new object();
 
         private static ConcurrentDictionary<string, Type> TargetTypeCache { set; get; } =
             new ConcurrentDictionary<string, Type>();
@@ -25,10 +27,41 @@ namespace SummerBoot.Repository
         private string[] solidMethodNames = new string[] { "ToPage","ToPageAsync","InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
         public object Build(Type interfaceType, params object[] constructor)
         {
+            var temp = TargetTypeCache.ToJson();
             var cacheKey = interfaceType.FullName;
-            var resultType = TargetTypeCache.GetOrAdd(cacheKey, (s) => BuildTargetType(interfaceType, constructor));
+            Type resultType;
+            //if (TargetTypeCache.ContainsKey(cacheKey))
+            //{
+            //    TargetTypeCache.TryGetValue(cacheKey, out resultType);
+            //}
+            //else
+            //{
+            //   //var lockObj=  LockObjCache.GetOrAdd(cacheKey, it => new object());
+            //    //bool lockOk = false;
+            //    //SpinLock sl = new SpinLock();
+            //    //sl.Enter(ref lockOk);
+            //    //resultType = BuildTargetType(interfaceType, constructor);
+            //    //TargetTypeCache.TryAdd(cacheKey, resultType);
+            //    //sl.Exit();
+
+            //    lock (lockObj)
+            //    {
+            //        resultType = BuildTargetType(interfaceType);
+            //        TargetTypeCache.TryAdd(cacheKey, resultType);
+            //    }
+                
+            //}
+            TargetTypeCache.TryGetValue(cacheKey, out resultType);
+            //var resultType= TargetTypeCache.GetOrAdd(cacheKey, it => BuildTargetType(interfaceType, constructor));
             var result = Activator.CreateInstance(resultType, args: constructor);
             return result;
+        }
+
+        public void InitInterface(Type interfaceType)
+        {
+            var cacheKey = interfaceType.FullName;
+            var resultType = BuildTargetType(interfaceType);
+            TargetTypeCache.TryAdd(cacheKey, resultType);
         }
 
         /// <summary>
@@ -37,7 +70,7 @@ namespace SummerBoot.Repository
         /// <param name="interfaceType"></param>
         /// <param name="constructor"></param>
         /// <returns></returns>
-        private Type BuildTargetType(Type interfaceType, params object[] constructor)
+        private Type BuildTargetType(Type interfaceType)
         {
             targetType = interfaceType;
             string assemblyName = targetType.Name + "ProxyAssembly";
@@ -126,10 +159,10 @@ namespace SummerBoot.Repository
             FieldBuilder paramterArrField = typeBuilder.DefineField("paramterArr",
                 typeof(List<object>), FieldAttributes.Public);
 
-            var cotrParameterTypes = isRepository ? new Type[] { repositoryType, iServiceProviderType, baseRepositoryType } : new Type[] { repositoryType, iServiceProviderType };
+            var ctorParameterTypes = isRepository ? new Type[] { repositoryType, iServiceProviderType, baseRepositoryType } : new Type[] { repositoryType, iServiceProviderType };
             //创建构造函数
             ConstructorBuilder constructorBuilder =
-                typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, cotrParameterTypes);
+                typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, ctorParameterTypes);
 
             //il创建构造函数，对httpService和IServiceProvider两个字段进行赋值，同时初始化存放参数的集合
             ILGenerator ilgCtor = constructorBuilder.GetILGenerator();

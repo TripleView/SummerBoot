@@ -36,7 +36,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             for (int i = 0; i < fieldInfos.Count; i++)
             {
                 var fieldInfo = fieldInfos[i];
-                var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(0,1)" : "";
+                var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(1,1)" : "";
                 var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
                 var columnDataType = fieldInfo.ColumnDataType;
                 

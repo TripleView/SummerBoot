@@ -77,34 +77,34 @@ namespace SummerBoot.Test.Feign
         [PostMapping("/json")]
         Task<Test> TestJson([Body(BodySerializationKind.Json)] Test tt);
 
-        [PostMapping("/{   methodName   }")]
+        [PostMapping("/{{   methodName   }}")]
         Task<Test> TestReplaceVariableHasSpace([Body(BodySerializationKind.Form)] Test tt, string methodName);
 
-        [PostMapping("/{methodName}")]
+        [PostMapping("/{{methodName}}")]
         Task<Test> TestReplaceVariableInUrlWithClass([Body(BodySerializationKind.Form)] Test tt, VariableClass2 poco);
 
-        [PostMapping("/{methodName}")]
+        [PostMapping("/{{methodName}}")]
         Task<Test> TestReplaceVariableInUrlWithClassWithAlias([Body(BodySerializationKind.Form)] Test tt, VariableClass poco);
 
-        [PostMapping("/{methodName}")]
+        [PostMapping("/{{methodName}}")]
         Task<Test> TestReplaceVariableInUrl([Body(BodySerializationKind.Form)] Test tt, string methodName);
 
-        [PostMapping("/{methodName}")]
+        [PostMapping("/{{methodName}}")]
         Task<Test> TestReplaceVariableInUrlWithAlias([Body(BodySerializationKind.Form)] Test tt, [AliasAs("methodName")] string name);
 
-        [Headers("a:{methodName}", "b:b")]
+        [Headers("a:{{methodName}}", "b:b")]
         [PostMapping("/testHeaderCollection")]
         Task<Test> TestReplaceVariableInHeaderWithClass([Body(BodySerializationKind.Form)] Test tt, VariableClass2 poco);
 
-        [Headers("a:{methodName}","b:b")]
+        [Headers("a:{{methodName}}","b:b")]
         [PostMapping("/testHeaderCollection")]
         Task<Test> TestReplaceVariableInHeaderWithClassWithAlias([Body(BodySerializationKind.Form)] Test tt, VariableClass poco);
 
-        [Headers("a:{methodName}", "b:b")]
+        [Headers("a:{{methodName}}", "b:b")]
         [PostMapping("/testHeaderCollection")]
         Task<Test> TestReplaceVariableInHeader([Body(BodySerializationKind.Form)] Test tt, string methodName);
 
-        [Headers("a:{methodName}", "b:b")]
+        [Headers("a:{{methodName}}", "b:b")]
         [PostMapping("/testHeaderCollection")]
         Task<Test> TestReplaceVariableInHeaderWithAlias([Body(BodySerializationKind.Form)] Test tt,[AliasAs("methodName")] string name);
 

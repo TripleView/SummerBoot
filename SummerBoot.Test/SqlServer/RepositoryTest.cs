@@ -185,7 +185,7 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
             sb.AppendLine("CREATE TABLE NullableTable (");
-            sb.AppendLine("    [Id] int IDENTITY(0,1) NOT NULL,");
+            sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
             sb.AppendLine("    [Int2] int  NULL,");
             sb.AppendLine("    [Long2] bigint  NULL,");
             sb.AppendLine("    [Float2] real  NULL,");
@@ -215,7 +215,7 @@ namespace SummerBoot.Test.SqlServer
 
             sb.Clear();
             sb.AppendLine("CREATE TABLE NotNullableTable (");
-            sb.AppendLine("    [Id] int IDENTITY(0,1) NOT NULL,");
+            sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
             sb.AppendLine("    [Int2] int  NOT NULL,");
             sb.AppendLine("    [Long2] bigint  NOT NULL,");
             sb.AppendLine("    [Float2] real  NOT NULL,");

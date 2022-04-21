@@ -254,12 +254,12 @@ namespace SummerBoot.Feign
                 return str;
             }
 
-            str = Regex.Replace(str, "\\{[^\\}]*\\}", match =>
+            str = Regex.Replace(str, "\\{\\{[^\\}]*\\}\\}", match =>
             {
                 string matchValue = match.Value;
                 foreach (var pair in parameters)
                 {
-                    if (matchValue.Replace(" ", "") == $"{{{pair.Key}}}")
+                    if (matchValue.Replace(" ", "") == $"{{{{{pair.Key}}}}}")
                     {
                         return pair.Value;
                     }

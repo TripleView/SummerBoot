@@ -179,7 +179,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <returns></returns>
         protected string BoxParameter(object obj, bool returnRealValue = false)
         {
-            var value = obj.ToString();
+            var value = obj?.ToString();
             if (string.IsNullOrWhiteSpace(value))
             {
                 return "";
