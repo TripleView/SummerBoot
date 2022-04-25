@@ -12,6 +12,10 @@ namespace SummerBoot.Repository.Generator.Dto
         /// </summary>
         public string Name { get; set; }
         /// <summary>
+        /// sqlserver专用
+        /// </summary>
+        public string  Schema { get; set; }
+        /// <summary>
         /// 表描述
         /// </summary>
         public string Description { get; set; }

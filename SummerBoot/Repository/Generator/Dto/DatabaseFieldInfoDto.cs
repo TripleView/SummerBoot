@@ -14,6 +14,10 @@
         /// </summary>
         public string ColumnDataType { get; set; }
         /// <summary>
+        /// 用户直接指定的列数据类型
+        /// </summary>
+        public string SpecifiedColumnDataType { get; set; }
+        /// <summary>
         /// 是否可空
         /// </summary>
         public bool IsNullable { get; set; }

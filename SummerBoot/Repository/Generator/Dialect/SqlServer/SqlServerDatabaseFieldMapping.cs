@@ -57,7 +57,6 @@ namespace SummerBoot.Repository.Generator.Dialect
 
         public List<string> ConvertCsharpTypeToDatabaseType(List<string> csharpTypeList)
         {
-            Single a = 123;
             var result = new List<string>();
             foreach (var type in csharpTypeList)
             {

@@ -29,11 +29,22 @@ namespace SummerBoot.Repository.Generator
         public void ExecuteGenerateSql(GenerateDatabaseSqlResult generateDatabaseSqlResult)
         {
             var dbConnection = dbFactory.GetDbConnection();
-            dbConnection.Execute(generateDatabaseSqlResult.Body);
+            if (generateDatabaseSqlResult.Body.HasText())
+            {
+                dbConnection.Execute(generateDatabaseSqlResult.Body);
+            }
+
+            foreach (var fieldModifySql in generateDatabaseSqlResult.FieldModifySqls)
+            {
+                dbConnection.Execute(fieldModifySql);
+            }
+
             foreach (var description in generateDatabaseSqlResult.Descriptions)
             {
                 dbConnection.Execute(description);
             }
+
+           dbConnection.Close();
         }
 
         public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace)
@@ -104,6 +115,7 @@ namespace SummerBoot.Repository.Generator
             return result;
         }
 
+
         public List<GenerateDatabaseSqlResult> GenerateSql(List<Type> types)
         {
             var result = new List<GenerateDatabaseSqlResult>();
@@ -112,8 +124,8 @@ namespace SummerBoot.Repository.Generator
                 var tableAttribute = type.GetCustomAttribute<TableAttribute>();
                 var tableDescriptionAttribute = type.GetCustomAttribute<DescriptionAttribute>();
                 var tableName = tableAttribute != null ? tableAttribute.Name : type.Name;
+                var schema = tableAttribute?.Schema;
                 var tableDescription = tableDescriptionAttribute?.Description ?? "";
-
                 var propertys = type.GetProperties();
                 var fieldInfos = new List<DatabaseFieldInfoDto>();
                 foreach (var propertyInfo in propertys)
@@ -121,6 +133,12 @@ namespace SummerBoot.Repository.Generator
                     var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
                     var fieldName = columnAttribute != null ? columnAttribute.Name : propertyInfo.Name;
                     var requireAttribute = propertyInfo.GetCustomAttribute<RequiredAttribute>();
+                    //忽略字段
+                    var notMappedAttribute = propertyInfo.GetCustomAttribute<NotMappedAttribute>();
+                    if (notMappedAttribute != null)
+                    {
+                        continue;
+                    }
                     //数据库可空类型判断
                     var isNullable = propertyInfo.PropertyType.IsNullable();
                     var fieldTypeName = isNullable
@@ -148,14 +166,17 @@ namespace SummerBoot.Repository.Generator
                     var descriptionAttribute = propertyInfo.GetCustomAttribute<DescriptionAttribute>();
                     var stringLengthAttribute = propertyInfo.GetCustomAttribute<StringLengthAttribute>();
                     var decimalPrecisionAttribute = propertyInfo.GetCustomAttribute<DecimalPrecisionAttribute>();
+                    var mappingToDatabaseTypeAttribute = propertyInfo.GetCustomAttribute<MappingToDatabaseTypeAttribute>();
 
                     var dbFieldTypeName = databaseFieldMapping.ConvertCsharpTypeToDatabaseType(new List<string>() { fieldTypeName.Name }).FirstOrDefault();
+
                     if (dbFieldTypeName.IsNullOrWhiteSpace())
                     {
                         throw new Exception($"can not convert {propertyInfo.PropertyType.Name} to database type");
                     }
+
                     //decimal精度问题
-                    var precision = decimalPrecisionAttribute?.Precision?? 18;
+                    var precision = decimalPrecisionAttribute?.Precision ?? 18;
                     var scale = decimalPrecisionAttribute?.Scale ?? 2;
 
                     var decimalPrecision = new DecimalPrecisionDto()
@@ -168,24 +189,64 @@ namespace SummerBoot.Repository.Generator
                     {
                         ColumnName = fieldName,
                         ColumnDataType = dbFieldTypeName,
+                        SpecifiedColumnDataType= mappingToDatabaseTypeAttribute?.DatabaseType,
                         IsNullable = isNullable,
                         IsKey = keyAttribute != null,
                         IsAutoCreate = databaseGeneratedAttribute != null && databaseGeneratedAttribute.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,
                         Description = descriptionAttribute != null ? descriptionAttribute.Description : "",
                         StringMaxLength = stringLengthAttribute?.MaximumLength,
-                        DecimalPrecision= decimalPrecision
+                        DecimalPrecision = decimalPrecision
                     };
 
                     fieldInfos.Add(fieldInfo);
                 }
 
-                var item = databaseInfo.CreateTable(new DatabaseTableInfoDto()
+                //判断数据库中是否已经有这张表，如果有，则比较两张表的结构
+
+                var dbTableInfo = databaseInfo.GetTableInfoByName(tableName);
+                //如果存在这张表
+                if (dbTableInfo.FieldInfos.Any())
                 {
-                    Description = tableDescription,
-                    Name = tableName,
-                    FieldInfos = fieldInfos
-                });
-                result.Add(item);
+                    var item = new GenerateDatabaseSqlResult()
+                    {
+                        Descriptions = new List<string>(),
+                        FieldModifySqls = new List<string>()
+                    };
+
+                    if (dbTableInfo.Description.IsNullOrEmpty()&&tableDescription.HasText())
+                    {
+                        var newTableDescriptionSql = databaseInfo.CreateTableDescription(schema, tableName, tableDescription);
+                        item.Descriptions.Add(newTableDescriptionSql);
+                    }
+                    foreach (var fieldInfo in fieldInfos)
+                    {
+                        var dbFieldInfo =
+                            dbTableInfo.FieldInfos.FirstOrDefault(it => it.ColumnName == fieldInfo.ColumnName);
+                        if (dbFieldInfo == null)
+                        {
+                            var createFieldSql = databaseInfo.CreateTableField(tableName, fieldInfo);
+                            item.FieldModifySqls.Add(createFieldSql);
+                            if (fieldInfo.Description.HasText())
+                            {
+                                var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo.ColumnName, fieldInfo.Description);
+                                item.Descriptions.Add(createFieldDescriptionSql);
+                            }
+                        }
+                    }
+                    result.Add(item);
+                }
+                else
+                //不存在这张表则新建
+                {
+                    var item = databaseInfo.CreateTable(new DatabaseTableInfoDto()
+                    {
+                        Description = tableDescription,
+                        Name = tableName,
+                        FieldInfos = fieldInfos,
+                        Schema = schema
+                    });
+                    result.Add(item);
+                }
             }
 
             return result;

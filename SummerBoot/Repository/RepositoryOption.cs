@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Linq.Expressions;
+using System.Reflection;
 using SummerBoot.Core;
 
 namespace SummerBoot.Repository
@@ -9,7 +13,10 @@ namespace SummerBoot.Repository
         private Type dbConnectionType;
 
         private string connectionString;
-
+        /// <summary>
+        /// 数据库与实体类自动转换配置，对单表单字段进行特殊配置
+        /// </summary>
+        private Dictionary<string, Dictionary<string,string>> generatorMap = new Dictionary<string, Dictionary<string, string>>();
         /// <summary>
         /// 数据库连接器类型
         /// </summary>
@@ -23,6 +30,45 @@ namespace SummerBoot.Repository
             }
         }
 
+        /// <summary>
+        /// 数据库与实体类自动转换配置，创建自定义字段映射，对单表单字段进行配置
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="selector"></param>
+        /// <param name="databaseMappingType"></param>
+        private void GeneratorMap<T>(Expression<Func<T, object>> selector, string databaseMappingType)
+        {
+            if (selector.Body is MemberExpression memberExpression)
+            {
+                var memberInfo = memberExpression.Member;
+                var columnAttribute = memberInfo.GetCustomAttribute<ColumnAttribute>();
+
+                var columnName = columnAttribute?.Name ?? memberInfo.Name;
+                var tableType = memberExpression.Member.DeclaringType;
+                if (tableType == null)
+                {
+                    return;
+                }
+                var tableAttribute = tableType.GetCustomAttribute<TableAttribute>(); 
+                var tableName = tableAttribute?.Name ?? tableType.Name;
+                if (generatorMap.ContainsKey(tableName))
+                {
+                    var tableFieldMaps = generatorMap[tableName];
+                    tableFieldMaps[columnName] = databaseMappingType;
+                }
+                else
+                {
+                    generatorMap[tableName] = new Dictionary<string, string>()
+                    {
+                        {columnName, databaseMappingType}
+                    };
+                }
+            }
+            else
+            {
+                throw new NotSupportedException("not support this selector");
+            }
+        }
         /// <summary>
         /// 数据库连接字符串
         /// </summary>

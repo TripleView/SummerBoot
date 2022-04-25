@@ -1,6 +1,7 @@
 ﻿using SummerBoot.Repository.Generator.Dto;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Dapper;
 using SummerBoot.Core;
@@ -30,15 +31,13 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var databaseDescriptions = new List<string>();
             if (tableInfo.Description.HasText())
             {
-                databaseDescriptions.Add($"EXEC sp_addextendedproperty 'MS_Description', N'{tableInfo.Description}', 'schema', N'dbo', 'table', N'{tableInfo.Name}'");
+                var tableDescriptionSql = CreateTableDescription(tableInfo.Schema,tableName, tableInfo.Description);
+                databaseDescriptions.Add(tableDescriptionSql);
             }
 
             for (int i = 0; i < fieldInfos.Count; i++)
             {
                 var fieldInfo = fieldInfos[i];
-                var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(1,1)" : "";
-                var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
-                var columnDataType = fieldInfo.ColumnDataType;
                 
                 //行末尾是否有逗号
                 var lastComma = "";
@@ -50,21 +49,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 {
                     lastComma = hasKeyField? ",":"";
                 }
-                //string类型默认长度max，也可自定义
-                if (fieldInfo.ColumnDataType == "nvarchar")
-                {
-                    columnDataType = fieldInfo.StringMaxLength.HasValue && fieldInfo.StringMaxLength.Value != int.MaxValue
-                        ? $"nvarchar({fieldInfo.StringMaxLength.Value})"
-                        : $"nvarchar(max)";
-                }
-                //自定义decimal精度类型
-                if (fieldInfo.ColumnDataType == "decimal")
-                {
-                    columnDataType =
-                        $"decimal({fieldInfo.DecimalPrecision.Precision},{fieldInfo.DecimalPrecision.Scale})";
-                }
-
-                body.AppendLine($"    [{fieldInfo.ColumnName}] {columnDataType} {identityString} {nullableString}{lastComma}");
+                
+                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo)}{lastComma}");
                 if (fieldInfo.IsKey)
                 {
                     keyField = fieldInfo.ColumnName;
@@ -73,7 +59,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 //添加行注释
                 if (fieldInfo.Description.HasText())
                 {
-                    databaseDescriptions.Add($"EXEC sp_addextendedproperty 'MS_Description', N'{fieldInfo.Description}', 'schema', N'dbo', 'table', N'{tableName}', 'column', N'{fieldInfo.ColumnName}'");
+                    var tableFieldDescription= CreateTableFieldDescription(tableInfo.Schema,tableName, fieldInfo.ColumnName, fieldInfo.Description);
+                    databaseDescriptions.Add(tableFieldDescription);
                 }
             }
 
@@ -88,10 +75,79 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var result = new GenerateDatabaseSqlResult()
             {
                 Body = body.ToString(),
-                Descriptions = databaseDescriptions
+                Descriptions = databaseDescriptions,
+                FieldModifySqls = new List<string>()
             };
 
             return result;
+        }
+
+        /// <summary>
+        /// 通过字段信息生成生成表的sql
+        /// </summary>
+        /// <param name="fieldInfo"></param>
+        /// <returns></returns>
+        private string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo)
+        {
+            var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(1,1)" : "";
+            var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
+            var columnDataType = fieldInfo.ColumnDataType;
+            //string类型默认长度max，也可自定义
+            if (fieldInfo.ColumnDataType == "nvarchar")
+            {
+                columnDataType = fieldInfo.StringMaxLength.HasValue && fieldInfo.StringMaxLength.Value != int.MaxValue
+                    ? $"nvarchar({fieldInfo.StringMaxLength.Value})"
+                    : $"nvarchar(max)";
+            }
+            //自定义decimal精度类型
+            if (fieldInfo.ColumnDataType == "decimal")
+            {
+                columnDataType =
+                    $"decimal({fieldInfo.DecimalPrecision.Precision},{fieldInfo.DecimalPrecision.Scale})";
+            }
+
+            if (fieldInfo.SpecifiedColumnDataType.HasText())
+            {
+                columnDataType = fieldInfo.SpecifiedColumnDataType;
+            }
+
+            var result = $"[{fieldInfo.ColumnName}] {columnDataType} {identityString} {nullableString}";
+            return result;
+        }
+
+        public string CreateTableDescription(string schema,string tableName, string description)
+        {
+            schema = GetDefaultSchema(schema);
+            var sql =
+                $"EXEC sp_addextendedproperty 'MS_Description', N'{description}', 'schema', N'{schema}', 'table', N'{tableName}'";
+            return sql;
+        }
+
+        private string GetDefaultSchema(string schema)
+        {
+            return schema.GetValueOrDefault("dbo");
+        }
+
+        public string UpdateTableDescription(string schema,string tableName, string description)
+        {
+            schema = GetDefaultSchema(schema);
+            var sql =
+                $"EXEC sp_updateextendedproperty 'MS_Description', N'{description}', 'schema', N'{schema}', 'table', N'{tableName}'";
+            return sql;
+        }
+
+        public string CreateTableField(string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            var sql = $"ALTER TABLE {tableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
+          return sql;
+        }
+
+        public string CreateTableFieldDescription(string schema,string tableName, string columnName, string description)
+        {
+            schema = GetDefaultSchema(schema);
+            var sql =
+                $"EXEC sp_addextendedproperty 'MS_Description', N'{description}', 'schema', N'{schema}', 'table', N'{tableName}', 'column', N'{columnName}'";
+            return sql;
         }
 
         public DatabaseTableInfoDto GetTableInfoByName(string tableName)
@@ -114,7 +170,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                left join sys.extended_properties ETP on ETP.major_id = c.id and ETP.minor_id = c.colid and ETP.name ='MS_Description' 
                left join syscomments CM on c.cdefault=CM.id
                where c.id = object_id(@tableName) ";
-            var FieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
 
             var tableDescriptionSql = @"select etp.value from SYS.OBJECTS c
                     left join sys.extended_properties ETP on ETP.major_id = c.object_id   
@@ -126,7 +182,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             {
                 Name = tableName,
                 Description = tableDescription,
-                FieldInfos = FieldInfos
+                FieldInfos = fieldInfos
             };
 
             return result;
