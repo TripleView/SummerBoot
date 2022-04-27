@@ -78,7 +78,7 @@ summerBoot基于工作单元与仓储模式开发了自己的ORM->repository，�
 需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core
 
 ## 1.首先在startup.cs类中注册服务
-````
+````csharp
 services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
@@ -106,7 +106,7 @@ services.AddSummerBootRepository(it =>
 其中注解大部分来自于系统自带的命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
 同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
 
-````
+```` csharp
 public class Customer:BaseEntity
 {
     [Key,DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -129,7 +129,7 @@ public class Customer:BaseEntity
 ````
 
 ## 3.定义接口，并继承于IBaseRepository，同时在接口上添加AutoRepository注解表示让框架自动注册并生成实现类
-````
+````csharp
 [AutoRepository]
 public interface ICustomerRepository : IBaseRepository<Customer>
 {
@@ -139,7 +139,7 @@ public interface ICustomerRepository : IBaseRepository<Customer>
 ### 4.1 查
 通过DI注入自定义仓储接口以后，就可以开始查了，支持正常查询与分页查询，查询有2种方式。
 #### 4.1.1 IQueryable链式语法查询。
-````
+````csharp
 //常规查询
 var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).Take(10).ToList();
 //分页
@@ -147,7 +147,7 @@ var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).To
 ````
 
 #### 4.1.2 直接在接口里定义方法，并且在方法上加上注解Select,然后在Select里写sql语句
-````
+````csharp
 [AutoRepository]
 public interface ICustomerRepository : IBaseRepository<Customer>
 {
@@ -171,7 +171,7 @@ public interface ICustomerRepository : IBaseRepository<Customer>
 ````
 使用方法:
 
-````
+````csharp
 var result = await customerRepository.QueryAllBuyProductByNameAsync("testCustomer");
 
 //page
@@ -179,14 +179,14 @@ var pageable = new Pageable(1, 10);
 var page = customerRepository.GetCustomerByPage(pageable, 5);
 ````
 > 注意：4.1.2查询里的分页支持，方法的返回值由Page这个类包裹，同时方法参数里必须包含 IPageable这个分页参数，sql语句里也要有order by，例如:
-````
+````csharp
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 ````
 
 #### 4.1.3 select注解这种方式拼接where查询条件
 将单个查询条件用{{}}包裹起来，一个条件里只能包括一个变量，同时在定义方法的时候，参数定义为WhereItem\<T\>,T为泛型参数，表示真正的参数类型，这样summerboot就会自动处理查询条件，处理规则如下，如果whereItem的active为true，即激活该条件，则sql语句中{{ }}包裹的查询条件会展开并参与查询，如果active为false，则sql语句中{{ }}包裹的查询条件自动替换为空字符串，不参与查询，为了使whereItem更好用，提供了WhereBuilder这种方式，使用例子如下所示：
-````
+````csharp
 //definition
 [AutoRepository]
 public interface ICustomerRepository : IBaseRepository<Customer>
@@ -222,7 +222,7 @@ Get方法，通过id获取结果，GetAll(),获取表里的所有结果集。
 
 ### 4.2 增
 #### 4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。
-````
+````csharp
 var customer = new Customer() { Name = "testCustomer" };
 customerRepository.Insert(customer);
 
@@ -233,24 +233,24 @@ customerRepository.Insert(customerList);
 ````
 ### 4.3 删
 #### 4.3.1 接口自带了Delete方法，可以删除单个实体，或者实体列表
-````
+````csharp
 customerRepository.Delete(customer);
 
 customerRepository.Delete(customerList);
 ````
 #### 4.3.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如
-````
+````csharp
  var deleteCount = customerRepository.Delete(it => it.Age > 5);
 ````
 ### 4.4 改
 #### 4.4.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。
-````
+````csharp
 customerRepository.Update(customer);
 
 customerRepository.Update(customerList);
 ````
 #### 4.4.2 同时还支持基于IQueryable链式语法的更新方式，返回受影响的行数，例如
-````
+````csharp
 var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 .SetValue(it=>it.Age,5)
 .SetValue(it=>it.TotalConsumptionAmount,100)
@@ -260,7 +260,7 @@ var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 ### 4.5.事务支持
 事务支持，需要在注入自定义仓储接口的同时，也注入框架自带的IUnitOfWork接口，用法如下
 
-````
+````csharp
 //uow is IUnitOfWork interface
 try
 {
@@ -284,7 +284,7 @@ catch (Exception e)
 ### 4.6 如果有些特殊情况需要自己手写实现类怎么办?
 #### 4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法
 >注意，此时该接口无需添加AutoRepository注解
-````
+````csharp
 public interface ICustomCustomerRepository : IBaseRepository<Customer>
 {
     Task<List<Customer>> GetCustomersAsync(string name);
@@ -299,7 +299,7 @@ public interface ICustomCustomerRepository : IBaseRepository<Customer>
 #### 4.6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。
 注解的参数为这个类对应的自定义接口的类型和服务的声明周期ServiceLifetime（周期默认为scope级别），添加AutoRegister注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
 
-````
+````csharp
 [AutoRegister(typeof(ICustomCustomerRepository))]
 public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustomerRepository
 {
@@ -342,14 +342,14 @@ public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustome
 >我们使用Feign，feign底层基于httpClient。
 
 ## 1.在startup.cs类中注册服务
-````
+````csharp
 services.AddSummerBoot();
 services.AddSummerBootFeign();
 ````
 ## 2.定义接口
  定义一个接口，并且在接口上添加FeignClient注解，FeignClient注解里可以自定义接口名称-Name，http接口url的公共部分-url（整个接口请求的url由FeignClient里的url加上方法里的path组成）,是否忽略远程接口的https证书校验-IsIgnoreHttpsCertificateValidate,接口超时时间-Timeout（单位s），自定义拦截器-InterceptorType。
 
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -359,7 +359,7 @@ public interface ITestFeign
 
 ## 3.设置请求头(header)
 接口上可以选择添加Headers注解，代表这个接口下所有http请求都带上注解里的请求头。Headers的参数为变长的string类型的参数，同时Headers也可以添加在方法上，代表该方法调用的时候，会加该请求头，接口上的Headers参数可与方法上的Headers参数互相叠加，同时headers里可以使用变量，变量的占位符为{}，如
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 [Headers("a:a","b:b")]
 public interface ITestFeign
@@ -389,7 +389,7 @@ await TestFeign.TestHeaderAsync("abc");
 
 ## 4.自定义拦截器
 自定义拦截器对接口下的所有方法均生效，拦截器的应用场景主要是在请求前做一些操作，比如请求第三方业务接口前，需要先登录第三方系统，那么就可以在拦截器里先请求第三方登录接口，获取到凭证以后，放到header里，拦截器需要实现IRequestInterceptor接口，例子如下
-````
+````csharp
 //先定义一个用来登录的loginFeign客户端
  [FeignClient(Url = "http://localhost:5001/login", IsIgnoreHttpsCertificateValidate = true,Timeout = 100)]
     public interface ILoginFeign
@@ -440,7 +440,7 @@ await TestFeign.TestAsync();
 
 ````
 忽略拦截器，有时候我们接口中的某些方法，是不需要拦截器的，那么就可以在方法上添加注解IgnoreInterceptor，那么该方法发起的请求，就会忽略拦截器，如
-````
+````csharp
 //定义访问业务接口的testFegn客户端，在客户端上定义拦截器为loginInterceptor
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(LoginInterceptor),Timeout = 100)]
 public interface ITestFeign
@@ -457,7 +457,7 @@ await TestFeign.TestAsync();
 
 ## 5.定义方法
 每个方法都应该添加注解代表发起请求的类型和要访问的url，有4个内置注解， GetMapping，PostMapping，PutMapping，DeleteMapping，同时方法的返回值必须是Task<>类型
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -477,7 +477,7 @@ public interface ITestFeign
 
 ### 5.1方法里的普通参数
 参数如果没有特殊注解，或者不是特殊类，均作为动态参数参与url，header里变量的替换，(参数如果为类，则读取类的属性值)，url和header中的变量使用占位符{{}}，如果变量名和参数名不一致，则可以使用AliasAs注解（可以用在参数或者类的属性上）来指定别名，如
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -510,7 +510,7 @@ await TestFeign.TestHeaderAsync("abc");
 ### 5.2方法里的特殊参数
 #### 5.2.1参数添加Query注解
 参数添加query注解后参数值将以key1=value1&key2=value2的方式添加到url后面。
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -530,7 +530,7 @@ await TestFeign.TestQueryWithClass(new Test() { Name = "abc", Age = 3 });
 
 #### 5.2.2参数添加Body(BodySerializationKind.Form)注解
 相当于模拟html里的form提交，参数值将被URL编码后，以key1=value1&key2=value2的方式添加到载荷（body）里。
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -544,7 +544,7 @@ await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
 
 #### 5.2.3参数添加Body(BodySerializationKind.Json)注解
 即以application/json的方式提交，参数值将会被json序列化后添加到载荷（body）里。
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -557,7 +557,7 @@ await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 });
 ````
 
 #### 5.2.4使用特殊类HeaderCollection作为方法参数，即可批量添加请求头
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -574,7 +574,7 @@ await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 },headerCollection);
 ````
 
 #### 5.2.5使用特殊类BasicAuthorization作为方法参数，即可添加basic认证的Authorization请求头
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -590,7 +590,7 @@ await TestFeign.TestBasicAuthorization(new BasicAuthorization(username,password)
 ````
 
 #### 5.2.6使用特殊类MultipartItem作为方法参数，并且在方法上标注Multipart注解，即可上传附件
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -639,7 +639,7 @@ var result = await testFeign.MultipartTest(new MultipartItem(new FileInfo(basePa
 ````
 
 #### 5.2.7使用类Stream作为方法返回类型，即可接收流式数据，比如下载文件。
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -655,7 +655,7 @@ streamResult.CopyTo(newfile);
 ````
 
 #### 5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -669,7 +669,7 @@ var rawResult =await testFeign.Test();
 ````
 
 #### 5.2.9使用类Task作为方法返回类型，即无需返回值。
-````
+````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
@@ -691,7 +691,7 @@ await testFeign.Test();
  ````
 
  2. AutoRegister注解，作用是让框架自动将接口和接口的实现类注册到IOC容器中，标注在实现类上，注解的参数为这个类对应的自定义接口的type和服务的生命周期ServiceLifetime（周期默认为scope级别），使用方式如下:
-````
+````csharp
  public interface ITest
     {
 
@@ -704,7 +704,7 @@ await testFeign.Test();
     }
 ````
  3. ApiResult 接口返回值包装类，包含 code，msg和data，3个字段，让整个系统的返回值统一有序，有利于前端的统一拦截，统一操作。使用方式如下:
- ````
+ ````csharp
 [HttpPost("CreateServerConfigAsync")]
 public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
 {
@@ -713,7 +713,7 @@ public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
 }
  ````
  4. 对net core mvc的一些增强操作，包括全局错误拦截器，和接口参数校验失败后的处理，配合ApiResult，使得系统报错时，也能统一返回，使用方式如下,首先在startUp里注册该服务，注意，要放在mvc注册之后:
- ````
+ ````csharp
 services.AddControllersWithViews();
 services.AddSummerBootMvcExtension(it =>
 {
@@ -725,7 +725,7 @@ services.AddSummerBootMvcExtension(it =>
  ````
 4.1 全局错误拦截器使用后的效果
  我们可以直接在业务代码里抛出错误，全局错误拦截器会捕捉到该错误，然后使用统一格式返回给前端，业务代码如下:
-````
+````csharp
 private void ValidateData(EnvConfigDto dto)
 {
 		if (dto == null)
@@ -739,7 +739,7 @@ private void ValidateData(EnvConfigDto dto)
 }
 ````
 如果业务代码里报错,则返回值如下:
-````
+````csharp
 {
   "code": 40000,
   "msg": "Value cannot be null. (Parameter '环境下没有配置服务器')",
@@ -748,7 +748,7 @@ private void ValidateData(EnvConfigDto dto)
 ````
 4.2 接口参数校验失败后的处理的效果
 我们在接口的参数dto里添加校验注解，代码如下
-````
+````csharp
 public class EnvConfigDto : BaseEntity
 {
 		/// <summary>
@@ -764,7 +764,7 @@ public class EnvConfigDto : BaseEntity
 }
 ````
 如果参数校验不通过,则返回值如下:
-````
+````csharp
 {
   "code": 40000,
   "msg": "环境名称不能为空",
@@ -774,7 +774,7 @@ public class EnvConfigDto : BaseEntity
 
 5. QueryCondition，lambda查询条件组合，解决前端传条件过来进行过滤查询的痛点，除了基本的And和Or方法，还添加了更人性化的方法，一般前端传过来的dto里的属性，有字符串类型，如果他们有值则添加到查询条件里，所以特地提取了2个方法，包括了AndIfStringIsNotEmpty（如果字符串不为空则进行and操作，否则返回原表达式），OrIfStringIsNotEmpty（如果字符串不为空则进行or操作，否则返回原表达式），
 同时dto里的属性，还有可能是nullable类型，即可空类型，比如 int? test代表用户是否填写某个过滤条件，如果hasValue则添加到查询条件里，所以特地提取了2个方法，AndIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式），OrIfNullableHasValue（如果可空值不为空则进行and操作，否则返回原表达式）用法如下:
-````
+````csharp
 //dto
 public class ServerConfigPageDto : IPageable
 {
