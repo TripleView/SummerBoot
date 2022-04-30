@@ -13,7 +13,6 @@ namespace SummerBoot.Repository.Generator.Dialect
             {"DateTime","datetime2"},
             {"Decimal","decimal"},
             {"Boolean","bit"},
-            {"long","bigint"},
             {"Byte[]","binary"},
             {"Double","float"},
             {"Int16","smallint"},

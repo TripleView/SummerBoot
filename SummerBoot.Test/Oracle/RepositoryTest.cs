@@ -9,7 +9,9 @@ using SummerBoot.Test.Oracle.Repository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using SummerBoot.Repository.Generator;
 using Xunit;
 
 namespace SummerBoot.Test.Oracle
@@ -18,6 +20,249 @@ namespace SummerBoot.Test.Oracle
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        [Fact, Order(11)]
+        public void TestGenerateCsharpClassByDatabaseInfo()
+        {
+            InitOracleDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
+            Assert.Equal(3, result.Count);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+            sb.AppendLine("namespace abc");
+            sb.AppendLine("{");
+            sb.AppendLine("   [Table(\"Customer\")]");
+            sb.AppendLine("   public class Customer");
+            sb.AppendLine("   {");
+            sb.AppendLine("      [Key]");
+            sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      public int Id { get; set; }");
+            sb.AppendLine("      [Column(\"Name\")]");
+            sb.AppendLine("      public string Name { get; set; }");
+            sb.AppendLine("      [Column(\"Age\")]");
+            sb.AppendLine("      public int Age { get; set; }");
+            sb.AppendLine("      [Column(\"CustomerNo\")]");
+            sb.AppendLine("      public string CustomerNo { get; set; }");
+            sb.AppendLine("      [Column(\"TotalConsumptionAmount\")]");
+            sb.AppendLine("      public decimal TotalConsumptionAmount { get; set; }");
+            sb.AppendLine("   }");
+            sb.AppendLine("}");
+            var exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0]);
+
+            sb.Clear();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+            sb.AppendLine("namespace abc");
+            sb.AppendLine("{");
+            sb.AppendLine("   /// <summary>");
+            sb.AppendLine("   ///NullableTable");
+            sb.AppendLine("   /// </summary>");
+            sb.AppendLine("   [Table(\"NullableTable\")]");
+            sb.AppendLine("   public class NullableTable");
+            sb.AppendLine("   {");
+            sb.AppendLine("      [Key]");
+            sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      public int Id { get; set; }");
+            sb.AppendLine("      /// <summary>");
+            sb.AppendLine("      ///Int2");
+            sb.AppendLine("      /// </summary>");
+            sb.AppendLine("      [Column(\"Int2\")]");
+            sb.AppendLine("      public int? Int2 { get; set; }");
+            sb.AppendLine("      /// <summary>");
+            sb.AppendLine("      ///Long2");
+            sb.AppendLine("      /// </summary>");
+            sb.AppendLine("      [Column(\"Long2\")]");
+            sb.AppendLine("      public long? Long2 { get; set; }");
+            sb.AppendLine("      [Column(\"Float2\")]");
+            sb.AppendLine("      public float? Float2 { get; set; }");
+            sb.AppendLine("      [Column(\"Double2\")]");
+            sb.AppendLine("      public double? Double2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal2\")]");
+            sb.AppendLine("      public decimal? Decimal2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal3\")]");
+            sb.AppendLine("      public decimal? Decimal3 { get; set; }");
+            sb.AppendLine("      [Column(\"Guid2\")]");
+            sb.AppendLine("      public Guid? Guid2 { get; set; }");
+            sb.AppendLine("      [Column(\"Short2\")]");
+            sb.AppendLine("      public short? Short2 { get; set; }");
+            sb.AppendLine("      [Column(\"DateTime2\")]");
+            sb.AppendLine("      public DateTime? DateTime2 { get; set; }");
+            sb.AppendLine("      [Column(\"Bool2\")]");
+            sb.AppendLine("      public bool? Bool2 { get; set; }");
+            sb.AppendLine("      [Column(\"TimeSpan2\")]");
+            sb.AppendLine("      public TimeSpan? TimeSpan2 { get; set; }");
+            sb.AppendLine("      [Column(\"Byte2\")]");
+            sb.AppendLine("      public byte? Byte2 { get; set; }");
+            sb.AppendLine("      [Column(\"String2\")]");
+            sb.AppendLine("      public string String2 { get; set; }");
+            sb.AppendLine("      [Column(\"String3\")]");
+            sb.AppendLine("      public string String3 { get; set; }");
+            sb.AppendLine("   }");
+            sb.AppendLine("}");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[1]);
+
+            sb.Clear();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+            sb.AppendLine("namespace abc");
+            sb.AppendLine("{");
+            sb.AppendLine("   /// <summary>");
+            sb.AppendLine("   ///NotNullableTable");
+            sb.AppendLine("   /// </summary>");
+            sb.AppendLine("   [Table(\"NotNullableTable\")]");
+            sb.AppendLine("   public class NotNullableTable");
+            sb.AppendLine("   {");
+            sb.AppendLine("      [Key]");
+            sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      public int Id { get; set; }");
+            sb.AppendLine("      /// <summary>");
+            sb.AppendLine("      ///Int2");
+            sb.AppendLine("      /// </summary>");
+            sb.AppendLine("      [Column(\"Int2\")]");
+            sb.AppendLine("      public int Int2 { get; set; }");
+            sb.AppendLine("      /// <summary>");
+            sb.AppendLine("      ///Long2");
+            sb.AppendLine("      /// </summary>");
+            sb.AppendLine("      [Column(\"Long2\")]");
+            sb.AppendLine("      public long Long2 { get; set; }");
+            sb.AppendLine("      [Column(\"Float2\")]");
+            sb.AppendLine("      public float Float2 { get; set; }");
+            sb.AppendLine("      [Column(\"Double2\")]");
+            sb.AppendLine("      public double Double2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal2\")]");
+            sb.AppendLine("      public decimal Decimal2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal3\")]");
+            sb.AppendLine("      public decimal Decimal3 { get; set; }");
+            sb.AppendLine("      [Column(\"Guid2\")]");
+            sb.AppendLine("      public Guid Guid2 { get; set; }");
+            sb.AppendLine("      [Column(\"Short2\")]");
+            sb.AppendLine("      public short Short2 { get; set; }");
+            sb.AppendLine("      [Column(\"DateTime2\")]");
+            sb.AppendLine("      public DateTime DateTime2 { get; set; }");
+            sb.AppendLine("      [Column(\"Bool2\")]");
+            sb.AppendLine("      public bool Bool2 { get; set; }");
+            sb.AppendLine("      [Column(\"TimeSpan2\")]");
+            sb.AppendLine("      public TimeSpan TimeSpan2 { get; set; }");
+            sb.AppendLine("      [Column(\"Byte2\")]");
+            sb.AppendLine("      public byte Byte2 { get; set; }");
+            sb.AppendLine("      [Column(\"String2\")]");
+            sb.AppendLine("      public string String2 { get; set; }");
+            sb.AppendLine("      [Column(\"String3\")]");
+            sb.AppendLine("      public string String3 { get; set; }");
+            sb.AppendLine("   }");
+            sb.AppendLine("}");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[2]);
+        }
+
+        /// <summary>
+        /// 测试根据c#类生成数据库表
+        /// </summary>
+        [Fact, Order(12)]
+        public void TestGenerateDatabaseTableByCsharpClass()
+        {
+            InitOracleDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
+            Assert.Equal(2, result.Count());
+            var sb = new StringBuilder();
+            sb.AppendLine("CREATE TABLE \"NULLABLETABLE2\" (");
+            sb.AppendLine("    \"ID\" NUMBER(10,0) GENERATED BY DEFAULT ON NULL AS IDENTITY MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE NOT NULL,");
+            sb.AppendLine("    \"INT2\" NUMBER(10,0),");
+            sb.AppendLine("    \"LONG2\" NUMBER(19,0),");
+            sb.AppendLine("    \"FLOAT2\" BINARY_FLOAT,");
+            sb.AppendLine("    \"DOUBLE2\" BINARY_DOUBLE,");
+            sb.AppendLine("    \"DECIMAL2\" NUMBER(18,2),");
+            sb.AppendLine("    \"DECIMAL3\" NUMBER(20,4),");
+            sb.AppendLine("    \"GUID2\" RAW(16),");
+            sb.AppendLine("    \"SHORT2\" NUMBER(5,0),");
+            sb.AppendLine("    \"DATETIME2\" TIMESTAMP(7),");
+            sb.AppendLine("    \"BOOL2\" NUMBER(1,0),");
+            sb.AppendLine("    \"TIMESPAN2\" INTERVAL DAY(8) TO SECOND(7),");
+            sb.AppendLine("    \"BYTE2\" NUMBER(3,0),");
+            sb.AppendLine("    \"STRING2\" NVARCHAR2(100),");
+            sb.AppendLine("    \"STRING3\" NVARCHAR2(2000),");
+            sb.AppendLine("    CONSTRAINT \"PK_NULLABLETABLE2\" PRIMARY KEY (\"ID\")");
+            sb.AppendLine(")");
+            var exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
+
+            Assert.Equal(3, result[0].Descriptions.Count);
+            Assert.Equal("COMMENT ON TABLE NULLABLETABLE2 IS 'NullableTable2'", result[0].Descriptions[0]);
+            Assert.Equal("COMMENT ON COLUMN NULLABLETABLE2.Int2 IS 'Int2'", result[0].Descriptions[1]);
+            Assert.Equal("COMMENT ON COLUMN NULLABLETABLE2.Long2 IS 'Long2'", result[0].Descriptions[2]);
+            //dbGenerator.ExecuteGenerateSql(result[0]);
+
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE \"NOTNULLABLETABLE2\" (");
+            sb.AppendLine("    \"ID\" NUMBER(10,0) GENERATED BY DEFAULT ON NULL AS IDENTITY MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE NOT NULL,");
+            sb.AppendLine("    \"INT2\" NUMBER(10,0) NOT NULL,");
+            sb.AppendLine("    \"LONG2\" NUMBER(19,0) NOT NULL,");
+            sb.AppendLine("    \"FLOAT2\" BINARY_FLOAT NOT NULL,");
+            sb.AppendLine("    \"DOUBLE2\" BINARY_DOUBLE NOT NULL,");
+            sb.AppendLine("    \"DECIMAL2\" NUMBER(18,2) NOT NULL,");
+            sb.AppendLine("    \"DECIMAL3\" NUMBER(20,4) NOT NULL,");
+            sb.AppendLine("    \"GUID2\" RAW(16) NOT NULL,");
+            sb.AppendLine("    \"SHORT2\" NUMBER(5,0) NOT NULL,");
+            sb.AppendLine("    \"DATETIME2\" TIMESTAMP(7) NOT NULL,");
+            sb.AppendLine("    \"BOOL2\" NUMBER(1,0) NOT NULL,");
+            sb.AppendLine("    \"TIMESPAN2\" INTERVAL DAY(8) TO SECOND(7) NOT NULL,");
+            sb.AppendLine("    \"BYTE2\" NUMBER(3,0) NOT NULL,");
+            sb.AppendLine("    \"STRING2\" NVARCHAR2(100) NOT NULL,");
+            sb.AppendLine("    \"STRING3\" NVARCHAR2(2000) NOT NULL,");
+            sb.AppendLine("    CONSTRAINT \"PK_NOTNULLABLETABLE2\" PRIMARY KEY (\"ID\")");
+            sb.AppendLine(")");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[1].Body);
+
+            sb.Clear();
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable3) });
+            Assert.Equal(1, result.Count());
+            Assert.Equal(1, result[0].Descriptions.Count);
+            Assert.Equal("COMMENT ON COLUMN NULLABLETABLE.test add column IS 'test add column'", result[0].Descriptions[0]);
+            Assert.Equal(1, result[0].FieldModifySqls.Count);
+            Assert.Equal("ALTER TABLE NullableTable ADD [int3] int  NULL", result[0].FieldModifySqls[0]);
+
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
+            Assert.Equal(1, result.Count());
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE SpecifiedMapTestTable (");
+            sb.AppendLine("    [NormalTxt] nvarchar(max)  NULL,");
+            sb.AppendLine("    [SpecifiedTxt] text  NULL");
+            sb.AppendLine(")");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
+        }
+
+        private void InitOracleDatabase()
+        {
+            //初始化数据库
+            using (var database = new OracleDb())    //新增
+            {
+                database.Database.EnsureDeleted();
+                database.Database.EnsureCreated();
+            }
+
+            InitService();
+        }
+
         [Fact,Order(3)]
         public void TestOracle()
         {
@@ -33,15 +278,8 @@ namespace SummerBoot.Test.Oracle
         }
        
 
-        private void InitOracleDatabase()
+        private void InitService()
         {
-            //初始化数据库
-            using (var database = new OracleDb())    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
-
             var services = new ServiceCollection();
 
             services.AddSummerBoot();

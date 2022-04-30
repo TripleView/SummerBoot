@@ -17,6 +17,7 @@ using Microsoft.Extensions.Http;
 using SummerBoot.Feign.Attributes;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Repository.Generator.Dialect;
+using SummerBoot.Repository.Generator.Dialect.Oracle;
 using SummerBoot.Repository.Generator.Dialect.SqlServer;
 
 namespace SummerBoot.Core
@@ -116,12 +117,19 @@ namespace SummerBoot.Core
             services.AddScoped(typeof(BaseRepository<>));
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
             services.AddScoped<RepositoryService>();
+            services.AddScoped<IDbGenerator, DbGenerator>();
             if (option.IsSqlServer)
             {
                 services.AddScoped<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
                 services.AddScoped<IDatabaseInfo, SqlServerDatabaseInfo>();
-                services.AddScoped<IDbGenerator, DbGenerator>();
+               
             }
+            else if (option.IsOracle)
+            {
+                services.AddScoped<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
+                services.AddScoped<IDatabaseInfo, OracleDatabaseInfo>();
+            }
+
 
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
 

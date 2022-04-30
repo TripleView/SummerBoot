@@ -103,7 +103,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             if (fieldInfo.ColumnDataType == "decimal")
             {
                 columnDataType =
-                    $"decimal({fieldInfo.DecimalPrecision.Precision},{fieldInfo.DecimalPrecision.Scale})";
+                    $"decimal({fieldInfo.Precision},{fieldInfo.Scale})";
             }
 
             if (fieldInfo.SpecifiedColumnDataType.HasText())
@@ -161,8 +161,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                              as IsKey
                  ,convert(bit,COLUMNPROPERTY(c.id,c.name,'IsIdentity')) as isAutoCreate
                  ,c.Length as [占用字节] 
-                 ,COLUMNPROPERTY(c.id,c.name,'PRECISION') as [长度]
-                 ,isnull(COLUMNPROPERTY(c.id,c.name,'Scale'),0) as [小数位数]
+                 ,COLUMNPROPERTY(c.id,c.name,'PRECISION') as Precision
+                 ,isnull(COLUMNPROPERTY(c.id,c.name,'Scale'),0) as Scale
                  ,ISNULL(CM.text,'') as [默认值]
                  ,isnull(ETP.value,'') AS Description
                from syscolumns c

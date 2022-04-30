@@ -1,4 +1,6 @@
-﻿namespace SummerBoot.Repository.Generator.Dto
+﻿using System;
+
+namespace SummerBoot.Repository.Generator.Dto
 {
     /// <summary>
     /// 数据库表信息
@@ -9,6 +11,10 @@
         /// 列名
         /// </summary>
         public string ColumnName { get; set; }
+        /// <summary>
+        /// 列的原始类型
+        /// </summary>
+        public Type ColumnType { get; set; }
         /// <summary>
         /// 列数据类型
         /// </summary>
@@ -35,12 +41,16 @@
         public string Description { get; set; }
 
         /// <summary>
-        /// 长度
+        /// 字符串长度
         /// </summary>
         public int? StringMaxLength { get; set; }
         /// <summary>
-        /// decimal精度控制
+        /// 精度（默认18）
         /// </summary>
-        public DecimalPrecisionDto DecimalPrecision { get; set; }    
+        public int Precision { get; set; }
+        /// <summary>
+        /// 标度（默认2）
+        /// </summary>
+        public int Scale { get; set; }
     }
 }

@@ -179,12 +179,6 @@ namespace SummerBoot.Repository.Generator
                     var precision = decimalPrecisionAttribute?.Precision ?? 18;
                     var scale = decimalPrecisionAttribute?.Scale ?? 2;
 
-                    var decimalPrecision = new DecimalPrecisionDto()
-                    {
-                        Precision = precision,
-                        Scale = scale
-                    };
-
                     var fieldInfo = new DatabaseFieldInfoDto()
                     {
                         ColumnName = fieldName,
@@ -195,7 +189,9 @@ namespace SummerBoot.Repository.Generator
                         IsAutoCreate = databaseGeneratedAttribute != null && databaseGeneratedAttribute.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,
                         Description = descriptionAttribute != null ? descriptionAttribute.Description : "",
                         StringMaxLength = stringLengthAttribute?.MaximumLength,
-                        DecimalPrecision = decimalPrecision
+                        Precision = precision,
+                        Scale = scale,
+                        ColumnType = propertyInfo.PropertyType
                     };
 
                     fieldInfos.Add(fieldInfo);

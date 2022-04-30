@@ -181,10 +181,10 @@ namespace SummerBoot.Test.SqlServer
             
             InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator>();
-            var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable), typeof(NotNullableTable) });
+            var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
-            sb.AppendLine("CREATE TABLE NullableTable (");
+            sb.AppendLine("CREATE TABLE NullableTable2 (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
             sb.AppendLine("    [Int2] int  NULL,");
             sb.AppendLine("    [Long2] bigint  NULL,");
@@ -200,21 +200,20 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Byte2] tinyint  NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NULL,");
-            sb.AppendLine("    CONSTRAINT PK_NullableTable PRIMARY KEY (Id)");
+            sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
 
             Assert.Equal(3, result[0].Descriptions.Count);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'NullableTable', 'schema', N'dbo', 'table', N'NullableTable'", result[0].Descriptions[0]);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'Int2'", result[0].Descriptions[1]);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Long2', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'Long2'", result[0].Descriptions[2]);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'NullableTable2', 'schema', N'dbo', 'table', N'NullableTable2'", result[0].Descriptions[0]);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'Int2'", result[0].Descriptions[1]);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Long2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'Long2'", result[0].Descriptions[2]);
             //dbGenerator.ExecuteGenerateSql(result[0]);
 
-
             sb.Clear();
-            sb.AppendLine("CREATE TABLE NotNullableTable (");
+            sb.AppendLine("CREATE TABLE NotNullableTable2 (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
             sb.AppendLine("    [Int2] int  NOT NULL,");
             sb.AppendLine("    [Long2] bigint  NOT NULL,");
@@ -230,11 +229,30 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Byte2] tinyint  NOT NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NOT NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NOT NULL,");
-            sb.AppendLine("    CONSTRAINT PK_NotNullableTable PRIMARY KEY (Id)");
+            sb.AppendLine("    CONSTRAINT PK_NotNullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[1].Body);
+
+            sb.Clear();
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable3) });
+            Assert.Equal(1, result.Count());
+            Assert.Equal(1, result[0].Descriptions.Count);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'test add column', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'int3'", result[0].Descriptions[0]);
+            Assert.Equal(1, result[0].FieldModifySqls.Count);
+            Assert.Equal("ALTER TABLE NullableTable ADD [int3] int  NULL", result[0].FieldModifySqls[0]);
+
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
+            Assert.Equal(1, result.Count());
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE SpecifiedMapTestTable (");
+            sb.AppendLine("    [NormalTxt] nvarchar(max)  NULL,");
+            sb.AppendLine("    [SpecifiedTxt] text  NULL");
+            sb.AppendLine(")");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
         }
 
         [Fact,Order(10)]

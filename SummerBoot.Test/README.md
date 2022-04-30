@@ -1,0 +1,1 @@
+复制app.json.default为app.json文件，然后打开，在里面添加oracle，sqlserver和mysql的数据库链接，即可开启单元测试。
