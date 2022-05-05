@@ -102,7 +102,7 @@ namespace SummerBoot.Repository.Generator
                         sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
                     }
                     sb.AppendLine($"      [Column(\"{columnInfo.ColumnName}\")]");
-                    var fieldType = databaseFieldMapping.ConvertDatabaseTypeToCsharpType(new List<string>() { columnInfo.ColumnDataType }).First();
+                    var fieldType = databaseFieldMapping.ConvertDatabaseTypeToCsharpType(new List<DatabaseFieldInfoDto>() { columnInfo }).First();
                     var nullablePart = (columnInfo.IsNullable && csharpCanBeNullableType.Any(it => it == fieldType)) ? "?" : "";
 
                     sb.AppendLine($"      public {fieldType}{nullablePart} {columnInfo.ColumnName} {{ get; set; }}");
@@ -166,7 +166,6 @@ namespace SummerBoot.Repository.Generator
                     var descriptionAttribute = propertyInfo.GetCustomAttribute<DescriptionAttribute>();
                     var stringLengthAttribute = propertyInfo.GetCustomAttribute<StringLengthAttribute>();
                     var decimalPrecisionAttribute = propertyInfo.GetCustomAttribute<DecimalPrecisionAttribute>();
-                    var mappingToDatabaseTypeAttribute = propertyInfo.GetCustomAttribute<MappingToDatabaseTypeAttribute>();
 
                     var dbFieldTypeName = databaseFieldMapping.ConvertCsharpTypeToDatabaseType(new List<string>() { fieldTypeName.Name }).FirstOrDefault();
 
@@ -183,7 +182,7 @@ namespace SummerBoot.Repository.Generator
                     {
                         ColumnName = fieldName,
                         ColumnDataType = dbFieldTypeName,
-                        SpecifiedColumnDataType= mappingToDatabaseTypeAttribute?.DatabaseType,
+                        SpecifiedColumnDataType= columnAttribute?.TypeName,
                         IsNullable = isNullable,
                         IsKey = keyAttribute != null,
                         IsAutoCreate = databaseGeneratedAttribute != null && databaseGeneratedAttribute.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,

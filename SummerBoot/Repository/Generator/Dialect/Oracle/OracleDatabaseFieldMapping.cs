@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using SummerBoot.Core;
+using SummerBoot.Repository.Generator.Dto;
 
 namespace SummerBoot.Repository.Generator.Dialect.Oracle
 {
@@ -67,12 +69,98 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
             return result;
         }
 
-        public List<string> ConvertDatabaseTypeToCsharpType(List<string> databaseTypeList)
+        public List<string> ConvertDatabaseTypeToCsharpType(List<DatabaseFieldInfoDto> databaseFieldInfoList)
         {
             var result = new List<string>();
-            foreach (var type in databaseTypeList)
+            foreach (var fieldInfo in databaseFieldInfoList)
             {
-                var item = DatabaseTypeToCsharpTypeMappings[type];
+                var item = "";
+                //自定义NUMBER精度类型
+                if (fieldInfo.ColumnDataType == "NUMBER")
+                {
+                    item = "int";
+                    var precision = fieldInfo.Precision;
+                    var scale = fieldInfo.Scale;
+
+                    if (scale == 0)
+                    {
+                        if (precision >= 6 && precision <= 10)
+                        {
+                            item = "int";
+                        }
+
+                        if (precision >= 11 && precision <= 19)
+                        {
+                            item = "long";
+                        }
+
+                        if (precision == 1)
+                        {
+                            item = "bool";
+                        }
+
+                        if (precision == 5)
+                        {
+                            item = "short";
+
+                        }
+
+                        if (precision >= 2 && precision <= 4)
+                        {
+                            item = "byte";
+                        }
+                        if (precision > 19)
+                        {
+
+                            item = "decimal";
+                        }
+                    }
+                    
+                    if (precision > 0 && scale > 0)
+                    {
+
+                        item = "decimal";
+                    }
+                }
+                //guid类型，默认16位
+                if (fieldInfo.ColumnDataType == "RAW")
+                {
+                    item = $"Guid";
+                }
+                //datetime类型，默认7位
+                if (fieldInfo.ColumnDataType == "TIMESTAMP(7)")
+                {
+                    item = $"DateTime";
+                }
+                //datetime类型，默认7位
+                if (fieldInfo.ColumnDataType == "INTERVAL DAY(8) TO SECOND(7)")
+                {
+                    item = $"TimeSpan";
+                }
+                //double
+                if (fieldInfo.ColumnDataType == "BINARY_DOUBLE")
+                {
+                    item = $"double";
+                }
+                //float
+                if (fieldInfo.ColumnDataType == "BINARY_FLOAT")
+                {
+                    item = $"float";
+                }
+                if (fieldInfo.ColumnDataType.Contains("CHAR")|| fieldInfo.ColumnDataType == "JSON"
+                                                             || fieldInfo.ColumnDataType == "CLOB" || fieldInfo.ColumnDataType == "NCLOB"
+                                                             || fieldInfo.ColumnDataType == "XMLTYPE" || fieldInfo.ColumnDataType == "ROWID"
+                                                             || fieldInfo.ColumnDataType == "UROWID" || fieldInfo.ColumnDataType == "LONG")
+                {
+                    item = $"string";
+                }
+                if ( fieldInfo.ColumnDataType == "BLOB"
+                                                              || fieldInfo.ColumnDataType == "BFILE" || fieldInfo.ColumnDataType == "LONG RAW"
+                                                             )
+                {
+                    item = $"byte[]";
+                }
+
                 result.Add(item);
             }
 

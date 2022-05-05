@@ -18,15 +18,21 @@ namespace SummerBoot.Test.Oracle.Db
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            
             base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<NullableTable>().HasComment("NullableTable");
-            modelBuilder.Entity<NullableTable>().Property(it=>it.Int2).HasComment("Int2");
-            modelBuilder.Entity<NullableTable>().Property(it => it.Long2).HasComment("Long2");
-            modelBuilder.Entity<NotNullableTable>().HasComment("NotNullableTable");
-            modelBuilder.Entity<NotNullableTable>().Property(it => it.Int2).HasComment("Int2");
-            modelBuilder.Entity<NotNullableTable>().Property(it => it.Long2).HasComment("Long2");
+            //modelBuilder.Entity<NullableTable>(entity =>
+            //{
+            //    entity.HasComment("NullableTable");
+            //});
+            //    //.HasComment("NullableTable");
+            //modelBuilder.Entity<NullableTable>().Property(it=>it.Int2).HasComment("Int2");
+            //modelBuilder.Entity<NullableTable>().Property(it => it.Long2).HasComment("Long2");
+            //modelBuilder.Entity<NotNullableTable>().HasComment("NotNullableTable");
+            //modelBuilder.Entity<NotNullableTable>().Property(it => it.Int2).HasComment("Int2");
+            //modelBuilder.Entity<NotNullableTable>().Property(it => it.Long2).HasComment("Long2");
             modelBuilder.Entity<NullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
             modelBuilder.Entity<NotNullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
+         
         }
         
         public DbSet<Customer> Customer { get; set; }

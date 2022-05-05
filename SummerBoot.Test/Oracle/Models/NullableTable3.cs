@@ -8,6 +8,7 @@ namespace SummerBoot.Test.Oracle.Models
     public class NullableTable3 : NullableTable
     {
         [Description("test add column")]
+        [Column("INT3")]
         public int? int3 { get; set; }
     }
 

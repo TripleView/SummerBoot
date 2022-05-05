@@ -108,11 +108,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                     precision = 10;
                     scale = 0;
                 }
-                if (fieldInfo.ColumnType.GetUnderlyingType() == typeof(int))
-                {
-                    precision = 10;
-                    scale = 0;
-                }
+               
                 if (fieldInfo.ColumnType.GetUnderlyingType() == typeof(long))
                 {
                     precision = 19;
@@ -188,16 +184,16 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
         {
             schema = GetDefaultSchema(schema);
             var sql =
-                $"COMMENT ON COLUMN {tableName}.{description} IS '{description}'";
+                $"COMMENT ON COLUMN {tableName}.{columnName} IS '{description}'";
             return sql;
         }
 
         public DatabaseTableInfoDto GetTableInfoByName(string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
-            var sql = @"   select c.*,d.comments Description from (select a.column_name AS ColumnName , a.data_type AS ColumnDataType,a.DATA_PRECISION AS Precision,a.DATA_SCALE AS Scale,  a.data_length ,CASE when a.nullable='Y' THEN 1 ELSE 0 end as IsNullable,CASE when  b.column_name is not null then 1 else 0 END column_key  from user_tab_columns a left join 
+            var sql = @"   select c.*,d.comments Description from (select a.column_name AS ColumnName , a.data_type AS ColumnDataType,a.DATA_PRECISION AS Precision,a.DATA_SCALE AS Scale,  a.data_length ,CASE when a.nullable='Y' THEN 1 ELSE 0 end as IsNullable,CASE when  b.column_name is not null then 1 else 0 END IsKey  from user_tab_columns a left join 
                 (select cu.* from user_cons_columns cu, user_constraints au where cu.constraint_name = au.constraint_name and au.constraint_type = 'P') b on 
-                b.table_name = a.Table_Name and a.column_name = b.column_name where a.Table_Name=:tableName) c left join user_col_comments d on c.ColumnName = d.column_name where d.table_name =:tableName
+                b.table_name = a.Table_Name and a.column_name = b.column_name where a.Table_Name=:tableName ORDER BY a.column_id) c left join user_col_comments d on c.ColumnName = d.column_name where d.table_name =:tableName
                 ";
             var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
 

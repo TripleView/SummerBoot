@@ -1,4 +1,5 @@
-﻿using SummerBoot.Repository.Attributes;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using SummerBoot.Repository.Attributes;
 
 namespace SummerBoot.Test.SqlServer.Models
 {
@@ -8,7 +9,7 @@ namespace SummerBoot.Test.SqlServer.Models
         /// <summary>
         /// 特殊指定的类型
         /// </summary>
-        [MappingToDatabaseType("text")]
+        [Column("SpecifiedTxt", TypeName = "text")]
         public string SpecifiedTxt { get; set; }
     }
 }

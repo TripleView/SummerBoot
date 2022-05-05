@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SummerBoot.Repository.Generator.Dto;
 
 namespace SummerBoot.Repository.Generator.Dialect
 {
@@ -66,12 +67,12 @@ namespace SummerBoot.Repository.Generator.Dialect
             return result;
         }
 
-        public List<string> ConvertDatabaseTypeToCsharpType(List<string> databaseTypeList)
+        public List<string> ConvertDatabaseTypeToCsharpType(List<DatabaseFieldInfoDto> databaseFieldInfoList)
         {
             var result = new List<string>();
-            foreach (var type in databaseTypeList)
+            foreach (var databaseFieldInfo in databaseFieldInfoList)
             {
-                var item = DatabaseTypeToCsharpTypeMappings[type];
+                var item = DatabaseTypeToCsharpTypeMappings[databaseFieldInfo.ColumnDataType];
                 result.Add(item);
             }
 
