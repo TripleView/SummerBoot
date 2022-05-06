@@ -8,6 +8,7 @@ using SummerBoot.Feign;
 using SummerBoot.Repository;
 using SummerBoot.Resource;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -133,11 +134,13 @@ namespace SummerBoot.Core
 
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
 
-            var types = Assembly.GetCallingAssembly().GetExportedTypes()
-                .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
-
-            var autoRepositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<AutoRepositoryAttribute>() != null).ToList();
-
+            var autoRepositoryTypes=new List<Type>();
+            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it=>!it.IsDynamic).ToList();
+            foreach (var assembly in allAssemblies)
+            {
+                autoRepositoryTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<AutoRepositoryAttribute>() != null).ToList());
+            }
+            
             foreach (var type in autoRepositoryTypes)
             {
                 repositoryProxyBuilder.InitInterface(type);
@@ -189,11 +192,13 @@ namespace SummerBoot.Core
             HttpHeaderSupport.Init();
 
             var feignProxyBuilder = new FeignProxyBuilder();
-            var types = Assembly.GetCallingAssembly().GetExportedTypes()
-                .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
-
-            var feignTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null).ToList();
-
+            var feignTypes = new List<Type>();
+            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList(); ;
+            foreach (var assembly in allAssemblies)
+            {
+                feignTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null).ToList());
+            }
+            
             foreach (var type in feignTypes)
             {
                 feignProxyBuilder.InitInterface(type);
