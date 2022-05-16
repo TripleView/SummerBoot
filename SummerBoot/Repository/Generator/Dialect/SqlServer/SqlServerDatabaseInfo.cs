@@ -59,7 +59,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 //添加行注释
                 if (fieldInfo.Description.HasText())
                 {
-                    var tableFieldDescription= CreateTableFieldDescription(tableInfo.Schema,tableName, fieldInfo.ColumnName, fieldInfo.Description);
+                    var tableFieldDescription= CreateTableFieldDescription(tableInfo.Schema,tableName, fieldInfo);
                     databaseDescriptions.Add(tableFieldDescription);
                 }
             }
@@ -136,17 +136,17 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
-        public string CreateTableField(string tableName, DatabaseFieldInfoDto fieldInfo)
+        public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var sql = $"ALTER TABLE {tableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
           return sql;
         }
 
-        public string CreateTableFieldDescription(string schema,string tableName, string columnName, string description)
+        public string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             schema = GetDefaultSchema(schema);
             var sql =
-                $"EXEC sp_addextendedproperty 'MS_Description', N'{description}', 'schema', N'{schema}', 'table', N'{tableName}', 'column', N'{columnName}'";
+                $"EXEC sp_addextendedproperty 'MS_Description', N'{fieldInfo.Description}', 'schema', N'{schema}', 'table', N'{tableName}', 'column', N'{fieldInfo.ColumnName}'";
             return sql;
         }
 

@@ -15,9 +15,22 @@ namespace SummerBoot.Test.Mysql.Db
             }
             optionsBuilder.UseMySQL(connectionString);
         }
-
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<NullableTable>().HasComment("NullableTable");
+            modelBuilder.Entity<NullableTable>().Property("Int2").HasComment("Int2");
+            modelBuilder.Entity<NullableTable>().Property(it => it.Long2).HasComment("Long2");
+            modelBuilder.Entity<NotNullableTable>().HasComment("NotNullableTable");
+            modelBuilder.Entity<NotNullableTable>().Property(it => it.Int2).HasComment("Int2").IsRequired(true);
+            modelBuilder.Entity<NotNullableTable>().Property(it => it.Long2).HasComment("Long2").IsRequired(true);
+            modelBuilder.Entity<NullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
+            modelBuilder.Entity<NotNullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
+        }
         public DbSet<Customer> Customer { get; set; }
         public DbSet<OrderHeader> OrderHeader { get; set; }
         public DbSet<OrderDetail> OrderDetail { get; set; }
+        public DbSet<NullableTable> NullableTable { get; set; }
+        public DbSet<NotNullableTable> NotNullableTable { get; set; }
     }
 }

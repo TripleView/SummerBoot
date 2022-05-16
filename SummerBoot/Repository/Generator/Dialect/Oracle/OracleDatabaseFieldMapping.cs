@@ -23,39 +23,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
             {"Byte","NUMBER"},//3,0
             {"Single","BINARY_FLOAT"},
         };
-        private Dictionary<string, string> DatabaseTypeToCsharpTypeMappings = new Dictionary<string, string>()
-        {
-            {"bigint","long"},
-            {"binary","byte[]"},
-            {"bit","bool"},
-            {"char","string"},
-            {"date","DateTime"},
-            {"datetime","DateTime"},
-            {"datetime2","DateTime"},
-            {"datetimeoffset","DateTimeOffset"},
-            {"decimal","decimal"},
-            {"float","double"},
-            {"image","byte[]"},
-            {"int","int"},
-            {"money","decimal"},
-            {"nchar","string"},
-            {"ntext","string"},
-            {"numeric","decimal"},
-            {"nvarchar","string"},
-            {"real","float"},
-            {"smalldatetime","DateTime"},
-            {"smallint","short"},
-            {"smallmoney","decimal"},
-            {"text","string"},
-            {"time","TimeSpan"},
-            {"timestamp","byte[]"},
-            {"tinyint","byte"},
-            {"uniqueidentifier","Guid"},
-            {"varbinary","byte[]"},
-            {"varchar","string"}
-        };
-
-
+        
         public List<string> ConvertCsharpTypeToDatabaseType(List<string> csharpTypeList)
         {
             short a;
@@ -78,7 +46,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 //自定义NUMBER精度类型
                 if (fieldInfo.ColumnDataType == "NUMBER")
                 {
-                    item = "int";
+                    item = "decimal";
                     var precision = fieldInfo.Precision;
                     var scale = fieldInfo.Scale;
 
@@ -128,7 +96,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                     item = $"Guid";
                 }
                 //datetime类型，默认7位
-                if (fieldInfo.ColumnDataType == "TIMESTAMP(7)")
+                if (fieldInfo.ColumnDataType == "TIMESTAMP(7)"|| fieldInfo.ColumnDataType == "DATE")
                 {
                     item = $"DateTime";
                 }
@@ -147,6 +115,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 {
                     item = $"float";
                 }
+                
                 if (fieldInfo.ColumnDataType.Contains("CHAR")|| fieldInfo.ColumnDataType == "JSON"
                                                              || fieldInfo.ColumnDataType == "CLOB" || fieldInfo.ColumnDataType == "NCLOB"
                                                              || fieldInfo.ColumnDataType == "XMLTYPE" || fieldInfo.ColumnDataType == "ROWID"

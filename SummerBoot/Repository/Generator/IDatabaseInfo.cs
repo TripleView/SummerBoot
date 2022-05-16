@@ -41,13 +41,13 @@ namespace SummerBoot.Repository.Generator
         /// <param name="columnName">字段名</param>
         /// <param name="description">注释</param>
         /// <returns></returns>
-        string CreateTableFieldDescription(string schema,string tableName,string columnName, string description);
+        string CreateTableFieldDescription(string schema,string tableName, DatabaseFieldInfoDto fieldInfo);
         /// <summary>
         /// 创建字段
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
-        string CreateTableField(string tableName, DatabaseFieldInfoDto fieldInfo);
+        string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
     }
 }

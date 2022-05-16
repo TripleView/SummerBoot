@@ -44,7 +44,7 @@ namespace SummerBoot.Repository.Generator
                 dbConnection.Execute(description);
             }
 
-           dbConnection.Close();
+            dbConnection.Close();
         }
 
         public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace)
@@ -104,8 +104,44 @@ namespace SummerBoot.Repository.Generator
                     sb.AppendLine($"      [Column(\"{columnInfo.ColumnName}\")]");
                     var fieldType = databaseFieldMapping.ConvertDatabaseTypeToCsharpType(new List<DatabaseFieldInfoDto>() { columnInfo }).First();
                     var nullablePart = (columnInfo.IsNullable && csharpCanBeNullableType.Any(it => it == fieldType)) ? "?" : "";
+                    //为了符合c#命名规范，重新计算列名
+                    var columnName = columnInfo.ColumnName;
+                    if (columnName.Length > 0)
+                    {
+                        if (columnName.Contains(" "))
+                        {
+                            var tempColumnNameArr = new List<string>();
+                            var columnNameParts = columnName.Split(" ").ToList();
+                            foreach (var columnNamePart in columnNameParts)
+                            {
+                                if (columnNamePart.HasText())
+                                {
+                                    var tempColumnNamePart = columnNamePart;
+                                    if (char.IsLetter(columnNamePart[0]) && char.IsLower(columnNamePart[0]))
+                                    {
+                                        tempColumnNamePart = char.ToUpper(columnNamePart[0])
+                                                             + columnNamePart.Substring(1, columnNamePart.Length - 1);
+                                    }
+                                    tempColumnNameArr.Add(tempColumnNamePart);
+                                }
+                            }
 
-                    sb.AppendLine($"      public {fieldType}{nullablePart} {columnInfo.ColumnName} {{ get; set; }}");
+                            columnName = string.Join(string.Empty, tempColumnNameArr);
+                        }
+                        else
+                        {
+                            if (columnName.HasText())
+                            {
+                                if (char.IsLetter(columnName[0]) && char.IsLower(columnName[0]))
+                                {
+                                    columnName = char.ToUpper(columnName[0])
+                                                 + columnName.Substring(1, columnName.Length - 1);
+                                }
+                            }
+                        }
+                    }
+
+                    sb.AppendLine($"      public {fieldType}{nullablePart} {columnName} {{ get; set; }}");
                 }
                 sb.AppendLine("   }");
                 sb.AppendLine("}");
@@ -182,7 +218,7 @@ namespace SummerBoot.Repository.Generator
                     {
                         ColumnName = fieldName,
                         ColumnDataType = dbFieldTypeName,
-                        SpecifiedColumnDataType= columnAttribute?.TypeName,
+                        SpecifiedColumnDataType = columnAttribute?.TypeName,
                         IsNullable = isNullable,
                         IsKey = keyAttribute != null,
                         IsAutoCreate = databaseGeneratedAttribute != null && databaseGeneratedAttribute.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,
@@ -208,7 +244,7 @@ namespace SummerBoot.Repository.Generator
                         FieldModifySqls = new List<string>()
                     };
 
-                    if (dbTableInfo.Description.IsNullOrEmpty()&&tableDescription.HasText())
+                    if (dbTableInfo.Description.IsNullOrEmpty() && tableDescription.HasText())
                     {
                         var newTableDescriptionSql = databaseInfo.CreateTableDescription(schema, tableName, tableDescription);
                         item.Descriptions.Add(newTableDescriptionSql);
@@ -219,11 +255,11 @@ namespace SummerBoot.Repository.Generator
                             dbTableInfo.FieldInfos.FirstOrDefault(it => it.ColumnName == fieldInfo.ColumnName);
                         if (dbFieldInfo == null)
                         {
-                            var createFieldSql = databaseInfo.CreateTableField(tableName, fieldInfo);
+                            var createFieldSql = databaseInfo.CreateTableField(schema, tableName, fieldInfo);
                             item.FieldModifySqls.Add(createFieldSql);
                             if (fieldInfo.Description.HasText())
                             {
-                                var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo.ColumnName, fieldInfo.Description);
+                                var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo);
                                 item.Descriptions.Add(createFieldDescriptionSql);
                             }
                         }

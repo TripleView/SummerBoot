@@ -72,7 +72,11 @@ namespace SummerBoot.Repository.Generator.Dialect
             var result = new List<string>();
             foreach (var databaseFieldInfo in databaseFieldInfoList)
             {
-                var item = DatabaseTypeToCsharpTypeMappings[databaseFieldInfo.ColumnDataType];
+                var item = "";
+                if (DatabaseTypeToCsharpTypeMappings.ContainsKey(databaseFieldInfo.ColumnDataType))
+                {
+                    item = DatabaseTypeToCsharpTypeMappings[databaseFieldInfo.ColumnDataType];
+                }
                 result.Add(item);
             }
 

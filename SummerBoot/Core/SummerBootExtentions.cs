@@ -130,6 +130,11 @@ namespace SummerBoot.Core
                 services.AddScoped<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
                 services.AddScoped<IDatabaseInfo, OracleDatabaseInfo>();
             }
+            else if (option.IsMysql)
+            {
+                services.AddScoped<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
+                services.AddScoped<IDatabaseInfo, MysqlDatabaseInfo>();
+            }
 
 
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
