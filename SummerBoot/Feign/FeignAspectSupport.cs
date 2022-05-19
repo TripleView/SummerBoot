@@ -13,10 +13,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using SummerBoot.Feign.Attributes;
+using SummerBoot.Feign.Nacos;
+using SummerBoot.Feign.Nacos.Dto;
 
 namespace SummerBoot.Feign
 {
@@ -26,22 +29,36 @@ namespace SummerBoot.Feign
         /// <summary>
         /// 解析方法的参数以及值
         /// </summary>
-        private Dictionary<string, string> parameters = new Dictionary<string, string>();
+        private Dictionary<string, object> parameters = new Dictionary<string, object>();
 
         /// <summary>
         /// 解析需要添加到url的参数以及值
         /// </summary>
-        private Dictionary<string, string> urlParameters = new Dictionary<string, string>();
+        private Dictionary<string, object> urlParameters = new Dictionary<string, object>();
+        /// <summary>
+        /// 编码器
+        /// </summary>
+        private IFeignEncoder encoder;
+        /// <summary>
+        /// 解码器
+        /// </summary>
+        private IFeignDecoder decoder;
 
+        private FeignOption feignOption;
+        private IConfiguration configuration;
         public async Task<T> BaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
+            urlParameters.Clear();
+            parameters.Clear();
             _serviceProvider = serviceProvider;
             //获得具体的client客户端
             var feignClient = serviceProvider.GetService<IClient>();
-            //序列化器与反序列化器
-            var encoder = serviceProvider.GetService<IFeignEncoder>();
-            var decoder = serviceProvider.GetService<IFeignDecoder>();
 
+            //序列化器与反序列化器
+            encoder = serviceProvider.GetService<IFeignEncoder>();
+            decoder = serviceProvider.GetService<IFeignDecoder>();
+            feignOption = serviceProvider.GetService<FeignOption>();
+            configuration = serviceProvider.GetService<IConfiguration>();
             //读取feignClientAttribute里的信息；
             //接口类型
             var interfaceType = method.DeclaringType;
@@ -50,7 +67,7 @@ namespace SummerBoot.Feign
             var feignClientAttribute = interfaceType.GetCustomAttribute<FeignClientAttribute>();
             if (feignClientAttribute == null) throw new Exception(nameof(feignClientAttribute));
 
-            var url = feignClientAttribute.Url;
+            var url = await GetUrlBody(feignClientAttribute);
 
             var clientName = feignClientAttribute.Name.GetValueOrDefault(interfaceType.FullName);
             var requestPath = url;
@@ -109,6 +126,7 @@ namespace SummerBoot.Feign
                 throw new NotSupportedException("only support one httpMapping");
             }
 
+            path = GetValueByConfiguration(path);
             var urlTemp = requestPath + path;
 
             urlTemp = GetUrl(urlTemp);
@@ -152,6 +170,41 @@ namespace SummerBoot.Feign
 
             responseTemplate.Body.Seek(0, SeekOrigin.Begin);
             throw new Exception($@"response Decoder error,content is {responseTemplate.Body.ConvertToString()}", ex);
+        }
+
+        /// <summary>
+        /// 获取url主体部分
+        /// </summary>
+        /// <param name="feignClientAttribute"></param>
+        /// <returns></returns>
+        private async Task<string> GetUrlBody(FeignClientAttribute feignClientAttribute)
+        {
+            var url = feignClientAttribute.Url;
+            url = GetValueByConfiguration(url);
+            //判断是否为微服务模式
+            if (feignOption.EnableNacos && feignClientAttribute.MicroServiceMode)
+            {
+                var nacosService = _serviceProvider.GetService<INacosService>();
+                var serviceName = feignClientAttribute.ServiceName;
+                if (serviceName.HasText())
+                {
+                    var serviceInstance = await nacosService.QueryInstanceList(new QueryInstanceListInputDto()
+                    {
+                        ServiceName = serviceName,
+                        HealthyOnly = true
+                    });
+                    if (serviceInstance != null && serviceInstance.Hosts?.Count > 0)
+                    {
+                        var host = serviceInstance.Hosts[0];
+                        var protocol = "";
+                        host.Metadata?.TryGetValue("protocol", out protocol);
+                        protocol = protocol.GetValueOrDefault("http");
+                        url = $"{protocol}://{host.Ip}:{host.Port}";
+                    }
+                }
+            }
+
+            return url;
         }
 
         private string GetUrl(string urlTemp)
@@ -198,7 +251,7 @@ namespace SummerBoot.Feign
         /// </summary>
         /// <param name="method"></param>
         /// <param name="requestTemplate"></param>
-        private void ProcessHeaders(MethodInfo method, RequestTemplate requestTemplate,Type interfaceType)
+        private void ProcessHeaders(MethodInfo method, RequestTemplate requestTemplate, Type interfaceType)
         {
             var headersAttributes = new List<HeadersAttribute>();
             var methodHeadersAttribute = method.GetCustomAttribute<HeadersAttribute>();
@@ -261,21 +314,56 @@ namespace SummerBoot.Feign
                 {
                     if (matchValue.Replace(" ", "") == $"{{{{{pair.Key}}}}}")
                     {
-                        return pair.Value;
+                        return pair.Value.ToString();
                     }
                 }
-                
+
                 return "";
 
             }, RegexOptions.Compiled);
 
             //foreach (var pair in parameters)
             //{
-                
-               
+
+
             //    str = str.Replace($"{{{pair.Key}}}", pair.Value);
             //}
 
+            return str;
+        }
+
+        /// <summary>
+        /// 通过配置文件获取具体的值
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private string GetValueByConfiguration(string value)
+        {
+            if (value.IsNullOrWhiteSpace())
+            {
+                return value;
+            }
+            var str = Regex.Replace(value, "\\$\\{[^\\}]*\\}", match =>
+            {
+                var matchValue = match.Value;
+                if (matchValue.Length >= 3)
+                {
+                    if (matchValue.Substring(0, 2) == "${")
+                    {
+                        matchValue = matchValue.Substring(2);
+                    }
+                    if (matchValue.Substring(matchValue.Length - 1, 1) == "}")
+                    {
+                        matchValue = matchValue.Substring(0, matchValue.Length - 1);
+                    }
+
+                    matchValue = matchValue.Trim();
+                    matchValue = configuration.GetSection(matchValue).Value;
+                    return matchValue;
+                }
+                return "";
+
+            }, RegexOptions.Compiled);
             return str;
         }
 
@@ -289,8 +377,12 @@ namespace SummerBoot.Feign
             var valueList = new List<string>();
             foreach (var pair in urlParameters)
             {
-
-                var value= Uri.EscapeDataString(pair.Value);
+                var pairValue = pair.Value.ToString();
+                if (pair.Value is Dictionary<string, object>)
+                {
+                    pairValue = encoder.EncoderObject(pair.Value);
+                }
+                var value = Uri.EscapeDataString(pairValue);
                 var urlPair = $"{pair.Key}={value}";
                 valueList.Add(urlPair);
             }
@@ -325,7 +417,7 @@ namespace SummerBoot.Feign
                 var bodyAttribute = parameterInfo.GetCustomAttribute<BodyAttribute>();
                 var queryAttribute = parameterInfo.GetCustomAttribute<QueryAttribute>();
                 var parameterName = aliasAsAttribute != null ? aliasAsAttribute.Name : parameterInfos[i].Name;
-
+                var isEmbedded = parameterInfo.GetCustomAttribute<EmbeddedAttribute>() != null;
                 //处理body类型
                 if (bodyAttribute != null)
                 {
@@ -337,54 +429,43 @@ namespace SummerBoot.Feign
                             break;
                         case BodySerializationKind.Form:
 
-                            if (arg is string str)
+                            if (parameterType.IsString())
                             {
-                                requestTemplate.HttpContent = new StringContent(Uri.EscapeDataString(str),
+                                requestTemplate.HttpContent = new StringContent(Uri.EscapeDataString(arg.ToString()),
                                     Encoding.UTF8, "application/x-www-form-urlencoded");
                             }
                             else
                             {
-                                var dictionary = new Dictionary<string, string>();
-
-                                if (arg is IDictionary tempDictionary)
+                                var dictionary = new Dictionary<string, object>();
+                                if (parameterType.IsClass)
                                 {
-                                    foreach (var key in tempDictionary.Keys)
+                                    var keyValue = AddClassParameter(parameterType, arg, false, false);
+                                    foreach (var keyValuePair in keyValue)
                                     {
-                                        var value = tempDictionary[key];
-                                        if (value != null)
-                                        {
-                                            dictionary.Add(key.ToString(), value?.ToString());
-                                        }
+                                        dictionary.AddIfNotExist(keyValuePair.Key, keyValuePair.Value);
                                     }
                                 }
                                 else
                                 {
-                                    var parameterPropertyInfos = parameterType.GetProperties();
-                                    foreach (var propertyInfo in parameterPropertyInfos)
-                                    {
-                                        var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
-
-                                        var key = propertyAliasAsAttribute != null
-                                            ? propertyAliasAsAttribute.Name
-                                            : propertyInfo.Name;
-
-                                        var value = propertyInfo.GetValue(arg);
-                                        if (value != null)
-                                        {
-                                            dictionary.Add(key.ToString(), value?.ToString());
-                                        }
-                                    }
+                                    throw new NotSupportedException(
+                                        "bodyAttribute is not use for:" + parameterType.Name);
                                 }
 
                                 if (multipartAttribute == null)
                                 {
-                                    requestTemplate.HttpContent = new FormUrlEncodedContent(dictionary);
+                                    var newDictionary = new Dictionary<string, string>();
+                                    foreach (var keyValuePair in dictionary)
+                                    {
+                                        newDictionary.Add(keyValuePair.Key, keyValuePair.Value.ToString());
+
+                                    }
+                                    requestTemplate.HttpContent = new FormUrlEncodedContent(newDictionary);
                                 }
                                 else
                                 {
-                                    foreach (KeyValuePair<string, string> pair in dictionary)
+                                    foreach (KeyValuePair<string, object> pair in dictionary)
                                     {
-                                        multipartFormDataContent.Add(new StringContent(pair.Value), pair.Key);
+                                        multipartFormDataContent.Add(new StringContent(pair.Value.ToString()), pair.Key);
                                     }
                                 }
 
@@ -392,44 +473,41 @@ namespace SummerBoot.Feign
 
                             break;
                     }
-
                 }
+                //处理query类型
                 else if (queryAttribute != null)
                 {
                     if (arg != null)
                     {
-                        if (arg is string str || parameterType.IsValueType)
+                        if (parameterType.IsString() || parameterType.IsValueType)
                         {
-                            urlParameters.Add(parameterName, arg.ToString());
+                            urlParameters.AddIfNotExist(parameterName, arg.ToString());
                         }
                         else if (parameterType.IsClass)
                         {
-                            var parameterPropertyInfos = parameterType.GetProperties();
-                            foreach (var propertyInfo in parameterPropertyInfos)
+                            var keyValue = AddClassParameter(parameterType, arg, isEmbedded, true);
+                            if (isEmbedded)
                             {
-                                var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
-
-                                var key = propertyAliasAsAttribute != null
-                                    ? propertyAliasAsAttribute.Name
-                                    : propertyInfo.Name;
-
-                                var value = propertyInfo.GetValue(arg);
-                                if (value != null)
+                                urlParameters.AddIfNotExist(parameterName, keyValue);
+                            }
+                            else
+                            {
+                                foreach (var keyValuePair in keyValue)
                                 {
-                                    urlParameters.Add(key, value.ToString());
+                                    urlParameters.AddIfNotExist(keyValuePair.Key, keyValuePair.Value);
                                 }
                             }
                         }
-
                     }
                 }
+                //处理普通的参数
                 else
                 {
                     if (arg != null)
                     {
-                        if (arg is string str || parameterType.IsValueType)
+                        if (parameterType.IsString() || parameterType.IsValueType)
                         {
-                            parameters.Add(parameterName, arg.ToString());
+                            parameters.AddIfNotExist(parameterName, arg.ToString());
                         }
                         else if (arg is BasicAuthorization baseAuthorization)
                         {
@@ -457,7 +535,7 @@ namespace SummerBoot.Feign
                             foreach (var keyValuePair in headerCollection)
                             {
                                 var key = keyValuePair.Key;
-                                var keyValue=keyValuePair.Value;
+                                var keyValue = keyValuePair.Value;
 
                                 var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
 
@@ -472,7 +550,7 @@ namespace SummerBoot.Feign
                                     keyList.Add(keyValue);
                                 }
                             }
-                           
+
                         }
                         else if (arg is MultipartItem multipartItem)
                         {
@@ -486,21 +564,11 @@ namespace SummerBoot.Feign
                         }
                         else if (parameterType.IsClass)
                         {
-                            var parameterPropertyInfos = parameterType.GetProperties();
-                            foreach (var propertyInfo in parameterPropertyInfos)
-                            {
-                                var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
-
-                                var key = propertyAliasAsAttribute != null
-                                    ? propertyAliasAsAttribute.Name
-                                    : propertyInfo.Name;
-
-                                var value = propertyInfo.GetValue(arg);
-                                if (value != null)
-                                {
-                                    parameters.Add(key, value.ToString());
-                                }
-                            }
+                           var keyValue= AddClassParameter(parameterType, arg, false, false);
+                           foreach (var keyValuePair in keyValue)
+                           {
+                               parameters.AddIfNotExist(keyValuePair.Key, keyValuePair.Value);
+                           }
                         }
 
                     }
@@ -510,6 +578,81 @@ namespace SummerBoot.Feign
             {
                 requestTemplate.HttpContent = multipartFormDataContent;
             }
+        }
+
+        /// <summary>
+        /// 添加类类型的参数
+        /// </summary>
+        /// <param name="parameterType"></param>
+        /// <param name="arg">参数</param>
+        /// <param name="originDictionary"></param>
+        /// <param name="originEmbedded">初始是否嵌套</param>
+        /// <param name="totalEmbedded">是否嵌套总开关，总开关关闭则全体不嵌套</param>
+        /// <returns></returns>
+        private Dictionary<string, object> AddClassParameter(Type parameterType, object arg,  bool originEmbedded, bool totalEmbedded)
+        {
+            if (!totalEmbedded)
+            {
+                originEmbedded = false;
+            }
+            //正常返回值
+            var targetDictionary = new Dictionary<string, object>();
+            //如果是字典类型
+            if (parameterType.IsDictionary())
+            {
+                if (arg is IDictionary argDictionary)
+                {
+                    foreach (DictionaryEntry keyValue in argDictionary)
+                    {
+                        var key = keyValue.Key.ToString();
+                        var value = keyValue.Value?.ToString();
+                        targetDictionary.AddIfNotExist(key, value);
+                    }
+                }
+            }
+            //正常类
+            else
+            {
+                var parameterPropertyInfos = parameterType.GetProperties();
+                foreach (var propertyInfo in parameterPropertyInfos)
+                {
+                    //判断是否序列化
+                    var isEmbedded = (propertyInfo.GetCustomAttribute<EmbeddedAttribute>() != null || originEmbedded) && totalEmbedded;
+
+                    var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
+
+                    var key = propertyAliasAsAttribute != null
+                        ? propertyAliasAsAttribute.Name
+                        : propertyInfo.Name;
+                    //处理常规类型
+                    var value = propertyInfo.GetValue(arg);
+                    if (propertyInfo.PropertyType.IsString() || propertyInfo.PropertyType.IsValueType)
+                    {
+                        if (value != null)
+                        {
+                            targetDictionary.AddIfNotExist(key, value.ToString());
+                        }
+                    }
+                    else
+                    {
+                        var keyValue = AddClassParameter(propertyInfo.PropertyType, value, isEmbedded, totalEmbedded);
+                       
+                        if (isEmbedded)
+                        {
+                            targetDictionary.AddIfNotExist(key, keyValue);
+                        }
+                        else
+                        {
+                            foreach (var keyValuePair in keyValue)
+                            {
+                                targetDictionary.AddIfNotExist(keyValuePair.Key, keyValuePair.Value);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return targetDictionary;
         }
     }
 }

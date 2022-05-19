@@ -1,5 +1,9 @@
 {
   "oracleDbConnectionString": "",
   "sqlServerDbConnectionString": "",
-  "mysqlDbConnectionString": ""
+  "mysqlDbConnectionString": "",
+  "configurationTest": {
+    "url": "http://localhost:5001/home",
+    "path": "/query"
+  }
 }

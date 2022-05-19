@@ -12,6 +12,7 @@ using SummerBoot.Feign;
 using Xunit;
 using System.Collections.Specialized;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
 namespace SummerBoot.Test.Feign
@@ -220,7 +221,7 @@ namespace SummerBoot.Test.Feign
                 await testFeign.TestIgnoreInterceptor(new Test() { Name = "sb", Age = 3 })
                 );
 
-            Assert.Equal("Response status code does not indicate success: 404 (No matching mock handler for \"POST http://localhost:5001/home/testIgnoreInterceptor\").", exception.Message);
+            Assert.Equal("No matching mock handler for \"POST http://localhost:5001/home/testIgnoreInterceptor\"", exception.Message);
         }
 
         [Fact]
@@ -522,6 +523,87 @@ namespace SummerBoot.Test.Feign
 
             var resultContent = result.ConvertToString();
             Assert.Equal("456", resultContent);
+        }
+
+        /// <summary>
+        /// 测试参数内嵌
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestEmbedded()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+            var result = await testFeign.TestEmbedded(new EmbeddedTest3()
+            {
+                Name = "sb",
+                Test = new EmbeddedTest2()
+                {
+                    Age = 3
+                }
+            });
+            Assert.Equal("ok", result);
+           
+        }
+
+        /// <summary>
+        /// 测试参数内嵌
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestNotEmbedded()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+            var result = await testFeign.TestNotEmbedded(new EmbeddedTest()
+            {
+                Name = "sb",
+                Test = new EmbeddedTest2()
+                {
+                    Age = 3
+                }
+            });
+            Assert.Equal("ok", result);
+        }
+
+        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
+        /// <summary>
+        /// 测试从配置中读取url
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestGetUrlFromConfiguration()
+        {
+            var build = new ConfigurationBuilder();
+            build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
+            build.AddJsonFile(CONFIG_FILE, true, true);
+            var configurationRoot = build.Build();
+            
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+            services.AddSingleton<IConfiguration>(configurationRoot);
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var configuration = serviceProvider.GetService<IConfiguration>();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeignWithConfiguration>();
+
+            var result = await testFeign.TestQuery(new Test() { Name = "sb", Age = 3 });
+            Assert.Equal("sb", result.Name);
+            Assert.Equal(3, result.Age);
         }
     }
 }

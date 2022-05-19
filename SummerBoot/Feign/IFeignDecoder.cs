@@ -36,6 +36,10 @@ namespace SummerBoot.Feign
                 
                 var body = responseTemplate.Body;
                 var str = body.ConvertToString();
+                if (typeof(string).IsAssignableFrom(type))
+                {
+                    return str;
+                }
 
                 return JsonConvert.DeserializeObject(str, type);
             }

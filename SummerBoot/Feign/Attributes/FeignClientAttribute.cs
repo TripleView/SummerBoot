@@ -11,7 +11,7 @@ namespace SummerBoot.Feign.Attributes
     public class FeignClientAttribute : Attribute
     {
         /// <summary>
-        /// 服务名称
+        /// 名称
         /// </summary>
         public string Name { get; set; }
         /// <summary>
@@ -34,5 +34,13 @@ namespace SummerBoot.Feign.Attributes
         /// 定义拦截器
         /// </summary>
         public Type InterceptorType { set; get; }
+        /// <summary>
+        /// 是否微服务模式
+        /// </summary>
+        public bool MicroServiceMode { get; set; }
+        /// <summary>
+        /// 微服务的名称
+        /// </summary>
+        public string ServiceName { get; set; }
     }
 }

@@ -23,6 +23,25 @@ namespace SummerBoot.Test.Feign
         public string methodName { get; set; }
     }
 
+    public class EmbeddedTest
+    {
+        public string Name { get; set; }
+
+        public EmbeddedTest2 Test { get; set; }
+    }
+
+    public class EmbeddedTest3
+    {
+        public string Name { get; set; }
+        [Embedded]
+        public EmbeddedTest2 Test { get; set; }
+    }
+
+    public class EmbeddedTest2
+    {
+        public int Age { get; set; }
+    }
+
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true,
         InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 
@@ -117,6 +136,28 @@ namespace SummerBoot.Test.Feign
 
         [GetMapping("/testBasicAuthorization")]
         Task<Test> TestBasicAuthorization(BasicAuthorization basicAuthorization);
-        
+
+        /// <summary>
+        /// 测试Embedded注解，表示参数是否内嵌，该测试嵌入
+        /// </summary>
+        /// <param name="tt"></param>
+        /// <returns></returns>
+        [GetMapping("/testEmbedded")]
+        Task<string> TestEmbedded([Query] EmbeddedTest3 tt);
+
+        /// <summary>
+        /// 测试Embedded注解，表示参数是否内嵌,该测试不嵌入
+        /// </summary>
+        /// <param name="tt"></param>
+        /// <returns></returns>
+        [GetMapping("/testNotEmbedded")]
+        Task<string> TestNotEmbedded([Query] EmbeddedTest tt);
+    }
+
+    [FeignClient(Url = "${configurationTest:url}")]
+    public interface ITestFeignWithConfiguration
+    {
+        [GetMapping("${configurationTest:path}")]
+        Task<Test> TestQuery([Query] Test tt);
     }
 }

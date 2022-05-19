@@ -66,9 +66,24 @@ namespace SummerBoot.Feign
                 }
 
                 var httpResponse = await httpClient.SendAsync(httpRequest,cancellationToken);
+                
+                //兼容返回类型不正规的接口，比如nacos
+                if (!httpResponse.IsSuccessStatusCode)
+                {
+                    var message = "";
+                    if (httpResponse.Content != null)
+                    {
+                        message= httpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    }
+                        
+                    if (message.IsNullOrWhiteSpace())
+                    {
+                        message = httpResponse.ReasonPhrase;
+                    }
 
-                httpResponse.EnsureSuccessStatusCode();
-
+                    throw new HttpRequestException(message);
+                }
+                
                 //把httpResponseMessage转化为responseTemplate
                 var result = await ConvertResponseAsync(httpResponse);
 

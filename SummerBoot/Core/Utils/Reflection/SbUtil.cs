@@ -144,5 +144,15 @@ namespace SummerBoot.Core
         {
             return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
+
+        /// <summary>
+        /// 判断是否为字典类型
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsDictionary(this Type type)
+        {
+            return type.GetInterfaces().Any(it => it == typeof(IDictionary));
+        }
     }
 }

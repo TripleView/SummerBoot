@@ -18,7 +18,12 @@ namespace SummerBoot.Feign
         /// </summary>
         /// <param name="obj"></param>
         HttpContent Encoder(object obj);
-
+        /// <summary>
+        /// 序列化obj
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        string EncoderObject(object obj);
 
         /// <summary>
         /// 默认的序列化器
@@ -32,6 +37,10 @@ namespace SummerBoot.Feign
                 return content;
             }
 
+            public string EncoderObject(object obj)
+            {
+                return JsonConvert.SerializeObject(obj);
+            }
         }
     }
 }

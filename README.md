@@ -69,6 +69,10 @@ net core 3.1,net 6
 			- [5.2.7使用类Stream作为方法返回类型，即可接收流式数据，比如下载文件。](#527使用类stream作为方法返回类型即可接收流式数据比如下载文件)
 			- [5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。](#528使用类httpresponsemessage作为方法返回类型即可获得最原始的响应消息)
 			- [5.2.9使用类Task作为方法返回类型，即无需返回值。](#529使用类task作为方法返回类型即无需返回值)
+	- [6. 微服务-接入nacos](#6-微服务-接入nacos)
+		- [6.1 添加nacos配置](#61-添加nacos配置)
+		- [6.2 在StartUp.cs中添加配置](#62-在startupcs中添加配置)
+		- [6.3 定义调用微服务的接口](#63-定义调用微服务的接口)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
 # SummerBoot中操作数据库
@@ -339,7 +343,7 @@ public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustome
 ````
 
 # SummerBoot中使用feign进行http调用
->我们使用Feign，feign底层基于httpClient。
+>feign底层基于httpClient。
 
 ## 1.在startup.cs类中注册服务
 ````csharp
@@ -353,7 +357,26 @@ services.AddSummerBootFeign();
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
 {
-   
+   [GetMapping("/query")]
+   Task<Test> TestQuery([Query] Test tt);
+}
+````
+同时，url和path可以通过读取配置获取，配置项通过${}包裹，配置的json如下：
+````json
+{
+  "configurationTest": {
+    "url": "http://localhost:5001/home",
+    "path": "/query"
+  }
+}
+````
+接口如下：
+````csharp
+[FeignClient(Url = "${configurationTest:url}")]
+public interface ITestFeignWithConfiguration
+{
+		[GetMapping("${configurationTest:path}")]
+		Task<Test> TestQuery([Query] Test tt);
 }
 ````
 
@@ -680,6 +703,57 @@ public interface ITestFeign
 await testFeign.Test();
 
 >>> get, http://localhost:5001/home/Test,忽略返回值
+````
+## 6. 微服务-接入nacos
+### 6.1 添加nacos配置
+在appsettings.json/appsettings.Development.json配置文件中添加配置
+````json
+{
+  "nacos": {
+    //nacos服务地址，如http://172.16.189.242:8848
+    "serviceAddress": "http://172.16.189.242:8848/",
+    //命名空间id，如832e754e-e845-47db-8acc-46ae3819b638或者public
+    "namespaceId": "public",
+    //要注册的服务名
+    "serviceName": "test",
+    //服务的分组名
+    "groupName": "DEFAULT_GROUP",
+    //主机协议，http或https
+    "protocol": "http",
+    //主机监听的端口号
+    "port": 5001
+  }
+}
+````
+### 6.2 在StartUp.cs中添加配置
+如果要把当前应用注册为微服务实例，则添加配置如下，那么本应用自动注册为微服务实例，并且服务名为配置的serviceName，其他微服务即可通过服务名调用本应用的接口。
+
+````csharp
+services.AddSummerBoot();
+services.AddSummerBootFeign(it =>
+{
+		it.EnableNacos = true;
+		it.NacosRegisterInstance = true;
+});
+````
+如果当前应用仅仅是调用其他微服务，本机不注册为微服务实例，则添加配置如下。
+````csharp
+services.AddSummerBoot();
+services.AddSummerBootFeign(it =>
+{
+		it.EnableNacos = true;
+});
+````
+### 6.3 定义调用微服务的接口
+主要是设置微服务的名称ServiceName，和MicroServiceMode设为true即可。url不用配置，剩下的就和正常的feign接口一样。
+
+````csharp
+[FeignClient( ServiceName = "test",MicroServiceMode = true)]
+public interface IFeignService
+{
+		[GetMapping("/home/index")]
+		Task<string> TestGet();
+}
 ````
 
 # SummerBoot中的人性化的设计

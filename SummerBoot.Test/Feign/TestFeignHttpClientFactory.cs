@@ -181,6 +181,29 @@ namespace SummerBoot.Test.Feign
                 }).With(it => it.Method == HttpMethod.Post).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("a", "a"), new KeyValuePair<string, string>("b", "b") })
                 .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
 
+            mockHttp.When("http://localhost:5001/home/testEmbedded").With(it =>
+                {
+                    //?Name=sb&Test={"Age":"3"}
+                    if (it.Method == HttpMethod.Get && it.RequestUri.Query == "?Name=sb&Test=%7B%22Age%22%3A%223%22%7D")
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .Respond("text/plain", "ok");
+
+            mockHttp.When("http://localhost:5001/home/testNotEmbedded").With(it =>
+                {
+                    if (it.Method == HttpMethod.Get && it.RequestUri.Query == "?Name=sb&Age=3")
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .Respond("text/plain", "ok");
+
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();
 

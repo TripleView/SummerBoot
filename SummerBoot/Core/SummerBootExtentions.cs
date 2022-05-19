@@ -14,8 +14,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Http;
 using SummerBoot.Feign.Attributes;
+using SummerBoot.Feign.Nacos;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Repository.Generator.Dialect;
 using SummerBoot.Repository.Generator.Dialect.Oracle;
@@ -123,7 +125,7 @@ namespace SummerBoot.Core
             {
                 services.AddScoped<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
                 services.AddScoped<IDatabaseInfo, SqlServerDatabaseInfo>();
-               
+
             }
             else if (option.IsOracle)
             {
@@ -139,13 +141,13 @@ namespace SummerBoot.Core
 
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
 
-            var autoRepositoryTypes=new List<Type>();
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it=>!it.IsDynamic).ToList();
+            var autoRepositoryTypes = new List<Type>();
+            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
             foreach (var assembly in allAssemblies)
             {
                 autoRepositoryTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<AutoRepositoryAttribute>() != null).ToList());
             }
-            
+
             foreach (var type in autoRepositoryTypes)
             {
                 repositoryProxyBuilder.InitInterface(type);
@@ -185,16 +187,32 @@ namespace SummerBoot.Core
             return services;
         }
 
-        public static IServiceCollection AddSummerBootFeign(this IServiceCollection services)
+        public static IServiceCollection AddSummerBootFeign(this IServiceCollection services, Action<FeignOption> action = null)
         {
+            var feignOption = new FeignOption();
+            if (action != null)
+            {
+                action(feignOption);
+            }
+
             services.AddHttpClient();
 
             services.TryAddTransient<IClient, IClient.DefaultFeignClient>();
             services.TryAddSingleton<IFeignEncoder, IFeignEncoder.DefaultEncoder>();
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
-            
+
             services.TryAddTransient<HttpService>();
+
+            services.AddSingleton<FeignOption>(it => feignOption);
             HttpHeaderSupport.Init();
+
+            if (feignOption.EnableNacos )
+            {
+                if (feignOption.NacosRegisterInstance)
+                {
+                    services.AddHostedService<NacosBackgroundService>();
+                }
+            }
 
             var feignProxyBuilder = new FeignProxyBuilder();
             var feignTypes = new List<Type>();
@@ -203,17 +221,17 @@ namespace SummerBoot.Core
             {
                 feignTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null).ToList());
             }
-            
+
             foreach (var type in feignTypes)
             {
                 feignProxyBuilder.InitInterface(type);
                 services.AddSummerBootFeignService(type, ServiceLifetime.Transient);
             }
-            services.TryAddSingleton<IFeignProxyBuilder>(it=> feignProxyBuilder);
+            services.TryAddSingleton<IFeignProxyBuilder>(it => feignProxyBuilder);
             return services;
         }
 
-        
+
         private static IServiceCollection AddSummerBootFeignService(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime)
         {
@@ -235,13 +253,13 @@ namespace SummerBoot.Core
             }
 
             //判断方法返回类型是不是task<>
-             foreach (var methodInfo in serviceType.GetMethods())
-             {
-                 if (!typeof(Task<>).IsAssignableFrom(methodInfo.ReturnType)&& !typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
-                 {
-                     throw new ArgumentException($"{methodInfo.Name} must return task<>");
-                 }
-             }
+            foreach (var methodInfo in serviceType.GetMethods())
+            {
+                if (!typeof(Task<>).IsAssignableFrom(methodInfo.ReturnType) && !typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
+                {
+                    throw new ArgumentException($"{methodInfo.Name} must return task<>");
+                }
+            }
 
             var fallBack = feignClient.FallBack;
             if (fallBack != null)
@@ -257,7 +275,7 @@ namespace SummerBoot.Core
             {
                 if (!feignClient.InterceptorType.GetInterfaces().Any(it => typeof(IRequestInterceptor) == it))
                 {
-                    throw new Exception($"{serviceType.FullName} must inherit from interface IRequestInterceptor"  );
+                    throw new Exception($"{serviceType.FullName} must inherit from interface IRequestInterceptor");
                 }
 
                 services.AddTransient(feignClient.InterceptorType);
@@ -265,7 +283,7 @@ namespace SummerBoot.Core
 
             var httpClient = services.AddHttpClient(feignClient.Name, it =>
             {
-                if (feignClient.Timeout!=0)
+                if (feignClient.Timeout != 0)
                 {
                     it.Timeout = TimeSpan.FromSeconds(feignClient.Timeout);
                 }
