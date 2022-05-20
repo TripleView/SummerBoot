@@ -133,7 +133,7 @@ namespace SummerBoot.Feign
             urlTemp = AddUrlParameter(urlTemp);
 
             requestTemplate.Url = ReplaceVariable(urlTemp);
-
+            Console.WriteLine("url:" + requestTemplate.Url);
             //如果存在拦截器，则进行拦截
             var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
 
@@ -186,20 +186,58 @@ namespace SummerBoot.Feign
             {
                 var nacosService = _serviceProvider.GetService<INacosService>();
                 var serviceName = feignClientAttribute.ServiceName;
+                serviceName = GetValueByConfiguration(serviceName);
+                if (serviceName.IsNullOrWhiteSpace())
+                {
+                    throw new ArgumentNullException("feignClientAttribute's ServiceName can not be null");
+                }
+                var namespaceId = feignClientAttribute.NacosNamespaceId;
+                namespaceId = GetValueByConfiguration(namespaceId).GetValueOrDefault("public");
+
+                var groupName = feignClientAttribute.NacosGroupName;
+                groupName = GetValueByConfiguration(groupName).GetValueOrDefault("DEFAULT_GROUP");
+
                 if (serviceName.HasText())
                 {
                     var serviceInstance = await nacosService.QueryInstanceList(new QueryInstanceListInputDto()
                     {
                         ServiceName = serviceName,
-                        HealthyOnly = true
+                        HealthyOnly = true,
+                        NamespaceId = namespaceId,
+                        GroupName = groupName
                     });
                     if (serviceInstance != null && serviceInstance.Hosts?.Count > 0)
                     {
-                        var host = serviceInstance.Hosts[0];
+                        var lbStrategy = configuration.GetSection("nacos:lbStrategy")?.Value;
+                        var tempHosts = new List<QueryInstanceListItemOutputDto>();
+                        //根据权重加权后进行随机
+                        if (lbStrategy == "WeightRandom")
+                        {
+                            foreach (var hostDto in serviceInstance.Hosts)
+                            {
+                                hostDto.Weight = hostDto.Weight == 0 ? 1 : hostDto.Weight;
+                                for (int i = 0; i < hostDto.Weight; i++)
+                                {
+                                    tempHosts.Add(hostDto);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            tempHosts = serviceInstance.Hosts;
+                        }
+                        //采用随机算法分配要请求的服务器
+                        Random random = new Random();
+                        int randomPos = random.Next(tempHosts.Count);
+                        var host = tempHosts[randomPos];
                         var protocol = "";
                         host.Metadata?.TryGetValue("protocol", out protocol);
                         protocol = protocol.GetValueOrDefault("http");
                         url = $"{protocol}://{host.Ip}:{host.Port}";
+                    }
+                    else
+                    {
+                        throw new Exception($"No instance of service named \"{serviceName}\" was found");
                     }
                 }
             }
@@ -564,11 +602,11 @@ namespace SummerBoot.Feign
                         }
                         else if (parameterType.IsClass)
                         {
-                           var keyValue= AddClassParameter(parameterType, arg, false, false);
-                           foreach (var keyValuePair in keyValue)
-                           {
-                               parameters.AddIfNotExist(keyValuePair.Key, keyValuePair.Value);
-                           }
+                            var keyValue = AddClassParameter(parameterType, arg, false, false);
+                            foreach (var keyValuePair in keyValue)
+                            {
+                                parameters.AddIfNotExist(keyValuePair.Key, keyValuePair.Value);
+                            }
                         }
 
                     }
@@ -589,7 +627,7 @@ namespace SummerBoot.Feign
         /// <param name="originEmbedded">初始是否嵌套</param>
         /// <param name="totalEmbedded">是否嵌套总开关，总开关关闭则全体不嵌套</param>
         /// <returns></returns>
-        private Dictionary<string, object> AddClassParameter(Type parameterType, object arg,  bool originEmbedded, bool totalEmbedded)
+        private Dictionary<string, object> AddClassParameter(Type parameterType, object arg, bool originEmbedded, bool totalEmbedded)
         {
             if (!totalEmbedded)
             {
@@ -636,7 +674,7 @@ namespace SummerBoot.Feign
                     else
                     {
                         var keyValue = AddClassParameter(propertyInfo.PropertyType, value, isEmbedded, totalEmbedded);
-                       
+
                         if (isEmbedded)
                         {
                             targetDictionary.AddIfNotExist(key, keyValue);

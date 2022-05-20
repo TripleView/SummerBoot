@@ -42,5 +42,13 @@ namespace SummerBoot.Feign.Attributes
         /// 微服务的名称
         /// </summary>
         public string ServiceName { get; set; }
+        /// <summary>
+        /// nacos的命名空间,非nacos可不填写
+        /// </summary>
+        public string NacosNamespaceId { get; set; }
+        /// <summary>
+        /// nacos的分组名称,非nacos可不填写
+        /// </summary>
+        public string NacosGroupName { get; set; }
     }
 }

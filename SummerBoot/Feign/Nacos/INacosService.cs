@@ -15,14 +15,19 @@ namespace SummerBoot.Feign.Nacos
         /// <returns></returns>
         [PostMapping("/nacos/v1/ns/instance")]
         Task<string> RegisterInstance([Query]NacosRegisterInstanceDto dto);
-
+        /// <summary>
+        /// 注销实例
+        /// </summary>
+        /// <returns></returns>
+        [DeleteMapping("/nacos/v1/ns/instance")]
+        Task<string> UnRegisterInstance([Query] NacosRegisterInstanceDto dto);
         /// <summary>
         /// 发送实例心跳
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
         [PutMapping("/nacos/v1/ns/instance/beat")]
-        Task<string> SendInstanceHeartBeat([Query] SendInstanceHeartBeatDto dto);
+        Task<SendInstanceHeartBeatOutputDto> SendInstanceHeartBeat([Query] SendInstanceHeartBeatDto dto);
 
         /// <summary>
         /// 查询实例列表

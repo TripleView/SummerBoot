@@ -61,6 +61,7 @@ net core 3.1,net 6
 		- [5.1方法里的普通参数](#51方法里的普通参数)
 		- [5.2方法里的特殊参数](#52方法里的特殊参数)
 			- [5.2.1参数添加Query注解](#521参数添加query注解)
+				- [5.2.1.1 Query注解搭配Embedded注解使用，可将Embedded注解的类当做整体加入参数](#5211-query注解搭配embedded注解使用可将embedded注解的类当做整体加入参数)
 			- [5.2.2参数添加Body(BodySerializationKind.Form)注解](#522参数添加bodybodyserializationkindform注解)
 			- [5.2.3参数添加Body(BodySerializationKind.Json)注解](#523参数添加bodybodyserializationkindjson注解)
 			- [5.2.4使用特殊类HeaderCollection作为方法参数，即可批量添加请求头](#524使用特殊类headercollection作为方法参数即可批量添加请求头)
@@ -70,7 +71,7 @@ net core 3.1,net 6
 			- [5.2.8使用类HttpResponseMessage作为方法返回类型，即可获得最原始的响应消息。](#528使用类httpresponsemessage作为方法返回类型即可获得最原始的响应消息)
 			- [5.2.9使用类Task作为方法返回类型，即无需返回值。](#529使用类task作为方法返回类型即无需返回值)
 	- [6. 微服务-接入nacos](#6-微服务-接入nacos)
-		- [6.1 添加nacos配置](#61-添加nacos配置)
+		- [6.1 配置文件里添加nacos配置](#61-配置文件里添加nacos配置)
 		- [6.2 在StartUp.cs中添加配置](#62-在startupcs中添加配置)
 		- [6.3 定义调用微服务的接口](#63-定义调用微服务的接口)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
@@ -550,6 +551,48 @@ await TestFeign.TestQuery("abc");
 await TestFeign.TestQueryWithClass(new Test() { Name = "abc", Age = 3 });
 >>> get, http://localhost:5001/home/TestQueryWithClass?Name=abc&Age=3
 ````
+##### 5.2.1.1 Query注解搭配Embedded注解使用，可将Embedded注解的类当做整体加入参数
+````csharp
+public class EmbeddedTest2
+{
+		public int Age { get; set; }
+}
+
+public class EmbeddedTest3
+{
+		public string Name { get; set; }
+		[Embedded]
+		public EmbeddedTest2 Test { get; set; }
+}
+
+[FeignClient(Url = "http://localhost:5001/home")]
+public interface ITestFeign
+{
+	      /// <summary>
+        /// 测试Embedded注解，表示参数是否内嵌，该测试嵌入
+        /// </summary>
+        /// <param name="tt"></param>
+        /// <returns></returns>
+        [GetMapping("/testEmbedded")]
+        Task<string> TestEmbedded([Query] EmbeddedTest3 tt);
+}
+    
+ await testFeign.TestEmbedded(new EmbeddedTest3()
+            {
+                Name = "sb",
+                Test = new EmbeddedTest2()
+                {
+                    Age = 3
+                }
+            });		
+
+>>> get, http://localhost:5001/home/testEmbedded?Name=sb&Test=%7B%22Age%22%3A%223%22%7D
+
+````
+如果没有Embedded注解，则请求变成
+````csharp
+>>> get, http://localhost:5001/home/testEmbedded?Name=sb&Age=3
+````
 
 #### 5.2.2参数添加Body(BodySerializationKind.Form)注解
 相当于模拟html里的form提交，参数值将被URL编码后，以key1=value1&key2=value2的方式添加到载荷（body）里。
@@ -705,50 +748,51 @@ await testFeign.Test();
 >>> get, http://localhost:5001/home/Test,忽略返回值
 ````
 ## 6. 微服务-接入nacos
-### 6.1 添加nacos配置
+### 6.1 配置文件里添加nacos配置
 在appsettings.json/appsettings.Development.json配置文件中添加配置
 ````json
-{
-  "nacos": {
+"nacos": {
+    //--------如果只是访问nacos中的微服务，则仅配置serviceAddress和lbStrategy即可。------
+
     //nacos服务地址，如http://172.16.189.242:8848
     "serviceAddress": "http://172.16.189.242:8848/",
+    //客户端负载均衡算法，一个服务下有多个实例，lbStrategy用来挑选服务下的实例，默认为Random(随机)，也可以选择WeightRandom(根据服务权重加权后再随机)
+    "lbStrategy": "Random",
+
+    //-------如果是要将本应用注册为服务实例，则全部参数均需配置--------------
+
+    //是否要把应用注册为服务实例
+    "registerInstance": true,
     //命名空间id，如832e754e-e845-47db-8acc-46ae3819b638或者public
-    "namespaceId": "public",
+    "namespaceId": "dfd8de72-e5ec-4595-91d4-49382f500edf",
     //要注册的服务名
     "serviceName": "test",
     //服务的分组名
     "groupName": "DEFAULT_GROUP",
-    //主机协议，http或https
+    //权重，一个服务下有多个实例，权重越高，访问到该实例的概率越大,比如有些实例所在的服务器配置高，那么权重就可以大一些，多引流到该实例，与上面的参数lbStrategy设置为WeightRandom搭配使用
+    "weight": 1,
+    //本应用对外的网络协议，http或https
     "protocol": "http",
-    //主机监听的端口号
-    "port": 5001
+    //本应用对外的端口号，比如5000
+    "port": 5000
   }
-}
 ````
 ### 6.2 在StartUp.cs中添加配置
-如果要把当前应用注册为微服务实例，则添加配置如下，那么本应用自动注册为微服务实例，并且服务名为配置的serviceName，其他微服务即可通过服务名调用本应用的接口。
+如果是把当前应用注册为微服务实例，那么到这一步就结束了，feign会自动根据配置文件里的配置将本应用注册为微服务实例。如果是本应用要调用微服务接口，请看6.3
 
 ````csharp
 services.AddSummerBoot();
 services.AddSummerBootFeign(it =>
 {
-		it.EnableNacos = true;
-		it.NacosRegisterInstance = true;
+		it.AddNacos(Configuration);
 });
 ````
-如果当前应用仅仅是调用其他微服务，本机不注册为微服务实例，则添加配置如下。
-````csharp
-services.AddSummerBoot();
-services.AddSummerBootFeign(it =>
-{
-		it.EnableNacos = true;
-});
-````
+
 ### 6.3 定义调用微服务的接口
-主要是设置微服务的名称ServiceName，和MicroServiceMode设为true即可。url不用配置，剩下的就和正常的feign接口一样。
+设置微服务的名称ServiceName，分组名称NacosGroupName(不填则默认DEFAULT_GROUP)，命名空间NacosNamespaceId(不填则默认public),以及MicroServiceMode设为true即可。url不用配置，剩下的就和正常的feign接口一样。
 
 ````csharp
-[FeignClient( ServiceName = "test",MicroServiceMode = true)]
+[FeignClient( ServiceName = "test", MicroServiceMode = true,NacosGroupName = "DEFAULT_GROUP", NacosNamespaceId = "dfd8de72-e5ec-4595-91d4-49382f500edf")]
 public interface IFeignService
 {
 		[GetMapping("/home/index")]

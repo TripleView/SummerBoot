@@ -206,9 +206,20 @@ namespace SummerBoot.Core
             services.AddSingleton<FeignOption>(it => feignOption);
             HttpHeaderSupport.Init();
 
-            if (feignOption.EnableNacos )
+            if (feignOption.EnableNacos)
             {
-                if (feignOption.NacosRegisterInstance)
+                if (feignOption.Configuration == null)
+                {
+                    throw new ArgumentNullException("AddNacos must add configuration");
+                }
+
+                var nacosConfiguration = feignOption.Configuration.GetSection("nacos");
+                services.Configure<NacosOption>(nacosConfiguration);
+                var registerInstance = false;
+                var registerInstanceString= nacosConfiguration.GetSection("registerInstance").Value;
+                bool.TryParse(registerInstanceString, out registerInstance);
+                
+                if (registerInstance)
                 {
                     services.AddHostedService<NacosBackgroundService>();
                 }
