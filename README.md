@@ -799,7 +799,22 @@ public interface IFeignService
 		Task<string> TestGet();
 }
 ````
-
+同时ServiceName，NacosGroupName，NacosNamespaceId也支持从配置文件中读取，如
+````json
+{
+	"ServiceName": "test",
+  "NacosGroupName": "DEFAULT_GROUP",
+  "NacosNamespaceId": "dfd8de72-e5ec-4595-91d4-49382f500edf"
+}
+````
+````csharp
+[FeignClient( ServiceName = "${ServiceName}", MicroServiceMode = true,NacosGroupName = "${NacosGroupName}", NacosNamespaceId = "${NacosNamespaceId}")]
+public interface IFeignService
+{
+		[GetMapping("/home/index")]
+		Task<string> TestGet();
+}
+````
 # SummerBoot中的人性化的设计
  1.先说一个net core mvc自带的功能，如果我们想要在appsettings.json里配置web应用的ip和port该怎么办？在appsettings.json里直接写
  ````
