@@ -26,5 +26,8 @@ namespace SummerBoot.Test.Sqlite.Db
         public DbSet<Customer> Customer { get; set; }
         public DbSet<OrderHeader> OrderHeader { get; set; }
         public DbSet<OrderDetail> OrderDetail { get; set; }
+
+        public DbSet<NullableTable> NullableTable { get; set; }
+        public DbSet<NotNullableTable> NotNullableTable { get; set; }
     }
 }

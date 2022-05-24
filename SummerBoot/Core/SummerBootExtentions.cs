@@ -21,6 +21,7 @@ using SummerBoot.Feign.Nacos;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Repository.Generator.Dialect;
 using SummerBoot.Repository.Generator.Dialect.Oracle;
+using SummerBoot.Repository.Generator.Dialect.Sqlite;
 using SummerBoot.Repository.Generator.Dialect.SqlServer;
 
 namespace SummerBoot.Core
@@ -136,6 +137,11 @@ namespace SummerBoot.Core
             {
                 services.AddScoped<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
                 services.AddScoped<IDatabaseInfo, MysqlDatabaseInfo>();
+            }
+            else if (option.IsSqlite)
+            {
+                services.AddScoped<IDatabaseFieldMapping, SqliteDatabaseFieldMapping>();
+                services.AddScoped<IDatabaseInfo, SqliteDatabaseInfo>();
             }
 
 

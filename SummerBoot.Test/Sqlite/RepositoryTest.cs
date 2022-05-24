@@ -10,7 +10,10 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using SummerBoot.Repository.Generator;
 using Xunit;
 
 namespace SummerBoot.Test.Sqlite
@@ -31,34 +34,235 @@ namespace SummerBoot.Test.Sqlite
     {
         private IServiceProvider serviceProvider;
 
+        [Fact, Order(11)]
+        public void TestGenerateCsharpClassByDatabaseInfo()
+        {
+            InitSqliteDatabase("Data Source=./TestGenerateCsharpClassByDatabaseInfo.db");
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
+            Assert.Equal(3, result.Count);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+            sb.AppendLine("namespace abc");
+            sb.AppendLine("{");
+            sb.AppendLine("   [Table(\"Customer\")]");
+            sb.AppendLine("   public class Customer");
+            sb.AppendLine("   {");
+            sb.AppendLine("      [Key]");
+            sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      public long Id { get; set; }");
+            sb.AppendLine("      [Column(\"Name\")]");
+            sb.AppendLine("      public string Name { get; set; }");
+            sb.AppendLine("      [Column(\"Age\")]");
+            sb.AppendLine("      public long Age { get; set; }");
+            sb.AppendLine("      [Column(\"CustomerNo\")]");
+            sb.AppendLine("      public string CustomerNo { get; set; }");
+            sb.AppendLine("      [Column(\"TotalConsumptionAmount\")]");
+            sb.AppendLine("      public string TotalConsumptionAmount { get; set; }");
+            sb.AppendLine("   }");
+            sb.AppendLine("}");
+            var exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0]);
+
+            sb.Clear();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+            sb.AppendLine("namespace abc");
+            sb.AppendLine("{");
+            sb.AppendLine("   [Table(\"NullableTable\")]");
+            sb.AppendLine("   public class NullableTable");
+            sb.AppendLine("   {");
+            sb.AppendLine("      [Key]");
+            sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      public long Id { get; set; }");
+            sb.AppendLine("      [Column(\"Int2\")]");
+            sb.AppendLine("      public long? Int2 { get; set; }");
+            sb.AppendLine("      [Column(\"Long2\")]");
+            sb.AppendLine("      public long? Long2 { get; set; }");
+            sb.AppendLine("      [Column(\"Float2\")]");
+            sb.AppendLine("      public double? Float2 { get; set; }");
+            sb.AppendLine("      [Column(\"Double2\")]");
+            sb.AppendLine("      public double? Double2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal2\")]");
+            sb.AppendLine("      public string Decimal2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal3\")]");
+            sb.AppendLine("      public string Decimal3 { get; set; }");
+            sb.AppendLine("      [Column(\"Guid2\")]");
+            sb.AppendLine("      public string Guid2 { get; set; }");
+            sb.AppendLine("      [Column(\"Short2\")]");
+            sb.AppendLine("      public long? Short2 { get; set; }");
+            sb.AppendLine("      [Column(\"DateTime2\")]");
+            sb.AppendLine("      public string DateTime2 { get; set; }");
+            sb.AppendLine("      [Column(\"Bool2\")]");
+            sb.AppendLine("      public long? Bool2 { get; set; }");
+            sb.AppendLine("      [Column(\"TimeSpan2\")]");
+            sb.AppendLine("      public string TimeSpan2 { get; set; }");
+            sb.AppendLine("      [Column(\"Byte2\")]");
+            sb.AppendLine("      public long? Byte2 { get; set; }");
+            sb.AppendLine("      [Column(\"String2\")]");
+            sb.AppendLine("      public string String2 { get; set; }");
+            sb.AppendLine("      [Column(\"String3\")]");
+            sb.AppendLine("      public string String3 { get; set; }");
+            sb.AppendLine("   }");
+            sb.AppendLine("}");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[1]);
+
+            sb.Clear();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations;");
+            sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+            sb.AppendLine("namespace abc");
+            sb.AppendLine("{");
+            sb.AppendLine("   [Table(\"NotNullableTable\")]");
+            sb.AppendLine("   public class NotNullableTable");
+            sb.AppendLine("   {");
+            sb.AppendLine("      [Key]");
+            sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      public long Id { get; set; }");
+            sb.AppendLine("      [Column(\"Int2\")]");
+            sb.AppendLine("      public long Int2 { get; set; }");
+            sb.AppendLine("      [Column(\"Long2\")]");
+            sb.AppendLine("      public long Long2 { get; set; }");
+            sb.AppendLine("      [Column(\"Float2\")]");
+            sb.AppendLine("      public double Float2 { get; set; }");
+            sb.AppendLine("      [Column(\"Double2\")]");
+            sb.AppendLine("      public double Double2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal2\")]");
+            sb.AppendLine("      public string Decimal2 { get; set; }");
+            sb.AppendLine("      [Column(\"Decimal3\")]");
+            sb.AppendLine("      public string Decimal3 { get; set; }");
+            sb.AppendLine("      [Column(\"Guid2\")]");
+            sb.AppendLine("      public string Guid2 { get; set; }");
+            sb.AppendLine("      [Column(\"Short2\")]");
+            sb.AppendLine("      public long Short2 { get; set; }");
+            sb.AppendLine("      [Column(\"DateTime2\")]");
+            sb.AppendLine("      public string DateTime2 { get; set; }");
+            sb.AppendLine("      [Column(\"Bool2\")]");
+            sb.AppendLine("      public long Bool2 { get; set; }");
+            sb.AppendLine("      [Column(\"TimeSpan2\")]");
+            sb.AppendLine("      public string TimeSpan2 { get; set; }");
+            sb.AppendLine("      [Column(\"Byte2\")]");
+            sb.AppendLine("      public long Byte2 { get; set; }");
+            sb.AppendLine("      [Column(\"String2\")]");
+            sb.AppendLine("      public string String2 { get; set; }");
+            sb.AppendLine("      [Column(\"String3\")]");
+            sb.AppendLine("      public string String3 { get; set; }");
+            sb.AppendLine("   }");
+            sb.AppendLine("}");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[2]);
+        }
+
+        /// <summary>
+        /// 测试根据c#类生成数据库表
+        /// </summary>
+        [Fact, Order(12)]
+        public void TestGenerateDatabaseTableByCsharpClass()
+        {
+
+            InitSqliteDatabase("Data Source=./TestGenerateDatabaseTableByCsharpClass.db");
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
+            Assert.Equal(2, result.Count());
+            var sb = new StringBuilder();
+            sb.AppendLine("CREATE TABLE \"NullableTable2\" (");
+            sb.AppendLine("    \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,");
+            sb.AppendLine("    \"Int2\" INTEGER NULL,");
+            sb.AppendLine("    \"Long2\" INTEGER NULL,");
+            sb.AppendLine("    \"Float2\" REAL NULL,");
+            sb.AppendLine("    \"Double2\" REAL NULL,");
+            sb.AppendLine("    \"Decimal2\" TEXT NULL,");
+            sb.AppendLine("    \"Decimal3\" TEXT NULL,");
+            sb.AppendLine("    \"Guid2\" TEXT NULL,");
+            sb.AppendLine("    \"Short2\" INTEGER NULL,");
+            sb.AppendLine("    \"DateTime2\" TEXT NULL,");
+            sb.AppendLine("    \"Bool2\" INTEGER NULL,");
+            sb.AppendLine("    \"TimeSpan2\" TEXT NULL,");
+            sb.AppendLine("    \"Byte2\" INTEGER NULL,");
+            sb.AppendLine("    \"String2\" TEXT NULL,");
+            sb.AppendLine("    \"String3\" TEXT NULL");
+            sb.AppendLine(")");
+            var exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
+
+            Assert.Equal(0, result[0].Descriptions.Count);
+
+            //dbGenerator.ExecuteGenerateSql(result[0]);
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE \"NotNullableTable2\" (");
+            sb.AppendLine("    \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,");
+            sb.AppendLine("    \"Int2\" INTEGER NOT NULL,");
+            sb.AppendLine("    \"Long2\" INTEGER NOT NULL,");
+            sb.AppendLine("    \"Float2\" REAL NOT NULL,");
+            sb.AppendLine("    \"Double2\" REAL NOT NULL,");
+            sb.AppendLine("    \"Decimal2\" TEXT NOT NULL,");
+            sb.AppendLine("    \"Decimal3\" TEXT NOT NULL,");
+            sb.AppendLine("    \"Guid2\" TEXT NOT NULL,");
+            sb.AppendLine("    \"Short2\" INTEGER NOT NULL,");
+            sb.AppendLine("    \"DateTime2\" TEXT NOT NULL,");
+            sb.AppendLine("    \"Bool2\" INTEGER NOT NULL,");
+            sb.AppendLine("    \"TimeSpan2\" TEXT NOT NULL,");
+            sb.AppendLine("    \"Byte2\" INTEGER NOT NULL,");
+            sb.AppendLine("    \"String2\" TEXT NOT NULL,");
+            sb.AppendLine("    \"String3\" TEXT NOT NULL");
+            sb.AppendLine(")");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[1].Body);
+
+            sb.Clear();
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable3) });
+            Assert.Equal(1, result.Count());
+            Assert.Equal(0, result[0].Descriptions.Count);
+            Assert.Equal(1, result[0].FieldModifySqls.Count);
+            Assert.Equal("ALTER TABLE NullableTable ADD \"int3\" INTEGER NULL", result[0].FieldModifySqls[0]);
+
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
+            Assert.Equal(1, result.Count());
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE \"SpecifiedMapTestTable\" (");
+            sb.AppendLine("    \"NormalTxt\" TEXT NULL,");
+            sb.AppendLine("    \"SpecifiedTxt\" real NULL");
+            sb.AppendLine(")");
+            exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
+        }
+
+
         [Fact,Order(10)]
         public void TestSqlite()
         {
-            InitSqliteDatabase("Data Source=./testDb.db");
+            InitSqliteDatabase("Data Source=./TestSqlite.db");
             TestRepository();
         }
 
         [Fact, Order(2)]
         public async Task TestSqliteAsync()
         {
-            InitSqliteDatabase("Data Source=./testAsyncDb.db");
+            InitSqliteDatabase("Data Source=./TestSqliteAsync.db");
             await TestRepositoryAsync();
         }
 
-        private void InitSqliteDatabase(string connectionString)
+        private void InitServices(string databaseString)
         {
-            //初始化数据库
-            using (var database = new SqliteDb(connectionString))    //新增
-            {
-                database.Database.EnsureDeleted();
-                database.Database.EnsureCreated();
-            }
-
             var services = new ServiceCollection();
 
             services.AddSummerBoot();
 
-            if (string.IsNullOrWhiteSpace(connectionString))
+            if (string.IsNullOrWhiteSpace(databaseString))
             {
                 throw new ArgumentNullException("sqlite connectionString must not be null");
             }
@@ -66,11 +270,23 @@ namespace SummerBoot.Test.Sqlite
             services.AddSummerBootRepository(it =>
             {
                 it.DbConnectionType = typeof(SQLiteConnection);
-                it.ConnectionString = connectionString;
+                it.ConnectionString = databaseString;
             });
 
             serviceProvider = services.BuildServiceProvider();
             serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+        }
+
+        private void InitSqliteDatabase(string databaseString)
+        {
+            //初始化数据库
+            using (var database = new SqliteDb(databaseString))    //新增
+            {
+                database.Database.EnsureDeleted();
+                database.Database.EnsureCreated();
+            }
+
+            InitServices(databaseString);
         }
 
         public async Task TestRepositoryAsync()

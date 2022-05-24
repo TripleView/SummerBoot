@@ -247,7 +247,11 @@ namespace SummerBoot.Repository.Generator
                     if (dbTableInfo.Description.IsNullOrEmpty() && tableDescription.HasText())
                     {
                         var newTableDescriptionSql = databaseInfo.CreateTableDescription(schema, tableName, tableDescription);
-                        item.Descriptions.Add(newTableDescriptionSql);
+                        if (newTableDescriptionSql.HasText())
+                        {
+                            item.Descriptions.Add(newTableDescriptionSql);
+                        }
+                        
                     }
                     foreach (var fieldInfo in fieldInfos)
                     {
@@ -260,7 +264,11 @@ namespace SummerBoot.Repository.Generator
                             if (fieldInfo.Description.HasText())
                             {
                                 var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo);
-                                item.Descriptions.Add(createFieldDescriptionSql);
+                                if (createFieldDescriptionSql.HasText())
+                                {
+                                    item.Descriptions.Add(createFieldDescriptionSql);
+                                }
+                                
                             }
                         }
                     }
