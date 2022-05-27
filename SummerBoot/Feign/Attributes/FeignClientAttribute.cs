@@ -13,7 +13,12 @@ namespace SummerBoot.Feign.Attributes
         /// <summary>
         /// 名称
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get;private set; }
+
+        public void SetName(string name)
+        {
+            this.Name = name;
+        }
         /// <summary>
         /// url地址
         /// </summary>

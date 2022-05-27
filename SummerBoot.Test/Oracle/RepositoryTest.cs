@@ -22,6 +22,57 @@ namespace SummerBoot.Test.Oracle
     {
         private IServiceProvider serviceProvider;
 
+        /// <summary>
+        /// ≤‚ ‘◊÷∂Œ”≥…‰
+        /// </summary>
+        [Fact, Order(14)]
+        public void TestTypeHandler()
+        {
+            InitOracleDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var testTypeHandlerTableRepository = serviceProvider.GetService<ITestTypeHandlerTableRepository>();
+            var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(TestTypeHandlerTable) });
+            foreach (var generateDatabaseSqlResult in sqls)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
+            Guid guid = Guid.NewGuid();
+
+            testTypeHandlerTableRepository.Insert(new TestTypeHandlerTable() { BoolColumn = true, Name = "true", NullableBoolColumn = true, GuidColumn = guid, NullableGuidColumn = guid });
+            var testTypeHandlerTableTrue = testTypeHandlerTableRepository.FirstOrDefault(it => it.Name == "true");
+            Assert.Equal(true, testTypeHandlerTableTrue.BoolColumn);
+            Assert.Equal(true, testTypeHandlerTableTrue.NullableBoolColumn);
+            Assert.Equal(guid, testTypeHandlerTableTrue.GuidColumn);
+            Assert.Equal(guid, testTypeHandlerTableTrue.NullableGuidColumn);
+            testTypeHandlerTableRepository.Insert(new TestTypeHandlerTable() { BoolColumn = false, Name = "false", NullableBoolColumn = false });
+            var testTypeHandlerTableFalse = testTypeHandlerTableRepository.FirstOrDefault(it => it.Name == "false");
+            Assert.Equal(false, testTypeHandlerTableFalse.BoolColumn);
+            Assert.Equal(false, testTypeHandlerTableFalse.NullableBoolColumn);
+            Assert.Equal(Guid.Empty, testTypeHandlerTableFalse.GuidColumn);
+            Assert.Equal(null, testTypeHandlerTableFalse.NullableGuidColumn);
+            testTypeHandlerTableRepository.Insert(new TestTypeHandlerTable() { BoolColumn = false, Name = "falseAndNull", NullableBoolColumn = null, GuidColumn = guid, NullableGuidColumn = null });
+            var testTypeHandlerTableFalseAndNull = testTypeHandlerTableRepository.FirstOrDefault(it => it.Name == "falseAndNull");
+            Assert.Equal(false, testTypeHandlerTableFalseAndNull.BoolColumn);
+            Assert.Equal(null, testTypeHandlerTableFalseAndNull.NullableBoolColumn);
+            Assert.Equal(guid, testTypeHandlerTableFalseAndNull.GuidColumn);
+            Assert.Equal(null, testTypeHandlerTableFalseAndNull.NullableGuidColumn);
+        }
+
+        /// <summary>
+        /// ≤‚ ‘±Ì√˚◊÷∂Œ√˚”≥…‰
+        /// </summary>
+        [Fact, Order(13)]
+        public void TestTableColumnMap()
+        {
+            InitOracleDatabase();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var tableColumnMapRepository = serviceProvider.GetService<ITableColumnMapRepository>();
+            customerRepository.Insert(new Customer() { Name = "sb" });
+            var customer = tableColumnMapRepository.FirstOrDefault(it => it.CustomerName == "sb");
+            Assert.NotNull(customer);
+            Assert.Equal("sb", customer.CustomerName);
+        }
+
         [Fact, Order(11)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
@@ -273,20 +324,20 @@ namespace SummerBoot.Test.Oracle
             InitService();
         }
 
-        [Fact,Order(3)]
+        [Fact, Order(3)]
         public void TestOracle()
         {
             InitOracleDatabase();
             TestRepository();
         }
 
-        [Fact,Order(2)]
+        [Fact, Order(2)]
         public async Task TestOracleAsync()
         {
             InitOracleDatabase();
             await TestRepositoryAsync();
         }
-       
+
 
         private void InitService()
         {
@@ -456,7 +507,7 @@ namespace SummerBoot.Test.Oracle
 
             Assert.Equal(94, newCount2);
             //Test delete 
-            var newCount3 = await customerRepository.DeleteAsync(it=>it.Age>5);
+            var newCount3 = await customerRepository.DeleteAsync(it => it.Age > 5);
             Assert.Equal(94, newCount3);
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
@@ -474,14 +525,14 @@ namespace SummerBoot.Test.Oracle
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
-            customerRepository.Where(it=>it.Name == "testCustomer")
-                .SetValue(it=>it.Age,5)
-                .SetValue(it=>it.TotalConsumptionAmount,100)
+            customerRepository.Where(it => it.Name == "testCustomer")
+                .SetValue(it => it.Age, 5)
+                .SetValue(it => it.TotalConsumptionAmount, 100)
                 .ExecuteUpdate();
 
-            var age5Customers= customerRepository.Where(it => it.Name == "testCustomer").ToList();
+            var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single(age5Customers);
-            Assert.Equal(5,age5Customers[0].Age);
+            Assert.Equal(5, age5Customers[0].Age);
             Assert.Equal(100, age5Customers[0].TotalConsumptionAmount);
 
             var orderHeader = new OrderHeader
@@ -612,7 +663,7 @@ namespace SummerBoot.Test.Oracle
             //Test delete 
             var newCount3 = customerRepository.Delete(it => it.Age > 5);
             Assert.Equal(94, newCount3);
-            customerRepository.Delete(it=>it.Age>5);
+            customerRepository.Delete(it => it.Age > 5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
         }

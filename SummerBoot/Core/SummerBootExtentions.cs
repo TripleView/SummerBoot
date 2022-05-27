@@ -9,11 +9,13 @@ using SummerBoot.Repository;
 using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Http;
 using SummerBoot.Feign.Attributes;
@@ -23,6 +25,8 @@ using SummerBoot.Repository.Generator.Dialect;
 using SummerBoot.Repository.Generator.Dialect.Oracle;
 using SummerBoot.Repository.Generator.Dialect.Sqlite;
 using SummerBoot.Repository.Generator.Dialect.SqlServer;
+using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
+using Guid = System.Guid;
 
 namespace SummerBoot.Core
 {
@@ -132,6 +136,7 @@ namespace SummerBoot.Core
             {
                 services.AddScoped<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
                 services.AddScoped<IDatabaseInfo, OracleDatabaseInfo>();
+                
             }
             else if (option.IsMysql)
             {
@@ -156,6 +161,16 @@ namespace SummerBoot.Core
 
             foreach (var type in autoRepositoryTypes)
             {
+                
+                var baseRepositoryType = type.GetInterfaces().FirstOrDefault(it =>
+                    it.IsGenericType && it.GetGenericTypeDefinition() == typeof(IBaseRepository<>));
+                if (baseRepositoryType == null)
+                {
+                    continue;
+                }
+
+                //注册dapper映射
+                RegisterDapperTypeMapTAndHandler(baseRepositoryType,option);
                 repositoryProxyBuilder.InitInterface(type);
                 services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
             }
@@ -163,6 +178,33 @@ namespace SummerBoot.Core
             services.TryAddSingleton<IRepositoryProxyBuilder>(it => repositoryProxyBuilder);
 
             return services;
+        }
+
+        /// <summary>
+        /// 注册dapper类型映射和类型处理程序
+        /// </summary>
+        /// <param name="baseRepositoryType"></param>
+        private static void RegisterDapperTypeMapTAndHandler(Type baseRepositoryType,RepositoryOption repositoryOption)
+        {
+            var entityType = baseRepositoryType.GetGenericArguments()[0];
+
+            var map = new CustomPropertyTypeMap(entityType, (type, columnName)
+                =>
+            {
+                return type.GetProperties().FirstOrDefault(prop =>
+                    (prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name).ToLower() == columnName.ToLower());
+            });
+
+            //oracle
+            if (repositoryOption.IsOracle)
+            {
+                SqlMapper.RemoveTypeMap(typeof(bool));
+                SqlMapper.AddTypeHandler(typeof(bool),new BoolNumericTypeHandler());
+                SqlMapper.RemoveTypeMap(typeof(Guid));
+                SqlMapper.AddTypeHandler(typeof(Guid), new GuidRaw16TypeHandler());
+            }
+
+            Dapper.SqlMapper.SetTypeMap(entityType, map);
         }
 
         private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
@@ -285,7 +327,9 @@ namespace SummerBoot.Core
                 services.AddTransient(serviceType, fallBack);
             }
 
-            feignClient.Name = feignClient.Name.GetValueOrDefault(serviceType.FullName);
+            var name = feignClient.Name.GetValueOrDefault(serviceType.FullName);
+            feignClient.SetName(name);
+           
 
 
             if (feignClient.InterceptorType != null)

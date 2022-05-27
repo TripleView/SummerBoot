@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Repository.Generator;
 using SummerBoot.Test.Sqlite.Db;
 using SummerBoot.Test.Sqlite.Models;
 using SummerBoot.Test.Sqlite.Repository;
@@ -9,11 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using SummerBoot.Repository.Generator;
 using Xunit;
 
 namespace SummerBoot.Test.Sqlite
@@ -33,6 +31,21 @@ namespace SummerBoot.Test.Sqlite
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// ≤‚ ‘±Ì√˚◊÷∂Œ√˚”≥…‰
+        /// </summary>
+        [Fact, Order(13)]
+        public void TestTableColumnMap()
+        {
+            InitSqliteDatabase("Data Source=./TestTableColumnMap.db");
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var tableColumnMapRepository = serviceProvider.GetService<ITableColumnMapRepository>();
+            customerRepository.Insert(new Customer() { Name = "sb" });
+            var customer = tableColumnMapRepository.FirstOrDefault(it => it.CustomerName == "sb");
+            Assert.NotNull(customer);
+            Assert.Equal("sb", customer.CustomerName);
+        }
 
         [Fact, Order(11)]
         public void TestGenerateCsharpClassByDatabaseInfo()

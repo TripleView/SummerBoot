@@ -32,7 +32,16 @@ net core 3.1,net 6
 - [SummerBoot中操作数据库](#summerboot中操作数据库)
 	- [准备工作](#准备工作)
 	- [1.首先在startup.cs类中注册服务](#1首先在startupcs类中注册服务)
-	- [2.定义一个数据库实体类](#2定义一个数据库实体类)
+	- [2.根据数据库表自动生成实体类，或根据实体类自动生成数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成数据库表)
+		- [2.1 根据实体类自动生成数据库表](#21-根据实体类自动生成数据库表)
+			- [2.1.1 定义一个数据库实体类](#211-定义一个数据库实体类)
+			- [2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成ddl的sql](#212-注入idbgenerator接口调用generatesql方法生成ddl的sql)
+				- [2.1.2.1 如果数据库中不存在该表名的表](#2121-如果数据库中不存在该表名的表)
+				- [2.1.2.2 如果数据库中已存在该表名的表](#2122-如果数据库中已存在该表名的表)
+				- [2.1.2.3 可以选择执行这些sql](#2123-可以选择执行这些sql)
+			- [2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射](#212-自定义实体类字段到数据库字段的类型映射或名称映射)
+		- [2.2 根据数据库表自动生成实体类](#22-根据数据库表自动生成实体类)
+			- [2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本](#221-注入idbgenerator接口调用generatecsharpclass方法生成c类的文本)
 	- [3.定义接口，并继承于IBaseRepository，同时在接口上添加AutoRepository注解表示让框架自动注册并生成实现类](#3定义接口并继承于ibaserepository同时在接口上添加autorepository注解表示让框架自动注册并生成实现类)
 	- [4.增删改查操作，均支持异步同步](#4增删改查操作均支持异步同步)
 		- [4.1 查](#41-查)
@@ -88,12 +97,13 @@ services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
 {
+	//以下为必填参数
 	//注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
 	it.DbConnectionType = typeof(SqliteConnection);
 	//添加数据库连接字符串
 	it.ConnectionString = "Data source=./mydb.db";
 
-	//以下为可选操作
+	//以下为可选参数
 	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
 	it.AutoUpdateLastUpdateOn = true;
 	//插入的时候自动添加创建时间，使用utc时间
@@ -107,16 +117,15 @@ services.AddSummerBootRepository(it =>
 });
 
 ````
-## 2.定义一个数据库实体类
-其中注解大部分来自于系统自带的命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
+## 2.根据数据库表自动生成实体类，或根据实体类自动生成数据库表
+### 2.1 根据实体类自动生成数据库表
+#### 2.1.1 定义一个数据库实体类
+其中注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
 同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
 
 ```` csharp
 public class Customer:BaseEntity
 {
-    [Key,DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { set; get; }
-
     public string Name { set; get; }
     
     public int Age { set; get; } = 0;
@@ -131,6 +140,122 @@ public class Customer:BaseEntity
     /// </summary>
     public decimal TotalConsumptionAmount { set; get; }
 }
+````
+#### 2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成ddl的sql
+```` csharp
+public class TestController : Controller
+{
+		private readonly IDbGenerator dbGenerator;
+
+		public TestController(IDbGenerator dbGenerator)
+		{
+				this.dbGenerator = dbGenerator;
+		}
+
+		[HttpGet("GenerateSql")]
+		public async Task<IActionResult> GenerateSql()
+		{
+				var generateSqls = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
+				return Content("ok");
+		}
+}
+````
+##### 2.1.2.1 如果数据库中不存在该表名的表
+这里以mysql为例，生成的sql如下:
+````sql
+CREATE TABLE Customer (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` text NULL ,
+    `Age` int NOT NULL ,
+    `CustomerNo` text NULL ,
+    `TotalConsumptionAmount` decimal(18,2) NOT NULL ,
+    `LastUpdateOn` datetime NULL ,
+    `LastUpdateBy` text NULL ,
+    `CreateOn` datetime NULL ,
+    `CreateBy` text NULL ,
+    `Active` int NULL ,
+    PRIMARY KEY (`Id`)
+)
+````
+##### 2.1.2.2 如果数据库中已存在该表名的表
+那么生成的sql为,新增字段的sql或者更新注释的sql，为了避免数据丢失，不会有删除字段的sql，这里以Customer表举例，如果刚开始没有继承BaseEntity，生成了表，后来继承BaseEntity了，那么此时生成的sql为
+
+````sql
+ALTER TABLE Customer ADD `LastUpdateOn` datetime NULL 
+ALTER TABLE Customer ADD `LastUpdateBy` text NULL 
+ALTER TABLE Customer ADD `CreateOn` datetime NULL 
+ALTER TABLE Customer ADD `CreateBy` text NULL 
+ALTER TABLE Customer ADD `Active` int NULL 
+````
+##### 2.1.2.3 可以选择执行这些sql
+把生成sql和执行sql分成2部分操作，对于日常而言是更方便的，我们可以快速拿到要执行的sql，进行检查，确认没问题后，可以保存下来，在正式发布应用时，留给dba审查。执行sql的代码如下
+```` csharp
+var generateSqls = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
+foreach (var sqlResult in generateSqls)
+{
+	dbGenerator.ExecuteGenerateSql(sqlResult);
+}
+````
+#### 2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射
+这里统一使用
+
+
+### 2.2 根据数据库表自动生成实体类
+#### 2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本
+参数为数据库表名的集合和生成的实体类的命名空间
+```` csharp
+public class TestController : Controller
+{
+		private readonly IDbGenerator dbGenerator;
+
+		public TestController(IDbGenerator dbGenerator)
+		{
+				this.dbGenerator = dbGenerator;
+		}
+
+		[HttpGet("GenerateClass")]
+		public async Task<IActionResult> GenerateClass()
+		{
+				var generateClasses = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer" },"Test.Model");
+				return Content("ok");
+		}
+}
+````
+生成的c#实体类如下,新建一个类文件并把文本黏贴进去即可
+```` csharp
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+namespace Test.Model
+{
+   [Table("Customer")]
+   public class Customer
+   {
+      [Key]
+      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+      [Column("Id")]
+      public int Id { get; set; }
+      [Column("Name")]
+      public string Name { get; set; }
+      [Column("Age")]
+      public int Age { get; set; }
+      [Column("CustomerNo")]
+      public string CustomerNo { get; set; }
+      [Column("TotalConsumptionAmount")]
+      public decimal TotalConsumptionAmount { get; set; }
+      [Column("LastUpdateOn")]
+      public DateTime? LastUpdateOn { get; set; }
+      [Column("LastUpdateBy")]
+      public string LastUpdateBy { get; set; }
+      [Column("CreateOn")]
+      public DateTime? CreateOn { get; set; }
+      [Column("CreateBy")]
+      public string CreateBy { get; set; }
+      [Column("Active")]
+      public int? Active { get; set; }
+   }
+}
+
 ````
 
 ## 3.定义接口，并继承于IBaseRepository，同时在接口上添加AutoRepository注解表示让框架自动注册并生成实现类
@@ -352,7 +477,7 @@ services.AddSummerBoot();
 services.AddSummerBootFeign();
 ````
 ## 2.定义接口
- 定义一个接口，并且在接口上添加FeignClient注解，FeignClient注解里可以自定义接口名称-Name，http接口url的公共部分-url（整个接口请求的url由FeignClient里的url加上方法里的path组成）,是否忽略远程接口的https证书校验-IsIgnoreHttpsCertificateValidate,接口超时时间-Timeout（单位s），自定义拦截器-InterceptorType。
+ 定义一个接口，并且在接口上添加FeignClient注解，FeignClient注解里可以自定义http接口url的公共部分-url（整个接口请求的url由FeignClient里的url加上方法里的path组成）,是否忽略远程接口的https证书校验-IsIgnoreHttpsCertificateValidate,接口超时时间-Timeout（单位s），自定义拦截器-InterceptorType。
 
 ````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]

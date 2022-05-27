@@ -270,6 +270,12 @@ namespace SummerBoot.Repository.Generator
                                 }
                                 
                             }
+                            //添加约束
+                            if (fieldInfo.IsKey)
+                            {
+                                //var createconStraintSql = databaseInfo.CreateconStraint(schema, tableName, fieldInfo);
+                                //item.FieldModifySqls.Add(createconStraintSql);
+                            }
                         }
                     }
                     result.Add(item);

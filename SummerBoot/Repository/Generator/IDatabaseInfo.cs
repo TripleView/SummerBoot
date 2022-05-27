@@ -49,5 +49,13 @@ namespace SummerBoot.Repository.Generator
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
         string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
+        /// <summary>
+        /// 创建索引
+        /// </summary>
+        /// <param name="schema"></param>
+        /// <param name="tableName"></param>
+        /// <param name="fieldInfo"></param>
+        /// <returns></returns>
+        //string CreateIndex(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
     }
 }

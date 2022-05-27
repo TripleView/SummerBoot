@@ -490,7 +490,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             if (!keyColumnExpression.Any())
             {
-                throw new Exception("请设置主键");
+                throw new Exception("Please set the primary key");
             }
 
             var middleList = new List<string>();

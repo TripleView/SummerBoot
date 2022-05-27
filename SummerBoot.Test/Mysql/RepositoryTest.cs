@@ -24,6 +24,21 @@ namespace SummerBoot.Test.Mysql
     {
         private IServiceProvider serviceProvider;
 
+        /// <summary>
+        /// ≤‚ ‘±Ì√˚◊÷∂Œ√˚”≥…‰
+        /// </summary>
+        [Fact, Order(13)]
+        public void TestTableColumnMap()
+        {
+            InitDatabase();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var tableColumnMapRepository = serviceProvider.GetService<ITableColumnMapRepository>();
+            customerRepository.Insert(new Customer() { Name = "sb" });
+            var customer = tableColumnMapRepository.FirstOrDefault(it => it.CustomerName == "sb");
+            Assert.NotNull(customer);
+            Assert.Equal("sb", customer.CustomerName);
+        }
+
         [Fact, Order(11)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {

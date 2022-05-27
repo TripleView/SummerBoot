@@ -23,7 +23,20 @@ namespace SummerBoot.Test.SqlServer
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
-
+        /// <summary>
+        /// ≤‚ ‘±Ì√˚◊÷∂Œ√˚”≥…‰
+        /// </summary>
+        [Fact, Order(13)]
+        public void TestTableColumnMap()
+        {
+            InitDatabase();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var tableColumnMapRepository = serviceProvider.GetService<ITableColumnMapRepository>();
+            customerRepository.Insert(new Customer() { Name = "sb" });
+            var customer = tableColumnMapRepository.FirstOrDefault(it => it.CustomerName == "sb");
+            Assert.NotNull(customer);
+            Assert.Equal("sb",customer.CustomerName);
+        }
         [Fact, Order(11)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
@@ -255,6 +268,8 @@ namespace SummerBoot.Test.SqlServer
                 , result[0].Body);
         }
 
+       
+
         [Fact,Order(10)]
         public void TestSqlServer()
         {
@@ -475,6 +490,7 @@ namespace SummerBoot.Test.SqlServer
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
             var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
+            
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
