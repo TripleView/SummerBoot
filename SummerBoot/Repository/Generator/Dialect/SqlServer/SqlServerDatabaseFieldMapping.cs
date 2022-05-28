@@ -17,7 +17,7 @@ namespace SummerBoot.Repository.Generator.Dialect
             {"Byte[]","binary"},
             {"Double","float"},
             {"Int16","smallint"},
-            {"TimeSpan","time"},
+            {"TimeSpan","bigint"},
             {"Guid","uniqueidentifier"},
             {"Byte","tinyint"},
             {"Single","real"},

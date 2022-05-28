@@ -450,6 +450,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             foreach (var column in table.Columns)
             {
+                if (column.IsKey && column.IsDatabaseGeneratedIdentity)
+                {
+                    continue;
+                }
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;

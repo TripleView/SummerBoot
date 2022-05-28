@@ -420,6 +420,12 @@ namespace SummerBoot.Feign
                 {
                     pairValue = encoder.EncoderObject(pair.Value);
                 }
+
+                if (pairValue.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
                 var value = Uri.EscapeDataString(pairValue);
                 var urlPair = $"{pair.Key}={value}";
                 valueList.Add(urlPair);

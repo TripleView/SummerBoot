@@ -1,11 +1,19 @@
 ﻿
+using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SummerBoot.Core.MvcExtension;
 using SummerBoot.Feign;
+using SummerBoot.Feign.Attributes;
+using SummerBoot.Feign.Nacos;
 using SummerBoot.Repository;
+using SummerBoot.Repository.Generator;
+using SummerBoot.Repository.Generator.Dialect;
+using SummerBoot.Repository.Generator.Dialect.Oracle;
+using SummerBoot.Repository.Generator.Dialect.Sqlite;
+using SummerBoot.Repository.Generator.Dialect.SqlServer;
+using SummerBoot.Repository.TypeHandler;
 using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
@@ -15,17 +23,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using Dapper;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Http;
-using SummerBoot.Feign.Attributes;
-using SummerBoot.Feign.Nacos;
-using SummerBoot.Repository.Generator;
-using SummerBoot.Repository.Generator.Dialect;
-using SummerBoot.Repository.Generator.Dialect.Oracle;
-using SummerBoot.Repository.Generator.Dialect.Sqlite;
-using SummerBoot.Repository.Generator.Dialect.SqlServer;
 using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
+using SummerBoot.Repository.TypeHandler.Dialect.Sqlite;
+using SummerBoot.Repository.TypeHandler.Dialect.SqlServer;
 using Guid = System.Guid;
 
 namespace SummerBoot.Core
@@ -125,28 +125,29 @@ namespace SummerBoot.Core
             services.AddScoped(typeof(BaseRepository<>));
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
             services.AddScoped<RepositoryService>();
-            services.AddScoped<IDbGenerator, DbGenerator>();
+
+            services.AddTransient<IDbGenerator, DbGenerator>();
             if (option.IsSqlServer)
             {
-                services.AddScoped<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
-                services.AddScoped<IDatabaseInfo, SqlServerDatabaseInfo>();
+                services.AddTransient<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
+                services.AddTransient<IDatabaseInfo, SqlServerDatabaseInfo>();
 
             }
             else if (option.IsOracle)
             {
-                services.AddScoped<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
-                services.AddScoped<IDatabaseInfo, OracleDatabaseInfo>();
+                services.AddTransient<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
+                services.AddTransient<IDatabaseInfo, OracleDatabaseInfo>();
                 
             }
             else if (option.IsMysql)
             {
-                services.AddScoped<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
-                services.AddScoped<IDatabaseInfo, MysqlDatabaseInfo>();
+                services.AddTransient<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
+                services.AddTransient<IDatabaseInfo, MysqlDatabaseInfo>();
             }
             else if (option.IsSqlite)
             {
-                services.AddScoped<IDatabaseFieldMapping, SqliteDatabaseFieldMapping>();
-                services.AddScoped<IDatabaseInfo, SqliteDatabaseInfo>();
+                services.AddTransient<IDatabaseFieldMapping, SqliteDatabaseFieldMapping>();
+                services.AddTransient<IDatabaseInfo, SqliteDatabaseInfo>();
             }
 
 
@@ -196,13 +197,30 @@ namespace SummerBoot.Core
             });
 
             //oracle
-            if (repositoryOption.IsOracle)
+            if (repositoryOption.IsOracle||repositoryOption.IsMysql)
             {
-                SqlMapper.RemoveTypeMap(typeof(bool));
-                SqlMapper.AddTypeHandler(typeof(bool),new BoolNumericTypeHandler());
                 SqlMapper.RemoveTypeMap(typeof(Guid));
-                SqlMapper.AddTypeHandler(typeof(Guid), new GuidRaw16TypeHandler());
+                SqlMapper.AddTypeHandler(typeof(Guid), new GuidTypeHandler());
+                if (repositoryOption.IsOracle)
+                {
+                    SqlMapper.RemoveTypeMap(typeof(bool));
+                    SqlMapper.AddTypeHandler(typeof(bool), new BoolNumericTypeHandler());
+                }
             }
+
+            if (repositoryOption.IsSqlite)
+            {
+                SqlMapper.RemoveTypeMap(typeof(Guid));
+                SqlMapper.AddTypeHandler(typeof(Guid), new SqliteGuidTypeHandler());
+                SqlMapper.RemoveTypeMap(typeof(TimeSpan));
+                SqlMapper.AddTypeHandler(typeof(TimeSpan), new SqliteTimeSpanTypeHandler());
+            }
+            if (repositoryOption.IsSqlServer)
+            {
+                SqlMapper.RemoveTypeMap(typeof(TimeSpan));
+                SqlMapper.AddTypeHandler(typeof(TimeSpan), new SqlServerTimeSpanTypeHandler());
+            }
+            
 
             Dapper.SqlMapper.SetTypeMap(entityType, map);
         }

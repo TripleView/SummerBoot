@@ -1,5 +1,5 @@
-﻿using Dapper;
-using System.Data;
+﻿using System.Data;
+using Dapper;
 
 namespace SummerBoot.Repository.TypeHandler.Dialect.Oracle
 {
@@ -10,6 +10,14 @@ namespace SummerBoot.Repository.TypeHandler.Dialect.Oracle
     {
         public override bool Parse(object value)
         {
+            if ( value is bool boolValue)
+            {
+                return boolValue;
+            }else if (value is string boolString)
+            {
+                return boolString.ToLower() == "true";
+            }
+
             int.TryParse(value?.ToString(), out int result);
             return result > 0;
         }

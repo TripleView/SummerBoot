@@ -25,9 +25,90 @@ namespace SummerBoot.Test.Mysql
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试根据实体类创建数据库表和进行插入查询对照
+        /// </summary>
+        [Fact, Order(106)]
+        public void TestCreateTableFromEntityAndCrud()
+        {
+            InitDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
+            var sqls= dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
+            foreach (var sql in sqls)
+            {
+                dbGenerator.ExecuteGenerateSql(sql);
+            }
+
+            var now = DateTime.Now;
+            var entity = new NullableTable2()
+            {
+                Bool2 = true,
+                Byte2 = 1,
+                DateTime2 =now,
+                Decimal2 = 1,
+                Decimal3 = 1,
+                Double2 = 1,
+                Float2 = 1,
+                Guid2 = Guid.NewGuid(),
+                Int2 = 1,
+                Long2 = 1,
+                Short2 = 1,
+                String2 = "sb",
+                String3 = "sb",
+                TimeSpan2 = TimeSpan.FromDays(1)
+            };
+            nullableTable2Repository.Insert(entity);
+
+            var dbEntity = nullableTable2Repository.FirstOrDefault(it => it.String2 == "sb");
+
+            CompareTwoNullable(entity,dbEntity);
+
+            var entity2 = new NullableTable2()
+            {
+                Bool2 = null,
+                Byte2 = null,
+                DateTime2 = null,
+                Decimal2 = null,
+                Decimal3 = null,
+                Double2 = null,
+                Float2 = null,
+                Guid2 = null,
+                Int2 = null,
+                Long2 = null,
+                Short2 = null,
+                String2 = "sb2",
+                String3 = null,
+                TimeSpan2 = null
+            };
+            nullableTable2Repository.Insert(entity2);
+
+            var dbEntity2 = nullableTable2Repository.FirstOrDefault(it => it.String2 == "sb2");
+
+            CompareTwoNullable(entity2, dbEntity2);
+        }
+
+        private void CompareTwoNullable(NullableTable2 entity, NullableTable2 dbEntity)
+        {
+            Assert.NotNull(dbEntity);
+            Assert.Equal(entity.Bool2, dbEntity.Bool2);
+            Assert.Equal(entity.Byte2, dbEntity.Byte2);
+            Assert.True((dbEntity.DateTime2.GetValueOrDefault() - entity.DateTime2.GetValueOrDefault()).TotalSeconds < 2);
+            Assert.Equal(entity.Decimal2, dbEntity.Decimal2);
+            Assert.Equal(entity.Decimal3, dbEntity.Decimal3);
+            Assert.Equal(entity.Double2, dbEntity.Double2);
+            Assert.Equal(entity.Guid2, dbEntity.Guid2);
+            Assert.Equal(entity.Int2, dbEntity.Int2);
+            Assert.Equal(entity.Long2, dbEntity.Long2);
+            Assert.Equal(entity.Short2, dbEntity.Short2);
+            Assert.Equal(entity.String2, dbEntity.String2);
+            Assert.Equal(entity.String3, dbEntity.String3);
+            Assert.Equal(entity.TimeSpan2, dbEntity.TimeSpan2);
+        }
+
+        /// <summary>
         /// 测试表名字段名映射
         /// </summary>
-        [Fact, Order(13)]
+        [Fact, Order(105)]
         public void TestTableColumnMap()
         {
             InitDatabase();
@@ -39,7 +120,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal("sb", customer.CustomerName);
         }
 
-        [Fact, Order(11)]
+        [Fact, Order(104)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
@@ -191,7 +272,7 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试根据c#类生成数据库表
         /// </summary>
-        [Fact, Order(12)]
+        [Fact, Order(103)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
 
@@ -272,7 +353,7 @@ namespace SummerBoot.Test.Mysql
                 , result[0].Body);
         }
 
-        [Fact,Order(10)]
+        [Fact,Order(102)]
         public void TestMysql()
         {
             InitDatabase();
@@ -280,7 +361,7 @@ namespace SummerBoot.Test.Mysql
          
         }
 
-        [Fact, Order(2)]
+        [Fact, Order(101)]
         public async Task TestMysqlAsync()
         {
             InitDatabase();

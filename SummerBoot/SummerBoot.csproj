@@ -45,6 +45,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Polly" Version="7.2.3" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Repository\TypeHandler\Dialect\Mysql\" />
+    <Folder Include="Repository\TypeHandler\Dialect\SqlServer\" />
+  </ItemGroup>
   
 
 

@@ -2,12 +2,12 @@
 using System.Data;
 using Dapper;
 
-namespace SummerBoot.Repository.TypeHandler.Dialect.Oracle
+namespace SummerBoot.Repository.TypeHandler
 {
     /// <summary>
-    /// Conversion between <see cref="Guid"/> and RAW(16) Oracle data type 
+    /// Conversion between <see cref="Guid"/> and byte array data type 
     /// </summary>
-    public class GuidRaw16TypeHandler : SqlMapper.TypeHandler<Guid>
+    public class GuidTypeHandler : SqlMapper.TypeHandler<Guid>
     {
         public override void SetValue(IDbDataParameter parameter, Guid value)
         {

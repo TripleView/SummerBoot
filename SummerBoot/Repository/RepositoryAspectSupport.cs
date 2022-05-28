@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace SummerBoot.Repository
 {
@@ -35,12 +36,15 @@ namespace SummerBoot.Repository
         /// </summary>
         private RepositoryOption repositoryOption;
 
+        private IConfiguration configuration;
+
         private void Init()
         {
             //先获得工作单元和数据库工厂以及序列化器
             uow = ServiceProvider.GetService<IUnitOfWork>();
             dbFactory = ServiceProvider.GetService<IDbFactory>();
             repositoryOption = ServiceProvider.GetService<RepositoryOption>();
+            configuration = ServiceProvider.GetService<IConfiguration>();
             parameterDictionary.Clear();
             pageable = null;
         }
@@ -59,6 +63,42 @@ namespace SummerBoot.Repository
                 dbConnection.Dispose();
             }
         }
+
+        /// <summary>
+        /// 通过配置文件获取具体的值
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private string GetValueByConfiguration(string value)
+        {
+            if (value.IsNullOrWhiteSpace())
+            {
+                return value;
+            }
+            var str = Regex.Replace(value, "\\$\\{[^\\}]*\\}", match =>
+            {
+                var matchValue = match.Value;
+                if (matchValue.Length >= 3)
+                {
+                    if (matchValue.Substring(0, 2) == "${")
+                    {
+                        matchValue = matchValue.Substring(2);
+                    }
+                    if (matchValue.Substring(matchValue.Length - 1, 1) == "}")
+                    {
+                        matchValue = matchValue.Substring(0, matchValue.Length - 1);
+                    }
+
+                    matchValue = matchValue.Trim();
+                    matchValue = configuration.GetSection(matchValue).Value;
+                    return matchValue;
+                }
+                return "";
+
+            }, RegexOptions.Compiled);
+            return str;
+        }
+
 
         public Page<T> PageBaseExecute<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {

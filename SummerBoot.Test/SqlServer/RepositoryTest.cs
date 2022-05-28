@@ -24,9 +24,91 @@ namespace SummerBoot.Test.SqlServer
     {
         private IServiceProvider serviceProvider;
         /// <summary>
+        /// 测试根据实体类创建数据库表和进行插入查询对照
+        /// </summary>
+        [Fact, Order(406)]
+        public void TestCreateTableFromEntityAndCrud()
+        {
+            InitDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
+            var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
+            foreach (var sql in sqls)
+            {
+                dbGenerator.ExecuteGenerateSql(sql);
+            }
+
+            var now = DateTime.Now;
+            var entity = new NullableTable2()
+            {
+                Bool2 = true,
+                Byte2 = 1,
+                DateTime2 = now,
+                Decimal2 = 1,
+                Decimal3 = 1,
+                Double2 = 1,
+                Float2 = 1,
+                Guid2 = Guid.NewGuid(),
+                Int2 = 1,
+                Long2 = 1,
+                Short2 = 1,
+                String2 = "sb",
+                String3 = "sb",
+                TimeSpan2 = TimeSpan.FromDays(1)
+            };
+            nullableTable2Repository.Insert(entity);
+
+            var dbEntity = nullableTable2Repository.FirstOrDefault(it => it.String2 == "sb");
+
+            CompareTwoNullable(entity, dbEntity);
+
+            var entity2 = new NullableTable2()
+            {
+                Bool2 = null,
+                Byte2 = null,
+                DateTime2 = null,
+                Decimal2 = null,
+                Decimal3 = null,
+                Double2 = null,
+                Float2 = null,
+                Guid2 = null,
+                Int2 = null,
+                Long2 = null,
+                Short2 = null,
+                String2 = "sb2",
+                String3 = null,
+                TimeSpan2 = null
+            };
+            nullableTable2Repository.Insert(entity2);
+
+            var dbEntity2 = nullableTable2Repository.FirstOrDefault(it => it.String2 == "sb2");
+
+            CompareTwoNullable(entity2, dbEntity2);
+        }
+
+        private void CompareTwoNullable(NullableTable2 entity, NullableTable2 dbEntity)
+        {
+            Assert.NotNull(dbEntity);
+            Assert.Equal(entity.Bool2, dbEntity.Bool2);
+            Assert.Equal(entity.Byte2, dbEntity.Byte2);
+            Assert.True((dbEntity.DateTime2.GetValueOrDefault() - entity.DateTime2.GetValueOrDefault()).TotalSeconds < 2);
+            Assert.Equal(entity.Decimal2, dbEntity.Decimal2);
+            Assert.Equal(entity.Decimal3, dbEntity.Decimal3);
+            Assert.Equal(entity.Double2, dbEntity.Double2);
+            Assert.Equal(entity.Guid2, dbEntity.Guid2);
+            Assert.Equal(entity.Int2, dbEntity.Int2);
+            Assert.Equal(entity.Long2, dbEntity.Long2);
+            Assert.Equal(entity.Short2, dbEntity.Short2);
+            Assert.Equal(entity.String2, dbEntity.String2);
+            Assert.Equal(entity.String3, dbEntity.String3);
+            Assert.Equal(entity.TimeSpan2, dbEntity.TimeSpan2);
+        }
+
+
+        /// <summary>
         /// 测试表名字段名映射
         /// </summary>
-        [Fact, Order(13)]
+        [Fact, Order(405)]
         public void TestTableColumnMap()
         {
             InitDatabase();
@@ -37,7 +119,7 @@ namespace SummerBoot.Test.SqlServer
             Assert.NotNull(customer);
             Assert.Equal("sb",customer.CustomerName);
         }
-        [Fact, Order(11)]
+        [Fact, Order(404)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
@@ -188,7 +270,7 @@ namespace SummerBoot.Test.SqlServer
         /// <summary>
         /// 测试根据c#类生成数据库表
         /// </summary>
-        [Fact, Order(12)]
+        [Fact, Order(403)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
             
@@ -209,7 +291,7 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Short2] smallint  NULL,");
             sb.AppendLine("    [DateTime2] datetime2  NULL,");
             sb.AppendLine("    [Bool2] bit  NULL,");
-            sb.AppendLine("    [TimeSpan2] time  NULL,");
+            sb.AppendLine("    [TimeSpan2] bigint  NULL,");
             sb.AppendLine("    [Byte2] tinyint  NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NULL,");
@@ -238,7 +320,7 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Short2] smallint  NOT NULL,");
             sb.AppendLine("    [DateTime2] datetime2  NOT NULL,");
             sb.AppendLine("    [Bool2] bit  NOT NULL,");
-            sb.AppendLine("    [TimeSpan2] time  NOT NULL,");
+            sb.AppendLine("    [TimeSpan2] bigint  NOT NULL,");
             sb.AppendLine("    [Byte2] tinyint  NOT NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NOT NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NOT NULL,");
@@ -270,7 +352,7 @@ namespace SummerBoot.Test.SqlServer
 
        
 
-        [Fact,Order(10)]
+        [Fact,Order(402)]
         public void TestSqlServer()
         {
             InitDatabase();
@@ -278,7 +360,7 @@ namespace SummerBoot.Test.SqlServer
          
         }
 
-        [Fact, Order(2)]
+        [Fact, Order(401)]
         public async Task TestSqlServerAsync()
         {
             InitDatabase();
@@ -292,6 +374,25 @@ namespace SummerBoot.Test.SqlServer
             {
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
+                //var entity = new NullableTable()
+                //{
+                //    Bool2 = true,
+                //    Byte2 = 1,
+                //    DateTime2 = DateTime.Now,
+                //    Decimal2 = 1,
+                //    Decimal3 = 1,
+                //    Double2 = 1,
+                //    Float2 = 1,
+                //    Guid2 = Guid.NewGuid(),
+                //    Int2 = 1,
+                //    Long2 = 1,
+                //    Short2 = 1,
+                //    String2 = "sb",
+                //    String3 = "sb",
+                //    TimeSpan2 = TimeSpan.FromDays(1)
+                //};
+                //database.NullableTable.Add(entity);
+                //database.SaveChanges();
             }
 
             InitService();
