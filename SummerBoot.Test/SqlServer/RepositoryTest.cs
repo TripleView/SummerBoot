@@ -20,6 +20,7 @@ using Xunit.Priority;
 
 namespace SummerBoot.Test.SqlServer
 {
+    [Collection("test")]
     [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {

@@ -133,7 +133,6 @@ namespace SummerBoot.Feign
             urlTemp = AddUrlParameter(urlTemp);
 
             requestTemplate.Url = ReplaceVariable(urlTemp);
-            Console.WriteLine("url:" + requestTemplate.Url);
             //如果存在拦截器，则进行拦截
             var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
 

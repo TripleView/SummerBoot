@@ -18,6 +18,7 @@ using Xunit.Priority;
 
 namespace SummerBoot.Test.Oracle
 {
+    [Collection("test")]
     [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {
@@ -30,6 +31,7 @@ namespace SummerBoot.Test.Oracle
         public void TestCreateTableFromEntityAndCrud()
         {
             InitOracleDatabase();
+            
             var dbGenerator = serviceProvider.GetService<IDbGenerator>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });

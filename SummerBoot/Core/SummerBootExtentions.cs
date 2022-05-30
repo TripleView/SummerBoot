@@ -201,6 +201,8 @@ namespace SummerBoot.Core
             {
                 SqlMapper.RemoveTypeMap(typeof(Guid));
                 SqlMapper.AddTypeHandler(typeof(Guid), new GuidTypeHandler());
+                SqlMapper.RemoveTypeMap(typeof(TimeSpan));
+                SqlMapper.AddTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
                 if (repositoryOption.IsOracle)
                 {
                     SqlMapper.RemoveTypeMap(typeof(bool));

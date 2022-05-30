@@ -28,6 +28,7 @@ namespace SummerBoot.Test.Sqlite
 
     }
 
+    [Collection("test")]
     [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {

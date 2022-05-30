@@ -20,6 +20,7 @@ using Xunit.Priority;
 
 namespace SummerBoot.Test.Mysql
 {
+    [Collection("test")]
     [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {
@@ -28,6 +29,7 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
+       
         [Fact, Priority(106)]
         public void TestCreateTableFromEntityAndCrud()
         {
