@@ -16,10 +16,11 @@ using Microsoft.EntityFrameworkCore;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using Xunit;
+using Xunit.Priority;
 
 namespace SummerBoot.Test.Mysql
 {
-    [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
+    [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
@@ -27,7 +28,7 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
-        [Fact, Order(106)]
+        [Fact, Priority(106)]
         public void TestCreateTableFromEntityAndCrud()
         {
             InitDatabase();
@@ -55,7 +56,7 @@ namespace SummerBoot.Test.Mysql
                 Short2 = 1,
                 String2 = "sb",
                 String3 = "sb",
-                TimeSpan2 = TimeSpan.FromDays(1)
+                TimeSpan2 = TimeSpan.FromHours(1)
             };
             nullableTable2Repository.Insert(entity);
 
@@ -108,7 +109,7 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试表名字段名映射
         /// </summary>
-        [Fact, Order(105)]
+        [Fact, Priority(105)]
         public void TestTableColumnMap()
         {
             InitDatabase();
@@ -120,7 +121,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal("sb", customer.CustomerName);
         }
 
-        [Fact, Order(104)]
+        [Fact, Priority(104)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
@@ -272,7 +273,7 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试根据c#类生成数据库表
         /// </summary>
-        [Fact, Order(103)]
+        [Fact, Priority(103)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
 
@@ -353,7 +354,7 @@ namespace SummerBoot.Test.Mysql
                 , result[0].Body);
         }
 
-        [Fact,Order(102)]
+        [Fact, Priority(102)]
         public void TestMysql()
         {
             InitDatabase();
@@ -361,7 +362,7 @@ namespace SummerBoot.Test.Mysql
          
         }
 
-        [Fact, Order(101)]
+        [Fact, Priority(101)]
         public async Task TestMysqlAsync()
         {
             InitDatabase();

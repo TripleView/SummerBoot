@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Priority;
 
 namespace SummerBoot.Test.Sqlite
 {
@@ -27,7 +28,7 @@ namespace SummerBoot.Test.Sqlite
 
     }
 
-    [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
+    [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
@@ -35,7 +36,7 @@ namespace SummerBoot.Test.Sqlite
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
-        [Fact, Order(306)]
+        [Fact, Priority(306)]
         public void TestCreateTableFromEntityAndCrud()
         {
             InitSqliteDatabase("Data Source=./TestCreateTableFromEntityAndCrud.db");
@@ -116,7 +117,7 @@ namespace SummerBoot.Test.Sqlite
         /// <summary>
         /// 测试表名字段名映射
         /// </summary>
-        [Fact, Order(305)]
+        [Fact, Priority(305)]
         public void TestTableColumnMap()
         {
             InitSqliteDatabase("Data Source=./TestTableColumnMap.db");
@@ -128,7 +129,7 @@ namespace SummerBoot.Test.Sqlite
             Assert.Equal("sb", customer.CustomerName);
         }
 
-        [Fact, Order(304)]
+        [Fact, Priority(304)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitSqliteDatabase("Data Source=./TestGenerateCsharpClassByDatabaseInfo.db");
@@ -261,7 +262,7 @@ namespace SummerBoot.Test.Sqlite
         /// <summary>
         /// 测试根据c#类生成数据库表
         /// </summary>
-        [Fact, Order(303)]
+        [Fact, Priority(303)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
 
@@ -336,14 +337,14 @@ namespace SummerBoot.Test.Sqlite
         }
 
 
-        [Fact,Order(302)]
+        [Fact, Priority(302)]
         public void TestSqlite()
         {
             InitSqliteDatabase("Data Source=./TestSqlite.db");
             TestRepository();
         }
 
-        [Fact, Order(301)]
+        [Fact, Priority(301)]
         public async Task TestSqliteAsync()
         {
             InitSqliteDatabase("Data Source=./TestSqliteAsync.db");

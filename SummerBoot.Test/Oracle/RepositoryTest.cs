@@ -14,10 +14,11 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SummerBoot.Repository.Generator;
 using Xunit;
+using Xunit.Priority;
 
 namespace SummerBoot.Test.Oracle
 {
-    [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
+    [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
@@ -25,7 +26,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
-        [Fact, Order(207)]
+        [Fact, Priority(207)]
         public void TestCreateTableFromEntityAndCrud()
         {
             InitOracleDatabase();
@@ -107,7 +108,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试字段映射
         /// </summary>
-        [Fact, Order(206)]
+        [Fact, Priority(206)]
         public void TestTypeHandler()
         {
             InitOracleDatabase();
@@ -143,7 +144,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试表名字段名映射
         /// </summary>
-        [Fact, Order(205)]
+        [Fact, Priority(205)]
         public void TestTableColumnMap()
         {
             InitOracleDatabase();
@@ -155,7 +156,7 @@ namespace SummerBoot.Test.Oracle
             Assert.Equal("sb", customer.CustomerName);
         }
 
-        [Fact, Order(204)]
+        [Fact, Priority(204)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitOracleDatabase();
@@ -303,7 +304,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试根据c#类生成数据库表
         /// </summary>
-        [Fact, Order(203)]
+        [Fact, Priority(203)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
             InitOracleDatabase();
@@ -406,14 +407,14 @@ namespace SummerBoot.Test.Oracle
             InitService();
         }
 
-        [Fact, Order(202)]
+        [Fact, Priority(202)]
         public void TestOracle()
         {
             InitOracleDatabase();
             TestRepository();
         }
 
-        [Fact, Order(201)]
+        [Fact, Priority(201)]
         public async Task TestOracleAsync()
         {
             InitOracleDatabase();

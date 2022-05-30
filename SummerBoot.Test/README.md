@@ -1,1 +1,1 @@
-复制app.json.default为app.json文件，然后打开，在里面添加oracle，sqlserver和mysql的数据库链接，即可开启单元测试。
+复制app.json.default为app.json文件，然后打开，修改里面的oracle，sqlserver和mysql的数据库链接，添加nacos的服务器地址，即可开启单元测试。注意，oracle数据库和mysql数据库要不区分大小写，否则一些单元测试会失败。

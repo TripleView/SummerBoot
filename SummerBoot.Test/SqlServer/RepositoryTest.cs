@@ -16,17 +16,18 @@ using Microsoft.EntityFrameworkCore;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using Xunit;
+using Xunit.Priority;
 
 namespace SummerBoot.Test.SqlServer
 {
-    [TestCaseOrderer("SummerBoot.Test.PriorityOrderer", "SummerBoot.Test")]
+    [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
-        [Fact, Order(406)]
+        [Fact, Priority(406)]
         public void TestCreateTableFromEntityAndCrud()
         {
             InitDatabase();
@@ -108,7 +109,7 @@ namespace SummerBoot.Test.SqlServer
         /// <summary>
         /// 测试表名字段名映射
         /// </summary>
-        [Fact, Order(405)]
+        [Fact, Priority(405)]
         public void TestTableColumnMap()
         {
             InitDatabase();
@@ -119,7 +120,7 @@ namespace SummerBoot.Test.SqlServer
             Assert.NotNull(customer);
             Assert.Equal("sb",customer.CustomerName);
         }
-        [Fact, Order(404)]
+        [Fact, Priority(404)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
@@ -270,7 +271,7 @@ namespace SummerBoot.Test.SqlServer
         /// <summary>
         /// 测试根据c#类生成数据库表
         /// </summary>
-        [Fact, Order(403)]
+        [Fact, Priority(403)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
             
@@ -352,7 +353,7 @@ namespace SummerBoot.Test.SqlServer
 
        
 
-        [Fact,Order(402)]
+        [Fact, Priority(402)]
         public void TestSqlServer()
         {
             InitDatabase();
@@ -360,7 +361,7 @@ namespace SummerBoot.Test.SqlServer
          
         }
 
-        [Fact, Order(401)]
+        [Fact, Priority(401)]
         public async Task TestSqlServerAsync()
         {
             InitDatabase();

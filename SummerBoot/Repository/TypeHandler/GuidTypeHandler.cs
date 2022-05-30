@@ -16,6 +16,10 @@ namespace SummerBoot.Repository.TypeHandler
 
         public override Guid Parse(object value)
         {
+            if (value is Guid guidValue)
+            {
+                return guidValue;
+            }
             if (value is byte[] bytearray)
             {
                 return new Guid(bytearray);
