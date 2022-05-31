@@ -25,6 +25,66 @@ namespace SummerBoot.Test.SqlServer
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+        
+         /// <summary>
+        /// 测试带命名空间的情况和新增主键
+        /// </summary>
+        [Fact, Priority(107)]
+        public void TestTableSchemaAndAddPrimaryKey()
+        {
+            InitDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
+            var sb = new StringBuilder();
+
+            var result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema) });
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE test.[CustomerWithSchema] (");
+            sb.AppendLine("    [Name] nvarchar(max)  NULL,");
+            sb.AppendLine("    [Age] int  NOT NULL,");
+            sb.AppendLine("    [CustomerNo] nvarchar(max)  NULL,");
+            sb.AppendLine("    [TotalConsumptionAmount] decimal(18,2)  NOT NULL");
+            sb.AppendLine(")");
+            var exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema2) });
+            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `Id` int NOT NULL PRIMARY KEY AUTO_INCREMENT", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `LastUpdateOn` datetime NULL ", result[0].FieldModifySqls[1]);
+            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `LastUpdateBy` text NULL ", result[0].FieldModifySqls[2]);
+            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `CreateOn` datetime NULL ", result[0].FieldModifySqls[3]);
+            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `CreateBy` text NULL ", result[0].FieldModifySqls[4]);
+            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `Active` int NULL ", result[0].FieldModifySqls[5]);
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
+
+            var entity = new CustomerWithSchema2()
+            {
+                Name = "sb",
+                Age = 3
+            };
+            customerWithSchema2Repository.Insert(entity);
+
+            var customerWithSchema2 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb");
+            Assert.NotNull(customerWithSchema2);
+            Assert.Equal("sb", customerWithSchema2.Name);
+            customerWithSchema2.Name = "sb3";
+            customerWithSchema2Repository.Update(customerWithSchema2);
+            var customerWithSchema3 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
+            Assert.NotNull(customerWithSchema3);
+            Assert.Equal("sb3", customerWithSchema3.Name);
+            customerWithSchema2Repository.Delete(it => it.Name == "sb3");
+            var customerWithSchema4 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
+            Assert.Null(customerWithSchema4);
+        }
+        
+        
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
@@ -281,7 +341,7 @@ namespace SummerBoot.Test.SqlServer
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
-            sb.AppendLine("CREATE TABLE NullableTable2 (");
+            sb.AppendLine("CREATE TABLE dbo.[NullableTable2] (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
             sb.AppendLine("    [Int2] int  NULL,");
             sb.AppendLine("    [Long2] bigint  NULL,");
@@ -310,7 +370,7 @@ namespace SummerBoot.Test.SqlServer
             //dbGenerator.ExecuteGenerateSql(result[0]);
 
             sb.Clear();
-            sb.AppendLine("CREATE TABLE NotNullableTable2 (");
+            sb.AppendLine("CREATE TABLE dbo.[NotNullableTable2] (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
             sb.AppendLine("    [Int2] int  NOT NULL,");
             sb.AppendLine("    [Long2] bigint  NOT NULL,");
@@ -338,12 +398,12 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(1, result[0].Descriptions.Count);
             Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'test add column', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'int3'", result[0].Descriptions[0]);
             Assert.Equal(1, result[0].FieldModifySqls.Count);
-            Assert.Equal("ALTER TABLE NullableTable ADD [int3] int  NULL", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE dbo.[NullableTable] ADD [int3] int  NULL", result[0].FieldModifySqls[0]);
 
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
             Assert.Equal(1, result.Count());
             sb.Clear();
-            sb.AppendLine("CREATE TABLE SpecifiedMapTestTable (");
+            sb.AppendLine("CREATE TABLE dbo.[SpecifiedMapTestTable] (");
             sb.AppendLine("    [NormalTxt] nvarchar(max)  NULL,");
             sb.AppendLine("    [SpecifiedTxt] text  NULL");
             sb.AppendLine(")");
@@ -374,8 +434,39 @@ namespace SummerBoot.Test.SqlServer
             //初始化数据库
             using (var database = new SqlServerDb())    //新增
             {
+              
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
+                try
+                {
+                    database.Database.ExecuteSqlRaw(
+                        "drop TABLE TEST1.[CUSTOMERWITHSCHEMA]");
+                }
+                catch (Exception e)
+                {
+                   
+                }
+              
+              
+                try
+                {
+                    database.Database.ExecuteSqlRaw(
+                        "CREATE USER test FOR LOGIN test;");
+                }
+                catch (Exception e)
+                {
+                   
+                }
+                try
+                {
+                   
+                    database.Database.ExecuteSqlRaw(
+                        "CREATE SCHEMA test AUTHORIZATION test");
+                }
+                catch (Exception e)
+                {
+                   
+                }
                 //var entity = new NullableTable()
                 //{
                 //    Bool2 = true,

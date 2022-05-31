@@ -9,3 +9,34 @@ alter user TEST1 quota unlimited on users;
 ````
 ## mysql
 mysql数据库不区分大小写
+
+## sqlserver 
+ALTER ROLE [test] ADD MEMBER [test]
+
+CREATE LOGIN test WITH PASSWORD = 'pass@123';
+CREATE USER test FOR LOGIN test;
+
+
+CREATE SCHEMA test AUTHORIZATION test;
+
+CREATE TABLE test.NineProngs (source int, cost int, partnumber int)
+
+ALTER SERVER ROLE  [dbcreator]  ADD MEMBER [test];
+
+CREATE USER test FOR LOGIN test;
+
+select * from sys.sysusers s
+
+drop schema test
+
+drop user test
+drop LOGIN test
+
+CREATE SCHEMA test AUTHORIZATION test
+
+
+Select sp.name as LoginName, sp.type_desc as LoginType,
+dp.name as DBUser, dp.type_desc as UserType
+from sys.server_principals sp
+join sys.database_principals dp on dp.sid = sp.sid
+where sp.name = 'test' -- your login

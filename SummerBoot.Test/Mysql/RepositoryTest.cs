@@ -184,7 +184,7 @@ namespace SummerBoot.Test.Mysql
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
-            //InitService();
+           
             var dbGenerator = serviceProvider.GetService<IDbGenerator>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
             Assert.Equal(3, result.Count);
@@ -341,7 +341,7 @@ namespace SummerBoot.Test.Mysql
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
-            sb.AppendLine("CREATE TABLE NullableTable2 (");
+            sb.AppendLine("CREATE TABLE test.`NullableTable2` (");
             sb.AppendLine("    `Id` int NOT NULL AUTO_INCREMENT,");
             sb.AppendLine("    `Int2` int NULL ,");
             sb.AppendLine("    `Long2` bigint NULL ,");
@@ -364,13 +364,13 @@ namespace SummerBoot.Test.Mysql
                 , result[0].Body);
 
             Assert.Equal(3, result[0].Descriptions.Count);
-            Assert.Equal("ALTER TABLE NullableTable2 COMMENT = 'NullableTable2'", result[0].Descriptions[0]);
-            Assert.Equal("ALTER TABLE NullableTable2 MODIFY `Int2` int NULL  COMMENT 'Int2'", result[0].Descriptions[1]);
-            Assert.Equal("ALTER TABLE NullableTable2 MODIFY `Long2` bigint NULL  COMMENT 'Long2'", result[0].Descriptions[2]);
+            Assert.Equal("ALTER TABLE test.`NullableTable2` COMMENT = 'NullableTable2'", result[0].Descriptions[0]);
+            Assert.Equal("ALTER TABLE test.`NullableTable2` MODIFY `Int2` int NULL  COMMENT 'Int2'", result[0].Descriptions[1]);
+            Assert.Equal("ALTER TABLE test.`NullableTable2` MODIFY `Long2` bigint NULL  COMMENT 'Long2'", result[0].Descriptions[2]);
             dbGenerator.ExecuteGenerateSql(result[0]);
 
             sb.Clear();
-            sb.AppendLine("CREATE TABLE NotNullableTable2 (");
+            sb.AppendLine("CREATE TABLE test.`NotNullableTable2` (");
             sb.AppendLine("    `Id` int NOT NULL AUTO_INCREMENT,");
             sb.AppendLine("    `Int2` int NOT NULL ,");
             sb.AppendLine("    `Long2` bigint NOT NULL ,");
@@ -397,14 +397,14 @@ namespace SummerBoot.Test.Mysql
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable3) });
             Assert.Equal(1, result.Count());
             Assert.Equal(1, result[0].Descriptions.Count);
-            Assert.Equal("ALTER TABLE NullableTable MODIFY `int3` int NULL  COMMENT 'test add column'", result[0].Descriptions[0]);
+            Assert.Equal("ALTER TABLE test.`NullableTable` MODIFY `int3` int NULL  COMMENT 'test add column'", result[0].Descriptions[0]);
             Assert.Equal(1, result[0].FieldModifySqls.Count);
-            Assert.Equal("ALTER TABLE NullableTable ADD `int3` int NULL ", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE test.`NullableTable` ADD `int3` int NULL ", result[0].FieldModifySqls[0]);
 
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
             Assert.Equal(1, result.Count());
             sb.Clear();
-            sb.AppendLine("CREATE TABLE SpecifiedMapTestTable (");
+            sb.AppendLine("CREATE TABLE test.`SpecifiedMapTestTable` (");
             sb.AppendLine("    `NormalTxt` text NULL ,");
             sb.AppendLine("    `SpecifiedTxt` text NULL ");
             sb.AppendLine(")");
@@ -451,7 +451,7 @@ namespace SummerBoot.Test.Mysql
                 try
                 {
                     database.Database.ExecuteSqlRaw(
-                        "drop TABLE test.`CustomerWithSchema`");
+                        "drop TABLE test1.`CustomerWithSchema`");
                 }
                 catch (Exception e)
                 {

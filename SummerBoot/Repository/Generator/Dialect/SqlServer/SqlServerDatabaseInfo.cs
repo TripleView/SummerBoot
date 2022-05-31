@@ -21,9 +21,9 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         {
             var tableName = tableInfo.Name;
             var fieldInfos = tableInfo.FieldInfos;
-
+            var schemaTableName = GetSchemaTableName(tableInfo.Schema, tableName);
             var body = new StringBuilder();
-            body.AppendLine($"CREATE TABLE {tableName} (");
+            body.AppendLine($"CREATE TABLE {schemaTableName} (");
             //主键
             var keyField = "";
             var hasKeyField = fieldInfos.Any(it => it.IsKey);
@@ -111,7 +111,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 columnDataType = fieldInfo.SpecifiedColumnDataType;
             }
 
-            var result = $"[{fieldInfo.ColumnName}] {columnDataType} {identityString} {nullableString}";
+            var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
+            var result = $"{columnName} {columnDataType} {identityString} {nullableString}";
             return result;
         }
 
@@ -133,7 +134,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
         public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            var sql = $"ALTER TABLE {tableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
           return sql;
         }
 
@@ -147,6 +149,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
         public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
+            schema = GetDefaultSchema(schema);
             var dbConnection = dbFactory.GetDbConnection();
             var sql = @"select c.name as columnName,t.name as columnDataType
                  ,convert(bit,c.IsNullable)  as isNullable
@@ -201,13 +204,17 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
         public string BoxTableNameOrColumnName(string tableNameOrColumnName)
         {
-            return "\"" + tableNameOrColumnName + "\"";
+            return "[" + tableNameOrColumnName + "]";
         }
 
         public string GetDefaultSchema(string schema)
         {
+            if (schema.HasText())
+            {
+                return schema;
+            }
             var dbConnection = dbFactory.GetDbConnection();
-            var result = dbConnection.QueryFirstOrDefault<string>("select USERNAME  from user_users");
+            var result = dbConnection.QueryFirstOrDefault<string>("select SCHEMA_name()");
             return result;
         }
     }

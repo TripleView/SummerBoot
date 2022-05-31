@@ -90,7 +90,7 @@ namespace SummerBoot.Test.Oracle
         }
 
         /// <summary>
-        /// 测试根据实体类创建数据库表和进行插入查询对照
+        /// ????????????????????????в?????????
         /// </summary>
         [Fact, Priority(207)]
         public void TestCreateTableFromEntityAndCrud()
@@ -173,7 +173,7 @@ namespace SummerBoot.Test.Oracle
 
 
         /// <summary>
-        /// 测试字段映射
+        /// ??????????
         /// </summary>
         [Fact, Priority(206)]
         public void TestTypeHandler()
@@ -209,7 +209,7 @@ namespace SummerBoot.Test.Oracle
         }
 
         /// <summary>
-        /// 测试表名字段名映射
+        /// ???????????????
         /// </summary>
         [Fact, Priority(205)]
         public void TestTableColumnMap()
@@ -369,7 +369,7 @@ namespace SummerBoot.Test.Oracle
         }
 
         /// <summary>
-        /// 测试根据c#类生成数据库表
+        /// ???????c#????????????
         /// </summary>
         [Fact, Priority(203)]
         public void TestGenerateDatabaseTableByCsharpClass()
@@ -453,8 +453,8 @@ namespace SummerBoot.Test.Oracle
 
         private void InitOracleDatabase()
         {
-            //初始化数据库
-            using (var database = new OracleDb())    //新增
+            //??????????
+            using (var database = new OracleDb())    //????
             {
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
@@ -634,13 +634,13 @@ namespace SummerBoot.Test.Oracle
             Assert.Equal(100, newCount.Count);
             var pageable = new Pageable(1, 10);
             var page = await customerRepository.GetCustomerByPageAsync(pageable, 5);
-            //0-99岁，大于5的只有94个
+            //0-99??????5?????94??
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
             var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
-            //测试bindWhere构造条件
+            //????bindWhere????????
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
             var nameWhereItem = WhereBuilder.HasValue("page5");
@@ -788,14 +788,14 @@ namespace SummerBoot.Test.Oracle
             //Assert.Equal(100, newCount);
             var pageable = new Pageable(1, 10);
             var page = customerRepository.GetCustomerByPage(pageable, 5);
-            //0-99岁，大于5的只有94个
+            //0-99??????5?????94??
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
             var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
 
-            //测试bindWhere构造条件
+            //????bindWhere????????
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
             var nameWhereItem = WhereBuilder.HasValue("page5");

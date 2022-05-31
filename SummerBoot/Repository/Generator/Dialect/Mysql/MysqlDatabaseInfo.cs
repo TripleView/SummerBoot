@@ -148,7 +148,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
-
+            schema = GetDefaultSchema(schema);
             var sql = @"
                        SELECT
                         COLUMN_NAME AS columnName,
