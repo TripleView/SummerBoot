@@ -68,7 +68,7 @@ namespace SummerBoot.Repository.Generator
             var result = new List<string>();
             foreach (var tableName in tableNames)
             {
-                var tableInfo = databaseInfo.GetTableInfoByName(tableName);
+                var tableInfo = databaseInfo.GetTableInfoByName("",tableName);
                 var columnInfos = tableInfo.FieldInfos;
                 var sb = new StringBuilder();
                 sb.AppendLine("using System;");
@@ -161,6 +161,7 @@ namespace SummerBoot.Repository.Generator
                 var tableDescriptionAttribute = type.GetCustomAttribute<DescriptionAttribute>();
                 var tableName = tableAttribute != null ? tableAttribute.Name : type.Name;
                 var schema = tableAttribute?.Schema;
+                schema = databaseInfo.GetDefaultSchema(schema);
                 var tableDescription = tableDescriptionAttribute?.Description ?? "";
                 var propertys = type.GetProperties();
                 var fieldInfos = new List<DatabaseFieldInfoDto>();
@@ -234,7 +235,7 @@ namespace SummerBoot.Repository.Generator
 
                 //判断数据库中是否已经有这张表，如果有，则比较两张表的结构
 
-                var dbTableInfo = databaseInfo.GetTableInfoByName(tableName);
+                var dbTableInfo = databaseInfo.GetTableInfoByName(schema, tableName);
                 //如果存在这张表
                 if (dbTableInfo.FieldInfos.Any())
                 {
@@ -268,13 +269,16 @@ namespace SummerBoot.Repository.Generator
                                 {
                                     item.Descriptions.Add(createFieldDescriptionSql);
                                 }
-                                
                             }
                             //添加约束
                             if (fieldInfo.IsKey)
                             {
-                                //var createconStraintSql = databaseInfo.CreateconStraint(schema, tableName, fieldInfo);
-                                //item.FieldModifySqls.Add(createconStraintSql);
+                                var createPrimaryKeySql = databaseInfo.CreatePrimaryKey(schema, tableName, fieldInfo);
+
+                                if (createPrimaryKeySql.HasText())
+                                {
+                                    item.FieldModifySqls.Add(createPrimaryKeySql);
+                                }
                             }
                         }
                     }

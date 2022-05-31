@@ -27,9 +27,66 @@ namespace SummerBoot.Test.Mysql
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试带命名空间的情况和新增主键
+        /// </summary>
+        [Fact, Priority(107)]
+        public void TestTableSchemaAndAddPrimaryKey()
+        {
+            InitDatabase();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
+            var sb = new StringBuilder();
+
+            var result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema) });
+            sb.Clear();
+            sb.AppendLine("CREATE TABLE test.`CustomerWithSchema` (");
+            sb.AppendLine("    `Name` text NULL ,");
+            sb.AppendLine("    `Age` int NOT NULL ,");
+            sb.AppendLine("    `CustomerNo` text NULL ,");
+            sb.AppendLine("    `TotalConsumptionAmount` decimal(18,2) NOT NULL ");
+            sb.AppendLine(")");
+            var exceptStr = sb.ToString();
+            Assert.Equal(exceptStr
+                , result[0].Body);
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
+            result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema2) });
+            Assert.Equal("ALTER TABLE test.`CustomerWithSchema` ADD `Id` int NOT NULL PRIMARY KEY AUTO_INCREMENT", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE test.`CustomerWithSchema` ADD `LastUpdateOn` datetime NULL ", result[0].FieldModifySqls[1]);
+            Assert.Equal("ALTER TABLE test.`CustomerWithSchema` ADD `LastUpdateBy` text NULL ", result[0].FieldModifySqls[2]);
+            Assert.Equal("ALTER TABLE test.`CustomerWithSchema` ADD `CreateOn` datetime NULL ", result[0].FieldModifySqls[3]);
+            Assert.Equal("ALTER TABLE test.`CustomerWithSchema` ADD `CreateBy` text NULL ", result[0].FieldModifySqls[4]);
+            Assert.Equal("ALTER TABLE test.`CustomerWithSchema` ADD `Active` int NULL ", result[0].FieldModifySqls[5]);
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
+
+            var entity = new CustomerWithSchema2()
+            {
+                Name = "sb",
+                Age = 3
+            };
+            customerWithSchema2Repository.Insert(entity);
+
+            var customerWithSchema2 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb");
+            Assert.NotNull(customerWithSchema2);
+            Assert.Equal("sb", customerWithSchema2.Name);
+            customerWithSchema2.Name = "sb3";
+            customerWithSchema2Repository.Update(customerWithSchema2);
+            var customerWithSchema3 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
+            Assert.NotNull(customerWithSchema3);
+            Assert.Equal("sb3", customerWithSchema3.Name);
+            customerWithSchema2Repository.Delete(it => it.Name == "sb3");
+            var customerWithSchema4 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
+            Assert.Null(customerWithSchema4);
+        }
+        /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
-       
+
         [Fact, Priority(106)]
         public void TestCreateTableFromEntityAndCrud()
         {
@@ -391,7 +448,15 @@ namespace SummerBoot.Test.Mysql
                     "ALTER TABLE notnullabletable MODIFY COLUMN `Int2` int not NULL COMMENT 'Int2'");
                 database.Database.ExecuteSqlRaw(
                     "ALTER TABLE notnullabletable MODIFY COLUMN `Long2` bigint not NULL COMMENT 'Long2'");
+                try
+                {
+                    database.Database.ExecuteSqlRaw(
+                        "drop TABLE test.`CustomerWithSchema`");
+                }
+                catch (Exception e)
+                {
 
+                }
             }
             InitService();
         }

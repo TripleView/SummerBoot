@@ -13,7 +13,7 @@ namespace SummerBoot.Repository.Generator
         /// </summary>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        DatabaseTableInfoDto GetTableInfoByName(string tableName);
+        DatabaseTableInfoDto GetTableInfoByName(string schema,string tableName);
         /// <summary>
         /// 创建数据库表
         /// </summary>
@@ -50,12 +50,30 @@ namespace SummerBoot.Repository.Generator
         /// <returns></returns>
         string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
         /// <summary>
-        /// 创建索引
+        /// 创建主键
         /// </summary>
         /// <param name="schema"></param>
         /// <param name="tableName"></param>
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
-        //string CreateIndex(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
+        string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
+        /// <summary>
+        /// 装饰表名或者列名
+        /// </summary>
+        /// <param name="tableNameOrColumnName"></param>
+        /// <returns></returns>
+        string BoxTableNameOrColumnName(string tableNameOrColumnName);
+        /// <summary>
+        /// 获取命名空间加表名
+        /// </summary>
+        /// <param name="schema"></param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        string GetSchemaTableName(string schema, string tableName);
+        /// <summary>
+        /// 获取默认用户
+        /// </summary>
+        /// <returns></returns>
+        string GetDefaultSchema(string schema);
     }
 }

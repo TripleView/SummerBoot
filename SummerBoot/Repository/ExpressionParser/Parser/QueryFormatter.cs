@@ -439,11 +439,18 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.sqlParameters.Clear();
         }
 
+        protected string GetSchemaTableName(string schema, string tableName)
+        {
+            tableName = BoxTableNameOrColumnName(tableName);
+            tableName = schema.HasText() ? schema + "." + tableName : tableName;
+            return tableName;
+        }
+
         public virtual DbQueryResult Insert<T>(T insertEntity)
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName= GetSchemaTableName(table.Schema, table.Name);
 
             var parameterNameList = new List<string>();
             var columnNameList = new List<string>();
@@ -483,7 +490,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var columnNameList = new List<string>();
             var keyColumnNameList = new List<string>();
@@ -529,7 +536,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var middleList = new List<string>();
             foreach (var column in table.Columns)
@@ -553,7 +560,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var middleResult = this.Visit(exp);
             this.FormatWhere(middleResult);
@@ -599,7 +606,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var middleResult = this.Visit(expression);
             this.FormatWhere(middleResult);
@@ -664,7 +671,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
             var columnNameList = new List<string>();
 
             foreach (var column in table.Columns)
@@ -700,7 +707,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName = BoxTableNameOrColumnName(table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
             var columnNameList = new List<string>();
 
             foreach (var column in table.Columns)

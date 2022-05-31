@@ -83,11 +83,6 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             return "";
         }
 
-        private string GetDefaultSchema(string schema)
-        {
-            return schema.GetValueOrDefault("dbo");
-        }
-
         public string UpdateTableDescription(string schema, string tableName, string description)
         {
             return "";
@@ -104,7 +99,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             return "";
         }
 
-        public DatabaseTableInfoDto GetTableInfoByName(string tableName)
+        public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
 
@@ -173,6 +168,28 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
                 FieldInfos = fieldInfos
             };
 
+            return result;
+        }
+
+        public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string BoxTableNameOrColumnName(string tableNameOrColumnName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetSchemaTableName(string schema, string tableName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetDefaultSchema(string schema)
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            var result = dbConnection.QueryFirstOrDefault<string>("select USERNAME  from user_users");
             return result;
         }
     }

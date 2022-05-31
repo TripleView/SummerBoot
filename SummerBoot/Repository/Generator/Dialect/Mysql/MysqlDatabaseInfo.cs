@@ -21,9 +21,9 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         {
             var tableName = tableInfo.Name;
             var fieldInfos = tableInfo.FieldInfos;
-
+            var schemaTableName = GetSchemaTableName(tableInfo.Schema, tableName);
             var body = new StringBuilder();
-            body.AppendLine($"CREATE TABLE {tableName} (");
+            body.AppendLine($"CREATE TABLE {schemaTableName} (");
             //主键
             var keyField = "";
             var hasKeyField = fieldInfos.Any(it => it.IsKey);
@@ -50,7 +50,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                     lastComma = hasKeyField ? "," : "";
                 }
 
-                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo)}{lastComma}");
+                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo, false)}{lastComma}");
                 if (fieldInfo.IsKey)
                 {
                     keyField = fieldInfo.ColumnName;
@@ -86,11 +86,13 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         /// 通过字段信息生成生成表的sql
         /// </summary>
         /// <param name="fieldInfo"></param>
+        /// <param name="isAlert"></param>
         /// <returns></returns>
-        private string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo)
+        private string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo, bool isAlter)
         {
-            var identityString = fieldInfo.IsAutoCreate ? "AUTO_INCREMENT" : "";
+            var identityString = fieldInfo.IsAutoCreate && fieldInfo.IsKey ? "AUTO_INCREMENT" : "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
+            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY " : "";
             var columnDataType = fieldInfo.ColumnDataType;
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "varchar")
@@ -111,28 +113,18 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 columnDataType = fieldInfo.SpecifiedColumnDataType;
             }
 
-            var result = $"`{fieldInfo.ColumnName}` {columnDataType} {nullableString} {identityString}";
+            var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
+            var result = $"{columnName} {columnDataType} {nullableString} {primaryKeyString}{identityString}";
             return result;
         }
 
         public string CreateTableDescription(string schema, string tableName, string description)
         {
-            tableName = GetTableName(schema, tableName);
-            var sql = $"ALTER TABLE {tableName} COMMENT = '{description}'";
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var sql = $"ALTER TABLE {schemaTableName} COMMENT = '{description}'";
             return sql;
         }
 
-        private string GetTableName(string schema, string tableName)
-        {
-            schema = GetDefaultSchema(schema);
-            tableName = schema.HasText() ? schema + "." + tableName : tableName;
-            return tableName;
-        }
-
-        private string GetDefaultSchema(string schema)
-        {
-            return schema.GetValueOrDefault("");
-        }
 
         public string UpdateTableDescription(string schema, string tableName, string description)
         {
@@ -141,19 +133,19 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
         public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            tableName = GetTableName(schema, tableName);
-            var sql = $"ALTER TABLE {tableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo, true)}";
             return sql;
         }
 
         public string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            tableName = GetTableName(schema, tableName);
-            var sql = $"ALTER TABLE {tableName} MODIFY {GetCreateFieldSqlByFieldInfo(fieldInfo)} COMMENT '{fieldInfo.Description}'";
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var sql = $"ALTER TABLE {schemaTableName} MODIFY {GetCreateFieldSqlByFieldInfo(fieldInfo, true)} COMMENT '{fieldInfo.Description}'";
             return sql;
         }
 
-        public DatabaseTableInfoDto GetTableInfoByName(string tableName)
+        public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
 
@@ -174,18 +166,19 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                     FROM
                         information_schema.`COLUMNS`
                     WHERE
+                        TABLE_SCHEMA =@schemaName and
                         TABLE_NAME = @tableName
                     ORDER BY
                         TABLE_NAME,
                         ORDINAL_POSITION ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
 
             var tableDescriptionSql = @"SELECT 
                                         TABLE_COMMENT
                                         FROM information_schema.tables
-                                        WHERE TABLE_NAME = @tableName ";
+                                        WHERE TABLE_SCHEMA =@schemaName and TABLE_NAME = @tableName ";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
 
             var result = new DatabaseTableInfoDto()
             {
@@ -195,6 +188,38 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             };
 
             return result;
+        }
+
+        public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            //var schemaTableName = GetSchemaTableName(schema, tableName);
+            //var sql =
+            //    $"ALTER TABLE {schemaTableName} ADD CONSTRAINT {tableName}_PK PRIMARY KEY({BoxTableNameOrColumnName(fieldInfo.ColumnName)})";
+
+            //return sql;
+            return "";
+        }
+
+        public string BoxTableNameOrColumnName(string tableNameOrColumnName)
+        {
+            return "`" + tableNameOrColumnName + "`";
+        }
+
+        public string GetSchemaTableName(string schema, string tableName)
+        {
+            tableName = BoxTableNameOrColumnName(tableName);
+            tableName = schema.HasText() ? schema + "." + tableName : tableName;
+            return tableName;
+        }
+
+        public string GetDefaultSchema(string schema)
+        {
+            if (schema.HasText())
+            {
+                return schema;
+            }
+            var dbConnection = dbFactory.GetDbConnection();
+            return dbConnection.Database;
         }
     }
 }

@@ -18,6 +18,7 @@ using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -117,6 +118,9 @@ namespace SummerBoot.Core
             if (option.ConnectionString.IsNullOrWhiteSpace()) throw new Exception("ConnectionString is Require");
 
             if (option.DbConnectionType == null) throw new Exception("DbConnectionType is Require");
+
+            ResetDapperSqlMapperTypeMapDictionary();
+
             services.TryAddScoped<IDbFactory, DbFactory>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddSingleton(t => option);
@@ -180,7 +184,56 @@ namespace SummerBoot.Core
 
             return services;
         }
+        /// <summary>
+        /// 重置dapper里类型映射的数组
+        /// </summary>
+        private static void ResetDapperSqlMapperTypeMapDictionary()
+        {
+            var typeMapField= typeof(SqlMapper).GetField("typeMap",BindingFlags.NonPublic|BindingFlags.Static);
+            typeMapField.SetValue(null,new Dictionary<Type, DbType?>(37)
+            {
+                [typeof(byte)] = DbType.Byte,
+                [typeof(sbyte)] = DbType.SByte,
+                [typeof(short)] = DbType.Int16,
+                [typeof(ushort)] = DbType.UInt16,
+                [typeof(int)] = DbType.Int32,
+                [typeof(uint)] = DbType.UInt32,
+                [typeof(long)] = DbType.Int64,
+                [typeof(ulong)] = DbType.UInt64,
+                [typeof(float)] = DbType.Single,
+                [typeof(double)] = DbType.Double,
+                [typeof(decimal)] = DbType.Decimal,
+                [typeof(bool)] = DbType.Boolean,
+                [typeof(string)] = DbType.String,
+                [typeof(char)] = DbType.StringFixedLength,
+                [typeof(Guid)] = DbType.Guid,
+                [typeof(DateTime)] = null,
+                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan)] = null,
+                [typeof(byte[])] = DbType.Binary,
+                [typeof(byte?)] = DbType.Byte,
+                [typeof(sbyte?)] = DbType.SByte,
+                [typeof(short?)] = DbType.Int16,
+                [typeof(ushort?)] = DbType.UInt16,
+                [typeof(int?)] = DbType.Int32,
+                [typeof(uint?)] = DbType.UInt32,
+                [typeof(long?)] = DbType.Int64,
+                [typeof(ulong?)] = DbType.UInt64,
+                [typeof(float?)] = DbType.Single,
+                [typeof(double?)] = DbType.Double,
+                [typeof(decimal?)] = DbType.Decimal,
+                [typeof(bool?)] = DbType.Boolean,
+                [typeof(char?)] = DbType.StringFixedLength,
+                [typeof(Guid?)] = DbType.Guid,
+                [typeof(DateTime?)] = null,
+                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan?)] = null,
+                [typeof(object)] = DbType.Object
+            });
 
+            var resetTypeHandlersMethod= typeof(SqlMapper).GetMethod("ResetTypeHandlers", BindingFlags.NonPublic | BindingFlags.Static);
+            resetTypeHandlersMethod.Invoke(null, new object?[1]{false});
+        }
         /// <summary>
         /// 注册dapper类型映射和类型处理程序
         /// </summary>
@@ -188,7 +241,7 @@ namespace SummerBoot.Core
         private static void RegisterDapperTypeMapTAndHandler(Type baseRepositoryType,RepositoryOption repositoryOption)
         {
             var entityType = baseRepositoryType.GetGenericArguments()[0];
-
+            
             var map = new CustomPropertyTypeMap(entityType, (type, columnName)
                 =>
             {

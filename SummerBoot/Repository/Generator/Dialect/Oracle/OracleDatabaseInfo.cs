@@ -19,10 +19,12 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
         public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
         {
             var tableName = tableInfo.Name;
+            var schemaTableName = GetSchemaTableName(tableInfo.Schema, tableName);
+
             var fieldInfos = tableInfo.FieldInfos;
 
             var body = new StringBuilder();
-            body.AppendLine($"CREATE TABLE \"{tableName}\" (");
+            body.AppendLine($"CREATE TABLE {schemaTableName} (");
             //主键
             var keyField = "";
             var hasKeyField = fieldInfos.Any(it => it.IsKey);
@@ -108,7 +110,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                     precision = 10;
                     scale = 0;
                 }
-               
+
                 if (fieldInfo.ColumnType.GetUnderlyingType() == typeof(long))
                 {
                     precision = 19;
@@ -148,59 +150,54 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 columnDataType = fieldInfo.SpecifiedColumnDataType;
             }
 
-
-            var result = $"\"{fieldInfo.ColumnName}\" {columnDataType}{identityString}{nullableString}";
+            var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
+            var result = $"{columnName} {columnDataType}{identityString}{nullableString}";
             return result;
         }
 
         public string CreateTableDescription(string schema, string tableName, string description)
         {
-            schema = GetDefaultSchema(schema);
+            var schemaTableName = GetSchemaTableName(schema, tableName);
             var sql =
-                $"COMMENT ON TABLE {tableName} IS '{description}'";
+                $"COMMENT ON TABLE {schemaTableName} IS '{description}'";
             return sql;
-        }
-
-        private string GetDefaultSchema(string schema)
-        {
-            return schema.GetValueOrDefault("dbo");
         }
 
         public string UpdateTableDescription(string schema, string tableName, string description)
         {
-            schema = GetDefaultSchema(schema);
             var sql = CreateTableDescription(schema, tableName, description);
-
-
             return sql;
         }
 
         public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            var sql = $"ALTER TABLE {tableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
             return sql;
         }
 
         public string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            schema = GetDefaultSchema(schema);
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
             var sql =
-                $"COMMENT ON COLUMN {tableName}.{fieldInfo.ColumnName} IS '{fieldInfo.Description}'";
+                $"COMMENT ON COLUMN {schemaTableName}.{columnName} IS '{fieldInfo.Description}'";
             return sql;
         }
 
-        public DatabaseTableInfoDto GetTableInfoByName(string tableName)
+        public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
+            schema = GetDefaultSchema(schema);
             var dbConnection = dbFactory.GetDbConnection();
-            var sql = @"   select c.*,d.comments Description from (select a.column_name AS ColumnName , a.data_type AS ColumnDataType,a.DATA_PRECISION AS Precision,a.DATA_SCALE AS Scale,  a.data_length ,CASE when a.nullable='Y' THEN 1 ELSE 0 end as IsNullable,CASE when  b.column_name is not null then 1 else 0 END IsKey  from user_tab_columns a left join 
-                (select cu.* from user_cons_columns cu, user_constraints au where cu.constraint_name = au.constraint_name and au.constraint_type = 'P') b on 
-                b.table_name = a.Table_Name and a.column_name = b.column_name where a.Table_Name=:tableName ORDER BY a.column_id) c left join user_col_comments d on c.ColumnName = d.column_name where d.table_name =:tableName
+            var sql = @"   select c.*,d.comments Description from (select a.column_name AS ColumnName , a.data_type AS ColumnDataType,a.DATA_PRECISION AS Precision,a.DATA_SCALE AS Scale,  a.data_length ,CASE when a.nullable='Y' THEN 1 ELSE 0 end as IsNullable,CASE when  b.column_name is not null then 1 else 0 END IsKey  from all_tab_columns a left join 
+                (select cu.* from all_cons_columns cu, all_constraints au where cu.constraint_name = au.constraint_name and au.constraint_type = 'P') b on 
+                b.table_name = a.Table_Name and a.column_name = b.column_name where a.Table_Name=:tableName and a.owner=:schemaName ORDER BY a.column_id) c left join all_col_comments d on c.ColumnName = d.column_name where d.table_name =:tableName
                 ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
 
-            var tableDescriptionSql = @"	SELECT comments FROM user_tab_comments WHERE table_name =:tableName AND TABLE_TYPE ='TABLE'";
+            var tableDescriptionSql = @"	SELECT comments FROM all_tab_comments WHERE table_name =:tableName AND TABLE_TYPE ='TABLE' and owner=:schemaName";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
 
             var result = new DatabaseTableInfoDto()
             {
@@ -209,6 +206,40 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 FieldInfos = fieldInfos
             };
 
+            return result;
+        }
+
+        public string GetSchemaTableName(string schema, string tableName)
+        {
+            tableName = BoxTableNameOrColumnName(tableName);
+            tableName = schema.HasText() ? schema + "." + tableName : tableName;
+            return tableName;
+        }
+
+        public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            var schemaTableName = GetSchemaTableName(schema, tableName);
+            var sql =
+                $"ALTER TABLE {schemaTableName} ADD CONSTRAINT {tableName}_PK PRIMARY KEY({fieldInfo.ColumnName}) ENABLE";
+
+            return sql;
+        }
+
+        public string BoxTableNameOrColumnName(string tableNameOrColumnName)
+        {
+            return "\"" + tableNameOrColumnName + "\"";
+        }
+
+        public string GetDefaultSchema(string schema)
+        {
+            if (schema.HasText())
+            {
+                return schema;
+            }
+
+            var dbConnection = dbFactory.GetDbConnection();
+            
+            var result = dbConnection.QueryFirstOrDefault<string>("select USERNAME  from user_users");
             return result;
         }
     }

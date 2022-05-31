@@ -29,7 +29,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             get
             {
-                //查找tableAttribute特性,看下有没有自定义表明
+                //查找tableAttribute特性,看下有没有自定义表名
                 var tableAttribute =Type.GetCustomAttribute<TableAttribute>();
                 //如果没有该特性，直接使用类名作为表名
                 var tableName = tableAttribute == null ? Type.Name : tableAttribute.Name;
@@ -37,6 +37,20 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
+        /// <summary>
+        /// 表的命名空间
+        /// </summary>
+        public string Schema
+        {
+            get
+            {
+                //查找tableAttribute特性,看下有没有自定义表名
+                var tableAttribute = Type.GetCustomAttribute<TableAttribute>();
+                //如果没有该特性，直接使用类名作为表名
+                var schema = tableAttribute == null ? "" : tableAttribute.Schema;
+                return schema;
+            }
+        }
         /// <summary>
         /// 表的列
         /// </summary>

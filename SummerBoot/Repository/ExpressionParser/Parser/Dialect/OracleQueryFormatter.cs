@@ -119,7 +119,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 //_sb.Append("(");
                 if (select.From is TableExpression table)
                 {
-                    var tableName = BoxTableNameOrColumnName(table.Name);
+                    var tableName = GetSchemaTableName(table.Schema, table.Name);
+                    
                     _sb.Append(tableName);
 
                     tableNameAlias = BoxTableNameOrColumnName(select.Alias);
