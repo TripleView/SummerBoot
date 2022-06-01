@@ -47,7 +47,8 @@ net core 3.1,net 6
 	- [4.增删改查操作，均支持异步同步](#4增删改查操作均支持异步同步)
 		- [4.1 查](#41-查)
 			- [4.1.1 IQueryable链式语法查询。](#411-iqueryable链式语法查询)
-			- [4.1.2 直接在接口里定义方法，并且在方法上加上注解Select,然后在Select里写sql语句](#412-直接在接口里定义方法并且在方法上加上注解select然后在select里写sql语句)
+			- [4.1.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete](#412-直接在接口里定义方法并且在方法上加上注解如selectupdatedelete)
+				- [4.1.2.1 注解里的sql支持从配置里读取](#4121-注解里的sql支持从配置里读取)
 			- [4.1.3 select注解这种方式拼接where查询条件](#413-select注解这种方式拼接where查询条件)
 			- [4.1.4 IBaseRepository接口自带的查方法](#414-ibaserepository接口自带的查方法)
 		- [4.2 增](#42-增)
@@ -319,7 +320,8 @@ var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).T
 var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
 ````
 
-#### 4.1.2 直接在接口里定义方法，并且在方法上加上注解Select,然后在Select里写sql语句
+#### 4.1.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete
+ 然后在Select,Update,Delete里写sql语句,如
 ````csharp
 [AutoRepository]
 public interface ICustomerRepository : IBaseRepository<Customer>
@@ -355,6 +357,51 @@ var page = customerRepository.GetCustomerByPage(pageable, 5);
 ````csharp
 [Select("select * from customer where age>@age order by id")]
 Page<Customer> GetCustomerByPage(IPageable pageable, int age);
+````
+
+##### 4.1.2.1 注解里的sql支持从配置里读取
+配置的json如下：
+````json
+{
+   "mysqlSql": {
+    "QueryListSql": "select * from customer ",
+    "QueryByPageSql": "select * from customer order by age",
+    "UpdateByNameSql": "update customer set age=@age where name=@name",
+    "DeleteByNameSql": "delete from customer where name=@name "
+  }
+}
+````
+配置项通过${}包裹,接口如下，：
+````csharp
+[AutoRepository]
+public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer>
+{
+		//异步
+		[Select("${mysqlSql:QueryListSql}")]
+		Task<List<Customer>> QueryListAsync();
+
+		[Select("${mysqlSql:QueryByPageSql}")]
+		Task<Page<Customer>> QueryByPageAsync(IPageable pageable);
+		//异步
+		[Update("${mysqlSql:UpdateByNameSql}")]
+		Task<int> UpdateByNameAsync(string name, int age);
+
+		[Delete("${mysqlSql:DeleteByNameSql}")]
+		Task<int> DeleteByNameAsync(string name);
+
+		//同步
+		[Select("${mysqlSql:QueryListSql}")]
+		List<Customer> QueryList();
+
+		[Select("${mysqlSql:QueryByPageSql}")]
+		Page<Customer> QueryByPage(IPageable pageable);
+		//异步
+		[Update("${mysqlSql:UpdateByNameSql}")]
+		int UpdateByName(string name,int age);
+
+		[Delete("${mysqlSql:DeleteByNameSql}")]
+		int DeleteByName(string name);
+}
 ````
 
 #### 4.1.3 select注解这种方式拼接where查询条件
