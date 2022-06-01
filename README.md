@@ -32,10 +32,11 @@ net core 3.1,net 6
 - [SummerBoot中操作数据库](#summerboot中操作数据库)
 	- [准备工作](#准备工作)
 	- [1.首先在startup.cs类中注册服务](#1首先在startupcs类中注册服务)
-	- [2.根据数据库表自动生成实体类，或根据实体类自动生成数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成数据库表)
-		- [2.1 根据实体类自动生成数据库表](#21-根据实体类自动生成数据库表)
+	- [2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成修改数据库表)
+		- [2.1 根据实体类自动生成/修改数据库表](#21-根据实体类自动生成修改数据库表)
 			- [2.1.1 定义一个数据库实体类](#211-定义一个数据库实体类)
-			- [2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成ddl的sql](#212-注入idbgenerator接口调用generatesql方法生成ddl的sql)
+			- [2.1.1 表的命名空间](#211-表的命名空间)
+			- [2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql](#212-注入idbgenerator接口调用generatesql方法生成建表或者修改表结构的sql)
 				- [2.1.2.1 如果数据库中不存在该表名的表](#2121-如果数据库中不存在该表名的表)
 				- [2.1.2.2 如果数据库中已存在该表名的表](#2122-如果数据库中已存在该表名的表)
 				- [2.1.2.3 可以选择执行这些sql](#2123-可以选择执行这些sql)
@@ -86,7 +87,7 @@ net core 3.1,net 6
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
 # SummerBoot中操作数据库
-summerBoot基于工作单元与仓储模式开发了自己的ORM->repository，底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
+summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
 
 ## 准备工作
 需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core
@@ -97,13 +98,13 @@ services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
 {
-	//以下为必填参数
+	//-----------以下为必填参数---------
 	//注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
 	it.DbConnectionType = typeof(SqliteConnection);
 	//添加数据库连接字符串
 	it.ConnectionString = "Data source=./mydb.db";
 
-	//以下为可选参数
+	//-----------以下为可选参数---------
 	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
 	it.AutoUpdateLastUpdateOn = true;
 	//插入的时候自动添加创建时间，使用utc时间
@@ -117,14 +118,14 @@ services.AddSummerBootRepository(it =>
 });
 
 ````
-## 2.根据数据库表自动生成实体类，或根据实体类自动生成数据库表
-### 2.1 根据实体类自动生成数据库表
+## 2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表
+### 2.1 根据实体类自动生成/修改数据库表
 #### 2.1.1 定义一个数据库实体类
-其中注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
+其中注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,列名Column,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
 同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
 
 ```` csharp
-public class Customer:BaseEntity
+public class Customer : BaseEntity
 {
     public string Name { set; get; }
     
@@ -141,7 +142,20 @@ public class Customer:BaseEntity
     public decimal TotalConsumptionAmount { set; get; }
 }
 ````
-#### 2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成ddl的sql
+#### 2.1.1 表的命名空间
+sqlserver里命名空间即schemas,oracle里命名空间即模式，sqlite和mysql里命名空间即数据库，
+如果要定义不同命名空间下的表，添加[Table("CustomerWithSchema", Schema = "test")]注解即可。
+
+````csharp
+[Table("CustomerWithSchema", Schema = "test")]
+public class CustomerWithSchema
+{
+		public string Name { set; get; }
+		public int Age { set; get; } = 0;
+}
+````
+
+#### 2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql
 ```` csharp
 public class TestController : Controller
 {
@@ -181,6 +195,7 @@ CREATE TABLE Customer (
 那么生成的sql为,新增字段的sql或者更新注释的sql，为了避免数据丢失，不会有删除字段的sql，这里以Customer表举例，如果刚开始没有继承BaseEntity，生成了表，后来继承BaseEntity了，那么此时生成的sql为
 
 ````sql
+ALTER TABLE Customer ADD `Id` int NOT NULL PRIMARY KEY AUTO_INCREMENT
 ALTER TABLE Customer ADD `LastUpdateOn` datetime NULL 
 ALTER TABLE Customer ADD `LastUpdateBy` text NULL 
 ALTER TABLE Customer ADD `CreateOn` datetime NULL 
@@ -197,7 +212,35 @@ foreach (var sqlResult in generateSqls)
 }
 ````
 #### 2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射
-这里统一使用
+这里统一使用column注解,如[Column("Age",TypeName = "float")]
+```` csharp
+public class Customer : BaseEntity
+{
+		public string Name { set; get; }
+		
+		[Column("Age",TypeName = "float")]
+		public int Age { set; get; } = 0;
+		/// <summary>
+		/// 会员号
+		/// </summary>
+		public string CustomerNo { set; get; }
+		/// <summary>
+		/// 总消费金额
+		/// </summary>
+		public decimal TotalConsumptionAmount { set; get; }
+}
+````
+生成的sql如下
+````sql
+CREATE TABLE `Customer2` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` text NULL ,
+    `Age` float NOT NULL ,
+    `CustomerNo` text NULL ,
+    `TotalConsumptionAmount` decimal(18,2) NOT NULL ,
+    PRIMARY KEY (`Id`)
+)
+````
 
 
 ### 2.2 根据数据库表自动生成实体类

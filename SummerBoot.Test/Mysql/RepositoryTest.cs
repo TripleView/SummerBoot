@@ -8,11 +8,13 @@ using SummerBoot.Test.Mysql.Repository;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using Xunit;
@@ -25,6 +27,64 @@ namespace SummerBoot.Test.Mysql
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(109)]
+        public async Task TestGetSqlByConfigurationAsync()
+        {
+            InitDatabase();
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            var customer1 = new Customer() { Age = 3, Name = "sb" };
+            var customer2 = new Customer() { Age = 5, Name = "sb2" };
+            testConfigurationRepository.Insert(customer1);
+            var customerList = await testConfigurationRepository.QueryListAsync();
+            Assert.Equal(1, customerList.Count);
+            Assert.Equal("sb", customerList[0].Name);
+
+            testConfigurationRepository.Insert(customer2);
+            var customerList2 = await testConfigurationRepository.QueryByPageAsync(new Pageable(1, 10));
+            Assert.Equal(2, customerList2.Data.Count);
+            Assert.Equal("sb", customerList2.Data[0].Name);
+            Assert.Equal("sb2", customerList2.Data[1].Name);
+
+            await testConfigurationRepository.UpdateByNameAsync("sb", 7);
+            var dbCustomer = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Equal(7, dbCustomer.Age);
+            await testConfigurationRepository.DeleteByNameAsync("sb");
+            var dbCustomer2 = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Null(dbCustomer2);
+        }
+
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(108)]
+        public void TestGetSqlByConfiguration()
+        {
+            InitDatabase();
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            var customer1 = new Customer() { Age = 3, Name = "sb" };
+            var customer2 = new Customer() { Age = 5, Name = "sb2" };
+            testConfigurationRepository.Insert(customer1);
+            var customerList = testConfigurationRepository.QueryList();
+            Assert.Equal(1, customerList.Count);
+            Assert.Equal("sb", customerList[0].Name);
+
+            testConfigurationRepository.Insert(customer2);
+            var customerList2 = testConfigurationRepository.QueryByPage(new Pageable(1, 10));
+            Assert.Equal(2, customerList2.Data.Count);
+            Assert.Equal("sb", customerList2.Data[0].Name);
+            Assert.Equal("sb2", customerList2.Data[1].Name);
+
+            testConfigurationRepository.UpdateByName("sb", 7);
+            var dbCustomer = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Equal(7, dbCustomer.Age);
+            testConfigurationRepository.DeleteByName("sb");
+            var dbCustomer2 = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Null(dbCustomer2);
+        }
 
         /// <summary>
         /// 测试带命名空间的情况和新增主键
@@ -79,6 +139,20 @@ namespace SummerBoot.Test.Mysql
             var customerWithSchema3 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
             Assert.NotNull(customerWithSchema3);
             Assert.Equal("sb3", customerWithSchema3.Name);
+
+            var entity2 = new CustomerWithSchema2()
+            {
+                Name = "sb4",
+                Age = 5
+            };
+            customerWithSchema2Repository.Insert(entity2);
+            var customerWithSchemaPage = customerWithSchema2Repository.TestPage(new Pageable(1, 10));
+            Assert.Equal(2, customerWithSchemaPage.Data.Count);
+            Assert.Equal("sb3", customerWithSchemaPage.Data[0].Name);
+            Assert.Equal("sb4", customerWithSchemaPage.Data[1].Name);
+            Assert.Equal(3, customerWithSchemaPage.Data[0].Age);
+            Assert.Equal(5, customerWithSchemaPage.Data[1].Age);
+
             customerWithSchema2Repository.Delete(it => it.Name == "sb3");
             var customerWithSchema4 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
             Assert.Null(customerWithSchema4);
@@ -338,6 +412,7 @@ namespace SummerBoot.Test.Mysql
 
             InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
@@ -460,11 +535,16 @@ namespace SummerBoot.Test.Mysql
             }
             InitService();
         }
-
+        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
         private void InitService()
         {
-            var services = new ServiceCollection();
+            var build = new ConfigurationBuilder();
+            build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
+            build.AddJsonFile(CONFIG_FILE, true, true);
+            var configurationRoot = build.Build();
 
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(configurationRoot);
             services.AddSummerBoot();
             var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))

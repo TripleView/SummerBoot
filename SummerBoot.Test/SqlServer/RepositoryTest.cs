@@ -8,11 +8,14 @@ using SummerBoot.Test.SqlServer.Repository;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using Xunit;
@@ -25,11 +28,69 @@ namespace SummerBoot.Test.SqlServer
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
-        
-         /// <summary>
+
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(409)]
+        public async Task TestGetSqlByConfigurationAsync()
+        {
+            InitDatabase();
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            var customer1 = new Customer() { Age = 3, Name = "sb" };
+            var customer2 = new Customer() { Age = 5, Name = "sb2" };
+            testConfigurationRepository.Insert(customer1);
+            var customerList = await testConfigurationRepository.QueryListAsync();
+            Assert.Equal(1, customerList.Count);
+            Assert.Equal("sb", customerList[0].Name);
+
+            testConfigurationRepository.Insert(customer2);
+            var customerList2 = await testConfigurationRepository.QueryByPageAsync(new Pageable(1, 10));
+            Assert.Equal(2, customerList2.Data.Count);
+            Assert.Equal("sb", customerList2.Data[0].Name);
+            Assert.Equal("sb2", customerList2.Data[1].Name);
+
+            await testConfigurationRepository.UpdateByNameAsync("sb", 7);
+            var dbCustomer = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Equal(7, dbCustomer.Age);
+            await testConfigurationRepository.DeleteByNameAsync("sb");
+            var dbCustomer2 = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Null(dbCustomer2);
+        }
+
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(408)]
+        public void TestGetSqlByConfiguration()
+        {
+            InitDatabase();
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            var customer1 = new Customer() { Age = 3, Name = "sb" };
+            var customer2 = new Customer() { Age = 5, Name = "sb2" };
+            testConfigurationRepository.Insert(customer1);
+            var customerList = testConfigurationRepository.QueryList();
+            Assert.Equal(1, customerList.Count);
+            Assert.Equal("sb", customerList[0].Name);
+
+            testConfigurationRepository.Insert(customer2);
+            var customerList2 = testConfigurationRepository.QueryByPage(new Pageable(1, 10));
+            Assert.Equal(2, customerList2.Data.Count);
+            Assert.Equal("sb", customerList2.Data[0].Name);
+            Assert.Equal("sb2", customerList2.Data[1].Name);
+
+            testConfigurationRepository.UpdateByName("sb", 7);
+            var dbCustomer = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Equal(7, dbCustomer.Age);
+            testConfigurationRepository.DeleteByName("sb");
+            var dbCustomer2 = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Null(dbCustomer2);
+        }
+
+        /// <summary>
         /// 测试带命名空间的情况和新增主键
         /// </summary>
-        [Fact, Priority(107)]
+        [Fact, Priority(407)]
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitDatabase();
@@ -39,7 +100,7 @@ namespace SummerBoot.Test.SqlServer
 
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema) });
             sb.Clear();
-            sb.AppendLine("CREATE TABLE test.[CustomerWithSchema] (");
+            sb.AppendLine("CREATE TABLE test1.[CustomerWithSchema] (");
             sb.AppendLine("    [Name] nvarchar(max)  NULL,");
             sb.AppendLine("    [Age] int  NOT NULL,");
             sb.AppendLine("    [CustomerNo] nvarchar(max)  NULL,");
@@ -53,12 +114,12 @@ namespace SummerBoot.Test.SqlServer
                 dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
             }
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema2) });
-            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `Id` int NOT NULL PRIMARY KEY AUTO_INCREMENT", result[0].FieldModifySqls[0]);
-            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `LastUpdateOn` datetime NULL ", result[0].FieldModifySqls[1]);
-            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `LastUpdateBy` text NULL ", result[0].FieldModifySqls[2]);
-            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `CreateOn` datetime NULL ", result[0].FieldModifySqls[3]);
-            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `CreateBy` text NULL ", result[0].FieldModifySqls[4]);
-            Assert.Equal("ALTER TABLE test.[CustomerWithSchema] ADD `Active` int NULL ", result[0].FieldModifySqls[5]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Id] int IDENTITY(1,1) PRIMARY KEY NOT NULL", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateOn] datetime2  NULL", result[0].FieldModifySqls[1]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateBy] nvarchar(max)  NULL", result[0].FieldModifySqls[2]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateOn] datetime2  NULL", result[0].FieldModifySqls[3]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateBy] nvarchar(max)  NULL", result[0].FieldModifySqls[4]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Active] int  NULL", result[0].FieldModifySqls[5]);
             foreach (var generateDatabaseSqlResult in result)
             {
                 dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
@@ -79,6 +140,20 @@ namespace SummerBoot.Test.SqlServer
             var customerWithSchema3 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
             Assert.NotNull(customerWithSchema3);
             Assert.Equal("sb3", customerWithSchema3.Name);
+
+            var entity2 = new CustomerWithSchema2()
+            {
+                Name = "sb4",
+                Age = 5
+            };
+            customerWithSchema2Repository.Insert(entity2);
+            var customerWithSchemaPage = customerWithSchema2Repository.TestPage(new Pageable(1, 10));
+            Assert.Equal(2, customerWithSchemaPage.Data.Count);
+            Assert.Equal("sb3", customerWithSchemaPage.Data[0].Name);
+            Assert.Equal("sb4", customerWithSchemaPage.Data[1].Name);
+            Assert.Equal(3, customerWithSchemaPage.Data[0].Age);
+            Assert.Equal(5, customerWithSchemaPage.Data[1].Age);
+
             customerWithSchema2Repository.Delete(it => it.Name == "sb3");
             var customerWithSchema4 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
             Assert.Null(customerWithSchema4);
@@ -437,36 +512,14 @@ namespace SummerBoot.Test.SqlServer
               
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
-                try
-                {
-                    database.Database.ExecuteSqlRaw(
-                        "drop TABLE TEST1.[CUSTOMERWITHSCHEMA]");
-                }
-                catch (Exception e)
-                {
-                   
-                }
-              
-              
-                try
-                {
-                    database.Database.ExecuteSqlRaw(
-                        "CREATE USER test FOR LOGIN test;");
-                }
-                catch (Exception e)
-                {
-                   
-                }
-                try
-                {
-                   
-                    database.Database.ExecuteSqlRaw(
-                        "CREATE SCHEMA test AUTHORIZATION test");
-                }
-                catch (Exception e)
-                {
-                   
-                }
+
+                ExecuteRaw(database.Database, "drop TABLE TEST1.[CUSTOMERWITHSCHEMA]");
+
+                ExecuteRaw(database.Database, "create SCHEMA test1");
+
+                ExecuteRaw(database.Database, "create USER test WITH DEFAULT_SCHEMA = test1");
+                
+                ExecuteRaw(database.Database, "GRANT SELECT,INSERT,UPDATE,delete ON SCHEMA :: test1 TO test; ");
                 //var entity = new NullableTable()
                 //{
                 //    Bool2 = true,
@@ -491,11 +544,31 @@ namespace SummerBoot.Test.SqlServer
             InitService();
         }
 
+        private void ExecuteRaw(DatabaseFacade db,string sql)
+        {
+            try
+            {
+
+                db.ExecuteSqlRaw(
+                    sql);
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
         private void InitService()
         {
+            var build = new ConfigurationBuilder();
+            build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
+            build.AddJsonFile(CONFIG_FILE, true, true);
+            var configurationRoot = build.Build();
+
             var services = new ServiceCollection();
 
             services.AddSummerBoot();
+            services.AddSingleton<IConfiguration>(configurationRoot);
             var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {

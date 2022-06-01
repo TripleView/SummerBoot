@@ -8,7 +8,7 @@ alter user TEST  quota unlimited on users;
 alter user TEST1 quota unlimited on users;
 ````
 ## mysql
-mysql数据库不区分大小写
+mysql数据库不区分大小写,默认数据库为test
 
 ## sqlserver 
 ALTER ROLE [test] ADD MEMBER [test]
@@ -40,3 +40,20 @@ dp.name as DBUser, dp.type_desc as UserType
 from sys.server_principals sp
 join sys.database_principals dp on dp.sid = sp.sid
 where sp.name = 'test' -- your login
+
+ALTER USER user_name
+WITH LOGIN = new_login;
+
+CREATE USER test
+
+select * from sys.sysusers s 
+
+alter USER test WITH DEFAULT_SCHEMA = test;
+
+GRANT SELECT,INSERT ON SCHEMA :: test TO test;  
+
+select * from sys.availability_groups
+
+ALTER AVAILABILITY GROUP [AG-TEPF] REMOVE DATABASE test; 
+
+select *from sys.dm_hadr_availability_group_states

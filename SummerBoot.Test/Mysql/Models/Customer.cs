@@ -18,4 +18,5 @@ namespace SummerBoot.Test.Mysql.Models
         /// </summary>
         public decimal TotalConsumptionAmount { set; get; }
     }
+
 }

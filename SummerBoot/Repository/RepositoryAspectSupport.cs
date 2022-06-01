@@ -118,6 +118,7 @@ namespace SummerBoot.Repository
 
                 OpenDb();
                 var sql = selectAttribute.Sql;
+                sql = GetValueByConfiguration(sql);
                 if (!sql.Contains("order by", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new NotSupportedException("sql must contain order by clause");
@@ -182,6 +183,7 @@ namespace SummerBoot.Repository
 
                 OpenDb();
                 var sql = selectAttribute.Sql;
+                sql = GetValueByConfiguration(sql);
                 if (!sql.Contains("order by", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new NotSupportedException("sql must contain order by clause");
@@ -245,6 +247,7 @@ namespace SummerBoot.Repository
             if (selectAttribute != null)
             {
                 var sql = selectAttribute.Sql;
+                sql = GetValueByConfiguration(sql);
                 sql = ReplaceSqlBindWhereCondition(sql);
 
                 OpenDb();
@@ -284,6 +287,7 @@ namespace SummerBoot.Repository
                 //获得动态参数
                 var dbArgs = GetParameters(method, args);
                 var sql = selectAttribute.Sql;
+                sql = GetValueByConfiguration(sql);
                 sql = ReplaceSqlBindWhereCondition(sql);
 
                 OpenDb();
@@ -329,6 +333,7 @@ namespace SummerBoot.Repository
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
             if (deleteAttribute == null && updateAttribute == null) return 0;
             var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
+            sql = GetValueByConfiguration(sql);
             sql = ReplaceSqlBindWhereCondition(sql);
 
             OpenDb();
@@ -349,6 +354,7 @@ namespace SummerBoot.Repository
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
             if (deleteAttribute == null && updateAttribute == null) return 0;
             var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
+            sql = GetValueByConfiguration(sql);
             sql = ReplaceSqlBindWhereCondition(sql);
             OpenDb();
             var executeResult = await dbConnection.ExecuteAsync(sql, dbArgs, transaction: dbTransaction);

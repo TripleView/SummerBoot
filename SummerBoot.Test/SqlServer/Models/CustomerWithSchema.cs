@@ -3,7 +3,7 @@ using SummerBoot.Repository;
 
 namespace SummerBoot.Test.SqlServer.Models
 {
-    [Table("CustomerWithSchema", Schema = "test")]
+    [Table("CustomerWithSchema", Schema = "test1")]
     public class CustomerWithSchema
     {
         public string Name { set; get; }
@@ -18,7 +18,7 @@ namespace SummerBoot.Test.SqlServer.Models
         public decimal TotalConsumptionAmount { set; get; }
     }
 
-    [Table("CustomerWithSchema", Schema = "test")]
+    [Table("CustomerWithSchema", Schema = "test1")]
     public class CustomerWithSchema2 : BaseEntity
     {
         public string Name { set; get; }

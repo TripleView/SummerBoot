@@ -50,7 +50,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                     lastComma = hasKeyField? ",":"";
                 }
                 
-                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo)}{lastComma}");
+                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo,false)}{lastComma}");
                 if (fieldInfo.IsKey)
                 {
                     keyField = fieldInfo.ColumnName;
@@ -87,11 +87,12 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         /// </summary>
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
-        private string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo)
+        private string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo, bool isAlter)
         {
             var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(1,1)" : "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
             var columnDataType = fieldInfo.ColumnDataType;
+            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY " : "";
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "nvarchar")
             {
@@ -112,7 +113,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             }
 
             var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
-            var result = $"{columnName} {columnDataType} {identityString} {nullableString}";
+            var result = $"{columnName} {columnDataType} {identityString} {primaryKeyString}{nullableString}";
             return result;
         }
 
@@ -135,7 +136,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var schemaTableName = GetSchemaTableName(schema, tableName);
-            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
+            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo,true)}";
           return sql;
         }
 
@@ -167,14 +168,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                inner join systypes t on c.xusertype = t.xusertype 
                left join sys.extended_properties ETP on ETP.major_id = c.id and ETP.minor_id = c.colid and ETP.name ='MS_Description' 
                left join syscomments CM on c.cdefault=CM.id
-               where c.id = object_id(@tableName) ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName }).ToList();
+               where c.id = (select t.object_id  from sys.tables t join sys.schemas s on t.schema_id=s.schema_id where s.name =@schemaName and t.name =@tableName) ";
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
 
             var tableDescriptionSql = @"select etp.value from SYS.OBJECTS c
                     left join sys.extended_properties ETP on ETP.major_id = c.object_id   
-                    where c.name =@tableName and minor_id =0";
+                    where c.object_id =(select t.object_id  from sys.tables t join sys.schemas s on t.schema_id=s.schema_id where s.name =@schemaName and t.name =@tableName) and minor_id =0";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
 
             var result=new DatabaseTableInfoDto()
             {
@@ -195,11 +196,12 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
         public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            var schemaTableName = GetSchemaTableName(schema, tableName);
-            var sql =
-                $"ALTER TABLE {schemaTableName} ADD CONSTRAINT {tableName}_PK PRIMARY KEY({fieldInfo.ColumnName}) ENABLE";
+            //var schemaTableName = GetSchemaTableName(schema, tableName);
+            //var sql =
+            //    $"ALTER TABLE {schemaTableName} ADD CONSTRAINT {tableName}_PK PRIMARY KEY({fieldInfo.ColumnName})";
 
-            return sql;
+            //return sql;
+            return "";
         }
 
         public string BoxTableNameOrColumnName(string tableNameOrColumnName)

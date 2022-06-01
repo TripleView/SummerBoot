@@ -42,4 +42,5 @@ namespace SummerBoot.Test.Oracle.Repository
         [Select("select * from customer where 1=1 {{ and name=:name}}{{ and age=:age}} order by id")]
         Page<Customer> GetCustomerByPageByCondition(IPageable pageable, WhereItem<string> name, WhereItem<int> age);
     }
+
 }

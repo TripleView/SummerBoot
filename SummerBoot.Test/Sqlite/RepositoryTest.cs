@@ -9,9 +9,11 @@ using SummerBoot.Test.Sqlite.Repository;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 using Xunit.Priority;
 
@@ -33,6 +35,63 @@ namespace SummerBoot.Test.Sqlite
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(308)]
+        public async Task TestGetSqlByConfigurationAsync()
+        {
+            InitSqliteDatabase("Data Source=./TestGetSqlByConfigurationAsync.db");
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            var customer1 = new Customer() { Age = 3, Name = "sb" };
+            var customer2 = new Customer() { Age = 5, Name = "sb2" };
+            testConfigurationRepository.Insert(customer1);
+            var customerList = await testConfigurationRepository.QueryListAsync();
+            Assert.Equal(1, customerList.Count);
+            Assert.Equal("sb", customerList[0].Name);
+
+            testConfigurationRepository.Insert(customer2);
+            var customerList2 = await testConfigurationRepository.QueryByPageAsync(new Pageable(1, 10));
+            Assert.Equal(2, customerList2.Data.Count);
+            Assert.Equal("sb", customerList2.Data[0].Name);
+            Assert.Equal("sb2", customerList2.Data[1].Name);
+
+            await testConfigurationRepository.UpdateByNameAsync("sb", 7);
+            var dbCustomer = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Equal(7, dbCustomer.Age);
+            await testConfigurationRepository.DeleteByNameAsync("sb");
+            var dbCustomer2 = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Null(dbCustomer2);
+        }
+
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(307)]
+        public void TestGetSqlByConfiguration()
+        {
+            InitSqliteDatabase("Data Source=./TestGetSqlByConfiguration.db");
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            var customer1 = new Customer() { Age = 3, Name = "sb" };
+            var customer2 = new Customer() { Age = 5, Name = "sb2" };
+            testConfigurationRepository.Insert(customer1);
+            var customerList = testConfigurationRepository.QueryList();
+            Assert.Equal(1, customerList.Count);
+            Assert.Equal("sb", customerList[0].Name);
+
+            testConfigurationRepository.Insert(customer2);
+            var customerList2 = testConfigurationRepository.QueryByPage(new Pageable(1, 10));
+            Assert.Equal(2, customerList2.Data.Count);
+            Assert.Equal("sb", customerList2.Data[0].Name);
+            Assert.Equal("sb2", customerList2.Data[1].Name);
+
+            testConfigurationRepository.UpdateByName("sb", 7);
+            var dbCustomer = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Equal(7, dbCustomer.Age);
+            testConfigurationRepository.DeleteByName("sb");
+            var dbCustomer2 = testConfigurationRepository.FirstOrDefault(it => it.Name == "sb");
+            Assert.Null(dbCustomer2);
+        }
 
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
@@ -351,12 +410,17 @@ namespace SummerBoot.Test.Sqlite
             InitSqliteDatabase("Data Source=./TestSqliteAsync.db");
             await TestRepositoryAsync();
         }
-
+        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
         private void InitServices(string databaseString)
         {
+            var build = new ConfigurationBuilder();
+            build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
+            build.AddJsonFile(CONFIG_FILE, true, true);
+            var configurationRoot = build.Build();
             var services = new ServiceCollection();
 
             services.AddSummerBoot();
+            services.AddSingleton<IConfiguration>(configurationRoot);
 
             if (string.IsNullOrWhiteSpace(databaseString))
             {

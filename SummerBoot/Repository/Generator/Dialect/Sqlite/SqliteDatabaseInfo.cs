@@ -188,9 +188,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
 
         public string GetDefaultSchema(string schema)
         {
-            var dbConnection = dbFactory.GetDbConnection();
-            var result = dbConnection.QueryFirstOrDefault<string>("select USERNAME  from user_users");
-            return result;
+            return "";
         }
     }
 }
