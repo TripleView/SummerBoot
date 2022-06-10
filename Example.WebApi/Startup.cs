@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using SummerBoot.Core;
 using System;
 using System.Collections.Generic;
+using MySql.Data.MySqlClient;
 
 namespace Example.WebApi
 {
@@ -23,18 +24,21 @@ namespace Example.WebApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSummerBoot();
-
             //添加跨域
             services.AddCors(it => it.AddPolicy("all", policy => policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true)));
 
 
+            services.AddSummerBoot();
+
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(SqliteConnection);
-                it.ConnectionString = "Data source=./Customer.db";
+                //-----------以下为必填参数---------
+                //注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
+                it.DbConnectionType = typeof(MySqlConnection);
+                //添加数据库连接字符串
+                it.ConnectionString = "Server=localhost;Database=test2;User ID=root;Password=123456;";
             });
-            
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "sukcore后台Api", Version = "v1" });

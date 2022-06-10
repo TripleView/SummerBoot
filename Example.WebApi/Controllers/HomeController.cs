@@ -1,9 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Example.WebApi.Model;
+using Example.WebApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Newtonsoft.Json;
+using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Repository.Generator;
 
 namespace Example.WebApi.Controllers
 {
@@ -16,6 +22,50 @@ namespace Example.WebApi.Controllers
     [Route("[controller]")]
     public class HomeController : ControllerBase
     {
+        private readonly ICustomerRepository customerRepository;
+        private readonly IDbGenerator dbGenerator;
+
+        public HomeController(ICustomerRepository customerRepository, IDbGenerator dbGenerator)
+        {
+            this.customerRepository = customerRepository;
+            this.dbGenerator = dbGenerator;
+        }
+
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            var results= dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
+            var generateClasses = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer" }, "Test.Model");
+            foreach (var databaseSqlResult in results)
+            {
+                dbGenerator.ExecuteGenerateSql(databaseSqlResult);
+            }
+
+            var cusotmer = new Customer()
+            {
+                Name = "三合",
+                Age = 3,
+                CustomerNo = "00001",
+                Address = "福建省",
+                TotalConsumptionAmount = 999
+            };
+            //增
+            customerRepository.Insert(cusotmer);
+            //改
+            cusotmer.Age = 5;
+            customerRepository.Update(cusotmer);
+            //也可以这样改
+            customerRepository.Where(it => it.Name == "三合").SetValue(it => it.Age, 6).ExecuteUpdate();
+            //查
+            var dbCustomer= customerRepository.FirstOrDefault(it => it.Name == "三合");
+            //删
+            customerRepository.Delete(dbCustomer);
+            //也可以这样删
+            customerRepository.Delete(it=>it.Name== "三合");
+
+            return Content("ok");
+        }
+
         [HttpGet("index")]
         public IActionResult Index()
         {

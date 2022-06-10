@@ -48,7 +48,6 @@
 
   <ItemGroup>
     <Folder Include="Repository\TypeHandler\Dialect\Mysql" />
-    <Folder Include="Repository\TypeHandler\Dialect\Mysql\" />
     <Folder Include="Repository\TypeHandler\Dialect\SqlServer\" />
   </ItemGroup>
   
