@@ -6,6 +6,12 @@ using SummerBoot.Repository.Attributes;
 
 namespace SummerBoot.Test.Oracle.Models
 {
+    public enum Enum2
+    {
+        x,
+        y
+    }
+
     [Table("NULLABLETABLE")]
     [Description("NullableTable")]
     public class NullableTable
@@ -47,6 +53,8 @@ namespace SummerBoot.Test.Oracle.Models
         public string String2 { get; set; }
         [Column("STRING3")]
         public string String3 { get; set; }
+        [Column("ENUM2")]
+        public Enum2 Enum2 { get; set; }
     }
 
 }

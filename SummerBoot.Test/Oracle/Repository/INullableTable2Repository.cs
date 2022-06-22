@@ -8,4 +8,16 @@ namespace SummerBoot.Test.Oracle.Repository
     {
         
     }
+
+    [AutoRepository]
+    public interface INullableTableRepository : IBaseRepository<NullableTable>
+    {
+
+    }
+
+    [AutoRepository]
+    public interface INotNullableTableRepository : IBaseRepository<NotNullableTable>
+    {
+
+    }
 }

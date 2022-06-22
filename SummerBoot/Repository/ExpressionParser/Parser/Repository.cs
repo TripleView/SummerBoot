@@ -115,6 +115,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return null;
         }
 
+        /// <summary>
+        /// 快速批量插入
+        /// </summary>
+        /// <param name="insertEntity"></param>
+        /// <returns></returns>
+        public DbQueryResult InternalFastInsert(List<T> insertEntitys)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                return dbQueryProvider.queryFormatter.FastBatchInsert(insertEntitys); ;
+            }
+
+            return null;
+        }
+
         public DbQueryResult InternalUpdate(T updateEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)

@@ -122,7 +122,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public void Format(Expression expression)
         {
-            _sb.Clear();
+            //_sb.Clear();
+            this.Clear();
             if (expression is SelectExpression selectExpression)
             {
                 var result = this.VisitSelect(selectExpression);
@@ -484,6 +485,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
 
             return result;
+        }
+        /// <summary>
+        /// 批量插入
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="insertEntitys"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public virtual DbQueryResult FastBatchInsert<T>(List<T> insertEntitys)
+        {
+            throw new NotSupportedException("not support this database");
         }
 
         public DbQueryResult Update<T>(T updateEntity)

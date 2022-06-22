@@ -8,10 +8,15 @@ using SummerBoot.Test.Oracle.Models;
 using SummerBoot.Test.Oracle.Repository;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
+using Google.Protobuf.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SummerBoot.Repository.Generator;
@@ -25,6 +30,384 @@ namespace SummerBoot.Test.Oracle
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// 测试批量插入
+        /// </summary>
+        [Fact, Priority(211)]
+        public async Task TestBatchInsertAsync()
+        {
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitOracleDatabase();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+            sw.Start();
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Models.Enum2.y
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+           await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+
+            sw.Stop();
+            var l1 = sw.ElapsedMilliseconds;
+
+            sw.Restart();
+            await nullableTableRepository.InsertAsync(nullableTableList);
+            sw.Stop();
+            var l3 = sw.ElapsedMilliseconds;
+
+            sw.Restart();
+            //Customer
+            var connection = dbFactory.GetDbConnection() as OracleConnection;
+            //connection.Open();
+            int?[] Int2 = new int?[total];
+            bool[] Bool2 = new bool[total];
+            byte[] Byte2 = new byte[total];
+            DateTime[] DateTime2 = new DateTime[total];
+            decimal?[] Decimal2 = new decimal?[total];
+            decimal[] Decimal3 = new decimal[total];
+            double[] Double2 = new double[total];
+            float[] Float2 = new float[total];
+            Guid?[] Guid2 = new Guid?[total];
+            short[] Short2 = new short[total];
+            TimeSpan[] TimeSpan2 = new TimeSpan[total];
+            string[] String2 = new string[total];
+            string[] String3 = new string[total];
+            long[] Long2 = new long[total];
+            Enum2[] Enum2 = new Enum2[total];
+
+            for (int j = 0; j < total; j++)
+            {
+                Int2[j] = 2;
+                Bool2[j] = true;
+                Byte2[j] = 1;
+                DateTime2[j] = now2;
+                Decimal2[j] = 1m;
+                Decimal3[j] = 1.1m;
+                Double2[j] = 1.1;
+                Float2[j] = (float)1.1;
+                Guid2[j] = Guid.NewGuid();
+                Short2[j] = 1;
+                TimeSpan2[j] = TimeSpan.FromHours(1);
+                String2[j] = "sb";
+                String3[j] = "sb";
+                Long2[j] = 2;
+                Enum2[j] = Models.Enum2.y;
+                if (j == 0)
+                {
+                    Guid2[j] = guid;
+                }
+            }
+
+            OracleParameter pInt2 = new OracleParameter();
+            pInt2.OracleDbType = OracleDbType.Int32;
+            pInt2.Value = Int2;
+
+            OracleParameter pBool2 = new OracleParameter();
+            pBool2.OracleDbType = OracleDbType.Byte;
+            pBool2.Value = Bool2;
+
+            OracleParameter pByte2 = new OracleParameter();
+            pByte2.OracleDbType = OracleDbType.Byte;
+            pByte2.Value = Byte2;
+
+            OracleParameter pDateTime2 = new OracleParameter();
+            pDateTime2.OracleDbType = OracleDbType.TimeStamp;
+            pDateTime2.Value = DateTime2;
+
+            OracleParameter pDecimal2 = new OracleParameter();
+            pDecimal2.OracleDbType = OracleDbType.Decimal;
+            pDecimal2.Value = Decimal2;
+
+            OracleParameter pDecimal3 = new OracleParameter();
+            pDecimal3.OracleDbType = OracleDbType.Decimal;
+            pDecimal3.Value = Decimal3;
+
+            OracleParameter pDouble2 = new OracleParameter();
+            pDouble2.OracleDbType = OracleDbType.Double;
+            pDouble2.Value = Double2;
+
+            OracleParameter pFloat2 = new OracleParameter();
+            pFloat2.OracleDbType = OracleDbType.BinaryFloat;
+            pFloat2.Value = Float2;
+
+
+            OracleParameter pGuid2 = new OracleParameter();
+            pGuid2.OracleDbType = OracleDbType.Raw;
+            pGuid2.Value = Guid2;
+
+            OracleParameter pShort2 = new OracleParameter();
+            pShort2.OracleDbType = OracleDbType.Int16;
+            pShort2.Value = Short2;
+
+            OracleParameter pTimeSpan2 = new OracleParameter();
+            pTimeSpan2.OracleDbType = OracleDbType.IntervalDS;
+            pTimeSpan2.Value = TimeSpan2;
+
+            OracleParameter pString2 = new OracleParameter();
+            pString2.OracleDbType = OracleDbType.Varchar2;
+            pString2.Value = String2;
+
+            OracleParameter pString3 = new OracleParameter();
+            pString3.OracleDbType = OracleDbType.Varchar2;
+            pString3.Value = String3;
+
+
+            OracleParameter pLong2 = new OracleParameter();
+            pLong2.OracleDbType = OracleDbType.Long;
+            pLong2.Value = Long2;
+
+            OracleParameter pEnum2 = new OracleParameter();
+            pEnum2.OracleDbType = OracleDbType.Byte;
+            pEnum2.Value = Long2;
+            // create command and set properties
+            OracleCommand cmd = connection.CreateCommand();
+            cmd.CommandText = "INSERT INTO NULLABLETABLE (INT2, LONG2, FLOAT2, DOUBLE2, DECIMAL2, DECIMAL3, GUID2, SHORT2, DATETIME2, BOOL2, TIMESPAN2, BYTE2, STRING2, STRING3,ENUM2) VALUES(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15)";
+            cmd.ArrayBindCount = total;
+            cmd.Parameters.Add(pInt2);
+            cmd.Parameters.Add(pLong2);
+            cmd.Parameters.Add(pFloat2);
+            cmd.Parameters.Add(pDouble2);
+            cmd.Parameters.Add(pDecimal2);
+            cmd.Parameters.Add(pDecimal3);
+            cmd.Parameters.Add(pGuid2);
+            cmd.Parameters.Add(pShort2);
+            cmd.Parameters.Add(pDateTime2);
+            cmd.Parameters.Add(pBool2);
+            cmd.Parameters.Add(pTimeSpan2);
+            cmd.Parameters.Add(pByte2);
+            cmd.Parameters.Add(pString2);
+            cmd.Parameters.Add(pString3);
+            cmd.Parameters.Add(pEnum2);
+            await cmd.ExecuteNonQueryAsync();
+            sw.Stop();
+            var l2 = sw.ElapsedMilliseconds;
+            var rate = l1 / l2;
+            var rate2 = l3 / l1;
+            var rate3 = l3 / l2;
+            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+            Assert.Equal(3, result.Count);
+            result = nullableTableRepository.Where(it => it.Enum2 == Models.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(4000, result.Count);
+        }
+
+        /// <summary>
+        /// 测试批量插入
+        /// </summary>
+        [Fact, Priority(211)]
+        public async Task TestBatchInsert()
+        {
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitOracleDatabase();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+            sw.Start();
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Models.Enum2.y
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            nullableTableRepository.FastBatchInsert(nullableTableList);
+           
+            sw.Stop();
+            var l1 = sw.ElapsedMilliseconds;
+           
+            sw.Restart();
+            nullableTableRepository.Insert(nullableTableList);
+            sw.Stop();
+            var l3 = sw.ElapsedMilliseconds;
+
+            sw.Restart();
+            //Customer
+            var connection = dbFactory.GetDbConnection() as OracleConnection;
+            //connection.Open();
+            int?[] Int2 = new int?[total];
+            bool[] Bool2 = new bool[total];
+            byte[] Byte2 = new byte[total];
+            DateTime[] DateTime2 = new DateTime[total];
+            decimal?[] Decimal2 = new decimal?[total];
+            decimal[] Decimal3 = new decimal[total];
+            double[] Double2 = new double[total];
+            float[] Float2 = new float[total];
+            Guid?[] Guid2 = new Guid?[total];
+            short[] Short2 = new short[total];
+            TimeSpan[] TimeSpan2 = new TimeSpan[total];
+            string[] String2 = new string[total];
+            string[] String3 = new string[total];
+            long[] Long2 = new long[total];
+            Enum2[] Enum2 = new Enum2[total];
+
+            for (int j = 0; j < total; j++)
+            {
+                Int2[j] = 2;
+                Bool2[j] = true;
+                Byte2[j] = 1;
+                DateTime2[j] = now2;
+                Decimal2[j] = 1m;
+                Decimal3[j] = 1.1m;
+                Double2[j] = 1.1;
+                Float2[j] = (float)1.1;
+                Guid2[j] = Guid.NewGuid();
+                Short2[j] = 1;
+                TimeSpan2[j] = TimeSpan.FromHours(1);
+                String2[j] = "sb";
+                String3[j] = "sb";
+                Long2[j] = 2;
+                Enum2[j] = Models.Enum2.y;
+                if (j == 0)
+                {
+                    Guid2[j] = guid;
+                }
+            }
+
+            OracleParameter pInt2 = new OracleParameter();
+            pInt2.OracleDbType = OracleDbType.Int32;
+            pInt2.Value = Int2;
+
+            OracleParameter pBool2 = new OracleParameter();
+            pBool2.OracleDbType = OracleDbType.Byte;
+            pBool2.Value = Bool2;
+            
+            OracleParameter pByte2 = new OracleParameter();
+            pByte2.OracleDbType = OracleDbType.Byte;
+            pByte2.Value = Byte2;
+
+            OracleParameter pDateTime2 = new OracleParameter();
+            pDateTime2.OracleDbType = OracleDbType.TimeStamp;
+            pDateTime2.Value = DateTime2;
+
+            OracleParameter pDecimal2 = new OracleParameter();
+            pDecimal2.OracleDbType = OracleDbType.Decimal;
+            pDecimal2.Value = Decimal2;
+
+            OracleParameter pDecimal3 = new OracleParameter();
+            pDecimal3.OracleDbType = OracleDbType.Decimal;
+            pDecimal3.Value = Decimal3;
+
+            OracleParameter pDouble2 = new OracleParameter();
+            pDouble2.OracleDbType = OracleDbType.Double;
+            pDouble2.Value = Double2;
+
+            OracleParameter pFloat2 = new OracleParameter();
+            pFloat2.OracleDbType = OracleDbType.BinaryFloat;
+            pFloat2.Value = Float2;
+
+            
+            OracleParameter pGuid2 = new OracleParameter();
+            pGuid2.OracleDbType = OracleDbType.Raw;
+            pGuid2.Value = Guid2;
+
+            OracleParameter pShort2 = new OracleParameter();
+            pShort2.OracleDbType = OracleDbType.Int16;
+            pShort2.Value = Short2;
+
+            OracleParameter pTimeSpan2 = new OracleParameter();
+            pTimeSpan2.OracleDbType = OracleDbType.IntervalDS;
+            pTimeSpan2.Value = TimeSpan2;
+
+            OracleParameter pString2 = new OracleParameter();
+            pString2.OracleDbType = OracleDbType.Varchar2;
+            pString2.Value = String2;
+
+            OracleParameter pString3 = new OracleParameter();
+            pString3.OracleDbType = OracleDbType.Varchar2;
+            pString3.Value = String3;
+
+
+            OracleParameter pLong2 = new OracleParameter();
+            pLong2.OracleDbType = OracleDbType.Long;
+            pLong2.Value = Long2;
+
+            OracleParameter pEnum2 = new OracleParameter();
+            pEnum2.OracleDbType = OracleDbType.Byte;
+            pEnum2.Value = Long2;
+            // create command and set properties
+            OracleCommand cmd = connection.CreateCommand();
+            cmd.CommandText = "INSERT INTO NULLABLETABLE (INT2, LONG2, FLOAT2, DOUBLE2, DECIMAL2, DECIMAL3, GUID2, SHORT2, DATETIME2, BOOL2, TIMESPAN2, BYTE2, STRING2, STRING3,ENUM2) VALUES(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15)";
+            cmd.ArrayBindCount = total;
+            cmd.Parameters.Add(pInt2);
+            cmd.Parameters.Add(pLong2);
+            cmd.Parameters.Add(pFloat2);
+            cmd.Parameters.Add(pDouble2);
+            cmd.Parameters.Add(pDecimal2);
+            cmd.Parameters.Add(pDecimal3);
+            cmd.Parameters.Add(pGuid2);
+            cmd.Parameters.Add(pShort2);
+            cmd.Parameters.Add(pDateTime2);
+            cmd.Parameters.Add(pBool2);
+            cmd.Parameters.Add(pTimeSpan2);
+            cmd.Parameters.Add(pByte2);
+            cmd.Parameters.Add(pString2);
+            cmd.Parameters.Add(pString3);
+            cmd.Parameters.Add(pEnum2);
+            cmd.ExecuteNonQuery();
+            sw.Stop();
+            var l2 = sw.ElapsedMilliseconds;
+            var rate = l1 / l2;
+            var rate2 = l3 / l1;
+            var rate3 = l3 / l2;
+            var result= nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it=>it.Id).ToList();
+            Assert.Equal(3,result.Count);
+             result = nullableTableRepository.Where(it => it.Enum2 == Models.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(4000, result.Count);
+        }
 
         /// <summary>
         /// 测试从配置文件读取sql
@@ -381,6 +764,8 @@ namespace SummerBoot.Test.Oracle
             sb.AppendLine("      public string STRING2 { get; set; }");
             sb.AppendLine("      [Column(\"STRING3\")]");
             sb.AppendLine("      public string STRING3 { get; set; }");
+            sb.AppendLine("      [Column(\"ENUM2\")]");
+            sb.AppendLine("      public int ENUM2 { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
             exceptStr = sb.ToString();
@@ -470,6 +855,7 @@ namespace SummerBoot.Test.Oracle
             sb.AppendLine("    \"BYTE2\" NUMBER(3,0),");
             sb.AppendLine("    \"STRING2\" NVARCHAR2(100),");
             sb.AppendLine("    \"STRING3\" NVARCHAR2(2000),");
+            sb.AppendLine("    \"ENUM2\" NUMBER(18,2) NOT NULL,");
             sb.AppendLine("    CONSTRAINT \"PK_NULLABLETABLE2\" PRIMARY KEY (\"ID\")");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();

@@ -3,6 +3,7 @@ using SummerBoot.Core;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -412,6 +413,68 @@ namespace SummerBoot.Repository
             return result;
         }
 
+        /// <summary>
+        /// 快速批量插入
+        /// </summary>
+        /// <param name="list"></param>
+        public void FastBatchInsert(List<T> list)
+        {
+            foreach (var t in list)
+            {
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    baseEntity.Active = 1;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    oracleBaseEntity.Active = 1;
+                }
+            }
+
+            var internalResult = InternalFastInsert(list);
+
+            OpenDb();
+            if (repositoryOption.IsOracle)
+            {
+                var cmd = dbConnection.CreateCommand();
+                cmd.CommandText = internalResult.Sql;
+                cmd.SetPropertyValue("ArrayBindCount", list.Count);
+
+                foreach (var parameter in internalResult.SqlParameters)
+                {
+                    var param = cmd.CreateParameter();
+
+                    if (parameter.DbType == DbType.Time)
+                    {
+                        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+                        var dbtype = Enum.Parse(oracleDbType, "114");
+                        param.SetPropertyValue("OracleDbType", dbtype);
+                        param.Value = parameter.Value;
+                    }
+                    else if (parameter.DbType == DbType.Time)
+                    {
+                        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+                        var dbtype = Enum.Parse(oracleDbType, "123");
+                        param.SetPropertyValue("OracleDbType", dbtype);
+                        param.Value = parameter.Value;
+                    }
+                    else
+                    {
+                        param.DbType = parameter.DbType;
+                        param.Value = parameter.Value;
+                    }
+
+                    cmd.Parameters.Add(param);
+                }
+
+                var resultCount = cmd.ExecuteNonQuery();
+            }
+
+            CloseDb();
+        }
+
         #endregion sync
 
         #region async
@@ -543,7 +606,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalGetAll();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = (await dbConnection.QueryAsync<T>(internalResult.Sql, dynamicParameters,transaction:dbTransaction)).ToList();
+            var result = (await dbConnection.QueryAsync<T>(internalResult.Sql, dynamicParameters, transaction: dbTransaction)).ToList();
             CloseDb();
 
             return result;
@@ -565,7 +628,7 @@ namespace SummerBoot.Repository
             }
 
             var internalResult = InternalUpdate(t);
-            
+
             OpenDb();
             var result = await dbConnection.ExecuteAsync(internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
@@ -605,7 +668,7 @@ namespace SummerBoot.Repository
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(internalResult.Sql, dynamicParameters,transaction:dbTransaction);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(internalResult.Sql, dynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -627,6 +690,68 @@ namespace SummerBoot.Repository
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// 快速批量插入
+        /// </summary>
+        /// <param name="list"></param>
+        public async Task FastBatchInsertAsync(List<T> list)
+        {
+            foreach (var t in list)
+            {
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    baseEntity.Active = 1;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    oracleBaseEntity.Active = 1;
+                }
+            }
+
+            var internalResult = InternalFastInsert(list);
+
+            OpenDb();
+            if (repositoryOption.IsOracle)
+            {
+                var cmd = dbConnection.CreateCommand();
+                cmd.CommandText = internalResult.Sql;
+                cmd.SetPropertyValue("ArrayBindCount", list.Count);
+
+                foreach (var parameter in internalResult.SqlParameters)
+                {
+                    var param = cmd.CreateParameter();
+
+                    if (parameter.DbType == DbType.Time)
+                    {
+                        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+                        var dbtype = Enum.Parse(oracleDbType, "114");
+                        param.SetPropertyValue("OracleDbType", dbtype);
+                        param.Value = parameter.Value;
+                    }
+                    else if (parameter.DbType == DbType.Time)
+                    {
+                        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+                        var dbtype = Enum.Parse(oracleDbType, "123");
+                        param.SetPropertyValue("OracleDbType", dbtype);
+                        param.Value = parameter.Value;
+                    }
+                    else
+                    {
+                        param.DbType = parameter.DbType;
+                        param.Value = parameter.Value;
+                    }
+
+                    cmd.Parameters.Add(param);
+                }
+
+                var resultCount = cmd.ExecuteNonQuery();
+            }
+
+            CloseDb();
         }
     }
 }

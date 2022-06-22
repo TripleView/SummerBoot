@@ -8,6 +8,7 @@ using SummerBoot.Test.SqlServer.Repository;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -28,6 +29,27 @@ namespace SummerBoot.Test.SqlServer
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// 测试从配置文件读取sql
+        /// </summary>
+        [Fact, Priority(409)]
+        public async Task TestBatchInsert()
+        {
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitDatabase();
+            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
+            using (var dbConnection=new SqlConnection())
+            {
+                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection);
+                sqlBulkCopy.BatchSize = total;
+                //sqlBulkCopy.WriteToServer();
+            }
+             
+        }
 
         /// <summary>
         /// 测试从配置文件读取sql

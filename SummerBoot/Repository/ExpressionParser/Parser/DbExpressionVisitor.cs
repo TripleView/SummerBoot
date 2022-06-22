@@ -913,6 +913,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected override Expression VisitUnary(UnaryExpression unaryExpression)
         {
+            if (unaryExpression.NodeType == ExpressionType.Convert)
+            {
+                return Visit(unaryExpression.Operand);
+            }
+
             //兼容active?可空类型=1这种情况
             if (unaryExpression.NodeType == ExpressionType.Convert && unaryExpression.Operand is ConstantExpression constantExpression)
             {
@@ -920,6 +925,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
 
             var operatorString = nodeTypeMappings[unaryExpression.NodeType];
+            
 
             var operand = unaryExpression.Operand;
             var middleResult = this.Visit(operand);

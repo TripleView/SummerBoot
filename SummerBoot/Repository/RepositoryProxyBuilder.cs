@@ -24,7 +24,7 @@ namespace SummerBoot.Repository
             new ConcurrentDictionary<string, Type>();
 
         //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] { "ToPage","ToPageAsync","InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
+        private string[] solidMethodNames = new string[] { "FastBatchInsertAsync","FastBatchInsert", "ToPage","ToPageAsync","InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
         public object Build(Type interfaceType, params object[] constructor)
         {
             var temp = TargetTypeCache.ToJson();

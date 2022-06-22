@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
+using SummerBoot.Repository;
 
 namespace SummerBoot.Core
 {
@@ -115,7 +120,7 @@ namespace SummerBoot.Core
         public static Type GetUnderlyingType(this Type type)
         {
             var resultTmp = type.IsAsyncType() ? type.GenericTypeArguments.First() : type;
-            var resultTmp2 = resultTmp.IsGenericType 
+            var resultTmp2 = resultTmp.IsGenericType
                 ? resultTmp.GetGenericArguments().First()
                 : resultTmp;
 
@@ -153,6 +158,87 @@ namespace SummerBoot.Core
         public static bool IsDictionary(this Type type)
         {
             return type.GetInterfaces().Any(it => it == typeof(IDictionary));
+        }
+
+        /// <summary>
+        /// 通过表达式树获取实体类的属性值
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="model"></param>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static TResult GetPropertyValue<T, TResult>(this T model, string propertyName)
+        {
+           var result= GetPropertyValue(model, propertyName);
+           return (TResult)result;
+        }
+
+        public static ConcurrentDictionary<string, object> CacheDictionary = new ConcurrentDictionary<string, object>();
+        /// <summary>
+        /// 通过表达式树获取实体类的属性值
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="model"></param>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static object GetPropertyValue<T>(this T model, string propertyName)
+        {
+            var type = model.GetType();
+            var property = type.GetProperty(propertyName);
+            if (property == null)
+            {
+                throw new ArgumentNullException($"could not find property with name {propertyName}");
+            }
+
+            var key="get:" + type.FullName + property.Name;
+            if (CacheDictionary.TryGetValue(key, out var func))
+            {
+                return ((Delegate)func).DynamicInvoke(model);
+            }
+
+            var modelExpression = Expression.Parameter(type, "model");
+            var propertyExpression = Expression.Property(modelExpression, property);
+            var convertExpression = Expression.Convert(propertyExpression, typeof(object));
+            var lambda = Expression.Lambda(convertExpression, modelExpression).Compile();
+            var result=lambda.DynamicInvoke(model);
+            CacheDictionary.TryAdd(key, lambda);
+            return result;
+        }
+
+        /// <summary>
+        /// 通过表达式树设置实体类的属性值
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="model"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="value"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void SetPropertyValue<T>(this T model, string propertyName, object value)
+        {
+            var type = model.GetType();
+            var property = type.GetProperty(propertyName);
+            
+            if (property == null)
+            {
+                throw new ArgumentNullException($"could not find property with name {propertyName}");
+            }
+
+            var key = "set:" + type.FullName + property.Name;
+            if (CacheDictionary.TryGetValue(key, out var func))
+            {
+                ((Delegate)func).DynamicInvoke(model, value);
+            }
+
+            var modelExpression = Expression.Parameter(type, "model");
+            var propertyExpression = Expression.Parameter(typeof(object), "val");
+            var convertExpression = Expression.Convert(propertyExpression, property.PropertyType);
+            var methodCallExpression = Expression.Call(modelExpression, property.GetSetMethod(), convertExpression);
+            var lambda = Expression.Lambda(methodCallExpression, modelExpression, propertyExpression).Compile();
+            CacheDictionary.TryAdd(key, lambda);
+            lambda.DynamicInvoke(model, value);
         }
     }
 }

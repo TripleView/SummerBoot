@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.ExpressionParser.Base;
@@ -140,6 +141,62 @@ namespace ExpressionParser.Test
     }
     public class UnitTestExpressionTreeVisitor
     {
+
+        [Fact]
+        public void TestArray()
+        {
+            var c = typeof(Dog).MakeArrayType(1);
+            var d = (Array)Activator.CreateInstance(c, args: new object[] { 16 });
+            var dffffff = typeof(Dog).GetProperty("Name").PropertyType;
+            var dog = new Dog()
+            {
+                Name = "sb"
+            };
+            d.SetValue(dog, 0);
+            Assert.Equal("sb",(d.GetValue(0) as Dog).Name);
+        }
+
+        [Fact]
+        public void TestSetPropertyValueByExpression()
+        {
+            var dog = new Dog()
+            {
+                Name = "sb"
+            };
+            dog.SetPropertyValue("Name", "sb2");
+            dog.SetPropertyValue("Active", 1);
+            Assert.Equal("sb2", dog.Name);
+            Assert.Equal(1, dog.Active);
+          
+
+            dog.SetPropertyValue("Active", null);
+            Assert.Equal(null, dog.Active);
+        }
+
+        [Fact]
+        public void TestGetPropertyValueByExpression()
+        {
+            var dog = new Dog()
+            {
+                Name = "sb",
+                Active = null
+            };
+            var value = dog.GetPropertyValue<Dog, string>("Name");
+            Assert.Equal("sb", value);
+            var intValue = dog.GetPropertyValue<Dog, int?>("Active");
+            Assert.Equal(null, intValue);
+            dog.Active = 1;
+             intValue = dog.GetPropertyValue<Dog, int?>("Active");
+            Assert.Equal(1, intValue);
+            dog.Active = null;
+            var value2 = dog.GetPropertyValue("Name");
+            Assert.Equal("sb", value2.ToString());
+            var intValue2 = dog.GetPropertyValue<Dog, int?>("Active");
+            Assert.Equal(null, intValue2);
+            dog.Active = 1;
+            intValue2 = dog.GetPropertyValue<Dog, int?>("Active");
+            Assert.Equal(1, intValue2);
+        }
         [Fact]
         public void TestNullable()
         {
@@ -1302,7 +1359,7 @@ namespace ExpressionParser.Test
             Assert.Equal("@y1", r1MiddleResult.SqlParameters[1].ParameterName);
             Assert.Equal(1, r1MiddleResult.SqlParameters[1].Value);
         }
-        
+
         [Fact]
         public void TestDelete()
         {

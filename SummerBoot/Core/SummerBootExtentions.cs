@@ -252,14 +252,19 @@ namespace SummerBoot.Core
             //oracle
             if (repositoryOption.IsOracle||repositoryOption.IsMysql)
             {
-                SqlMapper.RemoveTypeMap(typeof(Guid));
-                SqlMapper.AddTypeHandler(typeof(Guid), new GuidTypeHandler());
                 SqlMapper.RemoveTypeMap(typeof(TimeSpan));
                 SqlMapper.AddTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
                 if (repositoryOption.IsOracle)
                 {
                     SqlMapper.RemoveTypeMap(typeof(bool));
                     SqlMapper.AddTypeHandler(typeof(bool), new BoolNumericTypeHandler());
+                    SqlMapper.RemoveTypeMap(typeof(Guid));
+                    SqlMapper.AddTypeHandler(typeof(Guid), new OracleGuidTypeHandler());
+                }
+                else
+                {
+                    SqlMapper.RemoveTypeMap(typeof(Guid));
+                    SqlMapper.AddTypeHandler(typeof(Guid), new GuidTypeHandler());
                 }
             }
 

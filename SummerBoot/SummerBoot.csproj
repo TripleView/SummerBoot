@@ -6,7 +6,7 @@
     <StartupObject />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <Description>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单优雅。</Description>
     <PackageReleaseNotes>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于让.net开发变得更简单。</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/TripleView/SummerBoot</RepositoryUrl>
