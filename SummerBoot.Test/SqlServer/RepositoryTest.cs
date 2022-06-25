@@ -9,9 +9,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -33,22 +35,170 @@ namespace SummerBoot.Test.SqlServer
         /// <summary>
         /// 测试从配置文件读取sql
         /// </summary>
-        [Fact, Priority(409)]
+        [Fact, Priority(410)]
         public async Task TestBatchInsert()
         {
+            InitDatabase();
+            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlServer connectionString must not be null");
+            }
             var guid = Guid.NewGuid();
             var now = DateTime.Now;
             var now2 = now;
             var total = 2000;
             InitDatabase();
-            var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
-            using (var dbConnection=new SqlConnection())
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+           
+            for (int i = 0; i < total; i++)
             {
-                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection);
-                sqlBulkCopy.BatchSize = total;
-                //sqlBulkCopy.WriteToServer();
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
             }
-             
+
+            sw.Start();
+            nullableTableRepository.FastBatchInsert(nullableTableList);
+
+            sw.Stop();
+            var l1 = sw.ElapsedMilliseconds;
+            var nullableTableList2 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now2,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList2.Add(a);
+            }
+            sw.Restart();
+            nullableTableRepository.Insert(nullableTableList2);
+            sw.Stop();
+            var l3 = sw.ElapsedMilliseconds;
+            var nullableTableList3 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 0,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList3.Add(a);
+            }
+            sw.Restart();
+            using (var dbConnection = new SqlConnection(connectionString))
+            {
+                //&SqlBulkCopyOptions.KeepNulls
+                dbConnection.Open();
+                var dbtran=dbConnection.BeginTransaction();
+                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection, SqlBulkCopyOptions.KeepIdentity ,
+                    dbtran);
+                sqlBulkCopy.BatchSize = total;
+                sqlBulkCopy.DestinationTableName = "NullableTable";
+                sqlBulkCopy.ColumnMappings.Add("Int2", "Int2");
+                sqlBulkCopy.ColumnMappings.Add("Bool2", "Bool2");
+                sqlBulkCopy.ColumnMappings.Add("Byte2", "Byte2");
+                sqlBulkCopy.ColumnMappings.Add("DateTime2", "DateTime2");
+                sqlBulkCopy.ColumnMappings.Add("Decimal2", "Decimal2");
+                sqlBulkCopy.ColumnMappings.Add("Decimal3", "Decimal3");
+                sqlBulkCopy.ColumnMappings.Add("Double2", "Double2");
+                sqlBulkCopy.ColumnMappings.Add("Float2", "Float2");
+                sqlBulkCopy.ColumnMappings.Add("Guid2", "Guid2");
+                sqlBulkCopy.ColumnMappings.Add("Short2", "Short2");
+                sqlBulkCopy.ColumnMappings.Add("TimeSpan2", "TimeSpan2");
+
+                sqlBulkCopy.ColumnMappings.Add("String2", "String2");
+                sqlBulkCopy.ColumnMappings.Add("String3", "String3");
+                sqlBulkCopy.ColumnMappings.Add("Long2", "Long2");
+                sqlBulkCopy.ColumnMappings.Add("Enum2", "Enum2");
+                sqlBulkCopy.ColumnMappings.Add("Int3", "TestInt3");
+
+                var table = nullableTableList3.ToDataTable();
+                //table.Columns.Remove("id");
+                sqlBulkCopy.WriteToServer(table);
+                dbtran.Commit();
+            }
+            sw.Stop();
+            var l2 = sw.ElapsedMilliseconds;
+            var rate = l1 / l2;
+            var rate2 = l3 / l1;
+            var rate3 = l3 / l2;
+            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+            Assert.Equal(3, result.Count);
+            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(6000, result.Count);
+            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
+                .ToList();
+            Assert.Equal(3, models.Count);
+            Assert.True(models[0].Equals(models[1]));
+            Assert.True(models[0].Equals(models[2]));
         }
 
         /// <summary>
@@ -180,8 +330,8 @@ namespace SummerBoot.Test.SqlServer
             var customerWithSchema4 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
             Assert.Null(customerWithSchema4);
         }
-        
-        
+
+
         /// <summary>
         /// 测试根据实体类创建数据库表和进行插入查询对照
         /// </summary>
@@ -276,7 +426,7 @@ namespace SummerBoot.Test.SqlServer
             customerRepository.Insert(new Customer() { Name = "sb" });
             var customer = tableColumnMapRepository.FirstOrDefault(it => it.CustomerName == "sb");
             Assert.NotNull(customer);
-            Assert.Equal("sb",customer.CustomerName);
+            Assert.Equal("sb", customer.CustomerName);
         }
         [Fact, Priority(404)]
         public void TestGenerateCsharpClassByDatabaseInfo()
@@ -363,9 +513,13 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("      public string String2 { get; set; }");
             sb.AppendLine("      [Column(\"String3\")]");
             sb.AppendLine("      public string String3 { get; set; }");
+            sb.AppendLine("      [Column(\"Enum2\")]");
+            sb.AppendLine("      public int? Enum2 { get; set; }");
+            sb.AppendLine("      [Column(\"TestInt3\")]");
+            sb.AppendLine("      public int? TestInt3 { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
-             exceptStr = sb.ToString();
+            exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[1]);
 
@@ -432,7 +586,7 @@ namespace SummerBoot.Test.SqlServer
         [Fact, Priority(403)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
-            
+
             InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
@@ -454,6 +608,7 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Byte2] tinyint  NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NULL,");
+            sb.AppendLine("    [Enum2] int  NOT NULL,");
             sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
@@ -509,21 +664,21 @@ namespace SummerBoot.Test.SqlServer
                 , result[0].Body);
         }
 
-       
+
 
         [Fact, Priority(402)]
         public void TestSqlServer()
         {
             InitDatabase();
             TestRepository();
-         
+
         }
 
         [Fact, Priority(401)]
         public async Task TestSqlServerAsync()
         {
             InitDatabase();
-             await TestRepositoryAsync();
+            await TestRepositoryAsync();
         }
 
         private void InitDatabase()
@@ -531,7 +686,7 @@ namespace SummerBoot.Test.SqlServer
             //初始化数据库
             using (var database = new SqlServerDb())    //新增
             {
-              
+
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
 
@@ -540,33 +695,15 @@ namespace SummerBoot.Test.SqlServer
                 ExecuteRaw(database.Database, "create SCHEMA test1");
 
                 ExecuteRaw(database.Database, "create USER test WITH DEFAULT_SCHEMA = test1");
-                
+
                 ExecuteRaw(database.Database, "GRANT SELECT,INSERT,UPDATE,delete ON SCHEMA :: test1 TO test; ");
-                //var entity = new NullableTable()
-                //{
-                //    Bool2 = true,
-                //    Byte2 = 1,
-                //    DateTime2 = DateTime.Now,
-                //    Decimal2 = 1,
-                //    Decimal3 = 1,
-                //    Double2 = 1,
-                //    Float2 = 1,
-                //    Guid2 = Guid.NewGuid(),
-                //    Int2 = 1,
-                //    Long2 = 1,
-                //    Short2 = 1,
-                //    String2 = "sb",
-                //    String3 = "sb",
-                //    TimeSpan2 = TimeSpan.FromDays(1)
-                //};
-                //database.NullableTable.Add(entity);
-                //database.SaveChanges();
+               
             }
 
             InitService();
         }
 
-        private void ExecuteRaw(DatabaseFacade db,string sql)
+        private void ExecuteRaw(DatabaseFacade db, string sql)
         {
             try
             {
@@ -759,7 +896,7 @@ namespace SummerBoot.Test.SqlServer
                 .ExecuteUpdateAsync();
             Assert.Equal(94, newCount2);
             //Test delete 
-            var newCount3 = await customerRepository.DeleteAsync(it=>it.Age>5);
+            var newCount3 = await customerRepository.DeleteAsync(it => it.Age > 5);
             Assert.Equal(94, newCount3);
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
@@ -779,19 +916,19 @@ namespace SummerBoot.Test.SqlServer
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
             var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
-            
+
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
-            
-           var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
-                .SetValue(it=>it.Age,5)
-                .SetValue(it=>it.TotalConsumptionAmount,100)
-                .ExecuteUpdate();
 
-            var age5Customers= customerRepository.Where(it => it.Name == "testCustomer").ToList();
+            var updateCount = customerRepository.Where(it => it.Name == "testCustomer")
+                 .SetValue(it => it.Age, 5)
+                 .SetValue(it => it.TotalConsumptionAmount, 100)
+                 .ExecuteUpdate();
+
+            var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single((IEnumerable)age5Customers);
-            Assert.Equal(5,age5Customers[0].Age);
+            Assert.Equal(5, age5Customers[0].Age);
             Assert.Equal(100, age5Customers[0].TotalConsumptionAmount);
 
             var orderHeader = new OrderHeader
@@ -929,7 +1066,7 @@ namespace SummerBoot.Test.SqlServer
             //Test delete 
             var newCount3 = customerRepository.Delete(it => it.Age > 5);
             Assert.Equal(94, newCount3);
-            customerRepository.Delete(it=>it.Age>5);
+            customerRepository.Delete(it => it.Age > 5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
 

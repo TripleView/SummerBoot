@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using SummerBoot.Repository;
 
 namespace SummerBoot.Core
@@ -132,7 +133,7 @@ namespace SummerBoot.Core
         /// </summary>
         /// <param name="typeName"></param>
         /// <returns></returns>
-        public static Type ForName(string typeName)
+        public static Type LoadTypeByName(string typeName)
         {
             if (typeName.IsNullOrWhiteSpace()) throw new Exception("typeName must be not empty");
             Type t = Type.GetType(typeName);
@@ -171,8 +172,8 @@ namespace SummerBoot.Core
         /// <exception cref="ArgumentNullException"></exception>
         public static TResult GetPropertyValue<T, TResult>(this T model, string propertyName)
         {
-           var result= GetPropertyValue(model, propertyName);
-           return (TResult)result;
+            var result = GetPropertyValue(model, propertyName);
+            return (TResult)result;
         }
 
         public static ConcurrentDictionary<string, object> CacheDictionary = new ConcurrentDictionary<string, object>();
@@ -193,7 +194,7 @@ namespace SummerBoot.Core
                 throw new ArgumentNullException($"could not find property with name {propertyName}");
             }
 
-            var key="get:" + type.FullName + property.Name;
+            var key = "get:" + type.FullName + property.Name;
             if (CacheDictionary.TryGetValue(key, out var func))
             {
                 return ((Delegate)func).DynamicInvoke(model);
@@ -203,7 +204,7 @@ namespace SummerBoot.Core
             var propertyExpression = Expression.Property(modelExpression, property);
             var convertExpression = Expression.Convert(propertyExpression, typeof(object));
             var lambda = Expression.Lambda(convertExpression, modelExpression).Compile();
-            var result=lambda.DynamicInvoke(model);
+            var result = lambda.DynamicInvoke(model);
             CacheDictionary.TryAdd(key, lambda);
             return result;
         }
@@ -220,7 +221,7 @@ namespace SummerBoot.Core
         {
             var type = model.GetType();
             var property = type.GetProperty(propertyName);
-            
+
             if (property == null)
             {
                 throw new ArgumentNullException($"could not find property with name {propertyName}");
@@ -239,6 +240,92 @@ namespace SummerBoot.Core
             var lambda = Expression.Lambda(methodCallExpression, modelExpression, propertyExpression).Compile();
             CacheDictionary.TryAdd(key, lambda);
             lambda.DynamicInvoke(model, value);
+        }
+
+        /// <summary>
+        /// 构建一个object数据转换成一维数组数据的委托
+        /// </summary>
+        /// <param name="objType"></param>
+        /// <param name="propertyInfos"></param>
+        /// <returns></returns>
+        public static Func<T, object[]> BuildObjectGetValuesDelegate<T>(List<PropertyInfo> propertyInfos) where T : class
+        {
+            var objParameter = Expression.Parameter(typeof(T), "model");
+            var selectExpressions = propertyInfos.Select(it => BuildObjectGetValueExpression(objParameter, it));
+            var arrayExpression = Expression.NewArrayInit(typeof(object), selectExpressions);
+            var result = Expression.Lambda<Func<T, object[]>>(arrayExpression, objParameter).Compile();
+            return result;
+        }
+
+
+        /// <summary>
+        /// 构建对象获取单个值得
+        /// </summary>
+        /// <param name="modelExpression"></param>
+        /// <param name="propertyInfo"></param>
+        /// <returns></returns>
+        public static Expression BuildObjectGetValueExpression(ParameterExpression modelExpression, PropertyInfo propertyInfo)
+        {
+            var propertyExpression = Expression.Property(modelExpression, propertyInfo);
+            var convertExpression = Expression.Convert(propertyExpression, typeof(object));
+            return convertExpression;
+        }
+
+
+        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null) where T : class
+        {
+            var table = new DataTable("template");
+            if (propertyInfos == null || propertyInfos.Count == 0)
+            {
+                propertyInfos = typeof(T).GetProperties().Where(it => it.CanRead).ToList();
+            }
+            foreach (var propertyInfo in propertyInfos)
+            {
+                table.Columns.Add(propertyInfo.Name, ChangeType(propertyInfo.PropertyType));
+            }
+
+            Func<T, object[]> func;
+            var key = typeof(T).FullName + propertyInfos.Select(it => it.Name).ToList().StringJoin();
+            if (CacheDictionary.TryGetValue(key, out var cacheFunc))
+            {
+                func = (Func<T, object[]>)cacheFunc;
+            }
+            else
+            {
+                func = BuildObjectGetValuesDelegate<T>(propertyInfos);
+                CacheDictionary.TryAdd(key, func);
+            }
+
+            foreach (var model in source)
+            {
+               var rowData=  func(model);
+               table.Rows.Add(rowData);
+            }
+
+            return table;
+        }
+
+        private static Type ChangeType(Type type)
+        {
+            if (type.IsNullable())
+            {
+                type = Nullable.GetUnderlyingType(type);
+            }
+
+            return type;
+        }
+
+        public static Delegate BuildGenerateObjectDelegate(ConstructorInfo constructorInfo)
+        {
+            var parameterExpressions = new List<ParameterExpression>();
+            foreach (var parameterInfo in constructorInfo.GetParameters())
+            {
+                var parameterExpression = Expression.Parameter(parameterInfo.ParameterType);
+                parameterExpressions.Add(parameterExpression);
+            }
+            var c= Expression.New(constructorInfo, parameterExpressions);
+            var lambda = Expression.Lambda(c, parameterExpressions).Compile();
+            return lambda;
         }
     }
 }

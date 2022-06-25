@@ -53,6 +53,12 @@ namespace SummerBoot.Core
         /// </summary>
         public static DbType CSharpTypeToDbType(this Type type, DatabaseType databaseType)
         {
+            var tmpType = Nullable.GetUnderlyingType(type);
+            if (tmpType != null)
+            {
+                type = tmpType;
+            }
+
             DbType result;
             if (CsharpTypeToDbTypeMap.ContainsKey(type))
             {

@@ -29,5 +29,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// id字段的名称，有些数据库大小写敏感
         /// </summary>
         public string IdName { get; set; }
+        /// <summary>
+        /// 列字段的信息
+        /// </summary>
+        public List<DbQueryResultPropertyInfoMapping> PropertyInfoMappings { get; set; }
+    }
+
+    public class DbQueryResultPropertyInfoMapping
+    {
+        /// <summary>
+        /// 列名
+        /// </summary>
+        public string ColumnName { get; set; }
+        /// <summary>
+        /// 对应的属性
+        /// </summary>
+        public PropertyInfo PropertyInfo { get; set; }
     }
 }

@@ -431,7 +431,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected TableExpression getTableExpression(Type type)
         {
-            return new TableExpression(type);
+            var key = "getTableExpression"+type.FullName;
+            if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
+            {
+                return (TableExpression)cacheValue;
+            }
+
+            var result = new TableExpression(type);
+            SbUtil.CacheDictionary.TryAdd(key, result);
+            return result;
         }
 
         protected void Clear()

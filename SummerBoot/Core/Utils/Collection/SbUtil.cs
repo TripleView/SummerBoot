@@ -19,6 +19,15 @@ namespace SummerBoot.Core
             return list != null && list.Count > 0;
         }
 
-        
+        /// <summary>
+        /// 对字符串集合进行拼接
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="separator"></param>
+        /// <returns></returns>
+        public static string StringJoin(this IEnumerable<string> source,char separator= ',')
+        {
+           return string.Join(separator, source);
+        }
     }
 }

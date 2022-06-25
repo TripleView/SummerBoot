@@ -135,13 +135,41 @@ namespace SummerBoot.Core
             {
                 services.AddTransient<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
                 services.AddTransient<IDatabaseInfo, SqlServerDatabaseInfo>();
+                //先缓存SqlBulkCopy的type类型
 
+                try
+                {
+                    var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
+                    var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
+                    var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
+                        it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
+                            .Any(x => x == typeof(IDbConnection)));
+                    var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
+                    var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                         it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
+                         it.GetParameters()[0].ParameterType == typeof(DataTable));
+                    var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                        it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
+                        it.GetParameters()[0].ParameterType == typeof(DataTable));
+                    var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
+                        .FirstOrDefault(it=>it.Name=="Add"&&it.GetParameters().Length==2&&it.GetParameters()[0].ParameterType==typeof(string)
+                                   && it.GetParameters()[1].ParameterType == typeof(string));
+
+                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyWriteMethod", sqlBulkCopyWriteMethod);
+                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyWriteMethodAsync", sqlBulkCopyWriteMethodAsync);
+                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
+                    SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
+                }
+                catch (Exception e)
+                {
+                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegateErr", e);
+                }
             }
             else if (option.IsOracle)
             {
                 services.AddTransient<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
                 services.AddTransient<IDatabaseInfo, OracleDatabaseInfo>();
-                
+
             }
             else if (option.IsMysql)
             {
@@ -166,7 +194,7 @@ namespace SummerBoot.Core
 
             foreach (var type in autoRepositoryTypes)
             {
-                
+
                 var baseRepositoryType = type.GetInterfaces().FirstOrDefault(it =>
                     it.IsGenericType && it.GetGenericTypeDefinition() == typeof(IBaseRepository<>));
                 if (baseRepositoryType == null)
@@ -175,7 +203,7 @@ namespace SummerBoot.Core
                 }
 
                 //注册dapper映射
-                RegisterDapperTypeMapTAndHandler(baseRepositoryType,option);
+                RegisterDapperTypeMapTAndHandler(baseRepositoryType, option);
                 repositoryProxyBuilder.InitInterface(type);
                 services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
             }
@@ -189,8 +217,8 @@ namespace SummerBoot.Core
         /// </summary>
         private static void ResetDapperSqlMapperTypeMapDictionary()
         {
-            var typeMapField= typeof(SqlMapper).GetField("typeMap",BindingFlags.NonPublic|BindingFlags.Static);
-            typeMapField.SetValue(null,new Dictionary<Type, DbType?>(37)
+            var typeMapField = typeof(SqlMapper).GetField("typeMap", BindingFlags.NonPublic | BindingFlags.Static);
+            typeMapField.SetValue(null, new Dictionary<Type, DbType?>(37)
             {
                 [typeof(byte)] = DbType.Byte,
                 [typeof(sbyte)] = DbType.SByte,
@@ -231,17 +259,17 @@ namespace SummerBoot.Core
                 [typeof(object)] = DbType.Object
             });
 
-            var resetTypeHandlersMethod= typeof(SqlMapper).GetMethod("ResetTypeHandlers", BindingFlags.NonPublic | BindingFlags.Static);
-            resetTypeHandlersMethod.Invoke(null, new object?[1]{false});
+            var resetTypeHandlersMethod = typeof(SqlMapper).GetMethod("ResetTypeHandlers", BindingFlags.NonPublic | BindingFlags.Static);
+            resetTypeHandlersMethod.Invoke(null, new object?[1] { false });
         }
         /// <summary>
         /// 注册dapper类型映射和类型处理程序
         /// </summary>
         /// <param name="baseRepositoryType"></param>
-        private static void RegisterDapperTypeMapTAndHandler(Type baseRepositoryType,RepositoryOption repositoryOption)
+        private static void RegisterDapperTypeMapTAndHandler(Type baseRepositoryType, RepositoryOption repositoryOption)
         {
             var entityType = baseRepositoryType.GetGenericArguments()[0];
-            
+
             var map = new CustomPropertyTypeMap(entityType, (type, columnName)
                 =>
             {
@@ -250,7 +278,7 @@ namespace SummerBoot.Core
             });
 
             //oracle
-            if (repositoryOption.IsOracle||repositoryOption.IsMysql)
+            if (repositoryOption.IsOracle || repositoryOption.IsMysql)
             {
                 SqlMapper.RemoveTypeMap(typeof(TimeSpan));
                 SqlMapper.AddTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
@@ -277,10 +305,11 @@ namespace SummerBoot.Core
             }
             if (repositoryOption.IsSqlServer)
             {
-                SqlMapper.RemoveTypeMap(typeof(TimeSpan));
-                SqlMapper.AddTypeHandler(typeof(TimeSpan), new SqlServerTimeSpanTypeHandler());
+                SqlMapper.AddTypeMap(typeof(DateTime), DbType.DateTime2);
+                //SqlMapper.RemoveTypeMap(typeof(TimeSpan));
+                //SqlMapper.AddTypeHandler(typeof(TimeSpan), new SqlServerTimeSpanTypeHandler());
             }
-            
+
 
             Dapper.SqlMapper.SetTypeMap(entityType, map);
         }
@@ -342,9 +371,9 @@ namespace SummerBoot.Core
                 var nacosConfiguration = feignOption.Configuration.GetSection("nacos");
                 services.Configure<NacosOption>(nacosConfiguration);
                 var registerInstance = false;
-                var registerInstanceString= nacosConfiguration.GetSection("registerInstance").Value;
+                var registerInstanceString = nacosConfiguration.GetSection("registerInstance").Value;
                 bool.TryParse(registerInstanceString, out registerInstance);
-                
+
                 if (registerInstance)
                 {
                     services.AddHostedService<NacosBackgroundService>();
@@ -407,7 +436,7 @@ namespace SummerBoot.Core
 
             var name = feignClient.Name.GetValueOrDefault(serviceType.FullName);
             feignClient.SetName(name);
-           
+
 
 
             if (feignClient.InterceptorType != null)

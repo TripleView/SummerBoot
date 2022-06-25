@@ -1,25 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Oracle.ManagedDataAccess.Client;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Repository.Generator;
 using SummerBoot.Test.Oracle.Db;
 using SummerBoot.Test.Oracle.Models;
 using SummerBoot.Test.Oracle.Repository;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper;
-using Google.Protobuf.Reflection;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using SummerBoot.Repository.Generator;
+using SummerBoot.Test.Model;
 using Xunit;
 using Xunit.Priority;
 
@@ -34,7 +32,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// ≤‚ ‘≈˙¡ø≤Â»Î
         /// </summary>
-        [Fact, Priority(211)]
+        [Fact, Priority(212)]
         public async Task TestBatchInsertAsync()
         {
             var guid = Guid.NewGuid();
@@ -66,7 +64,7 @@ namespace SummerBoot.Test.Oracle
                     String2 = "sb",
                     String3 = "sb",
                     Long2 = 2,
-                    Enum2 = Models.Enum2.y
+                    Enum2 = Model.Enum2.y
                 };
                 if (i == 0)
                 {
@@ -75,7 +73,7 @@ namespace SummerBoot.Test.Oracle
                 nullableTableList.Add(a);
             }
 
-           await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
 
             sw.Stop();
             var l1 = sw.ElapsedMilliseconds;
@@ -121,13 +119,14 @@ namespace SummerBoot.Test.Oracle
                 String2[j] = "sb";
                 String3[j] = "sb";
                 Long2[j] = 2;
-                Enum2[j] = Models.Enum2.y;
+                Enum2[j] = Model.Enum2.y;
                 if (j == 0)
                 {
                     Guid2[j] = guid;
                 }
             }
 
+            var c = (int)Model.Enum2.y;
             OracleParameter pInt2 = new OracleParameter();
             pInt2.OracleDbType = OracleDbType.Int32;
             pInt2.Value = Int2;
@@ -188,7 +187,7 @@ namespace SummerBoot.Test.Oracle
 
             OracleParameter pEnum2 = new OracleParameter();
             pEnum2.OracleDbType = OracleDbType.Byte;
-            pEnum2.Value = Long2;
+            pEnum2.Value = Enum2;
             // create command and set properties
             OracleCommand cmd = connection.CreateCommand();
             cmd.CommandText = "INSERT INTO NULLABLETABLE (INT2, LONG2, FLOAT2, DOUBLE2, DECIMAL2, DECIMAL3, GUID2, SHORT2, DATETIME2, BOOL2, TIMESPAN2, BYTE2, STRING2, STRING3,ENUM2) VALUES(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15)";
@@ -216,8 +215,8 @@ namespace SummerBoot.Test.Oracle
             var rate3 = l3 / l2;
             var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
             Assert.Equal(3, result.Count);
-            result = nullableTableRepository.Where(it => it.Enum2 == Models.Enum2.y).OrderBy(it => it.Id).ToList();
-            Assert.Equal(4000, result.Count);
+            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(6000, result.Count);
         }
 
         /// <summary>
@@ -255,7 +254,7 @@ namespace SummerBoot.Test.Oracle
                     String2 = "sb",
                     String3 = "sb",
                     Long2 = 2,
-                    Enum2 = Models.Enum2.y
+                    Enum2 = Model.Enum2.y
                 };
                 if (i == 0)
                 {
@@ -310,7 +309,7 @@ namespace SummerBoot.Test.Oracle
                 String2[j] = "sb";
                 String3[j] = "sb";
                 Long2[j] = 2;
-                Enum2[j] = Models.Enum2.y;
+                Enum2[j] = Model.Enum2.y;
                 if (j == 0)
                 {
                     Guid2[j] = guid;
@@ -377,7 +376,7 @@ namespace SummerBoot.Test.Oracle
 
             OracleParameter pEnum2 = new OracleParameter();
             pEnum2.OracleDbType = OracleDbType.Byte;
-            pEnum2.Value = Long2;
+            pEnum2.Value = Enum2;
             // create command and set properties
             OracleCommand cmd = connection.CreateCommand();
             cmd.CommandText = "INSERT INTO NULLABLETABLE (INT2, LONG2, FLOAT2, DOUBLE2, DECIMAL2, DECIMAL3, GUID2, SHORT2, DATETIME2, BOOL2, TIMESPAN2, BYTE2, STRING2, STRING3,ENUM2) VALUES(:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15)";
@@ -405,8 +404,8 @@ namespace SummerBoot.Test.Oracle
             var rate3 = l3 / l2;
             var result= nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it=>it.Id).ToList();
             Assert.Equal(3,result.Count);
-             result = nullableTableRepository.Where(it => it.Enum2 == Models.Enum2.y).OrderBy(it => it.Id).ToList();
-            Assert.Equal(4000, result.Count);
+             result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(6000, result.Count);
         }
 
         /// <summary>
