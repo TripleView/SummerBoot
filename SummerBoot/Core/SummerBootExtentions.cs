@@ -141,10 +141,18 @@ namespace SummerBoot.Core
                 {
                     var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
                     var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
+                    var sqlBulkCopyOptionsType= sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
+
                     var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
                         it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
                             .Any(x => x == typeof(IDbConnection)));
                     var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
+
+                    var constructorInfo3 = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
+                        it.GetParameters().Length == 3 && it.GetParameters()[2].ParameterType.GetInterfaces()
+                            .Any(x => x == typeof(IDbTransaction)));
+                    var generateObjectDelegate3 = SbUtil.BuildGenerateObjectDelegate(constructorInfo3);
+
                     var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
                          it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
                          it.GetParameters()[0].ParameterType == typeof(DataTable));
@@ -158,7 +166,10 @@ namespace SummerBoot.Core
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyWriteMethod", sqlBulkCopyWriteMethod);
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyWriteMethodAsync", sqlBulkCopyWriteMethodAsync);
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
+                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
                     SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
+                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
+                    
                 }
                 catch (Exception e)
                 {

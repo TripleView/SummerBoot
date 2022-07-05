@@ -34,6 +34,6 @@
         public static ApiResult<T> Ok(string msg, T data) => new ApiResult<T>(ApiResultCodeEnum.Ok, msg, data);
 
         public static ApiResult<T> Ng(T data) => new ApiResult<T>(ApiResultCodeEnum.Ng, "", data);
-        public static ApiResult<T> Ng(string msg) => new ApiResult<T>(ApiResultCodeEnum.Ng, null,default);
+        public static ApiResult<T> Ng(string msg) => new ApiResult<T>(ApiResultCodeEnum.Ng, msg,default);
     }
 }

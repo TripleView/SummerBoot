@@ -854,7 +854,7 @@ namespace SummerBoot.Test.Oracle
             sb.AppendLine("    \"BYTE2\" NUMBER(3,0),");
             sb.AppendLine("    \"STRING2\" NVARCHAR2(100),");
             sb.AppendLine("    \"STRING3\" NVARCHAR2(2000),");
-            sb.AppendLine("    \"ENUM2\" NUMBER(18,2) NOT NULL,");
+            sb.AppendLine("    \"ENUM2\" NUMBER(18,2),");
             sb.AppendLine("    CONSTRAINT \"PK_NULLABLETABLE2\" PRIMARY KEY (\"ID\")");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();

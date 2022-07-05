@@ -33,7 +33,7 @@ namespace SummerBoot.Test.SqlServer.Models
         public DateTime? DateTime2 { get; set; }
 
         public bool? Bool2 { get; set; }
-
+       
         public TimeSpan? TimeSpan2 { get; set; }
 
         public byte? Byte2 { get; set; }

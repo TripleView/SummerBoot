@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
@@ -271,7 +272,6 @@ namespace SummerBoot.Core
             return convertExpression;
         }
 
-
         public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null) where T : class
         {
             var table = new DataTable("template");
@@ -298,8 +298,8 @@ namespace SummerBoot.Core
 
             foreach (var model in source)
             {
-               var rowData=  func(model);
-               table.Rows.Add(rowData);
+                var rowData = func(model);
+                table.Rows.Add(rowData);
             }
 
             return table;
@@ -323,9 +323,61 @@ namespace SummerBoot.Core
                 var parameterExpression = Expression.Parameter(parameterInfo.ParameterType);
                 parameterExpressions.Add(parameterExpression);
             }
-            var c= Expression.New(constructorInfo, parameterExpressions);
+            var c = Expression.New(constructorInfo, parameterExpressions);
             var lambda = Expression.Lambda(c, parameterExpressions).Compile();
             return lambda;
+        }
+
+        /// <summary>
+        /// 替换dataTable里列类型为timeSpan类型的值为long类型
+        /// </summary>
+        /// <param name="dt"></param>
+        public  static void ReplaceDataTableTimeSpanColumnForSqlserver(DataTable dt)
+        {
+            var needUpdateColumnIndexList = new List<int>();
+            var needUpdateColumnNameList = new List<string>();
+            for (int i = 0; i < dt.Columns.Count; i++)
+            {
+                var column = dt.Columns[i];
+                if (column.DataType == typeof(TimeSpan))
+                {
+                    needUpdateColumnIndexList.Add(i);
+                    needUpdateColumnNameList.Add(column.ColumnName);
+                }
+            }
+
+            if (needUpdateColumnIndexList.Count == 0)
+            {
+                return;
+            }
+
+            var nameMapping = new Dictionary<string, string>();
+            for (int i = 0; i < needUpdateColumnIndexList.Count; i++)
+            {
+                var oldColumnName = needUpdateColumnNameList[i];
+                var newColumnName = Guid.NewGuid().ToString("N");
+                nameMapping.Add(newColumnName, oldColumnName);
+                dt.Columns.Add(newColumnName, typeof(long));
+                for (int j = 0; j < dt.Rows.Count; j++)
+                {
+                    dt.Rows[j][newColumnName] = ((TimeSpan)(dt.Rows[j][oldColumnName])).Ticks;
+                }
+            }
+            for (int i = 0; i < needUpdateColumnIndexList.Count; i++)
+            {
+                var columnName = needUpdateColumnNameList[i];
+                dt.Columns.Remove(columnName);
+            }
+
+            for (int i = 0; i < dt.Columns.Count; i++)
+            {
+                var columnName = dt.Columns[i].ColumnName;
+                if (nameMapping.ContainsKey(columnName))
+                {
+                    dt.Columns[i].ColumnName = nameMapping[columnName];
+                }
+            }
+
         }
     }
 }

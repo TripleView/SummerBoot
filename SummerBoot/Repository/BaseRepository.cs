@@ -487,13 +487,14 @@ namespace SummerBoot.Repository
                         var addMethod = ((MethodInfo)cacheAddColumnMappingMethodInfo);
                         foreach (var mapping in internalResult.PropertyInfoMappings)
                         {
-                            addMethod.Invoke(columnMappings,parameters: new object[2]{ mapping.PropertyInfo.Name, mapping.ColumnName });
+                            addMethod.Invoke(columnMappings, parameters: new object[2] { mapping.PropertyInfo.Name, mapping.ColumnName });
                         }
-                        
                     }
 
-                   
-                    var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it=>it.PropertyInfo).ToList());
+                    var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
+                    //sqlserver替换timespan类型为long类型
+                    //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(insertData);
+
                     if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyWriteMethod", out var cacheWriteMethod))
                     {
                         ((MethodInfo)cacheWriteMethod).Invoke(sqlBulkCopy, parameters: new object[1] { insertData });
@@ -508,6 +509,7 @@ namespace SummerBoot.Repository
             CloseDb();
         }
 
+      
         #endregion sync
 
         #region async
@@ -725,9 +727,107 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public Task FastBatchInsertAsync(List<T> list)
+        public async Task FastBatchInsertAsync(List<T> list)
         {
-            throw new NotImplementedException();
+            foreach (var t in list)
+            {
+                if (t is BaseEntity baseEntity)
+                {
+                    baseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    baseEntity.Active = 1;
+                }
+                else if (t is OracleBaseEntity oracleBaseEntity)
+                {
+                    oracleBaseEntity.CreateOn = repositoryOption.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
+                    oracleBaseEntity.Active = 1;
+                }
+            }
+
+            var internalResult = InternalFastInsert(list);
+
+            OpenDb();
+            if (repositoryOption.IsOracle)
+            {
+                var cmd = dbConnection.CreateCommand();
+                cmd.CommandText = internalResult.Sql;
+                cmd.SetPropertyValue("ArrayBindCount", list.Count);
+
+                foreach (var parameter in internalResult.SqlParameters)
+                {
+                    var param = cmd.CreateParameter();
+
+                    if (parameter.DbType == DbType.Time)
+                    {
+                        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+                        var dbtype = Enum.Parse(oracleDbType, "114");
+                        param.SetPropertyValue("OracleDbType", dbtype);
+                        param.Value = parameter.Value;
+                    }
+                    else if (parameter.DbType == DbType.Time)
+                    {
+                        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+                        var dbtype = Enum.Parse(oracleDbType, "123");
+                        param.SetPropertyValue("OracleDbType", dbtype);
+                        param.Value = parameter.Value;
+                    }
+                    else
+                    {
+                        param.DbType = parameter.DbType;
+                        param.Value = parameter.Value;
+                    }
+
+                    cmd.Parameters.Add(param);
+                }
+
+                var resultCount =cmd.ExecuteNonQuery();
+            }
+            else if (repositoryOption.IsSqlServer)
+            {
+                if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegate", out var cacheFunc)
+                    && SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegate3", out var cacheFunc3)
+                    && SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyOptionsType", out var sqlBulkCopyOptionsType))
+                {
+                    object sqlBulkCopy;
+                    if (dbTransaction == null)
+                    {
+                        sqlBulkCopy = ((Delegate)cacheFunc).DynamicInvoke(this.dbConnection);
+                    }
+                    else
+                    {
+                        var dbtype = Enum.Parse((Type)sqlBulkCopyOptionsType, "1");
+                        sqlBulkCopy = ((Delegate)cacheFunc3).DynamicInvoke(this.dbConnection,dbtype,dbTransaction);
+                    }
+                  
+                    sqlBulkCopy.SetPropertyValue("BatchSize", 1000);
+                    sqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
+                    sqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
+                    var columnMappings = sqlBulkCopy.GetPropertyValue("ColumnMappings");
+
+                    if (SbUtil.CacheDictionary.TryGetValue("addColumnMappingMethodInfo", out var cacheAddColumnMappingMethodInfo))
+                    {
+                        var addMethod = ((MethodInfo)cacheAddColumnMappingMethodInfo);
+                        foreach (var mapping in internalResult.PropertyInfoMappings)
+                        {
+                            addMethod.Invoke(columnMappings, parameters: new object[2] { mapping.PropertyInfo.Name, mapping.ColumnName });
+                        }
+                    }
+
+                    var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
+                    //sqlserver替换timespan类型为long类型
+                    //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(insertData);
+
+                    if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyWriteMethodAsync", out var cacheWriteMethod))
+                    {
+                        await (Task)((MethodInfo)cacheWriteMethod).Invoke(sqlBulkCopy, parameters: new object[1] { insertData });
+                    }
+                }
+                else if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegateErr", out object cacheException))
+                {
+                    throw new NotSupportedException("init error", cacheException as Exception);
+                }
+            }
+
+            CloseDb();
         }
     }
 }

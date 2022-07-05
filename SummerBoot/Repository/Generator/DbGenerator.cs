@@ -193,7 +193,7 @@ namespace SummerBoot.Repository.Generator
                         isNullable = false;
                     }
                     //如果是枚举类型，统一转为int
-                    if (propertyInfo.PropertyType.IsEnum)
+                    if (propertyInfo.PropertyType.IsEnum||(propertyInfo.PropertyType.IsNullable()&& propertyInfo.PropertyType.GetUnderlyingType().IsEnum))
                     {
                         fieldTypeName = typeof(int);
                     }

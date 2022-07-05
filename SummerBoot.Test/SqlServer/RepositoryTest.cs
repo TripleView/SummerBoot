@@ -33,7 +33,260 @@ namespace SummerBoot.Test.SqlServer
         private IServiceProvider serviceProvider;
 
         /// <summary>
-        /// 测试从配置文件读取sql
+        /// 测试事务中批量插入
+        /// </summary>
+        [Fact, Priority(412)]
+        public async Task TestBatchInsertWithDbtransation()
+        {
+            InitDatabase();
+            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlServer connectionString must not be null");
+            }
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitDatabase();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                throw new Exception("error");
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+
+            var count1 = (await nullableTableRepository.GetAllAsync()).Count;
+            Assert.Equal(2000, count1);
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+            var count2 =(await nullableTableRepository.GetAllAsync()).Count;
+            Assert.Equal(4000, count2);
+        }
+
+        /// <summary>
+        /// 测试批量插入
+        /// </summary>
+        [Fact, Priority(411)]
+        public async Task TestBatchInsertAsync()
+        {
+            InitDatabase();
+            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlServer connectionString must not be null");
+            }
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitDatabase();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            sw.Start();
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+
+            sw.Stop();
+            var l1 = sw.ElapsedMilliseconds;
+            var nullableTableList2 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now2,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList2.Add(a);
+            }
+            sw.Restart();
+            await nullableTableRepository.InsertAsync(nullableTableList2);
+            sw.Stop();
+            var l3 = sw.ElapsedMilliseconds;
+            var nullableTableList3 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 0,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList3.Add(a);
+            }
+            sw.Restart();
+            using (var dbConnection = new SqlConnection(connectionString))
+            {
+                //&SqlBulkCopyOptions.KeepNulls
+                dbConnection.Open();
+                var dbtran = dbConnection.BeginTransaction();
+                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection, SqlBulkCopyOptions.KeepIdentity,
+                    dbtran);
+
+                sqlBulkCopy.BatchSize = total;
+                sqlBulkCopy.DestinationTableName = "NullableTable";
+                sqlBulkCopy.ColumnMappings.Add("Int2", "Int2");
+                sqlBulkCopy.ColumnMappings.Add("Bool2", "Bool2");
+                sqlBulkCopy.ColumnMappings.Add("Byte2", "Byte2");
+                sqlBulkCopy.ColumnMappings.Add("DateTime2", "DateTime2");
+                sqlBulkCopy.ColumnMappings.Add("Decimal2", "Decimal2");
+                sqlBulkCopy.ColumnMappings.Add("Decimal3", "Decimal3");
+                sqlBulkCopy.ColumnMappings.Add("Double2", "Double2");
+                sqlBulkCopy.ColumnMappings.Add("Float2", "Float2");
+                sqlBulkCopy.ColumnMappings.Add("Guid2", "Guid2");
+                sqlBulkCopy.ColumnMappings.Add("Short2", "Short2");
+                sqlBulkCopy.ColumnMappings.Add("TimeSpan2", "TimeSpan2");
+
+                sqlBulkCopy.ColumnMappings.Add("String2", "String2");
+                sqlBulkCopy.ColumnMappings.Add("String3", "String3");
+                sqlBulkCopy.ColumnMappings.Add("Long2", "Long2");
+                sqlBulkCopy.ColumnMappings.Add("Enum2", "Enum2");
+                sqlBulkCopy.ColumnMappings.Add("Int3", "TestInt3");
+
+                var table = nullableTableList3.ToDataTable();
+                //sqlserver替换timespan类型为long类型
+                //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(table);
+                //table.Columns.Remove("id");
+                await sqlBulkCopy.WriteToServerAsync(table);
+                dbtran.Commit();
+            }
+            sw.Stop();
+            var l2 = sw.ElapsedMilliseconds;
+            var rate = l1 / l2;
+            var rate2 = l3 / l1;
+            var rate3 = l3 / l2;
+            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+            Assert.Equal(3, result.Count);
+            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(6000, result.Count);
+            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
+                .ToList();
+            Assert.Equal(3, models.Count);
+            Assert.True(models[0].Equals(models[1]));
+            Assert.True(models[0].Equals(models[2]));
+        }
+
+        /// <summary>
+        /// 测试批量插入
         /// </summary>
         [Fact, Priority(410)]
         public async Task TestBatchInsert()
@@ -53,7 +306,7 @@ namespace SummerBoot.Test.SqlServer
             var dbFactory = serviceProvider.GetService<IDbFactory>();
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
-           
+
             for (int i = 0; i < total; i++)
             {
                 var a = new NullableTable()
@@ -157,8 +410,8 @@ namespace SummerBoot.Test.SqlServer
             {
                 //&SqlBulkCopyOptions.KeepNulls
                 dbConnection.Open();
-                var dbtran=dbConnection.BeginTransaction();
-                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection, SqlBulkCopyOptions.KeepIdentity ,
+                var dbtran = dbConnection.BeginTransaction();
+                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection, SqlBulkCopyOptions.KeepIdentity,
                     dbtran);
                 sqlBulkCopy.BatchSize = total;
                 sqlBulkCopy.DestinationTableName = "NullableTable";
@@ -181,6 +434,8 @@ namespace SummerBoot.Test.SqlServer
                 sqlBulkCopy.ColumnMappings.Add("Int3", "TestInt3");
 
                 var table = nullableTableList3.ToDataTable();
+                //sqlserver替换timespan类型为long类型
+                //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(table);
                 //table.Columns.Remove("id");
                 sqlBulkCopy.WriteToServer(table);
                 dbtran.Commit();
@@ -363,7 +618,7 @@ namespace SummerBoot.Test.SqlServer
                 Short2 = 1,
                 String2 = "sb",
                 String3 = "sb",
-                TimeSpan2 = TimeSpan.FromDays(1)
+                TimeSpan2 = TimeSpan.FromHours(1)
             };
             nullableTable2Repository.Insert(entity);
 
@@ -608,17 +863,19 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Byte2] tinyint  NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NULL,");
-            sb.AppendLine("    [Enum2] int  NOT NULL,");
+            sb.AppendLine("    [Enum2] int  NULL,");
+            sb.AppendLine("    [TestInt3] int  NULL,");
             sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
 
-            Assert.Equal(3, result[0].Descriptions.Count);
+            Assert.Equal(4, result[0].Descriptions.Count);
             Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'NullableTable2', 'schema', N'dbo', 'table', N'NullableTable2'", result[0].Descriptions[0]);
             Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'Int2'", result[0].Descriptions[1]);
             Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Long2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'Long2'", result[0].Descriptions[2]);
+            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'TestInt3'", result[0].Descriptions[3]);
             //dbGenerator.ExecuteGenerateSql(result[0]);
 
             sb.Clear();
@@ -697,7 +954,7 @@ namespace SummerBoot.Test.SqlServer
                 ExecuteRaw(database.Database, "create USER test WITH DEFAULT_SCHEMA = test1");
 
                 ExecuteRaw(database.Database, "GRANT SELECT,INSERT,UPDATE,delete ON SCHEMA :: test1 TO test; ");
-               
+
             }
 
             InitService();
