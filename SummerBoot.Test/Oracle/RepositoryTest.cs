@@ -30,6 +30,81 @@ namespace SummerBoot.Test.Oracle
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试事务中批量插入
+        /// </summary>
+        [Fact, Priority(213)]
+        public async Task TestBatchInsertWithDbtransation()
+        {
+            InitOracleDatabase();
+         
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+     
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                throw new Exception("error");
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+
+            var count1 = (await nullableTableRepository.GetAllAsync()).Count;
+            Assert.Equal(2000, count1);
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+            var count2 = (await nullableTableRepository.GetAllAsync()).Count;
+            Assert.Equal(4000, count2);
+        }
+        /// <summary>
         /// 测试批量插入
         /// </summary>
         [Fact, Priority(212)]
@@ -764,7 +839,9 @@ namespace SummerBoot.Test.Oracle
             sb.AppendLine("      [Column(\"STRING3\")]");
             sb.AppendLine("      public string STRING3 { get; set; }");
             sb.AppendLine("      [Column(\"ENUM2\")]");
-            sb.AppendLine("      public int ENUM2 { get; set; }");
+            sb.AppendLine("      public int? ENUM2 { get; set; }");
+            sb.AppendLine("      [Column(\"TESTINT3\")]");
+            sb.AppendLine("      public int? TESTINT3 { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
             exceptStr = sb.ToString();
@@ -855,16 +932,18 @@ namespace SummerBoot.Test.Oracle
             sb.AppendLine("    \"STRING2\" NVARCHAR2(100),");
             sb.AppendLine("    \"STRING3\" NVARCHAR2(2000),");
             sb.AppendLine("    \"ENUM2\" NUMBER(18,2),");
+            sb.AppendLine("    \"TESTINT3\" NUMBER(10,0),");
             sb.AppendLine("    CONSTRAINT \"PK_NULLABLETABLE2\" PRIMARY KEY (\"ID\")");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
 
-            Assert.Equal(3, result[0].Descriptions.Count);
+            Assert.Equal(4, result[0].Descriptions.Count);
             Assert.Equal("COMMENT ON TABLE TEST.\"NULLABLETABLE2\" IS 'NullableTable2'", result[0].Descriptions[0]);
             Assert.Equal("COMMENT ON COLUMN TEST.\"NULLABLETABLE2\".\"INT2\" IS 'Int2'", result[0].Descriptions[1]);
             Assert.Equal("COMMENT ON COLUMN TEST.\"NULLABLETABLE2\".\"LONG2\" IS 'Long2'", result[0].Descriptions[2]);
+            Assert.Equal("COMMENT ON COLUMN TEST.\"NULLABLETABLE2\".\"TESTINT3\" IS 'Int2'", result[0].Descriptions[3]);
             //dbGenerator.ExecuteGenerateSql(result[0]);
 
             sb.Clear();

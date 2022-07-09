@@ -50,6 +50,10 @@ namespace SummerBoot.Test.Oracle.Models
         public string String3 { get; set; }
         [Column("ENUM2")]
         public Enum2? Enum2 { get; set; }
+
+        [Column("TESTINT3")]
+        [Description("Int2")]
+        public int? Int3 { get; set; }
     }
 
 }

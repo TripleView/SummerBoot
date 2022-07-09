@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Test.Model;
 
 namespace SummerBoot.Test.Mysql.Models
 {
@@ -40,6 +41,12 @@ namespace SummerBoot.Test.Mysql.Models
         [StringLength(100)]
         public string String2 { get; set; }
         public string String3 { get; set; }
+
+        public Enum2? Enum2 { get; set; }
+
+        [Column("TestInt3")]
+        [Description("Int2")]
+        public int? Int3 { get; set; }
     }
 
 }

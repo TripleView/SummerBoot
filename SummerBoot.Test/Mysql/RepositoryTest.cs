@@ -19,6 +19,7 @@ using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using Xunit;
 using Xunit.Priority;
+using System.Diagnostics;
 
 namespace SummerBoot.Test.Mysql
 {
@@ -27,6 +28,362 @@ namespace SummerBoot.Test.Mysql
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// 测试事务中批量插入
+        /// </summary>
+        [Fact, Priority(412)]
+        public async Task TestBatchInsertWithDbtransation()
+        {
+            InitDatabase();
+            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlServer connectionString must not be null");
+            }
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                throw new Exception("error");
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+
+            var count1 = (await nullableTableRepository.GetAllAsync()).Count;
+            Assert.Equal(2000, count1);
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+            var count2 = (await nullableTableRepository.GetAllAsync()).Count;
+            Assert.Equal(4000, count2);
+        }
+
+        /// <summary>
+        /// 测试批量插入
+        /// </summary>
+        [Fact, Priority(411)]
+        public async Task TestBatchInsertAsync()
+        {
+            InitDatabase();
+            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlServer connectionString must not be null");
+            }
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitDatabase();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            sw.Start();
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+
+            sw.Stop();
+            var l1 = sw.ElapsedMilliseconds;
+            var nullableTableList2 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now2,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList2.Add(a);
+            }
+            sw.Restart();
+            await nullableTableRepository.InsertAsync(nullableTableList2);
+            sw.Stop();
+            var l3 = sw.ElapsedMilliseconds;
+            var nullableTableList3 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 0,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList3.Add(a);
+            }
+            sw.Restart();
+           
+            sw.Stop();
+            var l2 = sw.ElapsedMilliseconds;
+            var rate = l1 / l2;
+            var rate2 = l3 / l1;
+            var rate3 = l3 / l2;
+            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+            Assert.Equal(3, result.Count);
+            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(6000, result.Count);
+            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
+                .ToList();
+            Assert.Equal(3, models.Count);
+            Assert.True(models[0].Equals(models[1]));
+            Assert.True(models[0].Equals(models[2]));
+        }
+
+        /// <summary>
+        /// 测试批量插入
+        /// </summary>
+        [Fact, Priority(410)]
+        public async Task TestBatchInsert()
+        {
+            InitDatabase();
+            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("sqlServer connectionString must not be null");
+            }
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 2000;
+            InitDatabase();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var sw = new Stopwatch();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            sw.Start();
+            nullableTableRepository.FastBatchInsert(nullableTableList);
+
+            sw.Stop();
+            var l1 = sw.ElapsedMilliseconds;
+            var nullableTableList2 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now2,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList2.Add(a);
+            }
+            sw.Restart();
+            nullableTableRepository.Insert(nullableTableList2);
+            sw.Stop();
+            var l3 = sw.ElapsedMilliseconds;
+            var nullableTableList3 = new List<NullableTable>();
+
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 0,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList3.Add(a);
+            }
+            sw.Restart();
+           
+            sw.Stop();
+            var l2 = sw.ElapsedMilliseconds;
+            var rate = l1 / l2;
+            var rate2 = l3 / l1;
+            var rate3 = l3 / l2;
+            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+            Assert.Equal(3, result.Count);
+            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+            Assert.Equal(6000, result.Count);
+            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
+                .ToList();
+            Assert.Equal(3, models.Count);
+            Assert.True(models[0].Equals(models[1]));
+            Assert.True(models[0].Equals(models[2]));
+        }
 
         /// <summary>
         /// 测试从配置文件读取sql

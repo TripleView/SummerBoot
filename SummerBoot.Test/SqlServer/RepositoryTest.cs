@@ -48,7 +48,6 @@ namespace SummerBoot.Test.SqlServer
             var now = DateTime.Now;
             var now2 = now;
             var total = 2000;
-            InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
             var sw = new Stopwatch();

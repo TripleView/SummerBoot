@@ -442,6 +442,10 @@ namespace SummerBoot.Repository
                 var cmd = dbConnection.CreateCommand();
                 cmd.CommandText = internalResult.Sql;
                 cmd.SetPropertyValue("ArrayBindCount", list.Count);
+                if (dbTransaction != null)
+                {
+                    cmd.Transaction = dbTransaction;
+                }
 
                 foreach (var parameter in internalResult.SqlParameters)
                 {
@@ -751,6 +755,10 @@ namespace SummerBoot.Repository
                 var cmd = dbConnection.CreateCommand();
                 cmd.CommandText = internalResult.Sql;
                 cmd.SetPropertyValue("ArrayBindCount", list.Count);
+                if (dbTransaction != null)
+                {
+                    cmd.Transaction = dbTransaction;
+                }
 
                 foreach (var parameter in internalResult.SqlParameters)
                 {
@@ -825,6 +833,10 @@ namespace SummerBoot.Repository
                 {
                     throw new NotSupportedException("init error", cacheException as Exception);
                 }
+            }
+            else if (repositoryOption.IsMysql)
+            {
+
             }
 
             CloseDb();
