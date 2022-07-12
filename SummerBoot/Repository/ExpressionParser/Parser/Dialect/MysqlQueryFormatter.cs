@@ -1,4 +1,8 @@
-﻿namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
+namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 {
     public class MysqlQueryFormatter : QueryFormatter
     {
@@ -57,6 +61,22 @@
                 _sb.Append(BoxParameter(int.MaxValue));
             }
 
+        }
+
+        public override DbQueryResult FastBatchInsert<T>(List<T> insertEntitys)
+        {
+            Clear();
+            var table = this.getTableExpression(typeof(T));
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
+
+            var result = new DbQueryResult()
+            {
+                Sql = tableName,
+                SqlParameters = this.sqlParameters,
+                PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it => new DbQueryResultPropertyInfoMapping() { ColumnName = it.ColumnName, PropertyInfo = it.MemberInfo as PropertyInfo }).ToList()
+            };
+
+            return result;
         }
     }
 }

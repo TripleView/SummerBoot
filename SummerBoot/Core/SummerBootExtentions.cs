@@ -186,6 +186,33 @@ namespace SummerBoot.Core
             {
                 services.AddTransient<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
                 services.AddTransient<IDatabaseInfo, MysqlDatabaseInfo>();
+                try
+                {
+                    var mysqlAssembly = Assembly.Load("MySqlConnector");
+                    var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
+                    var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
+                    
+                    var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                         it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
+                         it.GetParameters()[0].ParameterType == typeof(DataTable));
+                    var mysqlBulkCopyWriteMethodAsync = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                        it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
+                        it.GetParameters()[0].ParameterType == typeof(DataTable));
+                    var addColumnMappingMethodInfo = mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
+                        .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
+                                  );
+                    
+                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethod", mysqlBulkCopyWriteMethod);
+                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethodAsync", mysqlBulkCopyWriteMethodAsync);
+                    SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
+                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
+                    SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
+                    
+                }
+                catch (Exception e)
+                {
+                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyDelegateErr", e);
+                }
             }
             else if (option.IsSqlite)
             {
@@ -317,8 +344,6 @@ namespace SummerBoot.Core
             if (repositoryOption.IsSqlServer)
             {
                 SqlMapper.AddTypeMap(typeof(DateTime), DbType.DateTime2);
-                //SqlMapper.RemoveTypeMap(typeof(TimeSpan));
-                //SqlMapper.AddTypeHandler(typeof(TimeSpan), new SqlServerTimeSpanTypeHandler());
             }
 
 

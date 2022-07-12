@@ -329,20 +329,22 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// 替换dataTable里列类型为timeSpan类型的值为long类型
+        /// 替换dataTable里的列类型
         /// </summary>
         /// <param name="dt"></param>
-        public  static void ReplaceDataTableTimeSpanColumnForSqlserver(DataTable dt)
+        public  static void ReplaceDataTableColumnType<OldType,NewType>(DataTable dt,Func<OldType, NewType> replaceFunc)
         {
             var needUpdateColumnIndexList = new List<int>();
             var needUpdateColumnNameList = new List<string>();
+            
             for (int i = 0; i < dt.Columns.Count; i++)
             {
                 var column = dt.Columns[i];
-                if (column.DataType == typeof(TimeSpan))
+                if (column.DataType.GetUnderlyingType() == typeof(OldType))
                 {
                     needUpdateColumnIndexList.Add(i);
                     needUpdateColumnNameList.Add(column.ColumnName);
+                  
                 }
             }
 
@@ -357,18 +359,16 @@ namespace SummerBoot.Core
                 var oldColumnName = needUpdateColumnNameList[i];
                 var newColumnName = Guid.NewGuid().ToString("N");
                 nameMapping.Add(newColumnName, oldColumnName);
-                dt.Columns.Add(newColumnName, typeof(long));
+              
+                dt.Columns.Add(newColumnName, typeof(byte[])).SetOrdinal(needUpdateColumnIndexList[i]);
                 for (int j = 0; j < dt.Rows.Count; j++)
                 {
-                    dt.Rows[j][newColumnName] = ((TimeSpan)(dt.Rows[j][oldColumnName])).Ticks;
+                    var c = (dt.Rows[j][oldColumnName]);
+                    dt.Rows[j][newColumnName] = replaceFunc((OldType)(dt.Rows[j][oldColumnName]));
                 }
+                dt.Columns.Remove(oldColumnName);
             }
-            for (int i = 0; i < needUpdateColumnIndexList.Count; i++)
-            {
-                var columnName = needUpdateColumnNameList[i];
-                dt.Columns.Remove(columnName);
-            }
-
+            
             for (int i = 0; i < dt.Columns.Count; i++)
             {
                 var columnName = dt.Columns[i].ColumnName;

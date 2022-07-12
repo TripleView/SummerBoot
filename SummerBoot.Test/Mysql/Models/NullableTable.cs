@@ -25,6 +25,7 @@ namespace SummerBoot.Test.Mysql.Models
 
         [DecimalPrecision(20,4)]
         public decimal? Decimal3 { get; set; }
+        //[Column(name: "Guid2", TypeName = "varbinary(200)")]
         public Guid? Guid2 { get; set; }
 
         public short? Short2 { get; set; }
@@ -47,6 +48,41 @@ namespace SummerBoot.Test.Mysql.Models
         [Column("TestInt3")]
         [Description("Int2")]
         public int? Int3 { get; set; }
+
+        protected bool Equals(NullableTable other)
+        {
+            return Int2 == other.Int2 && Long2 == other.Long2 && Nullable.Equals(Float2, other.Float2) && Nullable.Equals(Double2, other.Double2) && Decimal2 == other.Decimal2 && Decimal3 == other.Decimal3 && Nullable.Equals(Guid2, other.Guid2) && Short2 == other.Short2 && Nullable.Equals(DateTime2, other.DateTime2) && Bool2 == other.Bool2 && Nullable.Equals(TimeSpan2, other.TimeSpan2) && Byte2 == other.Byte2 && String2 == other.String2 && String3 == other.String3 && Enum2 == other.Enum2 && Int3 == other.Int3;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((NullableTable)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(Int2);
+            hashCode.Add(Long2);
+            hashCode.Add(Float2);
+            hashCode.Add(Double2);
+            hashCode.Add(Decimal2);
+            hashCode.Add(Decimal3);
+            hashCode.Add(Guid2);
+            hashCode.Add(Short2);
+            hashCode.Add(DateTime2);
+            hashCode.Add(Bool2);
+            hashCode.Add(TimeSpan2);
+            hashCode.Add(Byte2);
+            hashCode.Add(String2);
+            hashCode.Add(String3);
+            hashCode.Add(Enum2);
+            hashCode.Add(Int3);
+            return hashCode.ToHashCode();
+        }
     }
 
 }

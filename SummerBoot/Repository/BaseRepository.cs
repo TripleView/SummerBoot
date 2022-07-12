@@ -509,6 +509,55 @@ namespace SummerBoot.Repository
                     throw new NotSupportedException("init error", cacheException as Exception);
                 }
             }
+            else if (repositoryOption.IsMysql)
+            {
+                if (SbUtil.CacheDictionary.TryGetValue("mysqlBulkCopyType", out var cacheFunc)&&
+                    SbUtil.CacheDictionary.TryGetValue("mySqlBulkCopyColumnMappingType", out var mappingType))
+                {
+                    
+                    object mysqlBulkCopy = ((Type)cacheFunc).CreateInstance(new object[2] { dbConnection, dbTransaction });
+
+                    mysqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
+                    var columnMappings = mysqlBulkCopy.GetPropertyValue("ColumnMappings");
+
+                    if (SbUtil.CacheDictionary.TryGetValue("mysqlAddColumnMappingMethodInfo", out var cacheAddColumnMappingMethodInfo))
+                    {
+                        var addMethod = ((MethodInfo)cacheAddColumnMappingMethodInfo);
+
+                        for (int i = 0; i < internalResult.PropertyInfoMappings.Count; i++)
+                        {
+                            var property = internalResult.PropertyInfoMappings[i].PropertyInfo;
+                            var columnName = internalResult.PropertyInfoMappings[i].ColumnName;
+
+                            //continue;
+                            if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
+                            {
+                                var mappingParam = ((Type)mappingType).CreateInstance(new object[3]
+                                    { i, "@tmp", $"{columnName} = unhex(@tmp)" });
+                                addMethod.Invoke(columnMappings, parameters: new object[1] { mappingParam });
+                            }
+                            else
+                            {
+                                var mappingParam = ((Type)mappingType).CreateInstance(new object[3]
+                                    { i, columnName,null});
+                                addMethod.Invoke(columnMappings, parameters: new object[1] { mappingParam });
+                            }
+                        }
+                    }
+
+                    var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
+                    SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(insertData, guid1 => guid1.ToByteArray());
+
+                    if (SbUtil.CacheDictionary.TryGetValue("mysqlBulkCopyWriteMethod", out var cacheWriteMethod))
+                    {
+                        ((MethodInfo)cacheWriteMethod).Invoke(mysqlBulkCopy, parameters: new object[1] { insertData });
+                    }
+                }
+                else if (SbUtil.CacheDictionary.TryGetValue("mysqlBulkCopyDelegateErr", out object cacheException))
+                {
+                    throw new NotSupportedException("init error", cacheException as Exception);
+                }
+            }
 
             CloseDb();
         }
@@ -836,7 +885,33 @@ namespace SummerBoot.Repository
             }
             else if (repositoryOption.IsMysql)
             {
+                if (SbUtil.CacheDictionary.TryGetValue("mysqlBulkCopyType", out var cacheFunc))
+                {
+                    object mysqlBulkCopy = ((Type)cacheFunc).CreateInstance(new object[2]{ dbConnection, dbTransaction });
+                    
+                    mysqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
+                    var columnMappings = mysqlBulkCopy.GetPropertyValue("ColumnMappings");
 
+                    if (SbUtil.CacheDictionary.TryGetValue("mysqlAddColumnMappingMethodInfo", out var cacheAddColumnMappingMethodInfo))
+                    {
+                        var addMethod = ((MethodInfo)cacheAddColumnMappingMethodInfo);
+                        foreach (var mapping in internalResult.PropertyInfoMappings)
+                        {
+                            addMethod.Invoke(columnMappings, parameters: new object[1] { 1 });
+                        }
+                    }
+
+                    var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
+                    
+                    if (SbUtil.CacheDictionary.TryGetValue("mysqlBulkCopyWriteMethodAsync", out var cacheWriteMethod))
+                    {
+                        await (Task)((MethodInfo)cacheWriteMethod).Invoke(mysqlBulkCopy, parameters: new object[1] { insertData });
+                    }
+                }
+                else if (SbUtil.CacheDictionary.TryGetValue("mysqlBulkCopyDelegateErr", out object cacheException))
+                {
+                    throw new NotSupportedException("init error", cacheException as Exception);
+                }
             }
 
             CloseDb();

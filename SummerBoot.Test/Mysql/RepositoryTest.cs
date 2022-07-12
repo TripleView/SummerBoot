@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using MySql.Data.MySqlClient;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Test.Mysql.Db;
@@ -8,6 +7,7 @@ using SummerBoot.Test.Mysql.Repository;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -20,6 +20,9 @@ using SummerBoot.Repository.Generator;
 using Xunit;
 using Xunit.Priority;
 using System.Diagnostics;
+using System.Reflection;
+using MySqlConnector;
+using MySqlBulkLoader = MySql.Data.MySqlClient.MySqlBulkLoader;
 
 namespace SummerBoot.Test.Mysql
 {
@@ -32,14 +35,14 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试事务中批量插入
         /// </summary>
-        [Fact, Priority(412)]
+        [Fact, Priority(112)]
         public async Task TestBatchInsertWithDbtransation()
         {
             InitDatabase();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("sqlServer connectionString must not be null");
+                throw new ArgumentNullException("mysql connectionString must not be null");
             }
             var guid = Guid.NewGuid();
             var now = DateTime.Now;
@@ -112,14 +115,14 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试批量插入
         /// </summary>
-        [Fact, Priority(411)]
+        [Fact, Priority(111)]
         public async Task TestBatchInsertAsync()
         {
             InitDatabase();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("sqlServer connectionString must not be null");
+                throw new ArgumentNullException("mysql connectionString must not be null");
             }
             var guid = Guid.NewGuid();
             var now = DateTime.Now;
@@ -161,7 +164,7 @@ namespace SummerBoot.Test.Mysql
             }
 
             sw.Start();
-            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+            //await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
 
             sw.Stop();
             var l1 = sw.ElapsedMilliseconds;
@@ -233,9 +236,9 @@ namespace SummerBoot.Test.Mysql
            
             sw.Stop();
             var l2 = sw.ElapsedMilliseconds;
-            var rate = l1 / l2;
-            var rate2 = l3 / l1;
-            var rate3 = l3 / l2;
+            //var rate = l1 / l2;
+            //var rate2 = l3 / l1;
+            //var rate3 = l3 / l2;
             var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
             Assert.Equal(3, result.Count);
             result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
@@ -250,19 +253,19 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试批量插入
         /// </summary>
-        [Fact, Priority(410)]
+        [Fact, Priority(110)]
         public async Task TestBatchInsert()
         {
             InitDatabase();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("sqlServer connectionString must not be null");
+                throw new ArgumentNullException("mysql connectionString must not be null");
             }
             var guid = Guid.NewGuid();
             var now = DateTime.Now;
             var now2 = now;
-            var total = 2000;
+            var total = 20000;
             InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var dbFactory = serviceProvider.GetService<IDbFactory>();
@@ -294,6 +297,7 @@ namespace SummerBoot.Test.Mysql
                 if (i == 0)
                 {
                     a.Guid2 = guid;
+                    a.Int2 = 1;
                 }
                 nullableTableList.Add(a);
             }
@@ -330,6 +334,7 @@ namespace SummerBoot.Test.Mysql
                 if (i == 0)
                 {
                     a.Guid2 = guid;
+                    a.Int2 = 1;
                 }
                 nullableTableList2.Add(a);
             }
@@ -364,27 +369,68 @@ namespace SummerBoot.Test.Mysql
                 if (i == 0)
                 {
                     a.Guid2 = guid;
+                    a.Int2 = 1;
                 }
                 nullableTableList3.Add(a);
             }
             sw.Restart();
-           
+            using (var dbConnection = new MySqlConnection(connectionString))
+            {
+                dbConnection.Open();
+                var dbtran = dbConnection.BeginTransaction();
+                MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection,
+                    dbtran);
+            
+                sqlBulkCopy.DestinationTableName = "NullableTable";
+                var propertys=  typeof(NullableTable).GetProperties()
+                    .Where(it => it.CanRead && it.GetCustomAttribute<NotMappedAttribute>() == null).ToList();
+              
+
+                for (int i = 0; i < propertys.Count; i++)
+                {
+                    var property = propertys[i];
+                    var columnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+                   
+                    Debug.WriteLine(columnName);
+                    if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
+                    {
+                        sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} =unhex(@tmp)"));
+                    }
+                    else
+                    {
+                        sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columnName));
+                    }
+            
+                }
+
+                var table = nullableTableList3.ToDataTable();
+
+                SbUtil.ReplaceDataTableColumnType<Guid,byte[]>(table,guid1 => guid1.ToByteArray());
+
+                var c= sqlBulkCopy.WriteToServer(table);
+                if (c.Warnings.Count > 1)
+                {
+                    throw new Exception(string.Join(',', c.Warnings.Select(it => it.Message)));
+                }
+                dbtran.Commit();
+
+            }
             sw.Stop();
             var l2 = sw.ElapsedMilliseconds;
             var rate = l1 / l2;
             var rate2 = l3 / l1;
             var rate3 = l3 / l2;
+
             var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
             Assert.Equal(3, result.Count);
             result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
             Assert.Equal(6000, result.Count);
-            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
+            var models = nullableTableRepository.Where(it => it.Int2==1)
                 .ToList();
             Assert.Equal(3, models.Count);
             Assert.True(models[0].Equals(models[1]));
             Assert.True(models[0].Equals(models[2]));
         }
-
         /// <summary>
         /// 测试从配置文件读取sql
         /// </summary>
