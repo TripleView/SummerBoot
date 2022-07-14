@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Test", "SummerBo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.WebApi", "Example.WebApi\Example.WebApi.csproj", "{371CDA5F-B878-4614-9022-2646A78BB5FE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySqlConnector", "D:\test3\MySqlConnector\MySqlConnector.csproj", "{CF17BB5A-9740-481E-AB77-973B0B55E7CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{371CDA5F-B878-4614-9022-2646A78BB5FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{371CDA5F-B878-4614-9022-2646A78BB5FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{371CDA5F-B878-4614-9022-2646A78BB5FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF17BB5A-9740-481E-AB77-973B0B55E7CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF17BB5A-9740-481E-AB77-973B0B55E7CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF17BB5A-9740-481E-AB77-973B0B55E7CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF17BB5A-9740-481E-AB77-973B0B55E7CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

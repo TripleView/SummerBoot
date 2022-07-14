@@ -75,7 +75,23 @@ namespace ExpressionParser.Test
             
         }
 
-        public Dog(string name, int? active, Enum2 enum2)
+        public Dog(string name, int? active)
+        {
+            Name = name;
+            Active = active;
+        }
+        public string Name { get; set; }
+        public int? Active { get; set; }
+
+    }
+
+    public class Dog2 
+    {
+        public Dog2()
+        {
+
+        }
+        public Dog2(string name, int? active, Enum2? enum2)
         {
             Name = name;
             Active = active;
@@ -83,8 +99,8 @@ namespace ExpressionParser.Test
         }
         public string Name { get; set; }
         public int? Active { get; set; }
+        public Enum2? Enum2 { get; set; }
 
-        public Enum2 Enum2 { set; get; }
     }
 
     public class DogRepository : Repository<Dog>
@@ -159,16 +175,16 @@ namespace ExpressionParser.Test
         [Fact]
         public void TestGenerateObject()
         {
-            var dog = new Dog()
+            var dog = new Dog2()
             {
                 Name = "sb",
                 Active = 1,
                 Enum2 = Enum2.y
             };
 
-            var dogObj = SbUtil.BuildGenerateObjectDelegate(typeof(Dog).GetConstructors().FirstOrDefault(it=>it.GetParameters().Length==3))
+            var dogObj = SbUtil.BuildGenerateObjectDelegate(typeof(Dog2).GetConstructors().FirstOrDefault(it=>it.GetParameters().Length==3))
                 .DynamicInvoke("sb",1,Enum2.y);
-            var buildDog = dogObj as Dog;
+            var buildDog = dogObj as Dog2;
             Assert.Equal("sb", buildDog.Name);
             Assert.Equal(1, buildDog.Active);
             Assert.Equal(Enum2.y, buildDog.Enum2);
@@ -180,15 +196,15 @@ namespace ExpressionParser.Test
         [Fact]
         public void TestListToTable()
         {
-            var dog = new Dog()
+            var dog = new Dog2()
             {
                 Name = "sb",
                 Active = 1,
                 Enum2 = Enum2.y
             };
-            var list = new List<Dog>() { dog };
+            var list = new List<Dog2>() { dog };
             var c = list.ToDataTable();
-            var dog2 = new Dog()
+            var dog2 = new Dog2()
             {
                 Name = "sb2",
                 Active = null,
@@ -208,13 +224,13 @@ namespace ExpressionParser.Test
         [Fact]
         public void TestBuildObjectGetValuesDelegate()
         {
-            var dog = new Dog()
+            var dog = new Dog2()
             {
                 Name = "sb",
                 Active = 1,
                 Enum2 = Enum2.y
             };
-            var lambda = SbUtil.BuildObjectGetValuesDelegate<Dog>(dog.GetType().GetProperties().ToList());
+            var lambda = SbUtil.BuildObjectGetValuesDelegate<Dog2>(dog.GetType().GetProperties().ToList());
             var result = lambda(dog);
             Assert.Equal("sb", result[0]);
             Assert.Equal(1, result[1]);
@@ -239,7 +255,7 @@ namespace ExpressionParser.Test
         [Fact]
         public void TestSetPropertyValueByExpression()
         {
-            var dog = new Dog()
+            var dog = new Dog2()
             {
                 Name = "sb"
             };

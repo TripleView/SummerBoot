@@ -1,9 +1,32 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace SummerBoot.Core
 {
     public static partial class SbUtil
     {
+        public static long CalculateTime(string actionName, Action action)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            action();
+            sw.Stop();
+            var time = sw.ElapsedMilliseconds;
+            Debug.WriteLine(actionName + ":" + time);
+            return time;
+        }
+
+        public static async Task<long> CalculateTimeAsync(string actionName, Func<Task> action)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            await action();
+            sw.Stop();
+            var time = sw.ElapsedMilliseconds;
+            Debug.WriteLine(actionName + ":" + time);
+            return time;
+        }
         /// <summary>
         /// 1970的起始时间
         /// </summary>

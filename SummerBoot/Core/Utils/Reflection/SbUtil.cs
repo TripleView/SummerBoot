@@ -178,6 +178,7 @@ namespace SummerBoot.Core
         }
 
         public static ConcurrentDictionary<string, object> CacheDictionary = new ConcurrentDictionary<string, object>();
+        public static ConcurrentDictionary<string, Delegate> CacheDelegateDictionary = new ConcurrentDictionary<string, Delegate>();
         /// <summary>
         /// 通过表达式树获取实体类的属性值
         /// </summary>
@@ -272,7 +273,7 @@ namespace SummerBoot.Core
             return convertExpression;
         }
 
-        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null) where T : class
+        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null,bool useColumnAttribute=false) where T : class
         {
             var table = new DataTable("template");
             if (propertyInfos == null || propertyInfos.Count == 0)
@@ -281,7 +282,8 @@ namespace SummerBoot.Core
             }
             foreach (var propertyInfo in propertyInfos)
             {
-                table.Columns.Add(propertyInfo.Name, ChangeType(propertyInfo.PropertyType));
+                var columnName=useColumnAttribute?(propertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name?? propertyInfo.Name) : propertyInfo.Name;
+                table.Columns.Add(columnName, ChangeType(propertyInfo.PropertyType));
             }
 
             Func<T, object[]> func;

@@ -858,7 +858,7 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Short2] smallint  NULL,");
             sb.AppendLine("    [DateTime2] datetime2  NULL,");
             sb.AppendLine("    [Bool2] bit  NULL,");
-            sb.AppendLine("    [TimeSpan2] bigint  NULL,");
+            sb.AppendLine("    [TimeSpan2] time  NULL,");
             sb.AppendLine("    [Byte2] tinyint  NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NULL,");
@@ -890,7 +890,7 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("    [Short2] smallint  NOT NULL,");
             sb.AppendLine("    [DateTime2] datetime2  NOT NULL,");
             sb.AppendLine("    [Bool2] bit  NOT NULL,");
-            sb.AppendLine("    [TimeSpan2] bigint  NOT NULL,");
+            sb.AppendLine("    [TimeSpan2] time  NOT NULL,");
             sb.AppendLine("    [Byte2] tinyint  NOT NULL,");
             sb.AppendLine("    [String2] nvarchar(100)  NOT NULL,");
             sb.AppendLine("    [String3] nvarchar(max)  NOT NULL,");

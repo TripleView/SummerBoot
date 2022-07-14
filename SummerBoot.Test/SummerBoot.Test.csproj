@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SummerBoot\SummerBoot.csproj" />
+    <!--<ProjectReference Include="D:\test3\MySqlConnector\MySqlConnector.csproj" />-->
   </ItemGroup>
 
   <ItemGroup>
