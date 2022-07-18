@@ -53,6 +53,7 @@ net core 3.1,net 6
 			- [4.1.4 IBaseRepository接口自带的查方法](#414-ibaserepository接口自带的查方法)
 		- [4.2 增](#42-增)
 			- [4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。](#421-接口自带了insert方法可以插入单个实体或者实体列表如果实体类的主键名称为id且有key注解并且是自增的那么插入后框架会自动为实体的id这个字段赋值值为自增的id值)
+			- [4.2.2 快速批量插入，接口自带了FastBatchInsert方法，可以快速插入实体列表。](#422-快速批量插入接口自带了fastbatchinsert方法可以快速插入实体列表)
 		- [4.3 删](#43-删)
 			- [4.3.1 接口自带了Delete方法，可以删除单个实体，或者实体列表](#431-接口自带了delete方法可以删除单个实体或者实体列表)
 			- [4.3.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如](#432-同时还支持基于lambda表达式的删除返回受影响的行数例如)
@@ -450,6 +451,14 @@ var customer2 = new Customer() { Name = "testCustomer2" };
 var customer3 = new Customer() { Name = "testCustomer3" };
 var customerList = new List<Customer>() { customer2, customer3 };
 customerRepository.Insert(customerList);
+````
+#### 4.2.2 快速批量插入，接口自带了FastBatchInsert方法，可以快速插入实体列表。
+框架不会自动为实体的ID这个字段赋值，同时数据库为mysql的情况下，有一些特殊，首先驱动库必须有MySqlConnector，这个库可以和mysql.data共存，并不会冲突，所以无需担心，且数据库连接字符串后面必须加";AllowLoadLocalInfile=true"，同时在mysql数据库上执行"set global local_infile=1"开启批量上传。sqlite不支持批量快速插入。
+````csharp
+var customer2 = new Customer() { Name = "testCustomer2" };
+var customer3 = new Customer() { Name = "testCustomer3" };
+var customerList = new List<Customer>() { customer2, customer3 };
+customerRepository.FastBatchInsert(customerList);
 ````
 ### 4.3 删
 #### 4.3.1 接口自带了Delete方法，可以删除单个实体，或者实体列表

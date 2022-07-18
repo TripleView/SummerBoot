@@ -1070,6 +1070,7 @@ namespace SummerBoot.Test.Mysql
             {
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
+                database.Database.ExecuteSqlRaw("set global local_infile=1");
                 database.Database.ExecuteSqlRaw(
                     "ALTER TABLE nullabletable COMMENT = 'NullableTable'");
                 database.Database.ExecuteSqlRaw(
