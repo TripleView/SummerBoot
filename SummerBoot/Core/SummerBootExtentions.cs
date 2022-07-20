@@ -161,17 +161,26 @@ namespace SummerBoot.Core
                     var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
                         it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
                         it.GetParameters()[0].ParameterType == typeof(DataTable));
+
                     var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
                         .FirstOrDefault(it=>it.Name=="Add"&&it.GetParameters().Length==2&&it.GetParameters()[0].ParameterType==typeof(string)
                                    && it.GetParameters()[1].ParameterType == typeof(string));
 
-                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyWriteMethod", sqlBulkCopyWriteMethod);
-                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyWriteMethodAsync", sqlBulkCopyWriteMethodAsync);
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
                     SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
+
+                    //缓存委托
+                    var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
+                    var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
+                    var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
+                    SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
                     
+                    var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
+                    var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
+                    var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
+                    SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodAsyncDelegate", sqlBulkCopyWriteMethodAsyncDelegate);
                 }
                 catch (Exception e)
                 {

@@ -35,6 +35,38 @@ namespace SummerBoot.Test.Sqlite
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+
+        /// <summary>
+        /// 测试id类型为guid的model的增删改查
+        /// </summary>
+        [Fact, Priority(309)]
+        public async Task TestModelUseGuidAsId()
+        {
+            InitSqliteDatabase("Data Source=./TestModelUseGuidAsId.db");
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            var dbGuidModel = await guidModelRepository.GetAsync(id);
+            Assert.Equal(guidModel, dbGuidModel);
+            var dbGuidModel2 = guidModelRepository.FirstOrDefault(it => it.Id == id);
+            Assert.Equal(guidModel, dbGuidModel2);
+            dbGuidModel2.Name = "sb2";
+            await guidModelRepository.UpdateAsync(dbGuidModel2);
+            var dbGuidModel3 = guidModelRepository.Where(it => it.Name == "sb2").ToList();
+            Assert.Equal(id, dbGuidModel3.FirstOrDefault()?.Id);
+            await guidModelRepository.DeleteAsync(dbGuidModel3.FirstOrDefault());
+            var nullDbGuidModel = await guidModelRepository.GetAsync(id);
+            Assert.Null(nullDbGuidModel);
+        }
+
+
         /// <summary>
         /// 测试从配置文件读取sql
         /// </summary>

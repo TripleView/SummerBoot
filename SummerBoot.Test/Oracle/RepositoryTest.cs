@@ -30,6 +30,36 @@ namespace SummerBoot.Test.Oracle
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试id类型为guid的model的增删改查
+        /// </summary>
+        [Fact, Priority(214)]
+        public async Task TestModelUseGuidAsId()
+        {
+            InitOracleDatabase();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            var dbGuidModel = await guidModelRepository.GetAsync(id);
+            Assert.Equal(guidModel, dbGuidModel);
+            var dbGuidModel2 = guidModelRepository.FirstOrDefault(it => it.Id == id);
+            Assert.Equal(guidModel, dbGuidModel2);
+            dbGuidModel2.Name = "sb2";
+            await guidModelRepository.UpdateAsync(dbGuidModel2);
+            var dbGuidModel3 = guidModelRepository.Where(it => it.Name == "sb2").ToList();
+            Assert.Equal(id, dbGuidModel3.FirstOrDefault()?.Id);
+            await guidModelRepository.DeleteAsync(dbGuidModel3.FirstOrDefault());
+            var nullDbGuidModel = await guidModelRepository.GetAsync(id);
+            Assert.Null(nullDbGuidModel);
+        }
+
+
+        /// <summary>
         /// 测试事务中批量插入
         /// </summary>
         [Fact, Priority(213)]
@@ -289,6 +319,8 @@ namespace SummerBoot.Test.Oracle
             var rate2 = l3 / l1;
             var rate3 = l3 / l2;
             var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+            var count = nullableTableRepository.Count(it => it.Guid2 == guid);
+            Assert.Equal(3, count);
             Assert.Equal(3, result.Count);
             result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
             Assert.Equal(6000, result.Count);
@@ -478,6 +510,8 @@ namespace SummerBoot.Test.Oracle
             var rate2 = l3 / l1;
             var rate3 = l3 / l2;
             var result= nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it=>it.Id).ToList();
+            var count = nullableTableRepository.Count(it=>it.Guid2 == guid);
+            Assert.Equal(3, count);
             Assert.Equal(3,result.Count);
              result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
             Assert.Equal(6000, result.Count);

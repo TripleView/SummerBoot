@@ -137,9 +137,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName);
                     return result;
-
+               
                 case nameof(Queryable.Where):
-                    methodCallStack.Push(methodName);
+                
+                    methodCallStack.Push(nameof(Queryable.Where));
                     //MethodName = method.Name;
                     var result2 = this.VisitWhereCall(node);
                     var lastMethodCallName2 = methodCallStack.Pop();
@@ -165,6 +166,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 case nameof(Queryable.Distinct):
                 case nameof(Queryable.First):
                 case nameof(Queryable.FirstOrDefault):
+                case nameof(Queryable.Count):
+                    //针对group by里的count单独处理
+                    if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
+                    {
+                        break;
+                    }
                     methodCallStack.Push(methodName);
                     var result5 = this.VisitFirstOrDefaultDistinctCall(node);
                     var lastMethodCallName5 = methodCallStack.Pop();
@@ -178,7 +185,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName7 = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName7);
                     return result7;
-
             }
 
             //针对groupBy进行单独处理
@@ -483,7 +489,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if (MethodName == nameof(Queryable.Where)||MethodName==nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First))
+            else if (MethodName == nameof(Queryable.Where)||MethodName==nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -583,6 +589,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 else if (methodName == nameof(Queryable.Distinct))
                 {
                     result.ColumnsPrefix = "DISTINCT";
+                }else if (methodName == nameof(Queryable.Count))
+                {
+                    result.Columns.Clear();
+                    result.Columns.Add(new ColumnExpression(null, "", null, 0, "", "Count"));
                 }
                 else
                 {

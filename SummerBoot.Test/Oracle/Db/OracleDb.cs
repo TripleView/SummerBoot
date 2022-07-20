@@ -40,5 +40,6 @@ namespace SummerBoot.Test.Oracle.Db
         public DbSet<OrderDetail> OrderDetail { get; set; }
         public DbSet<NullableTable> NullableTable { get; set; }
         public DbSet<NotNullableTable> NotNullableTable { get; set; }
+        public DbSet<GuidModel> GuidModel { get; set; }
     }
 }

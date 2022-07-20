@@ -28,11 +28,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             var parameterNameList = new List<string>();
             var columnNameList = new List<string>();
 
-            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id" && it.MemberInfo is PropertyInfo);
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.IsDatabaseGeneratedIdentity && it.ColumnName.ToLower().Contains("id") && it.MemberInfo is PropertyInfo);
 
             foreach (var column in table.Columns)
             {
-                if (keyColumn!=null&& keyColumn == column)
+                if (keyColumn != null && keyColumn == column)
                 {
                     continue;
                 }
@@ -50,7 +50,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 SqlParameters = this.sqlParameters
             };
 
-          
+
             if (keyColumn != null)
             {
                 result.LastInsertIdSql = GetLastInsertIdSql();
@@ -199,12 +199,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 this.VisitWhere(select.Where);
             }
 
-            var tempSb= _sb.ToString();
+            var tempSb = _sb.ToString();
             _sb.Clear();
             _sb.Append(oldSb);
             _sb.Append(tempSb);
 
-            countSqlSb.Append( $"select count(1) from {tempSb}");
+            countSqlSb.Append($"select count(1) from {tempSb}");
 
             //添加软删除过滤逻辑
             if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && select.From is TableExpression tablex && (
@@ -431,12 +431,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             Clear();
             var table = this.getTableExpression(typeof(T));
             var tableName = GetSchemaTableName(table.Schema, table.Name);
-            
+
             var result = new DbQueryResult()
             {
                 Sql = tableName,
                 SqlParameters = this.sqlParameters,
-                PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it=>new DbQueryResultPropertyInfoMapping(){ColumnName = it.ColumnName,PropertyInfo = it.MemberInfo as PropertyInfo}).ToList()
+                PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it => new DbQueryResultPropertyInfoMapping() { ColumnName = it.ColumnName, PropertyInfo = it.MemberInfo as PropertyInfo }).ToList()
             };
 
             return result;

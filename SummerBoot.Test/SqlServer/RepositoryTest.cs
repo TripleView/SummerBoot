@@ -33,6 +33,35 @@ namespace SummerBoot.Test.SqlServer
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试id类型为guid的model的增删改查
+        /// </summary>
+        [Fact, Priority(413)]
+        public async Task TestModelUseGuidAsId()
+        {
+            InitDatabase();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            var dbGuidModel = await guidModelRepository.GetAsync(id);
+            Assert.Equal(guidModel, dbGuidModel);
+            var dbGuidModel2 = guidModelRepository.FirstOrDefault(it => it.Id == id);
+            Assert.Equal(guidModel, dbGuidModel2);
+            dbGuidModel2.Name = "sb2";
+            await guidModelRepository.UpdateAsync(dbGuidModel2);
+            var dbGuidModel3 = guidModelRepository.Where(it => it.Name == "sb2").ToList();
+            Assert.Equal(id, dbGuidModel3.FirstOrDefault()?.Id);
+            await guidModelRepository.DeleteAsync(dbGuidModel3.FirstOrDefault());
+            var nullDbGuidModel = await guidModelRepository.GetAsync(id);
+            Assert.Null(nullDbGuidModel);
+        }
+
+        /// <summary>
         /// 测试事务中批量插入
         /// </summary>
         [Fact, Priority(412)]
@@ -108,7 +137,7 @@ namespace SummerBoot.Test.SqlServer
             {
                 unitOfWork.RollBack();
             }
-            var count2 =(await nullableTableRepository.GetAllAsync()).Count;
+            var count2 = (await nullableTableRepository.GetAllAsync()).Count;
             Assert.Equal(4000, count2);
         }
 
@@ -279,6 +308,8 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(6000, result.Count);
             var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
                 .ToList();
+            var count = nullableTableRepository.Count(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id));
+            Assert.Equal(3, count);
             Assert.Equal(3, models.Count);
             Assert.True(models[0].Equals(models[1]));
             Assert.True(models[0].Equals(models[2]));
@@ -450,6 +481,8 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(6000, result.Count);
             var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
                 .ToList();
+            var count = nullableTableRepository.Count(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id));
+            Assert.Equal(3, count);
             Assert.Equal(3, models.Count);
             Assert.True(models[0].Equals(models[1]));
             Assert.True(models[0].Equals(models[2]));

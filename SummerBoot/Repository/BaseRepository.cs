@@ -478,11 +478,23 @@ namespace SummerBoot.Repository
             }
             else if (repositoryOption.IsSqlServer)
             {
-                if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegate", out var cacheFunc))
+                if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegate", out var cacheFunc)
+                    && SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegate3", out var cacheFunc3)
+                    && SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyOptionsType", out var sqlBulkCopyOptionsType))
                 {
-                    var sqlBulkCopy = ((Delegate)cacheFunc).DynamicInvoke(this.dbConnection);
+                   
+                    object sqlBulkCopy;
+                    if (dbTransaction == null)
+                    {
+                        sqlBulkCopy = ((Delegate)cacheFunc).DynamicInvoke(this.dbConnection);
+                    }
+                    else
+                    {
+                        var dbtype = Enum.Parse((Type)sqlBulkCopyOptionsType, "1");
+                        sqlBulkCopy = ((Delegate)cacheFunc3).DynamicInvoke(this.dbConnection, dbtype, dbTransaction);
+                    }
+
                     sqlBulkCopy.SetPropertyValue("BatchSize", 1000);
-                    sqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
                     sqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
                     var columnMappings = sqlBulkCopy.GetPropertyValue("ColumnMappings");
 
@@ -494,15 +506,15 @@ namespace SummerBoot.Repository
                             addMethod.Invoke(columnMappings, parameters: new object[2] { mapping.PropertyInfo.Name, mapping.ColumnName });
                         }
                     }
-
+                   
                     var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
-                    //sqlserver替换timespan类型为long类型
-                    //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(insertData);
-
-                    if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyWriteMethod", out var cacheWriteMethod))
+                    if (SbUtil.CacheDelegateDictionary.TryGetValue("sqlBulkCopyWriteMethodDelegate",
+                            out var sqlBulkCopyWriteMethodAsyncDelegate))
                     {
-                        ((MethodInfo)cacheWriteMethod).Invoke(sqlBulkCopy, parameters: new object[1] { insertData });
+                        sqlBulkCopyWriteMethodAsyncDelegate.DynamicInvoke(sqlBulkCopy,
+                            insertData);
                     }
+
                 }
                 else if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegateErr", out object cacheException))
                 {
@@ -859,7 +871,6 @@ namespace SummerBoot.Repository
 
                     sqlBulkCopy.SetPropertyValue("BatchSize", 1000);
                     sqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
-                    sqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
                     var columnMappings = sqlBulkCopy.GetPropertyValue("ColumnMappings");
 
                     if (SbUtil.CacheDictionary.TryGetValue("addColumnMappingMethodInfo", out var cacheAddColumnMappingMethodInfo))
@@ -872,12 +883,12 @@ namespace SummerBoot.Repository
                     }
 
                     var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
-                    //sqlserver替换timespan类型为long类型
-                    //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(insertData);
-
-                    if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyWriteMethodAsync", out var cacheWriteMethod))
+                    
+                    if (SbUtil.CacheDelegateDictionary.TryGetValue("sqlBulkCopyWriteMethodAsyncDelegate",
+                            out var sqlBulkCopyWriteMethodAsyncDelegate))
                     {
-                        await (Task)((MethodInfo)cacheWriteMethod).Invoke(sqlBulkCopy, parameters: new object[1] { insertData });
+                        await (Task)sqlBulkCopyWriteMethodAsyncDelegate.DynamicInvoke(sqlBulkCopy,
+                            insertData);
                     }
                 }
                 else if (SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegateErr", out object cacheException))

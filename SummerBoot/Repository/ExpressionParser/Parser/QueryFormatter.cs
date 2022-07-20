@@ -431,7 +431,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected TableExpression getTableExpression(Type type)
         {
-            var key = "getTableExpression"+type.FullName;
+            var key = "getTableExpression" + type.FullName;
             if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
             {
                 return (TableExpression)cacheValue;
@@ -459,7 +459,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
-            var tableName= GetSchemaTableName(table.Schema, table.Name);
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var parameterNameList = new List<string>();
             var columnNameList = new List<string>();
@@ -484,7 +484,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 SqlParameters = this.sqlParameters
             };
 
-            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.ColumnName.ToLower() == "id" && it.MemberInfo is PropertyInfo);
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.IsDatabaseGeneratedIdentity && it.ColumnName.ToLower() == "id" && it.MemberInfo is PropertyInfo);
             if (keyColumn != null)
             {
                 result.LastInsertIdSql = GetLastInsertIdSql();
@@ -593,7 +593,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             //判断是否软删除
             //软删除
-            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete&&typeof(BaseEntity).IsAssignableFrom(typeof(T)))
+            if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && typeof(BaseEntity).IsAssignableFrom(typeof(T)))
             {
                 var column = table.Columns.FirstOrDefault(it => it.MemberInfo.Name == "Active");
                 if (column != null)
@@ -615,7 +615,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     deleteSql += $" and {whereSql}";
                 }
 
-                result.Sql= deleteSql;
+                result.Sql = deleteSql;
 
             }
 
