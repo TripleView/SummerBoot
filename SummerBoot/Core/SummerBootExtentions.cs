@@ -519,18 +519,28 @@ namespace SummerBoot.Core
                 {
                     it.Timeout = TimeSpan.FromSeconds(feignClient.Timeout);
                 }
+                
             });
             //忽略https证书
             if (feignClient.IsIgnoreHttpsCertificateValidate)
             {
                 httpClient.ConfigurePrimaryHttpMessageHandler(it => new HttpClientHandler
                 {
+                    UseCookies = false,
                     ServerCertificateCustomValidationCallback =
                         HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                 });
                 httpClient.AddHttpMessageHandler(() =>
                 {
                     return new LoggingHandler();
+                });
+                
+            }
+            else
+            {
+                httpClient.ConfigurePrimaryHttpMessageHandler(it => new HttpClientHandler
+                {
+                    UseCookies = false
                 });
             }
 

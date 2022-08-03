@@ -7,12 +7,14 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Net.Http.Headers;
@@ -128,11 +130,11 @@ namespace SummerBoot.Feign
 
             path = GetValueByConfiguration(path);
             var urlTemp = requestPath + path;
-
-            urlTemp = GetUrl(urlTemp);
+            urlTemp = ReplaceVariable(urlTemp);
             urlTemp = AddUrlParameter(urlTemp);
+            urlTemp = GetUrl(urlTemp);
 
-            requestTemplate.Url = ReplaceVariable(urlTemp);
+            requestTemplate.Url = urlTemp;
             //如果存在拦截器，则进行拦截
             var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
 
@@ -594,6 +596,34 @@ namespace SummerBoot.Feign
                                 }
                             }
 
+                        }
+                        else if (arg is CookieCollection cookieCollection)
+                        {
+                            var cookieList = new List<string>();
+                            foreach (Cookie cookie in cookieCollection)
+                            {
+                                //Uri.EscapeDataString(cookie.Value)
+                                cookieList.Add($"{cookie.Name}={cookie.Value }");
+                            }
+
+                            if (cookieList.Any())
+                            {
+                                var key = "Cookie";
+                                var keyValue = string.Join("; ", cookieList);
+
+                                var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
+
+                                if (!hasHeaderKey)
+                                {
+                                    keyList = new List<string>();
+                                    keyList.Add(keyValue);
+                                    requestTemplate.Headers.Add(key, keyList);
+                                }
+                                else
+                                {
+                                    keyList.Add(keyValue);
+                                }
+                            }
                         }
                         else if (arg is MultipartItem multipartItem)
                         {
