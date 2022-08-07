@@ -602,8 +602,7 @@ namespace SummerBoot.Feign
                             var cookieList = new List<string>();
                             foreach (Cookie cookie in cookieCollection)
                             {
-                                //Uri.EscapeDataString(cookie.Value)
-                                cookieList.Add($"{cookie.Name}={cookie.Value }");
+                                cookieList.Add($"{cookie.Name}={cookie.Value}");
                             }
 
                             if (cookieList.Any())

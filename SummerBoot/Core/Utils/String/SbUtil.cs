@@ -266,5 +266,38 @@ namespace SummerBoot.Core
             var bytes = Encoding.UTF8.GetBytes(str);
             return bytes.ToHex();
         }
+
+        public static byte[] ToBytes(this int value)
+        {
+            return BitConverter.GetBytes(value);
+        }
+
+        /// <summary>
+        /// Return an array of bytes representing an integer.
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="len">Length of bytes object to use. An OverflowError is raised if the integer is not representable with the given number of bytes.</param>
+        /// <returns></returns>
+        public static byte[] ToBytesBig(this int number, int len)
+        {
+            byte[] bytes = BitConverter.GetBytes(number);
+            if (BitConverter.IsLittleEndian)                //if little endian, reverse to get big endian
+                Array.Reverse(bytes);
+            if (bytes.Length == len) return bytes;          //if already desired length, return.
+            if (bytes.Length > len)                         //if length is too long, remove some elements
+            {
+                var bytesTmp = Array.Empty<byte>();
+                bytes.CopyTo(bytesTmp, bytes.Length - len);
+                bytes = bytesTmp;
+            }
+            else                                            //if length is too small, add 0's in byte
+            {
+                Array.Reverse(bytes);
+                for (var i = bytes.Length; i < len; i++)
+                    bytes[i] = (byte)0;
+                Array.Reverse(bytes);
+            }
+            return bytes;
+        }
     }
 }

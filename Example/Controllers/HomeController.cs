@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Example.Feign;
@@ -23,8 +24,13 @@ namespace Example.Controllers
         [HttpGet("index")]
         public IActionResult Index()
         {
-            var d3 = testFeign.MultipartTest(new test() { Name = "hzp2", Age = 10 }, new MultipartItem(System.IO.File.OpenRead(@"D:\2.jpg"), "file", "2.jpg")).GetAwaiter().GetResult();
-            return Content("ok");
+            var b = (testFeign.Test(new test() { Name = "hzp2", Age = 10 },new CookieCollection()
+            {
+                new Cookie("Test","我爱你"),
+                new Cookie("Test1","2WjJ3g7eUpoej/oF2mw3ylDFKZ0ip8QWz/VBcPU7NoLT2qrP3Bzg3bRsLG8CEdN0cpbHKasOLo0v7ubeXrRoQAyIuiBO5piGqsJUKuBX6b7chg3Y8zUqnfRiv5ZDE7rtvf4XFiqZJ9IaOwOwiEmVlRUNHXZhB6npoQPAi0FLt0E="),
+                new Cookie("Test2","abc")
+            })).GetAwaiter().GetResult();
+            return Content(b.ToString());
         }
 
         [HttpGet("file")]

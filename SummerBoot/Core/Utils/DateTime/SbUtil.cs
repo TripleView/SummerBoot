@@ -70,5 +70,15 @@ namespace SummerBoot.Core
         {
             return (DateTime.UtcNow - Jan1st1970).Ticks/10;
         }
+
+        /// <summary>
+        /// 返回自1970年以来以毫秒为单位的UTC时间
+        /// </summary>
+        /// <param name="d"></param>
+        /// <returns></returns>
+        public static long CurrentSeconds()
+        {
+            return (long)(DateTime.UtcNow - Jan1st1970).TotalSeconds;
+        }
     }
 }

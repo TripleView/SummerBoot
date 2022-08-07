@@ -22,6 +22,7 @@ using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
@@ -143,7 +144,7 @@ namespace SummerBoot.Core
                 {
                     var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
                     var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
-                    var sqlBulkCopyOptionsType= sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
+                    var sqlBulkCopyOptionsType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
 
                     var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
                         it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
@@ -163,7 +164,7 @@ namespace SummerBoot.Core
                         it.GetParameters()[0].ParameterType == typeof(DataTable));
 
                     var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-                        .FirstOrDefault(it=>it.Name=="Add"&&it.GetParameters().Length==2&&it.GetParameters()[0].ParameterType==typeof(string)
+                        .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 2 && it.GetParameters()[0].ParameterType == typeof(string)
                                    && it.GetParameters()[1].ParameterType == typeof(string));
 
                     SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
@@ -176,7 +177,7 @@ namespace SummerBoot.Core
                     var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
                     var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
                     SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
-                    
+
                     var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
                     var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
                     var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
@@ -202,9 +203,9 @@ namespace SummerBoot.Core
                     var mysqlAssembly = Assembly.Load("MySqlConnector");
                     var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
                     var mySqlBulkCopyResultType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyResult");
-                    
+
                     var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
-                    
+
                     var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
                          it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
                          it.GetParameters()[0].ParameterType == typeof(DataTable));
@@ -221,7 +222,7 @@ namespace SummerBoot.Core
                     var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
                     SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodDelegate", mysqlBulkCopyWriteMethodDelegate);
                     var mySqlBulkCopyResultValueTaskType = typeof(ValueTask<>).MakeGenericType(mySqlBulkCopyResultType);
-                    var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable),typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
+                    var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
                     var mysqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodAsyncTypes);
                     var mysqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodAsyncFuncType, mysqlBulkCopyWriteMethodAsync);
                     SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodAsyncDelegate", mysqlBulkCopyWriteMethodAsyncDelegate);
@@ -235,7 +236,7 @@ namespace SummerBoot.Core
                     SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
                     SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
                     SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
-                    
+
                 }
                 catch (Exception e)
                 {
@@ -458,10 +459,12 @@ namespace SummerBoot.Core
                 services.AddSummerBootFeignService(type, ServiceLifetime.Transient);
             }
             services.TryAddSingleton<IFeignProxyBuilder>(it => feignProxyBuilder);
+            services.TryAddSingleton<IFeignUnitOfWork,DefaultFeignUnitOfWork>();
             return services;
         }
 
-
+        public static Dictionary<string,CookieContainer> GroupCookieContainerCache=new Dictionary<string,CookieContainer>();
+        public static Dictionary<string, CookieContainer> AllClientContainerCache = new Dictionary<string, CookieContainer>();
         private static IServiceCollection AddSummerBootFeignService(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime)
         {
@@ -519,30 +522,40 @@ namespace SummerBoot.Core
                 {
                     it.Timeout = TimeSpan.FromSeconds(feignClient.Timeout);
                 }
-                
+
             });
             //忽略https证书
+            var customHttpClientHandler = new HttpClientHandler();
+
             if (feignClient.IsIgnoreHttpsCertificateValidate)
             {
-                httpClient.ConfigurePrimaryHttpMessageHandler(it => new HttpClientHandler
-                {
-                    UseCookies = false,
-                    ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                });
-                httpClient.AddHttpMessageHandler(() =>
-                {
-                    return new LoggingHandler();
-                });
-                
+                customHttpClientHandler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             }
-            else
+
+            var cookieContainer=new CookieContainer(1000);
+            customHttpClientHandler.UseCookies = feignClient.UseCookie;
+            customHttpClientHandler.UseProxy = true;
+            if (feignClient.UseCookie)
             {
-                httpClient.ConfigurePrimaryHttpMessageHandler(it => new HttpClientHandler
+                if (feignClient.CookieGroupName.HasText())
                 {
-                    UseCookies = false
-                });
+                    if (GroupCookieContainerCache.ContainsKey(feignClient.CookieGroupName))
+                    {
+                        cookieContainer= GroupCookieContainerCache[feignClient.CookieGroupName];
+                    }
+                    else
+                    {
+                        GroupCookieContainerCache[feignClient.CookieGroupName] = cookieContainer;
+                    }
+                }
+                customHttpClientHandler.CookieContainer = cookieContainer;
+                AllClientContainerCache[name] = cookieContainer;
             }
+           
+
+
+            httpClient.ConfigurePrimaryHttpMessageHandler(it => customHttpClientHandler);
 
             //httpClient.ConfigurePrimaryHttpMessageHandler<LoggingHandler>();
             //httpClient.ConfigurePrimaryHttpMessageHandler((e) =>

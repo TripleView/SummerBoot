@@ -17,7 +17,7 @@ namespace Example.Feign
         public async Task ApplyAsync(RequestTemplate requestTemplate)
         {
             requestTemplate.Headers.Add("testHeader", new List<string>() { "123" });
-           var b=  await testFeign.Test(new test() { Name = "hzp2", Age = 10 });
+     
             await Task.CompletedTask;
         }
     }

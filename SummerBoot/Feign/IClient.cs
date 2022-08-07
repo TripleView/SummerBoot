@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
@@ -34,10 +35,9 @@ namespace SummerBoot.Feign
             public async Task<ResponseTemplate> ExecuteAsync(RequestTemplate requestTemplate, CancellationToken cancellationToken)
             {
                 var httpClient = HttpClientFactory.CreateClient(requestTemplate.ClientName);
-                
                 var httpRequest = new HttpRequestMessage(requestTemplate.HttpMethod, requestTemplate.Url);
                 httpRequest.Content = requestTemplate.HttpContent;
-
+             
                 //处理header
                 foreach (var requestTemplateHeader in requestTemplate.Headers)
                 {
@@ -65,17 +65,17 @@ namespace SummerBoot.Feign
                     }
                 }
 
-                var httpResponse = await httpClient.SendAsync(httpRequest,cancellationToken);
-                
+                var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
                 //兼容返回类型不正规的接口，比如nacos
                 if (!httpResponse.IsSuccessStatusCode)
                 {
                     var message = "";
                     if (httpResponse.Content != null)
                     {
-                        message= httpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        message = httpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     }
-                        
+
                     if (message.IsNullOrWhiteSpace())
                     {
                         message = httpResponse.ReasonPhrase;
@@ -83,7 +83,7 @@ namespace SummerBoot.Feign
 
                     throw new HttpRequestException(message);
                 }
-                
+
                 //把httpResponseMessage转化为responseTemplate
                 var result = await ConvertResponseAsync(httpResponse);
 

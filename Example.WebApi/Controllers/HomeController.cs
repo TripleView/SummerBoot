@@ -92,6 +92,9 @@ namespace Example.WebApi.Controllers
         [HttpPost("form")]
         public IActionResult form([FromForm] test t)
         {
+            Console.WriteLine(Request.Cookies["Test"]);
+            Console.WriteLine(Request.Cookies["Test1"]);
+            Console.WriteLine(Request.Cookies["Test2"]);
             return Content(JsonConvert.SerializeObject(t));
         }
 

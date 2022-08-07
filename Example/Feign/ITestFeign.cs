@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Policy;
 using System.Threading.Tasks;
@@ -40,7 +41,7 @@ namespace Example.Feign
 
         [IgnoreInterceptor]
         [PostMapping("/form")]
-        Task<dynamic> Test([Body(BodySerializationKind.Form)] test tt);
+        Task<dynamic> Test([Body(BodySerializationKind.Form)] test tt,CookieCollection cookies);
         [PostMapping("/{methodName}")]
         Task<dynamic> Test2([Body(BodySerializationKind.Form)] test tt, poco poco);
 
