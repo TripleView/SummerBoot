@@ -14,22 +14,27 @@ namespace Example.Controllers
     {
         private readonly ITestFeign testFeign;
         private readonly IRancherFeign rancherFeign;
+        private readonly IFeignUnitOfWork feignUnitOfWork;
 
-        public HomeController(ITestFeign testFeign, IRancherFeign rancherFeign)
+        public HomeController(ITestFeign testFeign, IRancherFeign rancherFeign, IFeignUnitOfWork feignUnitOfWork)
         {
             this.testFeign = testFeign;
             this.rancherFeign = rancherFeign;
+            this.feignUnitOfWork = feignUnitOfWork;
         }
 
         [HttpGet("index")]
         public IActionResult Index()
         {
+            feignUnitOfWork.BeginCookie();
+            feignUnitOfWork.AddCookie("http://localhost:5001/home", new Cookie("Test", "我爱你"));
             var b = (testFeign.Test(new test() { Name = "hzp2", Age = 10 },new CookieCollection()
             {
-                new Cookie("Test","我爱你"),
                 new Cookie("Test1","2WjJ3g7eUpoej/oF2mw3ylDFKZ0ip8QWz/VBcPU7NoLT2qrP3Bzg3bRsLG8CEdN0cpbHKasOLo0v7ubeXrRoQAyIuiBO5piGqsJUKuBX6b7chg3Y8zUqnfRiv5ZDE7rtvf4XFiqZJ9IaOwOwiEmVlRUNHXZhB6npoQPAi0FLt0E="),
                 new Cookie("Test2","abc")
             })).GetAwaiter().GetResult();
+            feignUnitOfWork.StopCookie();
+
             return Content(b.ToString());
         }
 

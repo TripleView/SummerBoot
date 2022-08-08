@@ -48,6 +48,7 @@
 
   <ItemGroup>
     <Folder Include="Model\" />
+    <Folder Include="Cache\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties app_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

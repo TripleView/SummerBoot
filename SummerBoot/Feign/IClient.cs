@@ -27,9 +27,11 @@ namespace SummerBoot.Feign
         public class DefaultFeignClient : IClient
         {
             private IHttpClientFactory HttpClientFactory { get; }
-            public DefaultFeignClient(IHttpClientFactory iHttpClientFactory)
+            private IFeignUnitOfWork feignUnitOfWork { get; }
+            public DefaultFeignClient(IHttpClientFactory iHttpClientFactory,IFeignUnitOfWork feignUnitOfWork)
             {
                 HttpClientFactory = iHttpClientFactory;
+                this.feignUnitOfWork = feignUnitOfWork;
             }
 
             public async Task<ResponseTemplate> ExecuteAsync(RequestTemplate requestTemplate, CancellationToken cancellationToken)
@@ -64,8 +66,17 @@ namespace SummerBoot.Feign
                             requestTemplateHeader.Value);
                     }
                 }
-
+                //添加cookie逻辑
                 var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+
+                if (feignUnitOfWork.IsShareCookie&&httpResponse != null && httpResponse.Headers.Contains(HeaderNames.SetCookie))
+                {
+                    var cookieList = httpResponse.Headers.GetValues(HeaderNames.SetCookie);
+                    foreach (var cookie in cookieList)
+                    {
+                        feignUnitOfWork.AddCookie(requestTemplate.Url, cookie);
+                    }
+                }
 
                 //兼容返回类型不正规的接口，比如nacos
                 if (!httpResponse.IsSuccessStatusCode)

@@ -48,7 +48,7 @@ namespace Example
             services.AddSummerBootFeign();
 
             services.AddControllers();
-
+            services.AddSummerBootCache();
             //services.AddMemoryCache();
 
             services.AddSwaggerGen(c =>

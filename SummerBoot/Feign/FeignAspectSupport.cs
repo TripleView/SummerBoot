@@ -46,6 +46,8 @@ namespace SummerBoot.Feign
         /// </summary>
         private IFeignDecoder decoder;
 
+        private IFeignUnitOfWork feignUnitOfWork;
+
         private FeignOption feignOption;
         private IConfiguration configuration;
         public async Task<T> BaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
@@ -61,6 +63,7 @@ namespace SummerBoot.Feign
             decoder = serviceProvider.GetService<IFeignDecoder>();
             feignOption = serviceProvider.GetService<FeignOption>();
             configuration = serviceProvider.GetService<IConfiguration>();
+            feignUnitOfWork = serviceProvider.GetService<IFeignUnitOfWork>();
             //读取feignClientAttribute里的信息；
             //接口类型
             var interfaceType = method.DeclaringType;
@@ -83,6 +86,8 @@ namespace SummerBoot.Feign
 
             //处理请求头逻辑
             ProcessHeaders(method, requestTemplate, interfaceType);
+
+          
 
             var path = "";
 
@@ -135,6 +140,8 @@ namespace SummerBoot.Feign
             urlTemp = GetUrl(urlTemp);
 
             requestTemplate.Url = urlTemp;
+
+            ProcessCookie(requestTemplate);
             //如果存在拦截器，则进行拦截
             var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
 
@@ -286,6 +293,44 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
+        /// 处理cookie
+        /// </summary>
+        /// <param name="requestTemplate"></param>
+        private void ProcessCookie(RequestTemplate requestTemplate)
+        {
+            if (!feignUnitOfWork.IsShareCookie)
+            {
+                return;
+            }
+
+            var cookies= feignUnitOfWork.GetCookies(requestTemplate.Url);
+            var cookieList = new List<string>();
+            foreach (Cookie cookie in cookies)
+            {
+                cookieList.Add($"{cookie.Name}={Uri.EscapeUriString(cookie.Value)}");
+            }
+
+            if (cookieList.Any())
+            {
+                var key = "Cookie";
+                var keyValue = string.Join("; ", cookieList);
+
+                var hasHeaderKey = requestTemplate.Headers.TryGetValue(key, out var keyList);
+
+                if (!hasHeaderKey)
+                {
+                    keyList = new List<string>();
+                    keyList.Add(keyValue);
+                    requestTemplate.Headers.Add(key, keyList);
+                }
+                else if(keyList.Count > 0)
+                {
+                    keyList[0] += $" ;{keyValue}";
+                }
+            }
+        }
+
+        /// <summary>
         /// 处理请求头逻辑
         /// </summary>
         /// <param name="method"></param>
@@ -406,6 +451,11 @@ namespace SummerBoot.Feign
             return str;
         }
 
+        /// <summary>
+        /// 为url添加query参数
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
         private string AddUrlParameter(string url)
         {
             if (urlParameters.Count == 0)
@@ -602,7 +652,7 @@ namespace SummerBoot.Feign
                             var cookieList = new List<string>();
                             foreach (Cookie cookie in cookieCollection)
                             {
-                                cookieList.Add($"{cookie.Name}={cookie.Value}");
+                                cookieList.Add($"{cookie.Name}={Uri.EscapeUriString(cookie.Value)}");
                             }
 
                             if (cookieList.Any())
@@ -646,6 +696,7 @@ namespace SummerBoot.Feign
                     }
                 }
             }
+
             if (multipartAttribute != null)
             {
                 requestTemplate.HttpContent = multipartFormDataContent;

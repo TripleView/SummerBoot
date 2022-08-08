@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -13,32 +14,69 @@ namespace SummerBoot.Feign
     public interface IFeignUnitOfWork
     {
         /// <summary>
-        /// 获取cookie管理器
+        /// 引用次数，开启一次事物加+1,当次数为1时提交，主要是为了防止事物嵌套
         /// </summary>
-        /// <param name="feignInterface"></param>
-        /// <returns></returns>
-        CookieContainer GetCookieContainer(object feignInterface);
+        int ActiveNumber { get; set; }
+
+        bool IsShareCookie => ActiveNumber > 0;
+        /// <summary>
+        /// 开启cookie共享
+        /// </summary>
+        void BeginCookie();
+        /// <summary>
+        /// 结束cookie共享
+        /// </summary>
+        void StopCookie();
+
+        bool AddCookie(string url, string cookieString);
+        bool AddCookie(string url, Cookie cookie);
+        List<Cookie> GetCookies(string url);
     }
 
     public class DefaultFeignUnitOfWork : IFeignUnitOfWork
     {
-        public CookieContainer GetCookieContainer(object feignInterfaceEntity)
+        private CookieContainer cookieContainer = new CookieContainer();
+        public int ActiveNumber { get; set; } = 0;
+
+        public bool AddCookie(string url, string cookieString)
         {
-            var feignInterface = feignInterfaceEntity.GetType().GetInterfaces().ToList()
-                .FirstOrDefault(it => it.GetCustomAttribute<FeignClientAttribute>() != null);
-            var feignClient = feignInterface?.GetCustomAttribute<FeignClientAttribute>();
-            if (feignClient == null)
+            if (ActiveNumber == 0)
             {
-                throw new NotSupportedException("only support feignClient interface");
+                throw new Exception("Unopened beginCookie");
+            }
+            cookieContainer.SetCookies(new Uri(url), cookieString);
+            return true;
+        }
+        public bool AddCookie(string url, Cookie cookie)
+        {
+            if (ActiveNumber == 0)
+            {
+                throw new Exception("Unopened beginCookie");
             }
 
-            if (!feignClient.UseCookie)
-            {
-                throw new NotSupportedException("feignClient not using UseCookie=true");
-            }
-            var clientName = feignClient.Name.GetValueOrDefault(feignInterface.FullName);
+            cookieContainer.Add(new Uri(url), cookie);
+            return true;
+        }
 
-            return SummerBootExtentions.AllClientContainerCache[clientName];
+        public void BeginCookie()
+        {
+            ActiveNumber++;
+        }
+
+        public List<Cookie> GetCookies(string url)
+        {
+            if (ActiveNumber == 0)
+            {
+                throw new Exception("Unopened beginCookie");
+            }
+            var urlCookies = cookieContainer.GetCookies(new Uri(url));
+            var result = urlCookies.ToList();
+            return result;
+        }
+
+        public void StopCookie()
+        {
+            ActiveNumber--;
         }
     }
 

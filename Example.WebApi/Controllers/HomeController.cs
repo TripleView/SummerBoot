@@ -95,6 +95,7 @@ namespace Example.WebApi.Controllers
             Console.WriteLine(Request.Cookies["Test"]);
             Console.WriteLine(Request.Cookies["Test1"]);
             Console.WriteLine(Request.Cookies["Test2"]);
+            Console.WriteLine(string.Join("--", Request.Headers.Values));
             return Content(JsonConvert.SerializeObject(t));
         }
 

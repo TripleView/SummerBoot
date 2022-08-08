@@ -27,6 +27,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using SummerBoot.Cache;
 using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
 using SummerBoot.Repository.TypeHandler.Dialect.Sqlite;
 using SummerBoot.Repository.TypeHandler.Dialect.SqlServer;
@@ -407,6 +408,39 @@ namespace SummerBoot.Core
             return services;
         }
 
+        public static IServiceCollection AddSummerBootCache(this IServiceCollection services,
+            Action<CacheOption> action = null)
+        {
+            var cacheOption = new CacheOption();
+            if (action != null)
+            {
+                action(cacheOption);
+            }
+
+            if (cacheOption.CacheDeserializer != null)
+            {
+                services.TryAddScoped(typeof(ICacheDeserializer), cacheOption.CacheDeserializer.GetType());
+            }
+            else
+            {
+                services.TryAddScoped<ICacheDeserializer, JsonCacheDeserializer>();
+            }
+
+
+            if (cacheOption.CacheSerializer != null)
+            {
+                services.TryAddScoped(typeof(ICacheSerializer), cacheOption.CacheSerializer.GetType());
+            }
+            else
+            {
+                services.TryAddScoped<ICacheSerializer, JsonCacheSerializer>();
+            }
+
+            services.AddMemoryCache();
+            services.TryAddScoped<ICache,DefaultCache>();
+            return services;
+        }
+
         public static IServiceCollection AddSummerBootFeign(this IServiceCollection services, Action<FeignOption> action = null)
         {
             var feignOption = new FeignOption();
@@ -459,12 +493,11 @@ namespace SummerBoot.Core
                 services.AddSummerBootFeignService(type, ServiceLifetime.Transient);
             }
             services.TryAddSingleton<IFeignProxyBuilder>(it => feignProxyBuilder);
-            services.TryAddSingleton<IFeignUnitOfWork,DefaultFeignUnitOfWork>();
+            services.TryAddSingleton<IFeignUnitOfWork, DefaultFeignUnitOfWork>();
+            services.AddScoped<IFeignUnitOfWork, DefaultFeignUnitOfWork>();
             return services;
         }
 
-        public static Dictionary<string,CookieContainer> GroupCookieContainerCache=new Dictionary<string,CookieContainer>();
-        public static Dictionary<string, CookieContainer> AllClientContainerCache = new Dictionary<string, CookieContainer>();
         private static IServiceCollection AddSummerBootFeignService(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime)
         {
@@ -524,36 +557,18 @@ namespace SummerBoot.Core
                 }
 
             });
-            //忽略https证书
-            var customHttpClientHandler = new HttpClientHandler();
+           
+            var customHttpClientHandler = new HttpClientHandler()
+            {
+                UseCookies = false
+            };
 
+            //忽略https证书
             if (feignClient.IsIgnoreHttpsCertificateValidate)
             {
                 customHttpClientHandler.ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             }
-
-            var cookieContainer=new CookieContainer(1000);
-            customHttpClientHandler.UseCookies = feignClient.UseCookie;
-            customHttpClientHandler.UseProxy = true;
-            if (feignClient.UseCookie)
-            {
-                if (feignClient.CookieGroupName.HasText())
-                {
-                    if (GroupCookieContainerCache.ContainsKey(feignClient.CookieGroupName))
-                    {
-                        cookieContainer= GroupCookieContainerCache[feignClient.CookieGroupName];
-                    }
-                    else
-                    {
-                        GroupCookieContainerCache[feignClient.CookieGroupName] = cookieContainer;
-                    }
-                }
-                customHttpClientHandler.CookieContainer = cookieContainer;
-                AllClientContainerCache[name] = cookieContainer;
-            }
-           
-
 
             httpClient.ConfigurePrimaryHttpMessageHandler(it => customHttpClientHandler);
 

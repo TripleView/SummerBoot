@@ -56,13 +56,5 @@ namespace SummerBoot.Feign.Attributes
         /// </summary>
         public string NacosGroupName { get; set; }
 
-        /// <summary>
-        /// 是否使用cookie
-        /// </summary>
-        public bool UseCookie { get; set; } = false;
-        /// <summary>
-        /// cookie组名称
-        /// </summary>
-        public string CookieGroupName { get; set; }
     }
 }

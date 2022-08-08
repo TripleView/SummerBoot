@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <Folder Include="AopTest\" />
+    <Folder Include="Cache\" />
   </ItemGroup>
 
 </Project>
