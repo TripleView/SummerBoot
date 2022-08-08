@@ -436,8 +436,19 @@ namespace SummerBoot.Core
                 services.TryAddScoped<ICacheSerializer, JsonCacheSerializer>();
             }
 
-            services.AddMemoryCache();
-            services.TryAddScoped<ICache,DefaultCache>();
+            if (cacheOption.UseMemory)
+            {
+                services.AddMemoryCache();
+                services.TryAddScoped<ICache,DefaultCache>();
+            }
+            else if (cacheOption.UseRedis)
+            {
+                services.TryAddSingleton<ICache,RedisCache>();
+            }
+
+            services.AddSingleton(cacheOption);
+   
+            
             return services;
         }
 
