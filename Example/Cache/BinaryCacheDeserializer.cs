@@ -8,9 +8,9 @@ namespace Example.Cache
 {
     public class BinaryCacheDeserializer : ICacheDeserializer
     {
-        public T DeserializeObject<T>(object obj)
+        public T DeserializeObject<T>(byte[] obj)
         {
-            using (var stream=new MemoryStream(obj as byte[]))
+            using (var stream=new MemoryStream(obj))
             {
                 stream.Seek(0, SeekOrigin.Begin);
                 var result=(T)new BinaryFormatter().Deserialize(stream);

@@ -6,7 +6,7 @@ namespace Example.Cache
 {
     public class BinaryCacheSerializer : ICacheSerializer
     {
-        public object SerializeObject<T>(T obj)
+        public byte[] SerializeObject<T>(T obj)
         {
             using (var stream=new MemoryStream())
             {

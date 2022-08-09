@@ -436,13 +436,18 @@ namespace SummerBoot.Core
                 services.TryAddScoped<ICacheSerializer, JsonCacheSerializer>();
             }
 
-            if (cacheOption.UseMemory)
+            if (cacheOption.IsUseMemory)
             {
                 services.AddMemoryCache();
-                services.TryAddScoped<ICache,DefaultCache>();
+                services.TryAddScoped<ICache,MemoryCache>();
             }
-            else if (cacheOption.UseRedis)
+            else if (cacheOption.IsUseRedis)
             {
+                services.AddStackExchangeRedisCache(it =>
+                {
+                    it.Configuration = cacheOption.RedisConnectionString;
+                    it.InstanceName = "sb";
+                });
                 services.TryAddSingleton<ICache,RedisCache>();
             }
 

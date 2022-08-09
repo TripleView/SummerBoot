@@ -1,18 +1,19 @@
 ﻿using Newtonsoft.Json;
+using SummerBoot.Core;
 
 namespace SummerBoot.Cache
 {
     public interface ICacheSerializer
     {
-        object SerializeObject<T>(T obj);
+        byte[] SerializeObject<T>(T obj);
     }
 
     public class JsonCacheSerializer : ICacheSerializer
     {
-        public object SerializeObject<T>(T obj)
+        public byte[] SerializeObject<T>(T obj)
         {
             var result = JsonConvert.SerializeObject(obj);
-            return result;
+            return result.GetBytes();
         }
     }
 
