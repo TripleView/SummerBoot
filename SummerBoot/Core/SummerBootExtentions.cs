@@ -448,7 +448,7 @@ namespace SummerBoot.Core
                     it.Configuration = cacheOption.RedisConnectionString;
                     it.InstanceName = "sb";
                 });
-                services.TryAddSingleton<ICache,RedisCache>();
+                services.TryAddScoped<ICache,RedisCache>();
             }
 
             services.AddSingleton(cacheOption);
