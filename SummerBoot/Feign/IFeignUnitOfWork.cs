@@ -77,6 +77,10 @@ namespace SummerBoot.Feign
         public void StopCookie()
         {
             ActiveNumber--;
+            if (ActiveNumber == 0)
+            {
+                cookieContainer = new CookieContainer();
+            }
         }
     }
 
