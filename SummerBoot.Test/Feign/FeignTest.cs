@@ -48,7 +48,27 @@ namespace SummerBoot.Test.Feign
             var c = d is t1;
             var c1 = d2 is t1;
         }
-        
+
+        /// <summary>
+        /// 测试仅使用path作为整体url
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestUsePathAsUrl()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+
+            await testFeign.TestUsePathAsUrl(new Test() { Name = "sb", Age = 3 });
+
+        }
+
 
         [Fact]
         public async Task TestReturnTask()

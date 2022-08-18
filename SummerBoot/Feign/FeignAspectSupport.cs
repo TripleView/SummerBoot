@@ -75,6 +75,7 @@ namespace SummerBoot.Feign
             var url = await GetUrlBody(feignClientAttribute);
 
             var clientName = feignClientAttribute.Name.GetValueOrDefault(interfaceType.FullName);
+
             var requestPath = url;
             var requestTemplate = new RequestTemplate()
             {
@@ -87,11 +88,13 @@ namespace SummerBoot.Feign
             //处理请求头逻辑
             ProcessHeaders(method, requestTemplate, interfaceType);
 
-          
+
 
             var path = "";
 
             var mappingCount = 0;
+            //是否仅使用路径作为url
+            var usePathAsUrl = false;
             //处理get逻辑
             var getMappingAttribute = method.GetCustomAttribute<GetMappingAttribute>();
             if (getMappingAttribute != null)
@@ -99,6 +102,7 @@ namespace SummerBoot.Feign
                 mappingCount++;
                 path = getMappingAttribute.Value;
                 requestTemplate.HttpMethod = HttpMethod.Get;
+                usePathAsUrl = getMappingAttribute.UsePathAsUrl;
             }
 
             //处理post逻辑
@@ -108,6 +112,7 @@ namespace SummerBoot.Feign
                 mappingCount++;
                 path = postMappingAttribute.Value;
                 requestTemplate.HttpMethod = HttpMethod.Post;
+                usePathAsUrl = postMappingAttribute.UsePathAsUrl;
             }
 
             //处理put逻辑
@@ -117,6 +122,7 @@ namespace SummerBoot.Feign
                 mappingCount++;
                 path = putMappingAttribute.Value;
                 requestTemplate.HttpMethod = HttpMethod.Put;
+                usePathAsUrl = putMappingAttribute.UsePathAsUrl;
             }
 
             //处理Delete逻辑
@@ -126,6 +132,7 @@ namespace SummerBoot.Feign
                 mappingCount++;
                 path = deleteMappingAttribute.Value;
                 requestTemplate.HttpMethod = HttpMethod.Delete;
+                usePathAsUrl = deleteMappingAttribute.UsePathAsUrl;
             }
 
             if (mappingCount > 1)
@@ -134,7 +141,9 @@ namespace SummerBoot.Feign
             }
 
             path = GetValueByConfiguration(path);
-            var urlTemp = requestPath + path;
+
+            //如果仅使用path作为url，就不需要添加feignClient上的url前缀
+            var urlTemp = usePathAsUrl ? path : requestPath + path;
             urlTemp = ReplaceVariable(urlTemp);
             urlTemp = AddUrlParameter(urlTemp);
             urlTemp = GetUrl(urlTemp);
@@ -303,7 +312,7 @@ namespace SummerBoot.Feign
                 return;
             }
 
-            var cookies= feignUnitOfWork.GetCookies(requestTemplate.Url);
+            var cookies = feignUnitOfWork.GetCookies(requestTemplate.Url);
             var cookieList = new List<string>();
             foreach (Cookie cookie in cookies)
             {
@@ -323,7 +332,7 @@ namespace SummerBoot.Feign
                     keyList.Add(keyValue);
                     requestTemplate.Headers.Add(key, keyList);
                 }
-                else if(keyList.Count > 0)
+                else if (keyList.Count > 0)
                 {
                     keyList[0] += $" ;{keyValue}";
                 }
