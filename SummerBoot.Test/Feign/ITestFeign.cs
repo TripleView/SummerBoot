@@ -59,6 +59,20 @@ namespace SummerBoot.Test.Feign
     [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
     public interface ITestFeign
     {
+        [IgnoreInterceptor]
+        [GetMapping("/TestCookieContainer1")]
+        Task TestCookieContainer1();
+
+        [IgnoreInterceptor]
+        [GetMapping("/TestCookieContainer2")]
+        Task TestCookieContainer2();
+
+        [IgnoreInterceptor]
+        [GetMapping("/TestCookieContainer3")]
+        Task TestCookieContainer3();
+
+
+
         [PostMapping("http://localhost:5001/home/json", UsePathAsUrl = true)]
         Task TestUsePathAsUrl([Body(BodySerializationKind.Json)] Test tt);
 

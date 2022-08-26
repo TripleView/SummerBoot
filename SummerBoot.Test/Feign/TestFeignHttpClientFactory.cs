@@ -60,7 +60,7 @@ namespace SummerBoot.Test.Feign
             mockHttp.When("http://localhost:5001/home/testBasicAuthorization")
              .With(it => it.Method == HttpMethod.Get).WithHeaders(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Authorization", "Basic YWJjOjEyMw==") })
                 .Respond("application/json", "{\"Name\": \"sb\",\"Age\": 3}"); // Respond with JSON
-            
+
 
             mockHttp.When("http://localhost:5001/home/testInterceptor").WithFormData(new List<KeyValuePair<string, string>>()
                 {
@@ -101,7 +101,7 @@ namespace SummerBoot.Test.Feign
 
             mockHttp.When("http://localhost:5001/home/query").With(it =>
                 {
-                    if (it.Method == HttpMethod.Get&&it.RequestUri.Query== "?Name=sb&Age=3")
+                    if (it.Method == HttpMethod.Get && it.RequestUri.Query == "?Name=sb&Age=3")
                     {
                         return true;
                     }
@@ -119,22 +119,22 @@ namespace SummerBoot.Test.Feign
 
                     return false;
                 })
-                .Respond( () =>
+                .Respond(() =>
                 {
                     var basePath = Path.Combine(AppContext.BaseDirectory, "123.txt");
-                    
+
                     var response = new HttpResponseMessage(HttpStatusCode.OK)
                     {
                         Content = new StreamContent(new FileInfo(basePath).OpenRead()),
                     };
 
-                    response.Content.Headers.ContentType =MediaTypeHeaderValue.Parse( "application/octet-stream");
+                    response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
                     response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment")
                     {
                         DispositionType = "attachment",
                         FileName = "123.txt",
                         FileNameStar = "123.txt",
-                        Parameters = {  }
+                        Parameters = { }
                     };
 
                     //response.Content.Headers.ContentDisposition.Parameters.Add(new NameValueHeaderValue("filename", "123.txt"));
@@ -143,7 +143,7 @@ namespace SummerBoot.Test.Feign
                     return Task.FromResult<HttpResponseMessage>(response);
                 }); // Respond with JSON
 
-            
+
 
             mockHttp.When("http://localhost:5001/home/queryWithExistCondition").With(it =>
                 {
@@ -204,6 +204,39 @@ namespace SummerBoot.Test.Feign
                 })
                 .Respond("text/plain", "ok");
 
+            //添加cookie测试
+            mockHttp.When("http://localhost:5001/home/TestCookieContainer1").With(it =>
+                {
+                    if (it.Method == HttpMethod.Get)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "abc=1;Path=/;Domain=localhost") }, new StringContent("ok"));
+            //
+            mockHttp.When("http://localhost:5001/home/TestCookieContainer2").With(it =>
+                {
+                    if (it.Method == HttpMethod.Get && it.Headers.TryGetValues("Cookie", out var values) && values.ToList().Contains("abc=1"))
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "def=2") }, new StringContent("ok"));
+
+            mockHttp.When("http://localhost:5001/home/TestCookieContainer3").With(it =>
+                {
+                    if (it.Method == HttpMethod.Get)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                })
+                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "abc=1;Domain=localhost") }, new StringContent("ok"));
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();
 

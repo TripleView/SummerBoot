@@ -11,6 +11,7 @@ using Microsoft.Extensions.Http;
 using SummerBoot.Feign;
 using Xunit;
 using System.Collections.Specialized;
+using System.Net;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -27,7 +28,7 @@ namespace SummerBoot.Test.Feign
 
     }
 
-    public interface t2:t1
+    public interface t2 : t1
     {
 
     }
@@ -44,11 +45,71 @@ namespace SummerBoot.Test.Feign
         {
 
             t1 d = new tt1();
-            t2 d2= new tt2();
+            t2 d2 = new tt2();
             var c = d is t1;
             var c1 = d2 is t1;
         }
 
+
+        /// <summary>
+        /// 测试工作单元模式
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestFeignUnitOfWork()
+        {
+            //var d= new CookieContainer();
+            //var fff = new Uri("http://localhost/a");
+            //d.Add(fff,new Cookie("aaa","b","/",fff.Host));
+            //var c= d.GetCookies(new Uri("http://localhost/b"));
+
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+            var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
+            feignUnitOfWork.BeginCookie();
+            await testFeign.TestCookieContainer1();
+            await testFeign.TestCookieContainer2();
+            feignUnitOfWork.StopCookie();
+        }
+
+
+        /// <summary>
+        /// 测试工作单元模式
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestFeignUnitOfWorkThrowNotMatch()
+        {
+            //var d= new CookieContainer();
+            //var fff = new Uri("http://localhost/a");
+            //d.Add(fff,new Cookie("aaa","b","/",fff.Host));
+            //var c= d.GetCookies(new Uri("http://localhost/b"));
+
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+            var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
+
+            await Assert.ThrowsAsync<HttpRequestException>(async () =>
+             {
+                 feignUnitOfWork.BeginCookie();
+                 await testFeign.TestCookieContainer3();
+                 await testFeign.TestCookieContainer2();
+                 feignUnitOfWork.StopCookie();
+             });
+
+        }
         /// <summary>
         /// 测试仅使用path作为整体url
         /// </summary>
@@ -83,7 +144,7 @@ namespace SummerBoot.Test.Feign
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
 
             await testFeign.TestReturnTask(new Test() { Name = "sb", Age = 3 });
-        
+
         }
 
         [Fact]
@@ -131,7 +192,7 @@ namespace SummerBoot.Test.Feign
 
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
-           
+
             var result = await testFeign.TestQuery(new Test() { Name = "sb", Age = 3 });
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
@@ -150,8 +211,8 @@ namespace SummerBoot.Test.Feign
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
             var basePath = Path.Combine(AppContext.BaseDirectory, "123.txt");
 
-            var byteArray=   File.ReadAllBytes(basePath);
-           
+            var byteArray = File.ReadAllBytes(basePath);
+
             var result = await testFeign.MultipartTest(new Test() { Name = "sb", Age = 3 }, new MultipartItem(byteArray, "file", "123.txt"));
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
@@ -170,7 +231,7 @@ namespace SummerBoot.Test.Feign
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
             var basePath = Path.Combine(AppContext.BaseDirectory, "123.txt");
 
-            var fileStream= new FileInfo(basePath).OpenRead();
+            var fileStream = new FileInfo(basePath).OpenRead();
             var result = await testFeign.MultipartTest(new Test() { Name = "sb", Age = 3 }, new MultipartItem(fileStream, "file", "123.txt"));
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
@@ -187,8 +248,8 @@ namespace SummerBoot.Test.Feign
 
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
-            var basePath =Path.Combine(AppContext.BaseDirectory,"123.txt");
-            var result = await testFeign.MultipartTest(new Test() { Name = "sb", Age = 3 },new MultipartItem(new FileInfo(basePath),"file","123.txt"));
+            var basePath = Path.Combine(AppContext.BaseDirectory, "123.txt");
+            var result = await testFeign.MultipartTest(new Test() { Name = "sb", Age = 3 }, new MultipartItem(new FileInfo(basePath), "file", "123.txt"));
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
         }
@@ -224,7 +285,7 @@ namespace SummerBoot.Test.Feign
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
         }
-        
+
 
         [Fact]
         public async Task TestIgnoreInterceptor()
@@ -237,7 +298,7 @@ namespace SummerBoot.Test.Feign
 
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
-            var exception =await Assert.ThrowsAsync<HttpRequestException>(async () =>
+            var exception = await Assert.ThrowsAsync<HttpRequestException>(async () =>
                 await testFeign.TestIgnoreInterceptor(new Test() { Name = "sb", Age = 3 })
                 );
 
@@ -256,8 +317,8 @@ namespace SummerBoot.Test.Feign
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
             var result = await testFeign.TestForm(new Test() { Name = "sb", Age = 3 });
-            Assert.Equal("sb",result.Name);
-            Assert.Equal(3,result.Age);
+            Assert.Equal("sb", result.Name);
+            Assert.Equal(3, result.Age);
         }
 
         [Fact]
@@ -288,7 +349,7 @@ namespace SummerBoot.Test.Feign
 
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
-            var result = await testFeign.TestReplaceVariableInUrlWithClassWithAlias(new Test() { Name = "sb", Age = 3 },new VariableClass(){Name = "form"});
+            var result = await testFeign.TestReplaceVariableInUrlWithClassWithAlias(new Test() { Name = "sb", Age = 3 }, new VariableClass() { Name = "form" });
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
         }
@@ -408,7 +469,7 @@ namespace SummerBoot.Test.Feign
 
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
-            var result = await testFeign.TestReplaceVariableInHeaderWithAlias(new Test() { Name = "sb", Age = 3 },  "a" );
+            var result = await testFeign.TestReplaceVariableInHeaderWithAlias(new Test() { Name = "sb", Age = 3 }, "a");
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
         }
@@ -444,7 +505,7 @@ namespace SummerBoot.Test.Feign
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
 
             var headerCollection = new HeaderCollection()
-                { new KeyValuePair<string, string>("a", "a"), 
+                { new KeyValuePair<string, string>("a", "a"),
                     new KeyValuePair<string, string>("b", "b") };
 
             var result = await testFeign.TestHeaderCollection(new Test() { Name = "sb", Age = 3 }, headerCollection);
@@ -465,11 +526,11 @@ namespace SummerBoot.Test.Feign
             var serviceProvider = services.BuildServiceProvider();
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
 
-            var result = await testFeign.TestBasicAuthorization(new BasicAuthorization("abc","123"));
+            var result = await testFeign.TestBasicAuthorization(new BasicAuthorization("abc", "123"));
             Assert.Equal("sb", result.Name);
             Assert.Equal(3, result.Age);
         }
-        
+
 
         [Fact]
         public async Task TestHeadersWithInterfaceAndMethod()
@@ -522,7 +583,7 @@ namespace SummerBoot.Test.Feign
 
             var result = await testFeign.TestOriginResponse(new Test() { Name = "sb", Age = 3 });
 
-            var resultContent =await result.Content.ReadAsStringAsync();
+            var resultContent = await result.Content.ReadAsStringAsync();
             Assert.Equal("{\"Name\": \"sb\",\"Age\": 3}", resultContent);
         }
 
@@ -569,7 +630,7 @@ namespace SummerBoot.Test.Feign
                 }
             });
             Assert.Equal("ok", result);
-           
+
         }
 
         /// <summary>
@@ -610,7 +671,7 @@ namespace SummerBoot.Test.Feign
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
             build.AddJsonFile(CONFIG_FILE, true, true);
             var configurationRoot = build.Build();
-            
+
             var services = new ServiceCollection();
             services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
             services.AddSingleton<IConfiguration>(configurationRoot);
