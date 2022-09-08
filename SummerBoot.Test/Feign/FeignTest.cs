@@ -50,6 +50,37 @@ namespace SummerBoot.Test.Feign
             var c1 = d2 is t1;
         }
 
+        /// <summary>
+        /// 测试工作单元模式赋值cookie
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestFeignUnitOfWorkAddCookie()
+        {
+            //var d= new CookieContainer();
+            //var fff = new Uri("http://localhost/a");
+            //d.Add(fff,new Cookie("aaa","b","/",fff.Host));
+            //var c= d.GetCookies(new Uri("http://localhost/b"));
+
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign();
+
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
+            var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
+            await Assert.ThrowsAsync<HttpRequestException>(async () =>
+            {
+                await testFeign.TestCookieContainer2();
+            });
+
+            feignUnitOfWork.BeginCookie();
+            feignUnitOfWork.AddCookie("http://localhost:5001/home/TestCookieContainer2", "abc=1");
+            await testFeign.TestCookieContainer2();
+            feignUnitOfWork.StopCookie();
+        }
 
         /// <summary>
         /// 测试工作单元模式

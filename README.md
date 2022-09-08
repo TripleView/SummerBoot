@@ -86,6 +86,11 @@ net core 3.1,net 6
 		- [6.1 配置文件里添加nacos配置](#61-配置文件里添加nacos配置)
 		- [6.2 在StartUp.cs中添加配置](#62-在startupcs中添加配置)
 		- [6.3 定义调用微服务的接口](#63-定义调用微服务的接口)
+	- [7. 在上下文中使用cookie](#7-在上下文中使用cookie)
+- [SummerBoot中使用cache进行缓存操作](#summerboot中使用cache进行缓存操作)
+	- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务-1)
+	- [2.ICache接口](#2icache接口)
+	- [3.注入接口后即可使用](#3注入接口后即可使用)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
 # SummerBoot中操作数据库
@@ -604,6 +609,16 @@ public interface ITestFeignWithConfiguration
 		Task<Test> TestQuery([Query] Test tt);
 }
 ````
+有时候我们只希望使用方法里的path作为完整url发起http请求，则可以定义接口如下，设置UsePathAsUrl为true(默认为false)
+````csharp
+[FeignClient(Url = "http://localhost:5001/home")]
+public interface ITestFeign
+{
+	[PostMapping("http://localhost:5001/home/json", UsePathAsUrl = true)]
+	Task TestUsePathAsUrl([Body(BodySerializationKind.Json)] Test tt);
+}
+````
+   
 
 ## 3.设置请求头(header)
 接口上可以选择添加Headers注解，代表这个接口下所有http请求都带上注解里的请求头。Headers的参数为变长的string类型的参数，同时Headers也可以添加在方法上，代表该方法调用的时候，会加该请求头，接口上的Headers参数可与方法上的Headers参数互相叠加，同时headers里可以使用变量，变量的占位符为{{}}，如
@@ -1039,6 +1054,96 @@ public interface IFeignService
 		Task<string> TestGet();
 }
 ````
+## 7. 在上下文中使用cookie
+feign中的工作单元模式，可以在上下文中设置cookie，这样接口在上下文中发起http请求时就会自动带上cookie，使用工作单元模式需要注入IFeignUnitOfWork接口，然后操作如下：
+````csharp
+var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
+//开启上下文
+feignUnitOfWork.BeginCookie();
+//添加cookie
+feignUnitOfWork.AddCookie("http://localhost:5001/home/TestCookieContainer2", "abc=1");
+await testFeign.TestCookieContainer2();
+//结束上下文
+feignUnitOfWork.StopCookie();
+
+````
+同时，如果接口返回了设置cookie的信息，工作单元也会保存下cookie，并且在上下文作用域内的接口发起http访问时，会自动带上这些cookie信息，一个很典型的场景是，我们在第一个接口登录后，接口会返回给我们cookie，在我们访问后续接口时，要带上第一个接口返回给我们的cookie。：
+````csharp
+var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
+//开启上下文
+feignUnitOfWork.BeginCookie();
+
+//登录后获取cookie
+await testFeign.LoginAsync("sb","123");
+//请求时自动带上登录后的cookie
+await testFeign.TestCookieContainer3();
+//结束上下文
+feignUnitOfWork.StopCookie();
+````
+# SummerBoot中使用cache进行缓存操作
+## 1.在startup.cs类中注册服务
+缓存分为内存缓存和redis缓存，内存缓存注册方式如下：
+````csharp
+ services.AddSummerBoot();
+ services.AddSummerBootCache(it => it.UseMemory());
+````
+redis缓存注册方式如下，connectionString为redis连接字符串：
+````csharp
+services.AddSummerBoot();
+services.AddSummerBootCache(it =>
+{
+		it.UseRedis(connectionString);
+});
+````
+## 2.ICache接口
+ICache接口主要有以下几个方法,以及对应的异步方法
+````csharp
+/// <summary>
+/// 绝对时间缓存，固定时间后缓存值失效
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <param name="key"></param>
+/// <param name="value"></param>
+/// <param name="absoluteExpiration"></param>
+/// <returns></returns>
+bool SetValueWithAbsolute<T>(string key, T value, TimeSpan absoluteExpiration);
+/// <summary>
+/// 滑动时间缓存，如果在时间内有命中，则继续延长时间，未命中则缓存值失效
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <param name="key"></param>
+/// <param name="value"></param>
+/// <param name="slidingExpiration"></param>
+/// <returns></returns>
+bool SetValueWithSliding<T>(string key, T value, TimeSpan slidingExpiration);
+/// <summary>
+/// 获取值
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <param name="key"></param>
+/// <returns></returns>
+CacheEntity<T> GetValue<T>(string key);
+/// <summary>
+/// 移除值
+/// </summary>
+/// <param name="key"></param>
+/// <returns></returns>
+bool Remove(string key);
+````
+## 3.注入接口后即可使用
+````csharp
+var cache = serviceProvider.GetRequiredService<ICache>();
+//设置固定时间缓存
+cache.SetValueWithAbsolute("test", "test", TimeSpan.FromSeconds(3));
+//设置滑动时间缓存
+var cache = serviceProvider.GetRequiredService<ICache>();
+cache.SetValueWithSliding("test", "test", TimeSpan.FromSeconds(3));
+//获取缓存
+var value = cache.GetValue<string>("test");
+//移除缓存
+cache.Remove("test");
+````
+
 # SummerBoot中的人性化的设计
  1.先说一个net core mvc自带的功能，如果我们想要在appsettings.json里配置web应用的ip和port该怎么办？在appsettings.json里直接写
  ````
