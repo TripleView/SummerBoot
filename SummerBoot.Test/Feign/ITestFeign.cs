@@ -68,7 +68,7 @@ namespace SummerBoot.Test.Feign
         Task TestCookieContainer2();
 
         [IgnoreInterceptor]
-        [GetMapping("/TestCookieContainer3")]
+        [GetMapping("http://localhost:5001/home2/TestCookieContainer3",UsePathAsUrl = true)]
         Task TestCookieContainer3();
 
 
