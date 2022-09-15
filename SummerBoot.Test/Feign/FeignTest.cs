@@ -11,6 +11,7 @@ using Microsoft.Extensions.Http;
 using SummerBoot.Feign;
 using Xunit;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Configuration;
@@ -48,6 +49,28 @@ namespace SummerBoot.Test.Feign
             t2 d2 = new tt2();
             var c = d is t1;
             var c1 = d2 is t1;
+        }
+
+        /// <summary>
+        /// 测试feign nacos配置中心
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestFeignNacosConfiguration()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddNacosConfiguration(MyConfiguration.Configs);
+            IConfiguration conf = builder.Build();
+
+            var xx = conf["a:c"];
+            var c = conf["a"];
+            Assert.Equal("333",c);
+            //while (true)
+            //{
+            //    var c = conf["a"];
+            //    Debug.WriteLine(DateTime.Now + "---" + c);
+            //    await Task.Delay(1000);
+            //}
         }
 
         /// <summary>
@@ -128,7 +151,7 @@ namespace SummerBoot.Test.Feign
             services.AddSummerBoot();
             services.AddSummerBootFeign();
 
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = services.BuildServiceProvider().CreateScope().ServiceProvider;
             var testFeign = serviceProvider.GetRequiredService<ITestFeign>();
             var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
 

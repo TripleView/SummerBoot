@@ -39,6 +39,8 @@ namespace Example.WebApi
                 it.ConnectionString = "Server=localhost;Database=test2;User ID=root;Password=123456;";
             });
 
+            services.AddSummerBootFeign(it => it.AddNacos(Configuration));
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "sukcoreºóÌ¨Api", Version = "v1" });

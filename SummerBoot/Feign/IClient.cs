@@ -92,6 +92,7 @@ namespace SummerBoot.Feign
                         message = httpResponse.ReasonPhrase;
                     }
 
+                    var c = httpRequest;
                     throw new HttpRequestException(message);
                 }
 

@@ -19,6 +19,8 @@ namespace SummerBoot.Feign.Nacos
             this.GroupName = this.GroupName.GetValueOrDefault("DEFAULT_GROUP");
             this.Protocol = this.Protocol.GetValueOrDefault("http");
             this.Port = this.Port.GetValueOrDefault(80);
+            this.ConfigurationOption = this.ConfigurationOption ?? new NacosConfigurationOption()
+            { DataID = "", GroupName = "DEFAULT_GROUP" };
             return this;
         }
         /// <summary>
@@ -36,32 +38,32 @@ namespace SummerBoot.Feign.Nacos
         /// <summary>
         /// ip地址
         /// </summary>
-    
+
         public string Ip { get; set; }
         /// <summary>
         /// 端口号
         /// </summary>
-   
+
         public int? Port { get; set; }
         /// <summary>
         /// 服务名
         /// </summary>
-   
+
         public string ServiceName { get; set; }
         /// <summary>
         /// 命名空间ID
         /// </summary>
-       
+
         public string NamespaceId { get; set; }
         /// <summary>
         /// 分组名
         /// </summary>
-    
+
         public string GroupName { get; set; }
         /// <summary>
         /// 集群名
         /// </summary>
-     
+
         public string ClusterName { get; set; }
         /// <summary>
         /// 是否上线
@@ -71,19 +73,35 @@ namespace SummerBoot.Feign.Nacos
         /// <summary>
         /// 是否健康
         /// </summary>
-       
+
         public bool Healthy { get; set; }
 
         /// <summary>
         /// 是否临时实例
         /// </summary>
-    
+
         public bool Ephemeral { get; set; }
 
         /// <summary>
         /// 元数据
         /// </summary>
         public Dictionary<string, string> MetaData { get; set; }
+        /// <summary>
+        /// nacos配置中心的设置值
+        /// </summary>
+        public NacosConfigurationOption ConfigurationOption { get; set; }
+    }
 
+    public class NacosConfigurationOption
+    {
+        /// <summary>
+        /// nacos配置的Data ID
+        /// </summary>
+        public string DataID { get; set; }
+        /// <summary>
+        /// nacos配置的分组名称
+        /// </summary>
+        public string GroupName { get; set; }
+      
     }
 }

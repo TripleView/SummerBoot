@@ -27,11 +27,14 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using SummerBoot.Cache;
 using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
 using SummerBoot.Repository.TypeHandler.Dialect.Sqlite;
 using SummerBoot.Repository.TypeHandler.Dialect.SqlServer;
 using Guid = System.Guid;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace SummerBoot.Core
 {
@@ -439,7 +442,7 @@ namespace SummerBoot.Core
             if (cacheOption.IsUseMemory)
             {
                 services.AddMemoryCache();
-                services.TryAddScoped<ICache,MemoryCache>();
+                services.TryAddScoped<ICache, MemoryCache>();
             }
             else if (cacheOption.IsUseRedis)
             {
@@ -448,13 +451,44 @@ namespace SummerBoot.Core
                     it.Configuration = cacheOption.RedisConnectionString;
                     it.InstanceName = "sb";
                 });
-                services.TryAddScoped<ICache,RedisCache>();
+                services.TryAddScoped<ICache, RedisCache>();
             }
 
             services.AddSingleton(cacheOption);
-   
-            
+
+
             return services;
+        }
+
+        public static IHostBuilder UseNacosConfiguration(this IHostBuilder builder)
+        {
+            builder.ConfigureAppConfiguration((context, configurationBuilder) =>
+            {
+                var config = configurationBuilder.Build();
+                configurationBuilder.AddNacosConfiguration(config);
+            });
+
+            return builder;
+        }
+
+        public static IConfigurationBuilder AddNacosConfiguration(
+            this IConfigurationBuilder builder,
+            IConfiguration configuration)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            var source = new NacosConfigurationSource(configuration);
+            //configuration.Bind(source);
+
+            return builder.Add(source);
         }
 
         public static IServiceCollection AddSummerBootFeign(this IServiceCollection services, Action<FeignOption> action = null)
@@ -472,7 +506,7 @@ namespace SummerBoot.Core
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
 
             services.TryAddTransient<HttpService>();
-
+            services.TryAddTransient<FeignHttpClientHandler>();
             services.AddSingleton<FeignOption>(it => feignOption);
             HttpHeaderSupport.Init();
 
@@ -489,8 +523,31 @@ namespace SummerBoot.Core
                 var registerInstanceString = nacosConfiguration.GetSection("registerInstance").Value;
                 bool.TryParse(registerInstanceString, out registerInstance);
 
+                var serviceAddress = nacosConfiguration.GetSection("serviceAddress").Value;
+                if (serviceAddress.IsNullOrWhiteSpace())
+                {
+                    throw new ArgumentNullException("nacos option serviceAddress can not be null");
+                }
+
+                var namespaceId = nacosConfiguration.GetSection("namespaceId").Value;
+                if (namespaceId.IsNullOrWhiteSpace())
+                {
+                    throw new ArgumentNullException("nacos option namespaceId can not be null");
+                }
+
                 if (registerInstance)
                 {
+                    var groupName = nacosConfiguration.GetSection("groupName").Value;
+                    if (groupName.IsNullOrWhiteSpace())
+                    {
+                        throw new ArgumentNullException("nacos option groupName can not be null");
+                    }
+
+                    var serviceName = nacosConfiguration.GetSection("serviceName").Value;
+                    if (serviceName.IsNullOrWhiteSpace())
+                    {
+                        throw new ArgumentNullException("nacos option serviceName can not be null");
+                    }
                     services.AddHostedService<NacosBackgroundService>();
                 }
             }
@@ -553,8 +610,6 @@ namespace SummerBoot.Core
             var name = feignClient.Name.GetValueOrDefault(serviceType.FullName);
             feignClient.SetName(name);
 
-
-
             if (feignClient.InterceptorType != null)
             {
                 if (!feignClient.InterceptorType.GetInterfaces().Any(it => typeof(IRequestInterceptor) == it))
@@ -573,20 +628,18 @@ namespace SummerBoot.Core
                 }
 
             });
-           
-            var customHttpClientHandler = new HttpClientHandler()
-            {
-                UseCookies = false
-            };
 
-            //忽略https证书
-            if (feignClient.IsIgnoreHttpsCertificateValidate)
+            httpClient.ConfigurePrimaryHttpMessageHandler(it =>
             {
-                customHttpClientHandler.ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            }
-
-            httpClient.ConfigurePrimaryHttpMessageHandler(it => customHttpClientHandler);
+                var feignHttpClientHandler = it.GetRequiredService<FeignHttpClientHandler>();
+                //忽略https证书
+                if (feignClient.IsIgnoreHttpsCertificateValidate)
+                {
+                    feignHttpClientHandler.ServerCertificateCustomValidationCallback =
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                }
+                return feignHttpClientHandler;
+            });
 
             //httpClient.ConfigurePrimaryHttpMessageHandler<LoggingHandler>();
             //httpClient.ConfigurePrimaryHttpMessageHandler((e) =>

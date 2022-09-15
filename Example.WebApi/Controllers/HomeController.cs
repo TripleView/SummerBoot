@@ -7,6 +7,7 @@ using Example.WebApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
@@ -24,11 +25,13 @@ namespace Example.WebApi.Controllers
     {
         private readonly ICustomerRepository customerRepository;
         private readonly IDbGenerator dbGenerator;
+        private readonly IConfiguration configuration;
 
-        public HomeController(ICustomerRepository customerRepository, IDbGenerator dbGenerator)
+        public HomeController(ICustomerRepository customerRepository, IDbGenerator dbGenerator, IConfiguration configuration)
         {
             this.customerRepository = customerRepository;
             this.dbGenerator = dbGenerator;
+            this.configuration = configuration;
         }
 
         [HttpGet("test")]
@@ -70,6 +73,17 @@ namespace Example.WebApi.Controllers
         public IActionResult Index()
         {
             return Content("ok");
+        }
+
+        [HttpGet("TestConfiguration")]
+        public IActionResult TestConfiguration()
+        {
+            return Content(configuration["a"]);
+        }
+        [HttpGet("TestConfiguration2")]
+        public IActionResult TestConfiguration2()
+        {
+            return Content(configuration["nacos:serviceAddress"]);
         }
 
         [HttpPost("query")]

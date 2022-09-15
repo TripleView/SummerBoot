@@ -1,12 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using SummerBoot.Feign.Attributes;
+﻿using SummerBoot.Feign.Attributes;
 using SummerBoot.Feign.Nacos.Dto;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace SummerBoot.Feign.Nacos
 {
-    [FeignClient(Url = "${nacos:serviceAddress}")]
+    [FeignClient(Url = "${nacos:serviceAddress}",Timeout = 60)]
     public interface INacosService
     {
         /// <summary>
@@ -36,5 +35,20 @@ namespace SummerBoot.Feign.Nacos
         /// <returns></returns>
         [GetMapping("/nacos/v1/ns/instance/list")]
         Task<QueryInstanceListOutputDto> QueryInstanceList([Query] QueryInstanceListInputDto dto);
+        /// <summary>
+        /// 获取配置信息
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [GetMapping("/nacos/v1/cs/configs")]
+        Task<HttpResponseMessage> GetConfigs([Query] GetConfigsDto dto);
+        /// <summary>
+        /// 监听配置信息
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [Headers("Long-Pulling-Timeout:10000")]
+        [PostMapping("/nacos/v1/cs/configs/listener")]
+        Task<string> ConfigListener([Query][AliasAs("Listening-Configs")] string config);
     }
 }

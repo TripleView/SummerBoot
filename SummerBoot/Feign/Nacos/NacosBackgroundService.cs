@@ -25,7 +25,7 @@ namespace SummerBoot.Feign.Nacos
         private Timer timer;
         public NacosBackgroundService(IServiceProvider serviceProvider, ILogger<NacosBackgroundService> logger, IConfiguration configuration, IOptions<NacosOption> nacosOptions)
         {
-            this.serviceProvider = serviceProvider;
+            this.serviceProvider = serviceProvider.CreateScope().ServiceProvider;
             this.logger = logger;
             this.configuration = configuration;
             this.nacosOption = nacosOptions.Value.GetConfigurationValueOrDefault();
@@ -42,7 +42,7 @@ namespace SummerBoot.Feign.Nacos
 
             var nacosService= serviceProvider.GetService<INacosService>();
             
-            var serviceName = GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
+            var serviceName = NacosUtil.GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
 
             var beatBody = new SendInstanceHeartBeatInstanceInfoDto()
             {
@@ -88,7 +88,7 @@ namespace SummerBoot.Feign.Nacos
         {
             var nacosService = serviceProvider.GetService<INacosService>();
 
-            var serviceName = GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
+            var serviceName = NacosUtil.GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
 
             ip = SbUtil.GetCurrentIp();
 
@@ -126,7 +126,7 @@ namespace SummerBoot.Feign.Nacos
 
             var nacosService = serviceProvider.GetService<INacosService>();
 
-            var serviceName = GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
+            var serviceName = NacosUtil.GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
 
             ip = SbUtil.GetCurrentIp();
 
@@ -150,12 +150,6 @@ namespace SummerBoot.Feign.Nacos
             }
 
             await base.StopAsync(cancellationToken);
-        }
-
-
-        private string GetServiceName(string groupName, string serviceName)
-        {
-           return groupName + "@@" + serviceName;
         }
     }
 }

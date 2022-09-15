@@ -13,17 +13,18 @@ namespace SummerBoot.Feign
         /// </summary>
         public bool EnableNacos { get; private set; }
         /// <summary>
-        /// 是否将本机注册为服务实例
+        /// 是否开启nacos配置读取
         /// </summary>
-        public bool NacosRegisterInstance { get; private set; }
+        public bool EnableNacosConfiguration { get; private set; }
         /// <summary>
         /// 添加nacos支持
         /// </summary>
         /// <param name="configuration"></param>
-        public void AddNacos(IConfiguration configuration)
+        public void AddNacos(IConfiguration configuration,bool enableNacosConfiguration=false)
         {
             Configuration = configuration;
             this.EnableNacos = true;
+            this.EnableNacosConfiguration = enableNacosConfiguration;
         }
     }
 }

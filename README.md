@@ -84,8 +84,10 @@ net core 3.1,net 6
 			- [5.2.9使用类Task作为方法返回类型，即无需返回值。](#529使用类task作为方法返回类型即无需返回值)
 	- [6. 微服务-接入nacos](#6-微服务-接入nacos)
 		- [6.1 配置文件里添加nacos配置](#61-配置文件里添加nacos配置)
-		- [6.2 在StartUp.cs中添加配置](#62-在startupcs中添加配置)
-		- [6.3 定义调用微服务的接口](#63-定义调用微服务的接口)
+		- [6.2 接入nacos配置中心](#62-接入nacos配置中心)
+		- [6.3 接入nacos服务中心](#63-接入nacos服务中心)
+			- [6.3.1 在StartUp.cs中添加配置](#631-在startupcs中添加配置)
+			- [6.3.2 定义调用微服务的接口](#632-定义调用微服务的接口)
 	- [7. 在上下文中使用cookie](#7-在上下文中使用cookie)
 - [SummerBoot中使用cache进行缓存操作](#summerboot中使用cache进行缓存操作)
 	- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务-1)
@@ -990,20 +992,31 @@ await testFeign.Test();
 ### 6.1 配置文件里添加nacos配置
 在appsettings.json/appsettings.Development.json配置文件中添加配置
 ````json
-"nacos": {
-    //--------如果只是访问nacos中的微服务，则仅配置serviceAddress和lbStrategy即可。------
-
+ "nacos": {
+    //--------使用nacos则serviceAddress和namespaceId必填------
     //nacos服务地址，如http://172.16.189.242:8848
     "serviceAddress": "http://172.16.189.242:8848/",
+    //命名空间id，如832e754e-e845-47db-8acc-46ae3819b638或者public
+    "namespaceId": "dfd8de72-e5ec-4595-91d4-49382f500edf",
+
+    //--------如果只是访问nacos中的微服务，则仅配置lbStrategy即可。------
     //客户端负载均衡算法，一个服务下有多个实例，lbStrategy用来挑选服务下的实例，默认为Random(随机)，也可以选择WeightRandom(根据服务权重加权后再随机)
     "lbStrategy": "Random",
+
+    //--------如果需要使用nacos配置中心，则ConfigurationOption必填------
+    "configurationOption": {
+      //配置的分组
+      "groupName": "DEFAULT_GROUP",
+      //配置的dataId,
+      "dataId": "prd"
+    },
+
 
     //-------如果是要将本应用注册为服务实例，则全部参数均需配置--------------
 
     //是否要把应用注册为服务实例
     "registerInstance": true,
-    //命名空间id，如832e754e-e845-47db-8acc-46ae3819b638或者public
-    "namespaceId": "dfd8de72-e5ec-4595-91d4-49382f500edf",
+
     //要注册的服务名
     "serviceName": "test",
     //服务的分组名
@@ -1014,10 +1027,30 @@ await testFeign.Test();
     "protocol": "http",
     //本应用对外的端口号，比如5000
     "port": 5000
+
   }
 ````
-### 6.2 在StartUp.cs中添加配置
-如果是把当前应用注册为微服务实例，那么到这一步就结束了，feign会自动根据配置文件里的配置将本应用注册为微服务实例。如果是本应用要调用微服务接口，请看6.3
+### 6.2 接入nacos配置中心
+接入nacos配置中心十分简单，仅需在Program.cs中添加一行.UseNacosConfiguration()即可，当前支持json格式，xml格式和yaml格式。
+
+net core3.1示例如下
+````csharp
+public static IHostBuilder CreateHostBuilder(string[] args) =>
+		Host.CreateDefaultBuilder(args)
+				.UseNacosConfiguration()
+				.ConfigureWebHostDefaults(webBuilder =>
+				{
+						webBuilder.UseStartup<Startup>().UseUrls("http://*:5001");
+				});
+````
+net6示例如下
+````csharp
+ var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseNacosConfiguration();
+````
+### 6.3 接入nacos服务中心
+#### 6.3.1 在StartUp.cs中添加配置
+如果是把当前应用注册为微服务实例，那么到这一步就结束了，feign会自动根据配置文件里的配置将本应用注册为微服务实例。如果是本应用要调用微服务接口，请看6.3.2
 
 ````csharp
 services.AddSummerBoot();
@@ -1027,7 +1060,7 @@ services.AddSummerBootFeign(it =>
 });
 ````
 
-### 6.3 定义调用微服务的接口
+#### 6.3.2 定义调用微服务的接口
 设置微服务的名称ServiceName，分组名称NacosGroupName(不填则默认DEFAULT_GROUP)，命名空间NacosNamespaceId(不填则默认public),以及MicroServiceMode设为true即可。url不用配置，剩下的就和正常的feign接口一样。
 
 ````csharp

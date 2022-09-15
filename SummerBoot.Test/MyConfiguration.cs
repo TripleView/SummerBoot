@@ -7,14 +7,9 @@ namespace SummerBoot.Test
     {
         static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
 
-        static IConfiguration Configs;
+        public static IConfiguration Configs;
 
-        /// <summary>
-        /// 获取配置文件的配置节点
-        /// </summary>
-        /// <param name="configKey">多个节点可以用英文.号隔开</param>
-        /// <returns></returns>
-        public static string GetConfiguration(string configKey)
+        static MyConfiguration()
         {
             if (Configs == null)
             {
@@ -23,6 +18,15 @@ namespace SummerBoot.Test
                 build.AddJsonFile(CONFIG_FILE, true, true);
                 Configs = build.Build();
             }
+        }
+        /// <summary>
+        /// 获取配置文件的配置节点
+        /// </summary>
+        /// <param name="configKey">多个节点可以用英文.号隔开</param>
+        /// <returns></returns>
+        public static string GetConfiguration(string configKey)
+        {
+           
 
             if (configKey.Contains("."))
             {
