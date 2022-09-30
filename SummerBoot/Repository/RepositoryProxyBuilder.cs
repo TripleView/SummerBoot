@@ -30,27 +30,7 @@ namespace SummerBoot.Repository
             var temp = TargetTypeCache.ToJson();
             var cacheKey = interfaceType.FullName;
             Type resultType;
-            //if (TargetTypeCache.ContainsKey(cacheKey))
-            //{
-            //    TargetTypeCache.TryGetValue(cacheKey, out resultType);
-            //}
-            //else
-            //{
-            //   //var lockObj=  LockObjCache.GetOrAdd(cacheKey, it => new object());
-            //    //bool lockOk = false;
-            //    //SpinLock sl = new SpinLock();
-            //    //sl.Enter(ref lockOk);
-            //    //resultType = BuildTargetType(interfaceType, constructor);
-            //    //TargetTypeCache.TryAdd(cacheKey, resultType);
-            //    //sl.Exit();
-
-            //    lock (lockObj)
-            //    {
-            //        resultType = BuildTargetType(interfaceType);
-            //        TargetTypeCache.TryAdd(cacheKey, resultType);
-            //    }
-                
-            //}
+          
             TargetTypeCache.TryGetValue(cacheKey, out resultType);
             //var resultType= TargetTypeCache.GetOrAdd(cacheKey, it => BuildTargetType(interfaceType, constructor));
             var result = Activator.CreateInstance(resultType, args: constructor);
