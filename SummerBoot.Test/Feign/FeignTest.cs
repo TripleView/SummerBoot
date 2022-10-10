@@ -16,6 +16,7 @@ using System.Net;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using SummerBoot.Feign.Attributes;
 
 namespace SummerBoot.Test.Feign
 {
@@ -38,9 +39,24 @@ namespace SummerBoot.Test.Feign
     {
 
     }
+
+    public class FeignContractResolverTestDto
+    {
+        [AliasAs("n2ame")]
+        public string Name { get; set; }
+    }
+
     public class FeignTest
     {
-
+        [Fact]
+        public async Task FeignContractResolverTest()
+        {
+            var setting = new JsonSerializerSettings() { ContractResolver = new FeignContractResolver() };
+            var result = JsonConvert.SerializeObject(new FeignContractResolverTestDto() { Name = "abc" }, setting);
+            Assert.Equal("{\"n2ame\":\"abc\"}", result);
+            var model = JsonConvert.DeserializeObject<FeignContractResolverTestDto>("{\"n2ame\":\"abc\"}", setting);
+            Assert.Equal("abc", model.Name);
+        }
         [Fact]
         public async Task Test()
         {
@@ -64,7 +80,7 @@ namespace SummerBoot.Test.Feign
 
             var xx = conf["a:c"];
             var c = conf["a"];
-            Assert.Equal("333",c);
+            Assert.Equal("333", c);
             //while (true)
             //{
             //    var c = conf["a"];

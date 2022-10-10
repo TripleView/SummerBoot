@@ -24,6 +24,8 @@ namespace SummerBoot.Feign
         /// </summary>
         public class DefaultDecoder : IFeignDecoder
         {
+            private JsonSerializerSettings settings = new JsonSerializerSettings()
+                { ContractResolver = new FeignContractResolver() };
             public object Decoder(ResponseTemplate responseTemplate, Type type)
             {
                 if (responseTemplate.HttpStatusCode == HttpStatusCode.NotFound ||
@@ -41,7 +43,7 @@ namespace SummerBoot.Feign
                     return str;
                 }
 
-                return JsonConvert.DeserializeObject(str, type);
+                return JsonConvert.DeserializeObject(str, type, settings);
             }
 
             public T Decoder<T>(ResponseTemplate responseTemplate)

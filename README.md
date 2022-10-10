@@ -850,7 +850,7 @@ await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
 ````
 
 #### 5.2.3参数添加Body(BodySerializationKind.Json)注解
-即以application/json的方式提交，参数值将会被json序列化后添加到载荷（body）里。
+即以application/json的方式提交，参数值将会被json序列化后添加到载荷（body）里，同样的，如果类里的字段有别名，也可以使用AliasAs注解。
 ````csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor),Timeout = 100)]
 public interface ITestFeign
