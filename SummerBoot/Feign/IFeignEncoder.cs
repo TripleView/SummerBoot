@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace SummerBoot.Feign
 {
@@ -30,16 +31,18 @@ namespace SummerBoot.Feign
         /// </summary>
         public class DefaultEncoder : IFeignEncoder
         {
+            private JsonSerializerSettings settings = new JsonSerializerSettings()
+                { ContractResolver = new FeignContractResolver() };
             public HttpContent Encoder(object obj)
             {
-                var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
+                var content = new StringContent(JsonConvert.SerializeObject(obj, settings), Encoding.UTF8, "application/json");
 
                 return content;
             }
 
             public string EncoderObject(object obj)
             {
-                return JsonConvert.SerializeObject(obj);
+                return JsonConvert.SerializeObject(obj, settings );
             }
         }
     }
