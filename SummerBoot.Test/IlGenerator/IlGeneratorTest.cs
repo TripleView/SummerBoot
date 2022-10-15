@@ -4,13 +4,53 @@ using System.Threading.Tasks;
 using System;
 using Xunit;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Emit;
 using SummerBoot.Core;
+using SummerBoot.Test.IlGenerator.Dto;
+using BindingFlags = System.Reflection.BindingFlags;
 
 namespace SummerBoot.Test.IlGenerator
 {
     public class IlGeneratorTest
     {
+        /// <summary>
+        /// 测试方法里返回一个实体类
+        /// </summary>
+        [Fact]
+        public static void TestReturnNewClass()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[] { typeof(Type) });
+            var il = dynamicMethod.GetILGenerator();
+            var ret = il.DeclareLocal(typeof(int));
+            var conlocal = il.DeclareLocal(typeof(object));
+            //il.Emit(OpCodes.Ldarg_0);
+            var ctor = typeof(IlResult).GetConstructor(Type.EmptyTypes);
+            il.Emit(OpCodes.Newobj,ctor );
+            //il.Emit(OpCodes.Callvirt,typeof(Type).GetMethod(nameof(Type.GetConstructors),types:new Type[0]));
+            //il.Emit(OpCodes.Stloc, conlocal);
+            //il.Emit(OpCodes.Ldc_I4_0);
+            //il.Emit(OpCodes.Newarr,typeof(Type));
+           
+            ////il.Emit(OpCodes.Localloc, conlocal);
+            //il.Emit(OpCodes.Newobj,(new Type[0]));
+
+            il.Emit(OpCodes.Ret);
+            //il.Emit(OpCodes.Newobj);
+            //il.Emit(OpCodes.Add);
+            //il.SteadLocal(ret);
+            //il.Emit(OpCodes.Ldloc_0);
+            //il.Emit(OpCodes.Ret);
+            var cccc= typeof(IlResult).GetConstructors();
+            //var dd = (Func<Type, IlResult>)dynamicMethod.CreateDelegate(typeof(Func<Type, IlResult>));
+            var dd = (Func<Type, object>)dynamicMethod.CreateDelegate(typeof(Func<Type ,object>));
+            var re = dd(typeof(IlResult));
+            //Assert.Equal("hzp", re.Name);
+        }
+
+        
+
         /// <summary>
         /// 测试常规加减法
         /// </summary>
