@@ -85,34 +85,40 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1, p1.Length);
         }
 
+        public T Test<T>()
+        {
+            return default;
+        }
+
         /// <summary>
-        /// 测试方法里返回一个实体类
+        /// 测试InitObject，该指令仅针对值类型的结构体，而不是原生的int等
         /// </summary>
         [Fact]
         public static void TestInitObject()
         {
+           Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
+            var ilRe = il.DeclareLocal(typeof(IlValueTypeItem));
             var ctor = typeof(IlResult).GetConstructor(Type.EmptyTypes);
-            il.Emit(OpCodes.Ldc_I4_8);
-            il.Emit(OpCodes.Initobj, typeof(int)); //stack is 
-            // il.Emit(OpCodes.Newobj,ctor);
-         
+        
+            il.Emit(OpCodes.Ldloc_S, ilRe);
           
-            il.Emit(OpCodes.Box,typeof(int));
+            il.Emit(OpCodes.Initobj, typeof(IlValueTypeItem)); //stack is 
+           
+            il.Emit(OpCodes.Ldloc_0);
+            il.Emit(OpCodes.Box,typeof(IlValueTypeItem));
             il.Emit(OpCodes.Ret);
-            
 
-            var cccc = typeof(IlResult).GetConstructors();
-            //var dd = (Func<Type, IlResult>)dynamicMethod.CreateDelegate(typeof(Func<Type, IlResult>));
             var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
             var re = dd();
           
         }
 
         /// <summary>
-        /// 测试il装箱操作
+        /// 测试il装箱操作,box指令后面跟着值类型的type类型
         /// </summary>
         [Fact]
         public static void TestBox()
