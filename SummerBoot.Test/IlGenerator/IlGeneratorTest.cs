@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using MySql.Data.MySqlClient;
 using SummerBoot.Core;
 using SummerBoot.Test.IlGenerator.Dto;
@@ -51,13 +52,7 @@ namespace SummerBoot.Test.IlGenerator
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
-                while (dr.Read())
-                {
-                    if (dr.FieldCount > 0)
-                    {
-                        var name = dr["Name"];
-                    }
-                }
+                GetTypeDeserializer(typeof(IlPerson),dr);
 
                 conn.Close();
             }
@@ -66,11 +61,11 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1, p1.Length);
         }
 
-        private Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr)
+        private static Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr)
         {
             var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite)
                 .ToList();
-            var tableColNames = Enumerable.Range(0, dr.FieldCount - 1).Select(it => dr.GetName(it)).ToList();
+            var tableColNames = Enumerable.Range(0, dr.FieldCount).Select(it => dr.GetName(it)).ToList();
 
             return null;
         }
