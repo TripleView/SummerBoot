@@ -11,6 +11,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using MySql.Data.MySqlClient;
 using SummerBoot.Core;
+using SummerBoot.Repository.Core;
 using SummerBoot.Test.IlGenerator.Dto;
 using BindingFlags = System.Reflection.BindingFlags;
 
@@ -52,7 +53,7 @@ namespace SummerBoot.Test.IlGenerator
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
-                GetTypeDeserializer(typeof(IlPerson),dr);
+                DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr);
 
                 conn.Close();
             }
@@ -61,14 +62,7 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1, p1.Length);
         }
 
-        private static Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr)
-        {
-            var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite)
-                .ToList();
-            var tableColNames = Enumerable.Range(0, dr.FieldCount).Select(it => dr.GetName(it)).ToList();
-
-            return null;
-        }
+       
 
         /// <summary>
         /// 测试反射获取属性
@@ -80,16 +74,27 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1, p1.Length);
         }
 
+        /// <summary>
+        /// 测试通过反射获取getItem方法
+        /// </summary>
+        [Fact]
+        public static void TestGetItemMethod()
+        {
+            var p1 = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance ).FirstOrDefault(it=>it.Name=="get_Item"&& it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == typeof(int));
+                //;
+            Assert.NotNull(p1);
+        }
+
         public T Test<T>()
         {
             return default;
         }
 
         /// <summary>
-        /// 测试InitObject，该指令仅针对值类型的结构体，而不是原生的int等
+        /// 测试InitObject和Ldloca，该指令仅针对值类型的结构体，而不是原生的int等
         /// </summary>
         [Fact]
-        public static void TestInitObject()
+        public static void TestInitObjectAndLdloca()
         {
            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
 
@@ -97,19 +102,23 @@ namespace SummerBoot.Test.IlGenerator
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var ilRe = il.DeclareLocal(typeof(IlValueTypeItem));
+            var nameProperty= typeof(IlValueTypeItem).GetProperty("Name");
             var ctor = typeof(IlResult).GetConstructor(Type.EmptyTypes);
         
-            il.Emit(OpCodes.Ldloc_S, ilRe);
-          
+            il.Emit(OpCodes.Ldloca, ilRe);
+
             il.Emit(OpCodes.Initobj, typeof(IlValueTypeItem)); //stack is 
-           
+
+            il.Emit(OpCodes.Ldloca,ilRe);
+            il.Emit(OpCodes.Ldstr,"何泽平");
+            il.Emit(OpCodes.Call,nameProperty.GetSetMethod());
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Box,typeof(IlValueTypeItem));
             il.Emit(OpCodes.Ret);
 
             var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
-            var re = dd();
-          
+            var re =(IlValueTypeItem) dd();
+             Assert.Equal("何泽平",re.Name);
         }
 
         /// <summary>
@@ -178,7 +187,7 @@ namespace SummerBoot.Test.IlGenerator
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Add);
-            il.SteadLocal(ret);
+            il.SteadOfLocal(ret);
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Ret);
             var dd = (Func<int, int, int>) dynamicMethod.CreateDelegate(typeof(Func<int, int, int>));

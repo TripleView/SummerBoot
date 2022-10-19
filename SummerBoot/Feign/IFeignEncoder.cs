@@ -35,6 +35,7 @@ namespace SummerBoot.Feign
                 { ContractResolver = new FeignContractResolver() };
             public HttpContent Encoder(object obj)
             {
+                var c = JsonConvert.SerializeObject(obj, settings);
                 var content = new StringContent(JsonConvert.SerializeObject(obj, settings), Encoding.UTF8, "application/json");
 
                 return content;
