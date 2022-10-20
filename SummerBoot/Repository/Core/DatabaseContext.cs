@@ -35,7 +35,7 @@ namespace SummerBoot.Repository.Core
                 new Type[]{typeof(IDataReader)});
             var il = dynamicMethod.GetILGenerator();
             var errorIndexLocal = il.DeclareLocal(typeof(int));
-            il.BeginExceptionBlock();
+            il.BeginExceptionBlock();//try
             //定义返回值
             var returnValueLocal = il.DeclareLocal(type);
             if (type.IsValueType)
@@ -65,25 +65,32 @@ namespace SummerBoot.Repository.Core
                 throw new Exception("The column to query could not be found");
             }
             var backUpObject = il.DeclareLocal(typeof(object));
-            var endLabel = il.DefineLabel();
-            for (var i = 0; i < queryMemberCacheInfos.Count; i++)
-            {
-                var queryMemberCacheInfo = queryMemberCacheInfos[i];
+            //var endLabel = il.DefineLabel();
+            //for (var i = 0; i < queryMemberCacheInfos.Count; i++)
+            //{
+            //    var queryMemberCacheInfo = queryMemberCacheInfos[i];
 
-                il.Emit(OpCodes.Dup);// [target,target]
-                il.EmitInt32(i);// [target,target,i]
-                il.SteadOfLocal(errorIndexLocal);//[target,target]
-                //通过索引从dataReader里读取数据，此时读取回来的是object类型
-                il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
-                il.EmitInt32(i);//[target, target,dataReader,i]
-                il.Emit(OpCodes.Callvirt,GetItem);// [target, target, getItemValue]
-                //对获取到的值进行备份,存到字段backUpObject里
-                il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
-                il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
+            //    il.Emit(OpCodes.Dup);// [target,target]
+            //    il.EmitInt32(i);// [target,target,i]
+            //    il.SteadOfLocal(errorIndexLocal);//[target,target]
+            //    //通过索引从dataReader里读取数据，此时读取回来的是object类型
+            //    il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
+            //    il.EmitInt32(i);//[target, target,dataReader,i]
+            //    il.Emit(OpCodes.Callvirt,GetItem);// [target, target, getItemValue]
+            //    //对获取到的值进行备份,存到字段backUpObject里
+            //    il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
+            //    il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
 
-            }
+            //}
 
-            return null;
+            il.EndExceptionBlock();
+
+            il.Emit(OpCodes.Ldstr,"何泽平");
+            il.Emit(OpCodes.Ret);
+
+            var result= (Func<IDataReader,object>)dynamicMethod.CreateDelegate(typeof(Func<IDataReader, object>));
+
+            return result;
         }
 
 

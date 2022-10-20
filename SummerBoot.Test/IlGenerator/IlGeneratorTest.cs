@@ -20,6 +20,92 @@ namespace SummerBoot.Test.IlGenerator
     public class IlGeneratorTest
     {
         /// <summary>
+        /// 测试try catch
+        /// </summary>
+        [Fact]
+        public static void TestTryCatch2()
+        {
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
+                new Type[]{typeof(string)});
+            ILGenerator methodIL = dynamicMethod.GetILGenerator();
+            LocalBuilder num = methodIL.DeclareLocal(typeof(Int32));
+
+            //int num = 0;
+            methodIL.Emit(OpCodes.Ldc_I4_0);
+            methodIL.Emit(OpCodes.Stloc_0);
+
+            //begin try
+            Label tryLabel = methodIL.BeginExceptionBlock();
+            //num = Convert.ToInt32(str);
+            methodIL.Emit(OpCodes.Ldarg_0);
+            methodIL.Emit(OpCodes.Call, typeof(Convert).GetMethod("ToInt32", new Type[] { typeof(string) }));
+            methodIL.Emit(OpCodes.Stloc_0);
+            //end try
+
+            //begin catch 注意，这个时侯堆栈顶为异常信息ex
+            methodIL.BeginCatchBlock(typeof(Exception));
+            //Console.WriteLine(ex.Message);
+            methodIL.Emit(OpCodes.Call, typeof(Exception).GetMethod("get_Message"));
+            methodIL.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
+            //end catch
+            methodIL.EndExceptionBlock();
+
+            //return num;
+            methodIL.Emit(OpCodes.Ldloc_0);
+            methodIL.Emit(OpCodes.Ret);
+            var dd = (Func<string,int>)dynamicMethod.CreateDelegate(typeof(Func<string,int>));
+            var re = dd("123");
+            //Assert.Equal("何泽平", re);
+        }
+        /// <summary>
+        /// 测试try catch
+        /// </summary>
+        [Fact]
+        public static void TestTryCatch()
+        {
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(string),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldstr, "何泽平");
+            il.BeginExceptionBlock();
+            il.Emit(OpCodes.Ldstr, "0");
+            il.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ToInt32), new Type[] { typeof(string) }));
+            il.Emit(OpCodes.Pop);
+            il.BeginCatchBlock(typeof(Exception));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ret);
+            il.EndExceptionBlock();
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<string>)dynamicMethod.CreateDelegate(typeof(Func<string>));
+            var re = dd();
+            Assert.Equal("何泽平", re);
+        }
+
+        /// <summary>
+        /// 测试栈顶有很多数据是否可以正确返回,有pop弹出则正常，否则报错，说明方法结束时，堆栈里必须为空
+        /// </summary>
+        [Fact]
+        public static void TestTopOfStackHasManyDataThenReturn()
+        {
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(string),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldstr, "何泽平");
+            il.Emit(OpCodes.Ldstr, "0");
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<string>)dynamicMethod.CreateDelegate(typeof(Func<string>));
+            var re = dd();
+            Assert.Equal("何泽平", re);
+        }
+
+        /// <summary>
         /// 测试反射获取属性
         /// </summary>
         [Fact]
