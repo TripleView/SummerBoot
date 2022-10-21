@@ -82,6 +82,7 @@ namespace SummerBoot.Repository.Core
             //    il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
 
             //}
+            il.BeginCatchBlock(typeof(Exception));
 
             il.EndExceptionBlock();
 

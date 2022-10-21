@@ -60,7 +60,7 @@ namespace SummerBoot.Test.IlGenerator
             //Assert.Equal("何泽平", re);
         }
         /// <summary>
-        /// 测试try catch
+        /// 测试try catch,经过测试，进入try，catch之前，堆栈必须为空，try catch结束后，trycatch里的堆栈也会被清空
         /// </summary>
         [Fact]
         public static void TestTryCatch()
@@ -70,21 +70,70 @@ namespace SummerBoot.Test.IlGenerator
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(string),
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-            il.Emit(OpCodes.Ldstr, "何泽平");
-            il.BeginExceptionBlock();
-            il.Emit(OpCodes.Ldstr, "0");
+            var strLocal = il.DeclareLocal(typeof(string));
+            //il.Emit(OpCodes.Ldstr, "何泽平");
+            //il.Emit(OpCodes.Pop);
+            var tryLabel= il.BeginExceptionBlock();
+            il.Emit(OpCodes.Ldstr, "ab0");
             il.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ToInt32), new Type[] { typeof(string) }));
             il.Emit(OpCodes.Pop);
+            //il.Emit(OpCodes.Leave_S, tryLabel);
             il.BeginCatchBlock(typeof(Exception));
-            il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Ret);
+            il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintException)));
+            il.Emit(OpCodes.Ldstr, "异常里挑出");
+            il.SteadOfLocal(strLocal);
+            //il.Emit(OpCodes.Leave_S, tryLabel);
+            //il.Emit(OpCodes.Call, typeof(Exception).GetMethod("get_Message"));
+            //il.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
+            ////il.Emit(OpCodes.Pop);
+            ////il.Emit(OpCodes.Ret);
+            //il.Emit(OpCodes.Ldstr, "异常里挑出");
+            //il.Emit(OpCodes.Ret);
             il.EndExceptionBlock();
+            //il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintObject)));
+            il.Emit(OpCodes.Ldloc,strLocal);
             il.Emit(OpCodes.Ret);
             var dd = (Func<string>)dynamicMethod.CreateDelegate(typeof(Func<string>));
             var re = dd();
-            Assert.Equal("何泽平", re);
+            Assert.Equal("异常里挑出", re);
         }
+        /// <summary>
+        /// 测试try catch,毕竟用自定义的错误处理程序
+        /// </summary>
+        [Fact]
+        public static void TestTryCatchWithCustomExceptionHandler()
+        {
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
 
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), null,
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            //il.Emit(OpCodes.Ldstr, "何泽平");
+            il.BeginExceptionBlock();
+            il.Emit(OpCodes.Ldstr, "abc");
+            il.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ToInt32), new Type[] { typeof(string) }));
+            il.Emit(OpCodes.Pop);
+            il.BeginCatchBlock(typeof(Exception));
+            il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintException)));
+            //il.Emit(OpCodes.Call, typeof(Exception).GetMethod("get_Message"));
+            //il.Emit(OpCodes.Call, typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) }));
+           
+            ////il.Emit(OpCodes.Ret);
+            il.EndExceptionBlock();
+      
+            il.Emit(OpCodes.Ret);
+            var dd = (Action)dynamicMethod.CreateDelegate(typeof(Action));
+             dd();
+        
+        }
+        public static void PrintObject(object obj)
+        {
+
+        }
+        public static void PrintException(Exception ex)
+        {
+
+        }
         /// <summary>
         /// 测试栈顶有很多数据是否可以正确返回,有pop弹出则正常，否则报错，说明方法结束时，堆栈里必须为空
         /// </summary>
