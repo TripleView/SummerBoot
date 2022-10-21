@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -35,9 +36,10 @@ namespace SummerBoot.Repository.Core
                 new Type[]{typeof(IDataReader)});
             var il = dynamicMethod.GetILGenerator();
             var errorIndexLocal = il.DeclareLocal(typeof(int));
+            var returnValueLocal = il.DeclareLocal(type);
             il.BeginExceptionBlock();//try
             //定义返回值
-            var returnValueLocal = il.DeclareLocal(type);
+            
             if (type.IsValueType)
             {
                 il.Emit(OpCodes.Ldloca, returnValueLocal);
@@ -65,36 +67,53 @@ namespace SummerBoot.Repository.Core
                 throw new Exception("The column to query could not be found");
             }
             var backUpObject = il.DeclareLocal(typeof(object));
-            //var endLabel = il.DefineLabel();
-            //for (var i = 0; i < queryMemberCacheInfos.Count; i++)
-            //{
-            //    var queryMemberCacheInfo = queryMemberCacheInfos[i];
+            var endLabel = il.DefineLabel();
+            // 
+            for (var i = 0; i < queryMemberCacheInfos.Count; i++)
+            {
+                var queryMemberCacheInfo = queryMemberCacheInfos[i];
 
-            //    il.Emit(OpCodes.Dup);// [target,target]
-            //    il.EmitInt32(i);// [target,target,i]
-            //    il.SteadOfLocal(errorIndexLocal);//[target,target]
-            //    //通过索引从dataReader里读取数据，此时读取回来的是object类型
-            //    il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
-            //    il.EmitInt32(i);//[target, target,dataReader,i]
-            //    il.Emit(OpCodes.Callvirt,GetItem);// [target, target, getItemValue]
-            //    //对获取到的值进行备份,存到字段backUpObject里
-            //    il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
-            //    il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
+                il.Emit(OpCodes.Dup);// [target,target]
+                il.EmitInt32(i);// [target,target,i]
+                il.SteadOfLocal(errorIndexLocal);//[target,target]
+                //通过索引从dataReader里读取数据，此时读取回来的是object类型
+                il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
+                il.EmitInt32(i);//[target, target,dataReader,i]
+                il.Emit(OpCodes.Callvirt,GetItem);// [target, target, getItemValue]
+                //对获取到的值进行备份,存到字段backUpObject里
+                il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
+                il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
+                // il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
+                il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod());
+                // il.Emit(OpCodes.Call,typeof(object).GetMethod(nameof(object.ToString),new []{typeof(string)}));
+                // il.Emit(OpCodes.Box,typeof(object));
+                // il.Emit(OpCodes.Call,typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
+                // il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
 
-            //}
+
+            }
+            il.SteadOfLocal(returnValueLocal);
+            
             il.BeginCatchBlock(typeof(Exception));
-
+            il.Emit(OpCodes.Call,typeof(DatabaseContext).GetMethod(nameof(ThrowRepositoryException)));
             il.EndExceptionBlock();
 
-            il.Emit(OpCodes.Ldstr,"何泽平");
+            il.Emit(OpCodes.Ldloc,returnValueLocal);
             il.Emit(OpCodes.Ret);
 
             var result= (Func<IDataReader,object>)dynamicMethod.CreateDelegate(typeof(Func<IDataReader, object>));
 
             return result;
         }
-
-
+        public static void DebugObj(object obj)
+        {
+            
+        }
+        public static void ThrowRepositoryException(Exception ex)
+        {
+            
+        }
+        
 
         /// <summary>
         /// 获取要查询的属性列表

@@ -188,8 +188,12 @@ namespace SummerBoot.Test.IlGenerator
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
-                DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr);
-
+                if (dr.Read())
+                {
+                    var func= DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr);
+                    var result = func(dr);
+                }
+               
                 conn.Close();
             }
 
@@ -225,6 +229,28 @@ namespace SummerBoot.Test.IlGenerator
             return default;
         }
 
+        /// <summary>
+        /// 测试Console.WriteLine方法，方便打印输出
+        /// </summary>
+        [Fact]
+        public static void TestConsoleWriteLine()
+        {
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var lable = il.DeclareLocal(typeof(object));
+             il.Emit(OpCodes.Ldstr,"测试");
+             il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
+             il.Emit(OpCodes.Ldstr,"测试");
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
+            var re = dd();
+            Assert.Equal("测试",re);
+        }
+        
         /// <summary>
         /// 测试InitObject和Ldloca，该指令仅针对值类型的结构体，而不是原生的int等
         /// </summary>
