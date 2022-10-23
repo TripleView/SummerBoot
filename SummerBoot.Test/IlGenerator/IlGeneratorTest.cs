@@ -188,6 +188,7 @@ namespace SummerBoot.Test.IlGenerator
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
+                var cc = dr[1];
                 if (dr.Read())
                 {
                     var func= DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr);

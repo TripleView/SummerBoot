@@ -82,8 +82,10 @@ namespace SummerBoot.Repository.Core
                 il.Emit(OpCodes.Callvirt,GetItem);// [target, target, getItemValue]
                 //对获取到的值进行备份,存到字段backUpObject里
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
+                
                 il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
                 // il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
+                il.Emit(OpCodes.Unbox_Any,queryMemberCacheInfo.PropertyInfo.PropertyType);
                 il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod());
                 // il.Emit(OpCodes.Call,typeof(object).GetMethod(nameof(object.ToString),new []{typeof(string)}));
                 // il.Emit(OpCodes.Box,typeof(object));
