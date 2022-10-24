@@ -184,13 +184,14 @@ namespace SummerBoot.Test.IlGenerator
                 Age INT NULL
                     )";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age) VALUES ('何泽平',30)";
+                cmd.CommandText = @"INSERT INTO test (Name,Age) VALUES ('何泽平',null)";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
-                var cc = dr[1];
                 if (dr.Read())
                 {
+                    //var c = dr.GetFieldType(0);
+                    //var c1 = dr.GetFieldType(1);
                     var func= DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr);
                     var result = func(dr);
                 }
@@ -202,7 +203,80 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1, p1.Length);
         }
 
-       
+
+        /// <summary>
+        /// 测试可空类型,执行Nullable.GetUnderlyingType，如果是可行类型，返回原生类型，如果非可空类型，返回null
+        /// </summary>
+        [Fact]
+        public static void TestNullableType()
+        {
+            var p1 = typeof(IlNullable).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            Assert.Equal(2, p1.Length);
+            var type = p1[0].PropertyType;
+            var nullableType= Nullable.GetUnderlyingType(type);
+            Assert.Equal(typeof(int),nullableType);
+            var type2 = p1[1].PropertyType;
+            var nullableType2 = Nullable.GetUnderlyingType(type2);
+            Assert.Null(nullableType2);
+        }
+
+        /// <summary>
+        /// 测试可空类型,执行Nullable.GetUnderlyingType，如果是可行类型，返回原生类型，如果非可空类型，返回null
+        /// </summary>
+        [Fact]
+        public static void TestEnum()
+        {
+            var p1 = typeof(IlEnumBody).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            Assert.Equal(1, p1.Length);
+            var type = p1[0].PropertyType;
+            var nullableType = Enum.GetUnderlyingType(type);
+            Assert.Equal(typeof(long),nullableType);
+        }
+        
+        /// <summary>
+        /// 测试CastClass方法，转换类型
+        /// </summary>
+        [Fact]
+        public static void TestCastClass()
+        {
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(IlPerson),
+                new Type[]{typeof(IlPersonSubClass)});
+            var il = dynamicMethod.GetILGenerator();
+            var lable = il.DeclareLocal(typeof(object));
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Castclass, typeof(IlPerson));
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<IlPersonSubClass,IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPersonSubClass,IlPerson>));
+            var re = dd(new IlPersonSubClass(){Address = "路边",Age = 1,Name = "草药"});
+            Assert.Equal("草药", re.Name);
+        }
+
+        /// <summary>
+        /// 测试可空类型,执行Nullable.GetUnderlyingType，如果是可行类型，返回原生类型，如果非可空类型，返回null
+        /// </summary>
+        [Fact]
+        public static void TestGetTypeCode()
+        {
+            var p1 = typeof(IlNullable).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            Assert.Equal(2, p1.Length);
+            var type = p1[0].PropertyType;
+            var c= Type.GetTypeCode(type);
+            if (c == TypeCode.Int32)
+            {
+
+            }
+            var nullableType = Nullable.GetUnderlyingType(type);
+            Assert.Equal(typeof(int), nullableType);
+            var type2 = p1[1].PropertyType;
+            var nullableType2 = Nullable.GetUnderlyingType(type2);
+            Assert.Null(nullableType2);
+        }
 
         /// <summary>
         /// 测试反射获取属性
@@ -212,6 +286,7 @@ namespace SummerBoot.Test.IlGenerator
         {
             var p1 = typeof(IlResult).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             Assert.Equal(1, p1.Length);
+           
         }
 
         /// <summary>
