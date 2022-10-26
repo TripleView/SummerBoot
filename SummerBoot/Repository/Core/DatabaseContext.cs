@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using SummerBoot.Core;
+using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository.Core
 {
@@ -23,7 +24,7 @@ namespace SummerBoot.Repository.Core
             new ConcurrentDictionary<Type, List<MemberCacheInfo>>();
 
         //通过索引获取值
-        private  static readonly MethodInfo GetItem = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+        private static readonly MethodInfo GetItem = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .FirstOrDefault(it =>
                 it.Name == "get_Item" && it.GetParameters().Length == 1 &&
                 it.GetParameters()[0].ParameterType == typeof(int));
@@ -33,28 +34,28 @@ namespace SummerBoot.Repository.Core
         public static Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr)
         {
             var dynamicMethod = new DynamicMethod("GetTypeDeserializer" + Guid.NewGuid().ToString("N"), typeof(object),
-                new Type[]{typeof(IDataReader)});
+                new Type[] { typeof(IDataReader) });
             var il = dynamicMethod.GetILGenerator();
             var errorIndexLocal = il.DeclareLocal(typeof(int));
             var returnValueLocal = il.DeclareLocal(type);
-            il.BeginExceptionBlock();//try
-            //定义返回值
-            
+           var tyrLabel= il.BeginExceptionBlock();//try
+                                     //定义返回值
+
             if (type.IsValueType)
             {
                 il.Emit(OpCodes.Ldloca, returnValueLocal);
-                il.Emit(OpCodes.Initobj,type);
+                il.Emit(OpCodes.Initobj, type);
                 il.Emit(OpCodes.Ldloca, returnValueLocal);
             }
             else
             {
-                var ctor=type.GetConstructor(Type.EmptyTypes);
+                var ctor = type.GetConstructor(Type.EmptyTypes);
                 if (ctor == null)
                 {
                     throw new Exception($"Type:{type.FullName} must have a parameterless constructor");
                 }
-                il.Emit(OpCodes.Newobj,ctor);
-                il.Emit(OpCodes.Stloc,returnValueLocal);
+                il.Emit(OpCodes.Newobj, ctor);
+                il.Emit(OpCodes.Stloc, returnValueLocal);
                 il.Emit(OpCodes.Ldloc, returnValueLocal);
             }
 
@@ -72,50 +73,83 @@ namespace SummerBoot.Repository.Core
             for (var i = 0; i < queryMemberCacheInfos.Count; i++)
             {
                 var queryMemberCacheInfo = queryMemberCacheInfos[i];
-
+                var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
+                var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
+                var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
+                var unboxType = nullableEntityFieldType ?? entityFieldType;
+                var dbNullLabel= il.DefineLabel();
+                var finishLabel = il.DefineLabel();
                 il.Emit(OpCodes.Dup);// [target,target]
                 il.EmitInt32(i);// [target,target,i]
                 il.SteadOfLocal(errorIndexLocal);//[target,target]
                 //通过索引从dataReader里读取数据，此时读取回来的是object类型
                 il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
-                il.EmitInt32(i);//[target, target,dataReader,i]
-                il.Emit(OpCodes.Callvirt,GetItem);// [target, target, getItemValue]
+                il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[target, target,dataReader,i]
+                il.Emit(OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
+                il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
+                il.Emit(OpCodes.Isinst, typeof(DBNull));// [target, target, getItemValue, bool]
+                il.Emit(OpCodes.Brtrue_S, dbNullLabel);// [target, target, getItemValue]
+                //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
                 //对获取到的值进行备份,存到字段backUpObject里
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
-                
-                il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
-                // il.Emit(OpCodes.Stloc,backUpObject);// [target, target, getItemValue]
-                il.Emit(OpCodes.Unbox_Any,queryMemberCacheInfo.PropertyInfo.PropertyType);
-                il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod());
+                il.SteadOfLocal(backUpObject);// [target, target, getItemValue]
+                if (unboxType.IsEnum)
+                {
+                    var enumType = Enum.GetUnderlyingType(unboxType);
+                }
+                else
+                {
+                    if (drFieldType == unboxType)
+                    {
+                        il.Emit(OpCodes.Unbox_Any, entityFieldType);// [target, target, real-type-value]
+                        il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
+                    }
+                   
+                }
+
+                il.Emit(OpCodes.Br_S, finishLabel);
+
+
                 // il.Emit(OpCodes.Call,typeof(object).GetMethod(nameof(object.ToString),new []{typeof(string)}));
                 // il.Emit(OpCodes.Box,typeof(object));
                 // il.Emit(OpCodes.Call,typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
                 // il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
 
-
+                il.MarkLabel(dbNullLabel);
+                il.Emit(OpCodes.Pop);// [target, target]
+                il.Emit(OpCodes.Pop);// [target]
+                il.Emit(OpCodes.Br_S, finishLabel);
+                il.MarkLabel(finishLabel);
             }
+            il.MarkLabel(endLabel);
             il.SteadOfLocal(returnValueLocal);
-            
+
             il.BeginCatchBlock(typeof(Exception));
-            il.Emit(OpCodes.Call,typeof(DatabaseContext).GetMethod(nameof(ThrowRepositoryException)));
+            il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(ThrowRepositoryException)));
             il.EndExceptionBlock();
 
-            il.Emit(OpCodes.Ldloc,returnValueLocal);
+            il.Emit(OpCodes.Ldloc, returnValueLocal);
             il.Emit(OpCodes.Ret);
 
-            var result= (Func<IDataReader,object>)dynamicMethod.CreateDelegate(typeof(Func<IDataReader, object>));
+            var result = (Func<IDataReader, object>)dynamicMethod.CreateDelegate(typeof(Func<IDataReader, object>));
 
             return result;
         }
+
+
+        public static void DebugBreakPoint()
+        {
+            var st = new StackTrace();
+        }
         public static void DebugObj(object obj)
         {
-            
+            var st = new StackTrace();
         }
         public static void ThrowRepositoryException(Exception ex)
         {
-            
+
         }
-        
+
 
         /// <summary>
         /// 获取要查询的属性列表
@@ -123,13 +157,25 @@ namespace SummerBoot.Repository.Core
         /// <param name="dr"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        private static List<MemberCacheInfo> GetQueryMemberCacheInfos(IDataReader dr,Type type)
+        private static List<MemberCacheInfo> GetQueryMemberCacheInfos(IDataReader dr, Type type)
         {
             var memberCacheInfos = GetMemberCacheInfos(type);
-            var tableColNames = Enumerable.Range(0, dr.FieldCount).Select(it => dr.GetName(it)).ToList();
-            var result = memberCacheInfos.Where(it =>
-                tableColNames.Any(x => string.Equals(x, it.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();
-            return memberCacheInfos;
+            var tableColNames = Enumerable.Range(0, dr.FieldCount).Select(it => new {name=dr.GetName(it),index=it}).ToList();
+            var result = new List<MemberCacheInfo>();
+            foreach (var info in memberCacheInfos)
+            {
+                var tableColName = tableColNames.FirstOrDefault(it =>
+                    string.Equals(it.name, info.Name, StringComparison.InvariantCultureIgnoreCase));
+                if (tableColName == null)
+                {
+                    continue;
+                }
+
+                info.DataReaderIndex = tableColName.index;
+                result.Add(info);
+            }
+  
+            return result;
         }
 
         /// <summary>
@@ -153,16 +199,16 @@ namespace SummerBoot.Repository.Core
 
                 result = new List<MemberCacheInfo>();
 
-                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite)
+                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType||it.PropertyType==typeof(string)))
                     .ToList();
 
                 for (var i = 0; i < propertyInfos.Count; i++)
                 {
-                    var propertyInfo=propertyInfos[i];
+                    var propertyInfo = propertyInfos[i];
                     var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
                     var memberCacheInfo = new MemberCacheInfo()
                     {
-                        Name = columnAttribute?.Name??propertyInfo.Name,
+                        Name = columnAttribute?.Name ?? propertyInfo.Name,
                         PropertyInfo = propertyInfo,
                         PropertyName = propertyInfo.Name
                     };

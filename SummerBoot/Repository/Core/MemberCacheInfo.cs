@@ -9,5 +9,6 @@ namespace SummerBoot.Repository.Core
         public string PropertyName { get; set; }
 
         public PropertyInfo PropertyInfo { get; set; }
+        public int DataReaderIndex { get; set; }
     }
 }

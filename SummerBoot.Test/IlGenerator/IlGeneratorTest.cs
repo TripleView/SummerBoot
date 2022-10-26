@@ -184,7 +184,7 @@ namespace SummerBoot.Test.IlGenerator
                 Age INT NULL
                     )";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age) VALUES ('何泽平',null)";
+                cmd.CommandText = @"INSERT INTO test (Name,Age) VALUES ('何泽平',30)";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
@@ -205,7 +205,7 @@ namespace SummerBoot.Test.IlGenerator
 
 
         /// <summary>
-        /// 测试可空类型,执行Nullable.GetUnderlyingType，如果是可行类型，返回原生类型，如果非可空类型，返回null
+        /// 测试可空类型,执行Nullable.GetUnderlyingType，如果是可行类型，返回原生类型，如果非可空类型，返回null,可空类型本身也为值类型
         /// </summary>
         [Fact]
         public static void TestNullableType()
@@ -214,18 +214,63 @@ namespace SummerBoot.Test.IlGenerator
 
             Assert.Equal(2, p1.Length);
             var type = p1[0].PropertyType;
+            Assert.True(type.IsValueType);
             var nullableType= Nullable.GetUnderlyingType(type);
             Assert.Equal(typeof(int),nullableType);
             var type2 = p1[1].PropertyType;
             var nullableType2 = Nullable.GetUnderlyingType(type2);
             Assert.Null(nullableType2);
+            var c = Type.GetTypeCode(type);
+            var c2 = Type.GetTypeCode(type2);
         }
 
         /// <summary>
-        /// 测试可空类型,执行Nullable.GetUnderlyingType，如果是可行类型，返回原生类型，如果非可空类型，返回null
+        /// 测试值类型赋值为可空类型,方式1，装箱再拆箱,装箱拆箱自带了一个转换效果
         /// </summary>
         [Fact]
-        public static void TestEnum()
+        public static void TestTypeToNullableTypeUseBoxAndUnbox()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int?),
+                Type.EmptyTypes);
+            var ctor = typeof(int?).GetConstructor(new Type[1]{typeof(int)});
+            var il = dynamicMethod.GetILGenerator();
+            var objLocal = il.DeclareLocal(typeof(int?));
+
+            il.Emit(OpCodes.Ldc_I4,10);
+            il.Emit(OpCodes.Box, typeof(int));
+            il.Emit(OpCodes.Unbox_Any, typeof(int?));
+            
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<int?>)dynamicMethod.CreateDelegate(typeof(Func< int?>));
+            var re = dd();
+            Assert.Equal(10, re);
+        }
+
+        /// <summary>
+        /// 测试值类型赋值为可空类型,方式2，newobj指令，通过构造函数生成一个可空类型,
+        /// </summary>
+        [Fact]
+        public static void TestTypeToNullableTypeUseNewobj()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int?),
+                Type.EmptyTypes);
+            var ctor = typeof(int?).GetConstructor(new Type[1] { typeof(int) });
+            var il = dynamicMethod.GetILGenerator();
+            var objLocal = il.DeclareLocal(typeof(int?));
+            il.Emit(OpCodes.Ldc_I4, 10);
+            il.Emit(OpCodes.Newobj, ctor);
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<int?>)dynamicMethod.CreateDelegate(typeof(Func<int?>));
+            var re = dd();
+            Assert.Equal(10, re);
+        }
+        /// <summary>
+        /// 测试枚举类型,执行Enum.GetUnderlyingType，获取枚举的实际类型，枚举可以是byte int long类型等
+        /// </summary>
+        [Fact]
+        public static void TestEnumGetUnderlyingType()
         {
             var p1 = typeof(IlEnumBody).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
@@ -234,7 +279,67 @@ namespace SummerBoot.Test.IlGenerator
             var nullableType = Enum.GetUnderlyingType(type);
             Assert.Equal(typeof(long),nullableType);
         }
+
+        /// <summary>
+        /// 测试string类型是否为类类型
+        /// </summary>
+        [Fact]
+        public static void TestStringIsClass()
+        {
+            var result = typeof(string).IsClass;
+            Assert.True(result);
+        }
+
+        /// <summary>
+        /// 测试测试对象引用是否为特定类的实例。
+        /// </summary>
+        [Fact]
+        public static void TestIsInstance()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(bool),
+                Type.EmptyTypes);
+            var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var objLocal = il.DeclareLocal(typeof(decimal));
+            //il.Emit(OpCodes.Ldc_I4_1);
+            //il.Emit(OpCodes.Ldc_I4, 10);
+            //il.Emit(OpCodes.Box, typeof(int));
+            il.Emit(OpCodes.Newobj, ctor);
+            il.Emit(OpCodes.Isinst, typeof(IlPerson));
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<bool>)dynamicMethod.CreateDelegate(typeof(Func<bool>));
+            var re = dd();
+            Assert.True(re);
+        }
+
         
+        /// <summary>
+        /// 测试op_Explicit显示类型转换,这里以decimal显示转换为double为例。
+        /// </summary>
+        [Fact]
+        public static void TestOp_Explicit()
+        {
+            var op_method= typeof(decimal).GetMethods().Where(it=>it.Name== "op_Explicit" && it.ReturnType == typeof(double) && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType==typeof(decimal)).ToList().First();
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(double),
+                Type.EmptyTypes);
+
+            var ctor = typeof(decimal).GetConstructor(new Type[1] { typeof(int) });
+            var il = dynamicMethod.GetILGenerator();
+            var objLocal = il.DeclareLocal(typeof(decimal));
+            //il.Emit(OpCodes.Ldloca_S,objLocal);
+            il.Emit(OpCodes.Ldc_I4,10);
+            il.Emit(OpCodes.Newobj,ctor);
+            il.Emit(OpCodes.Call, op_method);
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<double>)dynamicMethod.CreateDelegate(typeof(Func<double>));
+            var re = dd();
+            Assert.Equal(10, re);
+        }
+
+        
+
         /// <summary>
         /// 测试CastClass方法，转换类型
         /// </summary>
@@ -300,9 +405,76 @@ namespace SummerBoot.Test.IlGenerator
             Assert.NotNull(p1);
         }
 
-        public T Test<T>()
+        /// <summary>
+        /// 测试long类型，即int64，特别要注意，入参时如果输入数字，默认为int32，需要强制转换为long。
+        /// </summary>
+        [Fact]
+        public static void TestLong()
         {
-            return default;
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(long),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var lable = il.DeclareLocal(typeof(object));
+            var ctor = typeof(IlEnumBody).GetConstructor(Type.EmptyTypes);
+            il.Emit(OpCodes.Ldc_I8, (long)1);
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<long>)dynamicMethod.CreateDelegate(typeof(Func<long>));
+            var re = dd();
+            Assert.Equal(1, re);
+        }
+
+        /// <summary>
+        /// 测试其他类型到enum的转换
+        /// </summary>
+        [Fact]
+        public static void TestEnumParse()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(IlEnum),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var lable = il.DeclareLocal(typeof(object));
+            var ctor = typeof(IlEnumBody).GetConstructor(Type.EmptyTypes);
+            il.Emit(OpCodes.Ldc_I4,1);
+            il.Emit(OpCodes.Conv_I8);
+            il.Emit(OpCodes.Box, typeof(long));
+            il.Emit(OpCodes.Unbox_Any, typeof(IlEnum));
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<IlEnum>)dynamicMethod.CreateDelegate(typeof(Func<IlEnum>));
+            var re = dd();
+            //Assert.Equal(IlEnum.a, re);
+        }
+
+        /// <summary>
+        /// 测试其他类型到enum的转换,并且设置为类的属性
+        /// </summary>
+        [Fact]
+        public static void TestEnumParseAndSettingProperty()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(IlEnumBody),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var ctor = typeof(IlEnumBody).GetConstructor(Type.EmptyTypes);
+            
+            il.Emit(OpCodes.Newobj, ctor); //stack is ilResult
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Ldc_I4, 2);
+            il.Emit(OpCodes.Conv_I8);
+            il.Emit(OpCodes.Box, typeof(long));
+            il.Emit(OpCodes.Unbox_Any, typeof(IlEnum));
+            il.Emit(OpCodes.Call, typeof(IlEnumBody).GetProperty(nameof(IlEnumBody.Enum)).GetSetMethod());
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<IlEnumBody>)dynamicMethod.CreateDelegate(typeof(Func<IlEnumBody>));
+            var re = dd();
+            Assert.Equal(IlEnum.b, re.Enum);
+        }
+
+        [Fact]
+        public static void Test()
+        {
+            var op_method = typeof(decimal).GetMethods().Where(it => it.Name == "op_Explicit" && it.ReturnType==typeof(uint)).ToList();
+            var c= typeof(int).IsPrimitive;
+            var d= typeof(string).IsPrimitive;
         }
 
         /// <summary>
@@ -460,6 +632,61 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal("相等", re);
             var re2 = func(6);
             Assert.Equal("不相等", re2);
+        }
+
+        /// <summary>
+        /// 测试跳转标签，结果是标签可以定义了不使用，并不会报错
+        /// </summary>
+        [Fact]
+        public static void TestLabel()
+        {
+            var dynamicMethod = new DynamicMethod("test2" + Guid.NewGuid().ToString("N"), typeof(int),
+                Type.EmptyTypes);
+            var debugWriteMethod = typeof(Debug)
+                .GetMethod(nameof(Debug.WriteLine), new Type[] { typeof(object) });
+            var il = dynamicMethod.GetILGenerator();
+            var endLabel = il.DefineLabel();
+            il.Emit(OpCodes.Ldc_I4,10);
+            il.MarkLabel(endLabel);
+            il.Emit(OpCodes.Ret);
+            var func = (Func<int>)dynamicMethod.CreateDelegate(typeof(Func<int>));
+            var re = func();
+            Assert.Equal(10,re);
+        }
+
+        /// <summary>
+        /// 测试无条件跳转标签是否会消耗栈顶，结论Brtrue_S会消耗栈顶元素并跳转，Leave_S指令会清空栈顶，同时markLabel相当于分支，每种分支都要写
+        ///
+        /// /// </summary>
+        [Fact]
+        public static void TestBrtrue_SLabel()
+        {
+            var dynamicMethod = new DynamicMethod("test2" + Guid.NewGuid().ToString("N"), typeof(int),
+                new Type[]{typeof(int)});
+            var debugWriteMethod = typeof(Debug)
+                .GetMethod(nameof(Debug.WriteLine), new Type[] { typeof(object) });
+            var il = dynamicMethod.GetILGenerator();
+            var endLabel = il.DefineLabel();
+            var finishLabel = il.DefineLabel();
+            il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Brtrue_S,endLabel);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Leave_S,finishLabel);
+            il.MarkLabel(endLabel);
+            //il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Ret);
+            il.MarkLabel(finishLabel);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Ret);
+            var func = (Func<int,int>)dynamicMethod.CreateDelegate(typeof(Func<int,int>));
+            var re = func(1);
+            Assert.Equal(1, re);
+            var re2 = func(0);
+            Assert.Equal(0, re2);
         }
     }
 }
