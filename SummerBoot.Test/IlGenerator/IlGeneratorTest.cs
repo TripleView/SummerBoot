@@ -14,6 +14,7 @@ using SummerBoot.Core;
 using SummerBoot.Repository.Core;
 using SummerBoot.Test.IlGenerator.Dto;
 using BindingFlags = System.Reflection.BindingFlags;
+using Type = System.Type;
 
 namespace SummerBoot.Test.IlGenerator
 {
@@ -291,6 +292,19 @@ namespace SummerBoot.Test.IlGenerator
         }
 
         /// <summary>
+        /// 测试一个Type是否为数字类型
+        /// </summary>
+        [Fact]
+        public static void TestIsNumberType()
+        {
+            
+            var result = typeof(string).IsNumberType();
+            Assert.False(result);
+            var decimalResult = typeof(decimal).IsNumberType();
+            Assert.True(decimalResult);
+        }
+
+        /// <summary>
         /// 测试测试对象引用是否为特定类的实例。
         /// </summary>
         [Fact]
@@ -313,7 +327,94 @@ namespace SummerBoot.Test.IlGenerator
             Assert.True(re);
         }
 
-        
+        /// <summary>
+        /// 测试测试对象引用是否为特定类的实例。
+        /// </summary>
+        [Fact]
+        public static void TestIsInstanceObjectType()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[]{typeof(object)});
+            var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            //il.Emit(OpCodes.Box, typeof(long));
+           
+            il.Emit(OpCodes.Callvirt,typeof(object).GetMethod(nameof(object.GetType)));
+            //il.Emit(OpCodes.Box,typeof(long));
+            ////il.Emit(OpCodes.Box, typeof(long));
+            //il.Emit(OpCodes.Box, typeof(object));
+            //il.Emit(OpCodes.Unbox_Any, typeof(IlEnum));
+            //il.Emit(OpCodes.Box, typeof(object));
+            il.Emit(OpCodes.Ret);
+           
+            var dd = (Func<object, object>)dynamicMethod.CreateDelegate(typeof(Func<object, object>));
+            var re = dd(2L);
+            //Assert.True(re);
+            ////Assert.Equal(IlEnum.b,(IlEnum)re);
+        }
+
+        [Fact]
+        public static bool TestGenerateTypeMethod()
+        {
+            var method= typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.GenerateTypeMethod)).MakeGenericMethod(typeof(long));
+           //var re2=  method.Invoke(null,new Object[]{1L});
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[] { typeof(object) });
+            var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            //il.Emit(OpCodes.Box, typeof(long));
+
+            il.Emit(OpCodes.Call, method);
+            //il.Emit(OpCodes.Box,typeof(long));
+            ////il.Emit(OpCodes.Box, typeof(long));
+            //il.Emit(OpCodes.Box, typeof(object));
+            //il.Emit(OpCodes.Unbox_Any, typeof(IlEnum));
+            //il.Emit(OpCodes.Box, typeof(object));
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<object, object>)dynamicMethod.CreateDelegate(typeof(Func<object, object>));
+            var re = dd(2L);
+
+            return true;
+        }
+
+        public static bool GenerateTypeMethod<T>(T value)
+        {
+            var a = typeof(T);
+            return true;
+        }
+
+        [Fact]
+        public static void TestSizeOf()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
+                Type.EmptyTypes);
+            
+            var il = dynamicMethod.GetILGenerator();
+            //il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Sizeof, typeof(short));
+           
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<int>)dynamicMethod.CreateDelegate(typeof(Func<int>));
+            var re = dd();
+            //Assert.True(re);
+            Assert.Equal(2, re);
+        }
+
+        [Fact]
+        public static void T5()
+        {
+            decimal f = 1m;
+            object d = f;
+   
+            var g = d.GetType();
+            var f2 = d is decimal;
+
+        }
+
         /// <summary>
         /// 测试op_Explicit显示类型转换,这里以decimal显示转换为double为例。
         /// </summary>

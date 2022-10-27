@@ -72,5 +72,16 @@ namespace SummerBoot.Core
                     break;
             }
         }
+
+        /// <summary>
+        /// 在il层面，将一种类型转换为另一种类型
+        /// </summary>
+        /// <param name="il"></param>
+        /// <param name="fromType"></param>
+        /// <param name="toType"></param>
+        public static void ConvertTypeToDistinctType(this ILGenerator il, Type fromType,Type toType)
+        {
+            
+        }
     }
 }
