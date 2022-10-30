@@ -34,6 +34,7 @@ namespace SummerBoot.Core
                     ilGenerator.Emit(OpCodes.Stloc_3);
                     return;
             }
+
             if (localIndex > 0 && localIndex <= 255)
             {
                 ilGenerator.Emit(OpCodes.Stloc_S, localIndex);
@@ -66,6 +67,7 @@ namespace SummerBoot.Core
                     ilGenerator.Emit(OpCodes.Ldloc_3);
                     return;
             }
+
             if (localIndex > 0 && localIndex <= 255)
             {
                 ilGenerator.Emit(OpCodes.Ldloc_S, localIndex);
@@ -84,25 +86,46 @@ namespace SummerBoot.Core
         {
             switch (value)
             {
-                case -1: il.Emit(OpCodes.Ldc_I4_M1); break;
-                case 0: il.Emit(OpCodes.Ldc_I4_0); break;
-                case 1: il.Emit(OpCodes.Ldc_I4_1); break;
-                case 2: il.Emit(OpCodes.Ldc_I4_2); break;
-                case 3: il.Emit(OpCodes.Ldc_I4_3); break;
-                case 4: il.Emit(OpCodes.Ldc_I4_4); break;
-                case 5: il.Emit(OpCodes.Ldc_I4_5); break;
-                case 6: il.Emit(OpCodes.Ldc_I4_6); break;
-                case 7: il.Emit(OpCodes.Ldc_I4_7); break;
-                case 8: il.Emit(OpCodes.Ldc_I4_8); break;
+                case -1:
+                    il.Emit(OpCodes.Ldc_I4_M1);
+                    break;
+                case 0:
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    break;
+                case 1:
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    break;
+                case 2:
+                    il.Emit(OpCodes.Ldc_I4_2);
+                    break;
+                case 3:
+                    il.Emit(OpCodes.Ldc_I4_3);
+                    break;
+                case 4:
+                    il.Emit(OpCodes.Ldc_I4_4);
+                    break;
+                case 5:
+                    il.Emit(OpCodes.Ldc_I4_5);
+                    break;
+                case 6:
+                    il.Emit(OpCodes.Ldc_I4_6);
+                    break;
+                case 7:
+                    il.Emit(OpCodes.Ldc_I4_7);
+                    break;
+                case 8:
+                    il.Emit(OpCodes.Ldc_I4_8);
+                    break;
                 default:
                     if (value >= -128 && value <= 127)
                     {
-                        il.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
+                        il.Emit(OpCodes.Ldc_I4_S, (sbyte) value);
                     }
                     else
                     {
                         il.Emit(OpCodes.Ldc_I4, value);
                     }
+
                     break;
             }
         }
@@ -116,64 +139,89 @@ namespace SummerBoot.Core
         /// <param name="toType"></param>
         public static void ConvertTypeToTargetType(this ILGenerator il, Type fromType, Type toType)
         {
+            var fromTypeNullableType = Nullable.GetUnderlyingType(fromType);
+            var toTypeNullableType = Nullable.GetUnderlyingType(toType);
+            var tempFromType = fromTypeNullableType ?? fromType;
+            var tempToType = toTypeNullableType ?? toType;
+
             //校验是否已装箱，否则报错
             il.Emit(OpCodes.Dup);
             il.Emit(OpCodes.Ldtoken, fromType);
+            il.Emit(OpCodes.Call,SbUtil.GetTypeFromHandleMethod);
             il.Emit(OpCodes.Call, CheckIsBoxMethod);
             //判断是否为枚举
-            if (toType.IsEnum)
+            if (tempToType.IsEnum)
             {
-                var enumUnderlyingType = Enum.GetUnderlyingType(toType);
+                var enumUnderlyingType = Enum.GetUnderlyingType(tempToType);
 
-                if (enumUnderlyingType != fromType)
+                if (enumUnderlyingType != tempFromType)
                 {
                     //string 类型可以转化
-                    if (fromType == typeof(string))
+                    if (tempFromType == typeof(string))
                     {
                         //因为enum.parse这个方法，参数顺序是枚举类型type,具体的字符串value，是否忽略大小写bool,此时堆栈里的顺序与这个有点不一样，是string在前面，所以要先保存string，加载type后再加载string
-                        var stringLocal= il.DeclareLocal(typeof(object));
+                        var stringLocal = il.DeclareLocal(typeof(object));
                         il.SteadOfLocal(stringLocal);
                         //加载enum的元数据令牌
-                        il.Emit(OpCodes.Ldtoken, toType);
+                        il.Emit(OpCodes.Ldtoken, tempToType);
                         //转为enum的type
                         il.Emit(OpCodes.Call, GetTypeFromHandleMethod);
                         //加载string
                         il.LoadLocal(stringLocal);
                         il.Emit(OpCodes.Ldc_I4_1);
                         il.Emit(OpCodes.Call, EnumParse);
-                        il.Emit(OpCodes.Unbox_Any, toType);
+                        il.Emit(OpCodes.Unbox_Any, tempToType);
+                        //如果是可控类型，则返回值要转为可空类型
+                        if (toTypeNullableType != null)
+                        {
+                            il.Emit(OpCodes.Newobj,toType.GetConstructor(new []{tempToType}));
+                        }
                         return;
                     }
-                    throw new Exception($"convert source type :{fromType.Name} to target type {toType.Name} error");
+
+                    throw new Exception(
+                        $"convert source type :{tempFromType.Name} to target type {tempToType.Name} error");
                 }
                 else
                 {
-                    il.Emit(OpCodes.Unbox_Any, toType);
+                    il.Emit(OpCodes.Unbox_Any, tempToType);
+                    //如果是可控类型，则返回值要转为可空类型
+                    if (toTypeNullableType != null)
+                    {
+                        il.Emit(OpCodes.Newobj,toType.GetConstructor(new []{tempToType}));
+                    }
                     return;
                 }
-               
             }
+
             //判断是否类型一致，一致就直接拆箱
-            if (fromType == toType)
+            if (tempFromType == tempToType)
             {
                 il.Emit(OpCodes.Unbox_Any, toType);
+
                 return;
             }
 
             //查找显式转换或者隐式转换方法
-            var fromOpMethod = fromType.GetMethods().FirstOrDefault(it =>
-                (it.Name == "op_Explicit" || it.Name == "op_Implicit") && it.ReturnType == toType &&
-                it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == fromType);
+            var fromOpMethod = tempFromType.GetMethods().FirstOrDefault(it =>
+                (it.Name == "op_Explicit" || it.Name == "op_Implicit") && it.ReturnType == tempToType &&
+                it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == tempFromType);
 
-            var toOpMethod = toType.GetMethods().FirstOrDefault(it =>
-                (it.Name == "op_Explicit" || it.Name == "op_Implicit") && it.ReturnType == toType &&
-                it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == fromType);
+            var toOpMethod = tempToType.GetMethods().FirstOrDefault(it =>
+                (it.Name == "op_Explicit" || it.Name == "op_Implicit") && it.ReturnType == tempToType &&
+                it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == tempFromType);
 
             var opMethod = fromOpMethod ?? toOpMethod;
             if (opMethod != null)
             {
-                il.Emit(OpCodes.Unbox_Any, fromType);
+                il.Emit(OpCodes.Unbox_Any, tempFromType);
                 il.Emit(OpCodes.Call, opMethod);
+                //如果是可控类型，则返回值要转为可空类型
+                if (toTypeNullableType != null)
+                {
+                    il.Emit(OpCodes.Newobj, toType.GetConstructor(new[] {tempToType}));
+                }
+
                 return;
             }
 
@@ -181,33 +229,44 @@ namespace SummerBoot.Core
             //判断是否为数值类型之间的转换，因为数值类型之间的转换，il提供了原生的语法
             var isNumberConvert = false;
             OpCode opCode = default;
-            if (fromType.IsNumberType() && toType.IsNumberType() && fromType != typeof(decimal) && toType != typeof(decimal))
+            if (tempFromType.IsNumberType() && tempToType.IsNumberType() && tempFromType != typeof(decimal) &&
+                tempToType != typeof(decimal))
             {
                 isNumberConvert = true;
 
-                switch (Type.GetTypeCode(toType))
+                switch (Type.GetTypeCode(tempToType))
                 {
                     case TypeCode.Byte:
-                        opCode = OpCodes.Conv_Ovf_I1_Un; break;
+                        opCode = OpCodes.Conv_Ovf_I1_Un;
+                        break;
                     case TypeCode.SByte:
-                        opCode = OpCodes.Conv_Ovf_I1; break;
+                        opCode = OpCodes.Conv_Ovf_I1;
+                        break;
                     case TypeCode.UInt16:
-                        opCode = OpCodes.Conv_Ovf_I2_Un; break;
+                        opCode = OpCodes.Conv_Ovf_I2_Un;
+                        break;
                     case TypeCode.Int16:
-                        opCode = OpCodes.Conv_Ovf_I2; break;
+                        opCode = OpCodes.Conv_Ovf_I2;
+                        break;
                     case TypeCode.UInt32:
-                        opCode = OpCodes.Conv_Ovf_I4_Un; break;
+                        opCode = OpCodes.Conv_Ovf_I4_Un;
+                        break;
                     case TypeCode.Boolean:
                     case TypeCode.Int32:
-                        opCode = OpCodes.Conv_Ovf_I4; break;
+                        opCode = OpCodes.Conv_Ovf_I4;
+                        break;
                     case TypeCode.UInt64:
-                        opCode = OpCodes.Conv_Ovf_I8_Un; break;
+                        opCode = OpCodes.Conv_Ovf_I8_Un;
+                        break;
                     case TypeCode.Int64:
-                        opCode = OpCodes.Conv_Ovf_I8; break;
+                        opCode = OpCodes.Conv_Ovf_I8;
+                        break;
                     case TypeCode.Single:
-                        opCode = OpCodes.Conv_R4; break;
+                        opCode = OpCodes.Conv_R4;
+                        break;
                     case TypeCode.Double:
-                        opCode = OpCodes.Conv_R8; break;
+                        opCode = OpCodes.Conv_R8;
+                        break;
                     default:
                         isNumberConvert = false;
                         break;
@@ -217,26 +276,31 @@ namespace SummerBoot.Core
             //数值类型
             if (isNumberConvert)
             {
-                il.Emit(OpCodes.Unbox_Any, fromType);
+                il.Emit(OpCodes.Unbox_Any, tempFromType);
                 il.Emit(opCode);
-                if (toType == typeof(bool))
+                if (tempToType == typeof(bool))
                 {
                     il.Emit(OpCodes.Ldc_I4_0);
                     il.Emit(OpCodes.Ceq);
                     il.Emit(OpCodes.Ldc_I4_0);
                     il.Emit(OpCodes.Ceq);
                 }
+
+                //如果是可控类型，则返回值要转为可空类型
+                if (toTypeNullableType != null)
+                {
+                    il.Emit(OpCodes.Newobj, toType.GetConstructor(new[] {tempToType}));
+                }
             }
             //其他类型转换
             else
             {
-                il.Emit(OpCodes.Ldtoken, toType);
+                il.Emit(OpCodes.Ldtoken, tempToType);
                 il.Emit(OpCodes.Call, GetTypeFromHandleMethod);
                 il.Emit(OpCodes.Call, InvariantCulture);
                 il.Emit(OpCodes.Call, ConvertChangeTypeMethod);
                 il.Emit(OpCodes.Unbox_Any, toType);
             }
-
         }
 
         /// <summary>

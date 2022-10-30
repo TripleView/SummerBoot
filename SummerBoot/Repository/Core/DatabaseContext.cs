@@ -75,8 +75,8 @@ namespace SummerBoot.Repository.Core
                 var queryMemberCacheInfo = queryMemberCacheInfos[i];
                 var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
                 var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
-                var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
-                var unboxType = nullableEntityFieldType ?? entityFieldType;
+                // var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
+                // var unboxType = nullableEntityFieldType ?? entityFieldType;
                 var dbNullLabel= il.DefineLabel();
                 var finishLabel = il.DefineLabel();
                 il.Emit(OpCodes.Dup);// [target,target]
@@ -86,6 +86,7 @@ namespace SummerBoot.Repository.Core
                 il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
                 il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[target, target,dataReader,i]
                 il.Emit(OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
+                //判断返回值是否为dbnull，如果是，则跳转到结束
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.Emit(OpCodes.Isinst, typeof(DBNull));// [target, target, getItemValue, bool]
                 il.Emit(OpCodes.Brtrue_S, dbNullLabel);// [target, target, getItemValue]
@@ -93,20 +94,8 @@ namespace SummerBoot.Repository.Core
                 //对获取到的值进行备份,存到字段backUpObject里
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.SteadOfLocal(backUpObject);// [target, target, getItemValue]
-                if (unboxType.IsEnum)
-                {
-                    var enumType = Enum.GetUnderlyingType(unboxType);
-                }
-                else
-                {
-                    if (drFieldType == unboxType)
-                    {
-                        il.Emit(OpCodes.Unbox_Any, entityFieldType);// [target, target, real-type-value]
-                        il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
-                    }
-                   
-                }
-
+                il.ConvertTypeToTargetType(drFieldType,entityFieldType);// [target, target, realValue]
+                il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
                 il.Emit(OpCodes.Br_S, finishLabel);
 
 
@@ -125,6 +114,7 @@ namespace SummerBoot.Repository.Core
             il.SteadOfLocal(returnValueLocal);
 
             il.BeginCatchBlock(typeof(Exception));
+            //此时栈顶元素为[exception]
             il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(ThrowRepositoryException)));
             il.EndExceptionBlock();
 

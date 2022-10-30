@@ -8,7 +8,7 @@ namespace SummerBoot.Core
 {
     public static partial class SbUtil
     {
-        private static MethodInfo CheckIsBoxMethod = typeof(SbUtil).GetMethod(nameof(SbUtil.CheckIsBox)),
+        public static MethodInfo CheckIsBoxMethod = typeof(SbUtil).GetMethod(nameof(SbUtil.CheckIsBox)),
 
             GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)),
 
