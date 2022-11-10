@@ -41,6 +41,7 @@ namespace SummerBoot.Test.SqlServer
             InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
             var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+          
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {

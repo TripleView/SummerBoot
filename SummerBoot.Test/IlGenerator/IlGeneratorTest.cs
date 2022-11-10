@@ -18,15 +18,109 @@ using SummerBoot.Test.IlGenerator.Dto;
 using BindingFlags = System.Reflection.BindingFlags;
 using Type = System.Type;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace SummerBoot.Test.IlGenerator
 {
     public class IlGeneratorTest
     {
+
+        public object TDete(object obj, IlPerson person, ref int tt)
+        {
+            var c = (int)obj;
+            int ccc = 33;
+            ref int a =ref ccc;
+            return person;
+        }
+        public delegate object Dete(object obj, IlPerson person, ref int tt);
+
         /// <summary>
-        /// 测试引用类型传递
+        /// 测试unbox指令，该指令作用为，将堆栈顶部的对象引用，拆箱为一个值类型指针，即ref类型，主要用在结构体赋值中。
         /// </summary>
         [Fact]
+        public static void TestUnbox()
+        {
+             
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object), new Type[]{typeof(object), typeof(int) });
+            var ageProp = typeof(IlValueTypeItem).GetProperty(nameof(IlValueTypeItem.Age)).GetSetMethod();
+            var il = dynamicMethod.GetILGenerator();
+            var local = il.DeclareLocal(typeof(IlValueTypeItem).MakeByRefType());
+          
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Unbox, typeof(IlValueTypeItem));
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Call,ageProp);
+
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<object, int, object>) dynamicMethod.CreateDelegate(typeof(Func<object,int, object>));
+            var valueItem = new IlValueTypeItem()
+            {
+                Age = 30,
+                Name = "ppx"
+            };
+            var re = dd(valueItem, 10);
+            Assert.Equal(10, ((IlValueTypeItem)re).Age);
+        }
+
+        /// <summary>
+        /// 测试ref传参，使用stind指令来设置指针，先推送地址到堆栈，再推送值，然后调用stind指令，会把值赋给相应的地址，堆栈清空
+        /// </summary>
+        [Fact]
+        public static void TestRefAndStind()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object), new Type[] { typeof(object), typeof(IlPerson), typeof(int).MakeByRefType() });
+            // var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),Type.EmptyTypes);
+            var ageProp = typeof(IlPerson).GetProperty(nameof(IlPerson.Age)).GetSetMethod();
+            var il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Unbox_Any, typeof(int));
+            il.Emit(OpCodes.Stind_I4);
+            
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Unbox_Any, typeof(int));
+            //il.Emit(OpCodes.Starg_S,2);
+            //il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, ageProp);
+            il.Emit(OpCodes.Ret);
+            //var refType= Expression.GetFuncType(typeof(object), typeof(int).MakeByRefType());
+            //var dd = dynamicMethod.CreateDelegate(refType);
+            //var dd = (Func<object, IlPerson, object>) dynamicMethod.CreateDelegate(typeof(Func<object, IlPerson, object>));
+            var dd = (Dete)dynamicMethod.CreateDelegate(typeof(Dete));
+
+            var ilPerson = new IlPerson()
+            {
+                Age = 3,
+                Name = "何泽平"
+            };
+            int intValue = 6;
+            var re = dd(10, ilPerson, ref intValue);
+            //var c2 = re.GetType();
+            Assert.Equal(10, intValue);
+        }
+
+        [Fact]
+        public static void TestMatch()
+        {
+            int intV2 = 10;
+            ref int intV=ref intV2;
+            intV = 20;
+
+           var a  = new Regex(@"(?<![\p{L}\p{N}_])\{=([\p{L}\p{N}_]+)\}",
+                RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant |
+                RegexOptions.Compiled);
+           var sql = "select a.age,a.name from a where a.name=@ppx";
+           var c= a.Matches(sql);
+        }
+
+
+    /// <summary>
+    /// 测试引用类型传递
+    /// </summary>
+    [Fact]
         public static void TestReferenceModelUpdate()
         {
             var person = new IlPerson()
@@ -380,7 +474,7 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestIsInstance()
         {
-            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(bool),
+            var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(bool),
                 Type.EmptyTypes);
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();

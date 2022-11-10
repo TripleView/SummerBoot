@@ -9,6 +9,7 @@ namespace SummerBoot.Test.IlGenerator.Dto
     public struct IlValueTypeItem
     {
         public string Name { get; set; }
+        public int Age { get; set; }
     }
 
     public class IlResult
