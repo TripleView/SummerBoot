@@ -10,6 +10,11 @@ namespace SummerBoot.Repository
 {
     public class RepositoryOption
     {
+        /// <summary>
+        /// sql语句里的参数标识符
+        /// </summary>
+        public static List<char> ParameterIdentifiers = new List<char>() { '@', ':', '?' };
+
         private Type dbConnectionType;
 
         private string connectionString;

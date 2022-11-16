@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using SummerBoot.Core.Utils.Reflection;
 using SummerBoot.Repository;
 
 namespace SummerBoot.Core
@@ -178,6 +179,12 @@ namespace SummerBoot.Core
             return (TResult)result;
         }
 
+        public static TResult GetPropertyValueByEmit<T, TResult>(this T model, string propertyName)
+        {
+            var result = GetPropertyValueByEmit(model, propertyName);
+            return (TResult)result;
+        }
+
         public static ConcurrentDictionary<string, object> CacheDictionary = new ConcurrentDictionary<string, object>();
         public static ConcurrentDictionary<string, Delegate> CacheDelegateDictionary = new ConcurrentDictionary<string, Delegate>();
         /// <summary>
@@ -197,7 +204,7 @@ namespace SummerBoot.Core
                 throw new ArgumentNullException($"could not find property with name {propertyName}");
             }
 
-            var key = "get:" + type.FullName + property.Name;
+            var key = "GetPropertyValue:" + type.FullName + property.Name;
             if (CacheDictionary.TryGetValue(key, out var func))
             {
                 return ((Delegate)func).DynamicInvoke(model);
@@ -209,6 +216,48 @@ namespace SummerBoot.Core
             var lambda = Expression.Lambda(convertExpression, modelExpression).Compile();
             var result = lambda.DynamicInvoke(model);
             CacheDictionary.TryAdd(key, lambda);
+            return result;
+        }
+
+        public static object GetPropertyValueByEmit<T>(this T model, string propertyName)
+        {
+            var type = model.GetType();
+            var property = type.GetProperty(propertyName);
+            if (property == null)
+            {
+                throw new ArgumentNullException($"could not find property with name {propertyName}");
+            }
+
+            var key = "GetPropertyValue2:" + type.FullName + property.Name;
+            if (CacheDictionary.TryGetValue(key, out var func))
+            {
+                return ((Delegate)func).DynamicInvoke(model);
+            }
+
+            var dynamicMethod = new DynamicMethod("GetPropertyValueByEmit" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[] { typeof(T) });
+
+            var il = dynamicMethod.GetILGenerator();
+
+            if (type.IsValueType)
+            {
+                il.Emit(OpCodes.Ldarga_S, 0);
+                il.Emit(OpCodes.Callvirt, property.GetGetMethod());
+                il.Emit(OpCodes.Box, property.PropertyType);
+            }
+            else
+            {
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Castclass,type);
+                il.Emit(OpCodes.Callvirt, property.GetGetMethod());
+                il.Emit(OpCodes.Box, property.PropertyType);
+            }
+           
+            il.Emit(OpCodes.Ret);
+
+            var lambda = dynamicMethod.CreateDelegate(typeof(Func<T, object>));
+            CacheDictionary.TryAdd(key, lambda);
+            var result = lambda.DynamicInvoke(model);
             return result;
         }
 
@@ -402,6 +451,113 @@ namespace SummerBoot.Core
         public static bool IsNumberType(this Type type)
         {
             return type.IsValueType && NumberTypeDic.ContainsKey(type);
+        }
+
+        /// <summary>
+        /// 缓存Type中提取出来的可写属性信息
+        /// </summary>
+        private static ConcurrentDictionary<Type, List<MemberInfoCache>> settingMemberInfoCaches =
+            new ConcurrentDictionary<Type, List<MemberInfoCache>>();
+        /// <summary>
+        /// 获取类型里的属性列表，仅支持属性
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static List<MemberInfoCache> GetMemberInfoCachesForSetting(this Type type)
+        {
+            if (settingMemberInfoCaches.TryGetValue(type, out var result))
+            {
+                return result;
+            }
+
+            lock (settingMemberInfoCaches)
+            {
+                if (settingMemberInfoCaches.TryGetValue(type, out result))
+                {
+                    return result;
+                }
+
+                result = new List<MemberInfoCache>();
+
+                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                    .ToList();
+
+                for (var i = 0; i < propertyInfos.Count; i++)
+                {
+                    var propertyInfo = propertyInfos[i];
+
+                    if (propertyInfo.GetIndexParameters().Length > 0)
+                    {
+                        continue;
+                    }
+
+                    var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
+                    var memberCacheInfo = new MemberInfoCache()
+                    {
+                        Name = columnAttribute?.Name ?? propertyInfo.Name,
+                        PropertyInfo = propertyInfo,
+                        PropertyName = propertyInfo.Name
+                    };
+                    result.Add(memberCacheInfo);
+                }
+
+                settingMemberInfoCaches.TryAdd(type, result);
+                return result;
+
+            }
+        }
+
+        /// <summary>
+        /// 缓存Type中提取出来的可读属性信息
+        /// </summary>
+        private static ConcurrentDictionary<Type, List<MemberInfoCache>> gettingMemberInfoCaches =
+            new ConcurrentDictionary<Type, List<MemberInfoCache>>();
+        /// <summary>
+        /// 获取类型里的属性列表，仅支持属性
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static List<MemberInfoCache> GetMemberInfoCachesForGetting(this Type type)
+        {
+            if (gettingMemberInfoCaches.TryGetValue(type, out var result))
+            {
+                return result;
+            }
+
+            lock (gettingMemberInfoCaches)
+            {
+                if (gettingMemberInfoCaches.TryGetValue(type, out result))
+                {
+                    return result;
+                }
+
+                result = new List<MemberInfoCache>();
+
+                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanRead && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                    .ToList();
+
+                for (var i = 0; i < propertyInfos.Count; i++)
+                {
+                    var propertyInfo = propertyInfos[i];
+
+                    if (propertyInfo.GetIndexParameters().Length> 0)
+                    {
+                        continue;
+                    }
+                    var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
+                    var memberCacheInfo = new MemberInfoCache()
+                    {
+                        Name = columnAttribute?.Name ?? propertyInfo.Name,
+                        PropertyInfo = propertyInfo,
+                        PropertyName = propertyInfo.Name
+                    };
+                    result.Add(memberCacheInfo);
+                }
+
+                gettingMemberInfoCaches.TryAdd(type, result);
+                return result;
+
+            }
         }
     }
 }

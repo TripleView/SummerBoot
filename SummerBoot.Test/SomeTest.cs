@@ -120,6 +120,78 @@ namespace SummerBoot.Test
         }
 
         [Fact]
+        public void TestCompareGetPropertyValueByEmitOrExpression()
+        {
+            var dog = new Dog()
+            {
+                Name = "sb"
+            };
+            var sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 1000000; i++)
+            {
+                var value = dog.GetPropertyValueByEmit("Name");
+            }
+            sw.Stop();
+            var time1 = sw.ElapsedMilliseconds;
+            //sw.Restart();
+            //for (int i = 0; i < 1000000; i++)
+            //{
+            //    var value = dog.GetPropertyValue("Name", pro, type);
+            //}
+            //sw.Stop();
+            //var time2 = sw.ElapsedMilliseconds;
+            //var diff = time1 - time2;
+        }
+
+
+        [Fact]
+        public void TestGetPropertyValueByEmit()
+        {
+            var dog = new Dog()
+            {
+                Name = "sb",
+                Active = null
+            };
+            var value = dog.GetPropertyValueByEmit<Dog, string>("Name");
+            Assert.Equal("sb", value);
+            var intValue = dog.GetPropertyValueByEmit<Dog, int?>("Active");
+            Assert.Equal(null, intValue);
+            dog.Active = 1;
+            intValue = dog.GetPropertyValueByEmit<Dog, int?>("Active");
+            Assert.Equal(1, intValue);
+            dog.Active = null;
+            var value2 = dog.GetPropertyValueByEmit("Name");
+            Assert.Equal("sb", value2.ToString());
+            var intValue2 = dog.GetPropertyValueByEmit<Dog, int?>("Active");
+            Assert.Equal(null, intValue2);
+            dog.Active = 1;
+            intValue2 = dog.GetPropertyValueByEmit<Dog, int?>("Active");
+            Assert.Equal(1, intValue2);
+        }
+
+        [Fact]
+        public void TestStructGetPropertyValueByEmit()
+        {
+            var dogStruct3 = new DogStruct3()
+            {
+                Name = "sb",
+                Age = 1
+            };
+
+            var value3 = dogStruct3.GetPropertyValueByEmit(nameof(dogStruct3.Name));
+            var value = dogStruct3.GetPropertyValueByEmit<DogStruct3, string>(nameof(dogStruct3.Name));
+            Assert.Equal("sb", value);
+            var value2 = dogStruct3.GetPropertyValueByEmit<DogStruct3, int?>(nameof(dogStruct3.Age));
+            Assert.Equal("sb", value);
+            Assert.Equal(1, value2);
+            //var value3 = dogStruct3.GetPropertyValueByEmit(nameof(dogStruct3.Name));
+            Assert.Equal("sb", value3.ToString());
+            var value4 = dogStruct3.GetPropertyValueByEmit(nameof(dogStruct3.Age));
+            Assert.Equal(1, value4);
+        }
+
+        [Fact]
         public void TestGetPropertyValueByExpression()
         {
             var dog = new Dog()
@@ -153,20 +225,20 @@ namespace SummerBoot.Test
             sw.Start();
             for (int i = 0; i < 10000; i++)
             {
-               var cls=  Activator.CreateInstance(type, args: new object[1] { "abc" });
+                var cls = Activator.CreateInstance(type, args: new object[1] { "abc" });
                 list1.Add(cls);
             }
             sw.Stop();
-            var l1=sw.ElapsedMilliseconds;
-            var func= SbUtil.BuildGenerateObjectDelegate(type.GetConstructors().FirstOrDefault());
+            var l1 = sw.ElapsedMilliseconds;
+            var func = SbUtil.BuildGenerateObjectDelegate(type.GetConstructors().FirstOrDefault());
             sw.Restart();
             for (int i = 0; i < 10000; i++)
             {
-                var cls= func.DynamicInvoke("abc");
+                var cls = func.DynamicInvoke("abc");
                 list2.Add(cls);
             }
             sw.Stop();
-            var l2=sw.ElapsedMilliseconds;
+            var l2 = sw.ElapsedMilliseconds;
             var diff = l1 - l2;
         }
     }

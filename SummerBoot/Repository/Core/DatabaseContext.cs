@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using SummerBoot.Core;
+using SummerBoot.Core.Utils.Reflection;
 using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository.Core
@@ -17,11 +18,7 @@ namespace SummerBoot.Repository.Core
     /// </summary>
     public static class DatabaseContext
     {
-        /// <summary>
-        /// 缓存Type中提取出来的属性信息
-        /// </summary>
-        private static ConcurrentDictionary<Type, List<MemberCacheInfo>> typeInfoCache =
-            new ConcurrentDictionary<Type, List<MemberCacheInfo>>();
+      
 
         //通过索引获取值
         private static readonly MethodInfo GetItem = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance)
@@ -147,11 +144,11 @@ namespace SummerBoot.Repository.Core
         /// <param name="dr"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        private static List<MemberCacheInfo> GetQueryMemberCacheInfos(IDataReader dr, Type type)
+        private static List<MemberInfoCache> GetQueryMemberCacheInfos(IDataReader dr, Type type)
         {
-            var memberCacheInfos = GetMemberCacheInfos(type);
+            var memberCacheInfos = type.GetMemberInfoCachesForSetting();
             var tableColNames = Enumerable.Range(0, dr.FieldCount).Select(it => new {name=dr.GetName(it),index=it}).ToList();
-            var result = new List<MemberCacheInfo>();
+            var result = new List<MemberInfoCache>();
             foreach (var info in memberCacheInfos)
             {
                 var tableColName = tableColNames.FirstOrDefault(it =>
@@ -168,47 +165,6 @@ namespace SummerBoot.Repository.Core
             return result;
         }
 
-        /// <summary>
-        /// 获取类型里的属性列表，仅支持属性
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private static List<MemberCacheInfo> GetMemberCacheInfos(Type type)
-        {
-            if (typeInfoCache.TryGetValue(type, out var result))
-            {
-                return result;
-            }
-
-            lock (lockObj)
-            {
-                if (typeInfoCache.TryGetValue(type, out result))
-                {
-                    return result;
-                }
-
-                result = new List<MemberCacheInfo>();
-
-                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType||it.PropertyType==typeof(string)))
-                    .ToList();
-
-                for (var i = 0; i < propertyInfos.Count; i++)
-                {
-                    var propertyInfo = propertyInfos[i];
-                    var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
-                    var memberCacheInfo = new MemberCacheInfo()
-                    {
-                        Name = columnAttribute?.Name ?? propertyInfo.Name,
-                        PropertyInfo = propertyInfo,
-                        PropertyName = propertyInfo.Name
-                    };
-                    result.Add(memberCacheInfo);
-                }
-
-                typeInfoCache.TryAdd(type, result);
-                return result;
-
-            }
-        }
+       
     }
 }

@@ -19,6 +19,8 @@ using BindingFlags = System.Reflection.BindingFlags;
 using Type = System.Type;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using SummerBoot.Test.Model;
+using IlPerson = SummerBoot.Test.IlGenerator.Dto.IlPerson;
 
 namespace SummerBoot.Test.IlGenerator
 {
@@ -32,6 +34,38 @@ namespace SummerBoot.Test.IlGenerator
             ref int a =ref ccc;
             return person;
         }
+
+
+        private class PrivateProperty
+        {
+            public int Test { get;private set; }
+        }
+        /// <summary>
+        /// 测试属性私有的情况下，是否可以赋值,结论是可以赋值,无论 set是否私有，都是CanWrite,没有set才不是canWrite。
+        /// </summary>
+        [Fact]
+        public static void TestPrivateProperty()
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
+                new Type[]{typeof(PrivateProperty) });
+         
+            var il = dynamicMethod.GetILGenerator();
+            
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldc_I4, 10);
+            il.Emit(OpCodes.Callvirt,typeof(PrivateProperty).GetProperties(BindingFlags.Instance|BindingFlags.Public).FirstOrDefault(it=>it.Name=="Test").SetMethod);
+            il.Emit(OpCodes.Ldc_I4, 10);
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<PrivateProperty,int>)dynamicMethod.CreateDelegate(typeof(Func<PrivateProperty,int>));
+            var param = new PrivateProperty()
+            {
+            
+            };
+            var re = dd(param);
+            Assert.Equal(10, re);
+        }
+
         public delegate object Dete(object obj, IlPerson person, ref int tt);
 
         /// <summary>
@@ -371,6 +405,7 @@ namespace SummerBoot.Test.IlGenerator
             {
                 conn.Open();
                 var cmd = conn.CreateCommand();
+               
                 try
                 {
                     cmd.CommandText = "DROP TABLE test";
@@ -469,19 +504,17 @@ namespace SummerBoot.Test.IlGenerator
         }
 
         /// <summary>
-        /// 测试测试对象引用是否为特定类的实例。
+        /// 测试测试对象引用是否为特定类的实例,bool测试，如果是，返回true，如果否，返回false
         /// </summary>
         [Fact]
-        public static void TestIsInstance()
+        public static void TestIsInstanceWithBool()
         {
             var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(bool),
                 Type.EmptyTypes);
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var objLocal = il.DeclareLocal(typeof(decimal));
-            //il.Emit(OpCodes.Ldc_I4_1);
-            //il.Emit(OpCodes.Ldc_I4, 10);
-            //il.Emit(OpCodes.Box, typeof(int));
+       
             il.Emit(OpCodes.Newobj, ctor);
             il.Emit(OpCodes.Isinst, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
@@ -489,6 +522,59 @@ namespace SummerBoot.Test.IlGenerator
             var dd = (Func<bool>)dynamicMethod.CreateDelegate(typeof(Func<bool>));
             var re = dd();
             Assert.True(re);
+        }
+
+        [Fact]
+        public static void TestIsInstanceWithObject()
+        {
+            var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(bool),
+                Type.EmptyTypes);
+            var ctor = typeof(object).GetConstructor(Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var objLocal = il.DeclareLocal(typeof(decimal));
+
+            il.Emit(OpCodes.Newobj, ctor);
+            il.Emit(OpCodes.Castclass,typeof(IlPerson));
+            il.Emit(OpCodes.Isinst, typeof(object));
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<bool>)dynamicMethod.CreateDelegate(typeof(Func<bool>));
+            var re = dd();
+            Assert.True(re);
+        }
+
+        /// <summary>
+        /// 测试测试对象引用是否为特定类的实例,如果是，类似于castClass的效果，否则返回空引用
+        /// </summary>
+        [Fact]
+        public static void TestIsInstanceWithClass()
+        {
+            var nullDynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(IlPerson),
+                Type.EmptyTypes);
+            var ctor2 = typeof(DogClass3).GetConstructor(Type.EmptyTypes);
+            var il2 = nullDynamicMethod.GetILGenerator();
+            var objLocal2 = il2.DeclareLocal(typeof(decimal));
+            il2.Emit(OpCodes.Newobj, ctor2);
+            il2.Emit(OpCodes.Isinst, typeof(IlPerson));
+            il2.Emit(OpCodes.Ret);
+
+            var nullDd = (Func<IlPerson>)nullDynamicMethod.CreateDelegate(typeof(Func<IlPerson>));
+            var re2 = nullDd();
+            Assert.Null(re2);
+
+            var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(IlPerson),
+                Type.EmptyTypes);
+            var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var objLocal = il.DeclareLocal(typeof(decimal));
+            il.Emit(OpCodes.Newobj, ctor);
+            il.Emit(OpCodes.Isinst, typeof(IlPerson));
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPerson>));
+            var re = dd();
+            Assert.NotNull(re);
+            Assert.Equal(0,re.Age);
         }
 
         /// <summary>
