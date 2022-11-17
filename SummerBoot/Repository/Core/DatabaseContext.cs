@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using SummerBoot.Core;
 using SummerBoot.Core.Utils.Reflection;
 using YamlDotNet.Core.Tokens;
@@ -165,6 +167,46 @@ namespace SummerBoot.Repository.Core
             return result;
         }
 
-       
+        /// <summary>
+        /// 给请求设置参数
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="parameters"></param>
+        public static void SetParameters(IDbCommand cmd, DynamicParameters parameters)
+        {
+           var databaseType=  cmd.Connection.GetDatabaseType();
+        }
+
+
+        /// <summary>
+        /// 获取数据库类型
+        /// </summary>
+        /// <param name="dbConnection"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static DatabaseType GetDatabaseType(this IDbConnection dbConnection)
+        {
+            var dbConnectionType = dbConnection.GetType();
+            var dbName = dbConnectionType.FullName;
+            if (dbName.ToLower().IndexOf("sqlite") > -1)
+            {
+                return DatabaseType.Sqlite;
+            }else if (dbName.ToLower().IndexOf("mysql") > -1)
+            {
+                return DatabaseType.Mysql;
+            }else if (dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("microsoft") > -1
+                      || (dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("system") > -1))
+            {
+                return DatabaseType.SqlServer;
+            }
+            else if(dbName.ToLower().IndexOf("oracle") > -1)
+            {
+                return DatabaseType.Oracle;
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(dbName));
+            }
+        }
     }
 }

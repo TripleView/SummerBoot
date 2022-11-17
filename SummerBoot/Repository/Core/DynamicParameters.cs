@@ -10,8 +10,8 @@ namespace SummerBoot.Repository.Core
 {
     public class DynamicParameters
     {
-        private readonly Dictionary<string, ParamInfo> paramInfos = new Dictionary<string, ParamInfo>();
-
+        private readonly Dictionary<string,ParamInfo> paramInfos = new Dictionary<string, ParamInfo>();
+        public Dictionary<string, ParamInfo> GetParamInfos => paramInfos;
         /// <summary>
         /// 清除参数名称里的参数标识符
         /// </summary>

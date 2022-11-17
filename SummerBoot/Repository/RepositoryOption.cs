@@ -138,7 +138,7 @@ namespace SummerBoot.Repository
             {
                 var dbName = DbConnectionType.FullName;
                 return dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("microsoft") > -1
-                       || dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("system") > -1;
+                       || (dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("system") > -1);
             }
         }
         public bool IsOracle

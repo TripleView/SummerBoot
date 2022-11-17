@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Reflection;
 using ExpressionParser.Test;
 using SummerBoot.Core;
 using SummerBoot.Test.Model;
 using Xunit;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SummerBoot.Test
 {
@@ -19,7 +23,87 @@ namespace SummerBoot.Test
     }
     public class SomeTest
     {
+        public interface IDynamicGenerateInterface
+        {
+            void Write(string a);
+        }
 
+        public class DynamicGenerateInterface : IDynamicGenerateInterface
+        {
+            public void Write(string a)
+            {
+                Debug.WriteLine(a);
+            }
+        }
+
+        /// <summary>
+        /// 测试动态生成interface并且注入到ioc容器里
+        /// </summary>
+        [Fact]
+        public void TestDynamicGenerateInterfaceAndInsertDependency()
+        {
+            var name = "ITest";
+            string assemblyName = name + "ProxyAssembly";
+            string moduleName = name + "ProxyModule";
+            string typeName = name + "Proxy";
+
+            AssemblyName assyName = new AssemblyName(assemblyName);
+            AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
+
+            var interface1 = GenerateInterface(modBuilder);
+            var f = GenerateClass(modBuilder, interface1);
+            ServiceCollection services = new ServiceCollection();
+            services.AddScoped(interface1, f);
+            var pro = services.BuildServiceProvider();
+            var c= (IDynamicGenerateInterface)pro.GetRequiredService(interface1);
+            typeof(IDynamicGenerateInterface).GetMethod(nameof(IDynamicGenerateInterface.Write))
+                .Invoke(c, parameters:new object[] { "abc" });
+            c.Write("456");
+
+        }
+
+        public Type GenerateInterface(ModuleBuilder modBuilder)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Interface |
+                                              TypeAttributes.Abstract |
+                                              TypeAttributes.AutoClass |
+                                              TypeAttributes.AnsiClass |
+                                              TypeAttributes.BeforeFieldInit |
+                                              TypeAttributes.AutoLayout;
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = Type.EmptyTypes;
+            parentType = typeof(IDynamicGenerateInterface);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("IProxy", newTypeAttribute, null, new Type[] { typeof(IDynamicGenerateInterface) });
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+        public Type GenerateClass(ModuleBuilder modBuilder,Type interface1)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = new Type[]{ interface1 };
+            parentType = typeof(DynamicGenerateInterface);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("Proxy", newTypeAttribute, parentType, interfaceTypes);
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+        /// <summary>
+        /// 测试动态生成interface并且注入到ioc容器里
+        /// </summary>
+       
 
         [Fact]
         public void TestGenerateObject()

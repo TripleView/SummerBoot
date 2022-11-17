@@ -30,28 +30,26 @@ namespace SummerBoot.Test.Cache
         public void TestAddValueParameter()
         {
             var param = new DynamicParameters();
-            //Assert.Throws<NotSupportedException>(() =>
-            //{
-            //    param.AddEntity(123);
-            //});
-            //Assert.Throws<NotSupportedException>(() =>
-            //{
-            //    param.AddEntity("123");
-            //});
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                param.AddEntity(123);
+            });
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                param.AddEntity("123");
+            });
             var structDog = new DogStruct3()
             {
                 Name = "何pp",
                 Age = 10
             };
-
-            if (structDog is DogStruct3 dd)
-            {
-
-            }
-            //var a1 = structDog.GetPropertyValueByEmit(nameof(DogStruct3.Name));
-            var a = ((object)structDog).GetPropertyValueByEmit(nameof(DogStruct3.Name));
-            //var b = structDog.GetPropertyValueByEmit(nameof(DogStruct3.Age));
             param.AddEntity(structDog);
+
+            var para = param.GetParamInfos;
+            Assert.Equal(3,para.Count);
+            Assert.Equal("何pp", para[nameof(DogStruct3.Name)].Value);
+            Assert.Equal(10, para[nameof(DogStruct3.Age)].Value);
+            Assert.Equal(null, para[nameof(DogStruct3.kind)].Value);
         }
 
     }

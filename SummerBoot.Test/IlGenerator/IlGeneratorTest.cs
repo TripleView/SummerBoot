@@ -27,6 +27,34 @@ namespace SummerBoot.Test.IlGenerator
     public class IlGeneratorTest
     {
 
+        /// <summary>
+        /// 测试为真则跳转，结论，只有数字0和null，以及false是假，其余都为真，特别强调，-1也为真
+        /// 
+        /// </summary>
+        [Fact]
+        public static void TestBrTrue()
+        {
+            var dynamicMethod = new DynamicMethod("TestBrTrue" + Guid.NewGuid().ToString("N"), typeof(int),
+                Type.EmptyTypes);
+
+            var il = dynamicMethod.GetILGenerator();
+            var isTrueLabel = il.DefineLabel();
+            var isFalseLabel = il.DefineLabel();
+
+            il.Emit(OpCodes.Ldnull);
+            //il.Emit(OpCodes.Ldc_I4, 0);
+            il.Emit(OpCodes.Brtrue_S, isTrueLabel);
+            il.Emit(OpCodes.Ldc_I4, 0);
+            il.Emit(OpCodes.Ret);
+            il.MarkLabel(isTrueLabel);
+            il.Emit(OpCodes.Ldc_I4, 10);
+            il.Emit(OpCodes.Ret);
+            var dd = (Func< int>)dynamicMethod.CreateDelegate(typeof(Func< int>));
+           
+            var re = dd();
+            Assert.Equal(10, re);
+        }
+
         public object TDete(object obj, IlPerson person, ref int tt)
         {
             var c = (int)obj;
