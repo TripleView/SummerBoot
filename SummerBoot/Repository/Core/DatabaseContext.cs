@@ -167,6 +167,7 @@ namespace SummerBoot.Repository.Core
             return result;
         }
 
+
         /// <summary>
         /// 给请求设置参数
         /// </summary>
@@ -175,6 +176,8 @@ namespace SummerBoot.Repository.Core
         public static void SetParameters(IDbCommand cmd, DynamicParameters parameters)
         {
            var databaseType=  cmd.Connection.GetDatabaseType();
+           var paramInfos= parameters.GetParamInfos;
+
         }
 
 

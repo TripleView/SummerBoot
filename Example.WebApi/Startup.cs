@@ -8,7 +8,9 @@ using Microsoft.OpenApi.Models;
 using SummerBoot.Core;
 using System;
 using System.Collections.Generic;
+using Example.WebApi.Model;
 using MySql.Data.MySqlClient;
+using Example.WebApi.Repository;
 
 namespace Example.WebApi
 {
@@ -36,11 +38,17 @@ namespace Example.WebApi
                 //注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
                 it.DbConnectionType = typeof(MySqlConnection);
                 //添加数据库连接字符串
-                it.ConnectionString = "Server=localhost;Database=test2;User ID=root;Password=123456;";
+                it.ConnectionString = "Server=localhost;Database=test;User ID=root;Password=123456;AllowLoadLocalInfile=true";
+                
+                it.AddDatabaseUnit<MySqlConnection, ITestUnitOfWork>("Server=localhost;Database=test;User ID=root;Password=123456;AllowLoadLocalInfile=true",
+                    x=>
+                    {
+                        x.Bind<ICustomerRepository, Customer>();
+                    });
             });
 
             services.AddSummerBootFeign(it => it.AddNacos(Configuration));
-
+          
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "sukcore后台Api", Version = "v1" });

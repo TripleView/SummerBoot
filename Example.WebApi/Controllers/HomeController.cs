@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using SummerBoot.Repository;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 
@@ -26,12 +27,16 @@ namespace Example.WebApi.Controllers
         private readonly ICustomerRepository customerRepository;
         private readonly IDbGenerator dbGenerator;
         private readonly IConfiguration configuration;
+        private readonly ITestUnitOfWork testUnitOfWork;
+        private readonly IBaseRepository<Customer> baseRepository;
 
-        public HomeController(ICustomerRepository customerRepository, IDbGenerator dbGenerator, IConfiguration configuration)
+        public HomeController(IConfiguration configuration, ITestUnitOfWork testUnitOfWork, IBaseRepository<Customer> baseRepository)
         {
             this.customerRepository = customerRepository;
             this.dbGenerator = dbGenerator;
             this.configuration = configuration;
+            this.testUnitOfWork = testUnitOfWork;
+            this.baseRepository = baseRepository;
         }
 
         [HttpGet("test")]
@@ -78,6 +83,34 @@ namespace Example.WebApi.Controllers
         [HttpGet("TestConfiguration")]
         public IActionResult TestConfiguration()
         {
+            //var results = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
+            //var generateClasses = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer" }, "Test.Model");
+            //foreach (var databaseSqlResult in results)
+            //{
+            //    dbGenerator.ExecuteGenerateSql(databaseSqlResult);
+            //}
+
+            var cusotmer = new Customer()
+            {
+                Name = "三合",
+                Age = 3,
+                CustomerNo = "00001",
+                Address = "福建省",
+                TotalConsumptionAmount = 999
+            };
+            //增
+            baseRepository.Insert(cusotmer);
+            //改
+            cusotmer.Age = 5;
+            baseRepository.Update(cusotmer);
+            //也可以这样改
+            baseRepository.Where(it => it.Name == "三合").SetValue(it => it.Age, 6).ExecuteUpdate();
+            //查
+            var dbCustomer = baseRepository.FirstOrDefault(it => it.Name == "三合");
+            //删
+            baseRepository.Delete(dbCustomer);
+            //也可以这样删
+            baseRepository.Delete(it => it.Name == "三合");
             return Content(configuration["a"]);
         }
         [HttpGet("TestConfiguration2")]

@@ -7,7 +7,7 @@ namespace SummerBoot.Repository
     /// <summary>
     /// 数据源接口
     /// </summary>
-    public interface IDataSource:IInitializing,IDisposable
+    public interface IDataSource:IDisposable
     {
         IDbConnection GetConnection();
         IDbConnection GetConnection(string connectionString);

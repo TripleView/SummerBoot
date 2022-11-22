@@ -15,7 +15,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <param name="select"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static IRepository<T> SetValue<T>(this IQueryable<T> source2, Expression<Func<T, object>> select,object value)
+        public static IRepository<T> SetValue<T>(this IQueryable<T> source2, Expression<Func<T, object>> select, object value)
         {
             if (!(source2 is IRepository<T> source))
             {

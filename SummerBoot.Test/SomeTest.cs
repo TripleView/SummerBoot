@@ -27,12 +27,37 @@ namespace SummerBoot.Test
         {
             void Write(string a);
         }
-
+        public interface IDynamicGenerateInterface2: IDynamicGenerateInterface
+        {
+        }
         public class DynamicGenerateInterface : IDynamicGenerateInterface
         {
             public void Write(string a)
             {
                 Debug.WriteLine(a);
+            }
+        }
+
+        public class SecondDynamicGenerateInterface
+        {
+            private readonly IDynamicGenerateInterface dynamicGenerateInterface;
+
+            public SecondDynamicGenerateInterface(IDynamicGenerateInterface dynamicGenerateInterface)
+            {
+                this.dynamicGenerateInterface = dynamicGenerateInterface;
+            }
+
+            public void Write(string a)
+            {
+                dynamicGenerateInterface.Write(a);
+            }
+        }
+
+        public class Three: SecondDynamicGenerateInterface
+        {
+            public Three(IDynamicGenerateInterface2 a2):base(a2)
+            {
+                
             }
         }
 
@@ -52,15 +77,48 @@ namespace SummerBoot.Test
             ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
 
             var interface1 = GenerateInterface(modBuilder);
-            var f = GenerateClass(modBuilder, interface1);
+            var class1 = GenerateClass(modBuilder, interface1);
+            var child = GenerateClassWithSpecialConstructor(modBuilder, interface1);
+
             ServiceCollection services = new ServiceCollection();
-            services.AddScoped(interface1, f);
+            services.AddScoped(interface1, class1);
+            services.AddScoped(child);
             var pro = services.BuildServiceProvider();
             var c= (IDynamicGenerateInterface)pro.GetRequiredService(interface1);
-            typeof(IDynamicGenerateInterface).GetMethod(nameof(IDynamicGenerateInterface.Write))
-                .Invoke(c, parameters:new object[] { "abc" });
             c.Write("456");
+            var d =(SecondDynamicGenerateInterface) pro.GetRequiredService(child);
+          
+            //(IDynamicGenerateInterface)
+                 d.Write("789");
+        }
 
+        public Type GenerateClassWithSpecialConstructor(ModuleBuilder modBuilder,Type constructorType)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = Type.EmptyTypes;
+            parentType = typeof(SecondDynamicGenerateInterface);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("GenerateClassWithSpecialConstructor", newTypeAttribute, parentType, interfaceTypes);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+           var constructor= typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { constructorType });
+           var conIl= constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
         }
 
         public Type GenerateInterface(ModuleBuilder modBuilder)

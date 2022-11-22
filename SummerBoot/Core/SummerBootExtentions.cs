@@ -35,6 +35,9 @@ using SummerBoot.Repository.TypeHandler.Dialect.SqlServer;
 using Guid = System.Guid;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Xml.Linq;
 
 namespace SummerBoot.Core
 {
@@ -122,17 +125,48 @@ namespace SummerBoot.Core
 
             action(option);
 
+            if (option.DatabaseUnits.Count == 0)
+            {
+                throw new ArgumentNullException("please add database");
+            }
+
+            var name = "Repository";
+            string assemblyName = name + "ProxyAssembly";
+            string moduleName = name + "ProxyModule";
+            string typeName = name + "Proxy";
+
+            AssemblyName assyName = new AssemblyName(assemblyName);
+            AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
+
+            //添加数据库单元
+            foreach (var optionDatabaseUnit in option.DatabaseUnits)
+            {
+                
+                //动态生成IDbFactory接口类型
+                var iCustomDbFactoryType = GenerateCustomDbFactoryInterface(modBuilder);
+                //注册工厂
+                AddSummerBootRepositoryCustomDbFactory(services, iCustomDbFactoryType, optionDatabaseUnit.Value, modBuilder);
+                //动态生成ICustomUnitOfWork接口类型
+                var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, optionDatabaseUnit.Value.IUnitOfWorkType);
+                //注册工作单元
+                services.AddScoped(optionDatabaseUnit.Value.IUnitOfWorkType, customUnitOfWorkType);
+                //动态生成仓储基类
+                var customBaseRepository= GenerateCustomBaseRepository(modBuilder, optionDatabaseUnit.Value.IUnitOfWorkType, iCustomDbFactoryType);
+                services.AddScoped(typeof(IBaseRepository<>),customBaseRepository);
+            }
+
             if (option.ConnectionString.IsNullOrWhiteSpace()) throw new Exception("ConnectionString is Require");
 
             if (option.DbConnectionType == null) throw new Exception("DbConnectionType is Require");
 
             ResetDapperSqlMapperTypeMapDictionary();
+            services.AddSingleton(t => option);
+            RepositoryOption.Instance = option;
+            return services;
 
             services.TryAddScoped<IDbFactory, DbFactory>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddSingleton(t => option);
-            RepositoryOption.Instance = option;
-
             services.AddScoped(typeof(BaseRepository<>));
             //services.AddSbSingleton<IDataSource, DruidDataSource>();
             services.AddScoped<RepositoryService>();
@@ -253,7 +287,7 @@ namespace SummerBoot.Core
                 services.AddTransient<IDatabaseInfo, SqliteDatabaseInfo>();
             }
 
-
+            
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
 
             var autoRepositoryTypes = new List<Type>();
@@ -409,6 +443,157 @@ namespace SummerBoot.Core
             services.Add(serviceDescriptor);
 
             return services;
+        }
+
+
+        /// <summary>
+        /// 添加自定义数据工厂接口和自定义数据工厂到ioc容器
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="serviceType"></param>
+        /// <param name="databaseUnit"></param>
+        /// <param name="modBuilder"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        private static IServiceCollection AddSummerBootRepositoryCustomDbFactory( IServiceCollection services, Type serviceType,
+            DatabaseUnit databaseUnit, ModuleBuilder modBuilder)
+        {
+            if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
+
+            object Factory(IServiceProvider provider)
+            {
+                var customDbFactoryType= GenerateCustomDbFactory(modBuilder,serviceType);
+                var customDbFactory= customDbFactoryType.CreateInstance(new object[]{ databaseUnit });
+                return customDbFactory;
+            };
+
+            var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, ServiceLifetime.Scoped);
+            services.Add(serviceDescriptor);
+
+            return services;
+        }
+
+        private static Type GenerateCustomDbFactory(ModuleBuilder modBuilder, Type interface1)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = new Type[] { interface1 };
+            parentType = typeof(CustomDbFactory);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomDbFactory" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { typeof(DatabaseUnit) });
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+        private static Type GenerateCustomUnitOfWork(ModuleBuilder modBuilder, Type constructorType,Type interfaceType)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = new Type[]{interfaceType};
+            parentType = typeof(UnitOfWork);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomUnitOfWork"+Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] {typeof(ILogger<UnitOfWork>), constructorType });
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+        /// <summary>
+        /// 生成特殊仓储基类
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="constructorType"></param>
+        /// <param name="interfaceType"></param>
+        /// <returns></returns>
+        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type ICustomDbFactoryType)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = Type.EmptyTypes;
+            parentType = typeof(CustomBaseRepository<>);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomBaseRepository" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+            string[] typeParamNames = { "T"};
+            GenericTypeParameterBuilder[] typeParams =
+                typeBuilder.DefineGenericParameters(typeParamNames);
+
+            GenericTypeParameterBuilder TFirst = typeParams[0];
+            TFirst.SetGenericParameterAttributes(
+                GenericParameterAttributes.ReferenceTypeConstraint);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
+            
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+        /// <summary>
+        /// 生成自定义的dbFactory接口
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <returns></returns>
+        private static Type GenerateCustomDbFactoryInterface(ModuleBuilder modBuilder)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Interface |
+                                              TypeAttributes.Abstract |
+                                              TypeAttributes.AutoClass |
+                                              TypeAttributes.AnsiClass |
+                                              TypeAttributes.BeforeFieldInit |
+                                              TypeAttributes.AutoLayout;
+            
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("ICustomDbFactory"+Guid.NewGuid().ToString("N"), newTypeAttribute, null, new Type[] { typeof(IDbFactory) });
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
         }
 
         public static IServiceCollection AddSummerBootCache(this IServiceCollection services,
