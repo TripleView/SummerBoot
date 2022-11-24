@@ -394,11 +394,11 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// 设置类型映射
+        /// 设置参数类型映射
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dbType"></param>
-        public void SetTypeMap(Type type,DbType? dbType)
+        public void SetParameterTypeMap(Type type,DbType? dbType)
         {
             if (this.DefaultParameterTypeMaps.ContainsKey(type))
             {

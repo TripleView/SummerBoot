@@ -418,11 +418,21 @@ namespace SummerBoot.Test.IlGenerator
         }
 
         /// <summary>
+        /// 测试可空值类型是否为值类型,结论为真，是值类型
+        /// </summary>
+        [Fact]
+        public static void TestNullableValueType()
+        {
+            Assert.Equal(true, typeof(int?).IsValueType);
+        }
+
+        /// <summary>
         /// 测试反射获取属性
         /// </summary>
         [Fact]
         public static void TestReader()
         {
+
             var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {

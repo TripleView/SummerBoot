@@ -30,6 +30,13 @@ namespace SummerBoot.Repository.Core
 
         private static object lockObj = new object();
 
+        /// <summary>
+        /// 读取dataReader转化为type类型
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="dr"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr)
         {
             var dynamicMethod = new DynamicMethod("GetTypeDeserializer" + Guid.NewGuid().ToString("N"), typeof(object),
