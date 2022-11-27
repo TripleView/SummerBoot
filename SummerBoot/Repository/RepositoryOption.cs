@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using StackExchange.Redis;
 using SummerBoot.Core;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository
 {
@@ -376,14 +377,21 @@ namespace SummerBoot.Repository
             }}
         };
 
-        public Dictionary<Type, DbType?> DefaultParameterTypeMaps { get; }
+        public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
+
+        public static Dictionary<Guid, Dictionary<Type, ITypeHandler>> TypeHandlers { get; } =
+            new Dictionary<Guid, Dictionary<Type, ITypeHandler>>();
+
+        public Guid Id { private set; get; }
 
         public DatabaseUnit(Type iUnitOfWorkType, Type dbConnectionType, string connectionString)
         {
             this.IUnitOfWorkType = iUnitOfWorkType;
             this.DbConnectionType = dbConnectionType;
             this.ConnectionString = connectionString;
-            this.DefaultParameterTypeMaps = AllDatabaseParameterTypeMaps[DatabaseType];
+            this.ParameterTypeMaps = AllDatabaseParameterTypeMaps[DatabaseType];
+            this.Id = Guid.NewGuid();
+            TypeHandlers.Add(Id,new Dictionary<Type, ITypeHandler>());
         }
         public Type IUnitOfWorkType { get; }
         public List<Type> BindRepositoryTypes { get; private set; } = new List<Type>();
@@ -398,16 +406,28 @@ namespace SummerBoot.Repository
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dbType"></param>
-        public void SetParameterTypeMap(Type type,DbType? dbType)
+        public void SetParameterTypeMap(Type type, DbType? dbType)
         {
-            if (this.DefaultParameterTypeMaps.ContainsKey(type))
+            if (this.ParameterTypeMaps.ContainsKey(type))
             {
-                this.DefaultParameterTypeMaps[type] = dbType;
+                this.ParameterTypeMaps[type] = dbType;
             }
             else
             {
-                this.DefaultParameterTypeMaps.Add(type,dbType);
+                this.ParameterTypeMaps.Add(type, dbType);
             }
+        }
+
+        /// <summary>
+        /// 设置自定义的将值转换为数据库参数和将数据库返回的值解析为目标值的映射关系
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
+        /// <param name="t"></param>
+        public void SetTypeHandler<T>(Type type, T t) where T : ITypeHandler
+        {
+
+            TypeHandlers[this.Id][type]= t;
         }
 
         /// <summary>

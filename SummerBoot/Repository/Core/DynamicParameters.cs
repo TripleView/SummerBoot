@@ -10,6 +10,12 @@ namespace SummerBoot.Repository.Core
 {
     public class DynamicParameters
     {
+        public DynamicParameters() { }
+
+        public DynamicParameters(object entity)
+        {
+            this.AddEntity(entity);
+        }
         private readonly Dictionary<string,ParamInfo> paramInfos = new Dictionary<string, ParamInfo>();
         public Dictionary<string, ParamInfo> GetParamInfos => paramInfos;
         /// <summary>

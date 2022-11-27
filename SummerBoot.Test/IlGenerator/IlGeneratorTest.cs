@@ -18,7 +18,9 @@ using SummerBoot.Test.IlGenerator.Dto;
 using BindingFlags = System.Reflection.BindingFlags;
 using Type = System.Type;
 using System.Globalization;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using SummerBoot.Repository;
 using SummerBoot.Test.Model;
 using IlPerson = SummerBoot.Test.IlGenerator.Dto.IlPerson;
 
@@ -52,7 +54,7 @@ namespace SummerBoot.Test.IlGenerator
             var dd = (Func< int>)dynamicMethod.CreateDelegate(typeof(Func< int>));
            
             var re = dd();
-            Assert.Equal(10, re);
+            Assert.Equal(0, re);
         }
 
         public object TDete(object obj, IlPerson person, ref int tt)
@@ -454,23 +456,28 @@ namespace SummerBoot.Test.IlGenerator
                 }
 
                 cmd.CommandText = @"CREATE TABLE test (
+                id varchar(100),
                 Name varchar(100) NULL,
                 Age INT NULL
                     )";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age) VALUES (null,30)";
+                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES (null,30,'"+Guid.NewGuid().ToString("N")+"')";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age) VALUES ('何泽平',30)";
+                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString("N") + "')";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
                 var list = new List<IlPerson>();
+                
+
+                var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+                databaseUnit.SetTypeHandler(typeof(Guid),new GuidTypeHandler());
 
                 while (dr.Read())
                 {
                     //var c = dr.GetFieldType(0);
                     //var c1 = dr.GetFieldType(1);
-                    var func= DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr);
+                    var func= DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr, databaseUnit);
                     var result = func(dr);
                     list.Add((IlPerson) result);
                 }

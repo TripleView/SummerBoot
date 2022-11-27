@@ -37,7 +37,7 @@ namespace SummerBoot.Repository.Core
         /// <param name="dr"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public static Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr)
+        public static Func<IDataReader, object> GetTypeDeserializer(Type type, IDataReader dr,DatabaseUnit databaseUnit)
         {
             var dynamicMethod = new DynamicMethod("GetTypeDeserializer" + Guid.NewGuid().ToString("N"), typeof(object),
                 new Type[] { typeof(IDataReader) });
@@ -46,6 +46,7 @@ namespace SummerBoot.Repository.Core
             var returnValueLocal = il.DeclareLocal(type);
            var tyrLabel= il.BeginExceptionBlock();//try
                                      //定义返回值
+
 
             if (type.IsValueType)
             {
@@ -81,8 +82,10 @@ namespace SummerBoot.Repository.Core
                 var queryMemberCacheInfo = queryMemberCacheInfos[i];
                 var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
                 var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
-                // var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
-                // var unboxType = nullableEntityFieldType ?? entityFieldType;
+                var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
+                //实际类型
+                var realType = nullableEntityFieldType ?? entityFieldType;
+                
                 var dbNullLabel= il.DefineLabel();
                 var finishLabel = il.DefineLabel();
                 il.Emit(OpCodes.Dup);// [target,target]
@@ -100,7 +103,26 @@ namespace SummerBoot.Repository.Core
                 //对获取到的值进行备份,存到字段backUpObject里
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.SteadOfLocal(backUpObject);// [target, target, getItemValue]
-                il.ConvertTypeToTargetType(drFieldType,entityFieldType);// [target, target, realValue]
+
+                if (DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(realType))
+                {
+                    var typeHandlerType= DatabaseUnit.TypeHandlers[databaseUnit.Id][realType].GetType();
+                    il.Emit(OpCodes.Call, typeHandlerType.GetMethod(nameof(ITypeHandler.Parse)));
+                    if (nullableEntityFieldType != null)
+                    {
+
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Unbox_Any, realType);
+                    }
+                    
+                }
+                else
+                {
+                    il.ConvertTypeToTargetType(drFieldType, entityFieldType);// [target, target, realValue]
+                }
+               
                 il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
                 il.Emit(OpCodes.Br_S, finishLabel);
 
