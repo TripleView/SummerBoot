@@ -10,6 +10,7 @@ using SummerBoot.Test.Model;
 using Xunit;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.DependencyInjection;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Test
 {
@@ -21,6 +22,15 @@ namespace SummerBoot.Test
         }
         public string Name { get; set; }
     }
+
+    public static class StaticClass
+    {
+        public static int Test()
+        {
+            return 123;
+        }
+    }
+
     public class SomeTest
     {
         public interface IDynamicGenerateInterface
@@ -59,6 +69,64 @@ namespace SummerBoot.Test
             {
                 
             }
+        }
+
+
+        /// <summary>
+        /// 动态生成静态类，并添加2个方法,实验结论Ldsfld可以直接emit一个FieldBuilder
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="constructorType"></param>
+        /// <returns></returns>
+        [Fact]
+        public void GenerateStaticClass()
+        {
+            var c= typeof(StaticClass).Attributes;
+            var name = "ITest";
+            string assemblyName = name + "ProxyAssembly";
+            string moduleName = name + "ProxyModule";
+            string typeName = name + "Proxy";
+
+            AssemblyName assyName = new AssemblyName(assemblyName);
+            AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |TypeAttributes.Abstract|
+                                              TypeAttributes.Sealed|TypeAttributes.BeforeFieldInit|
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = Type.EmptyTypes;
+            parentType =null;
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("GenerateStaticClass", newTypeAttribute, parentType, interfaceTypes);
+
+            var staticField = typeBuilder.DefineField("handler", typeof(ITypeHandler),
+                FieldAttributes.Public | FieldAttributes.Static);
+
+            var staticIntField = typeBuilder.DefineField("intF", typeof(int),
+                FieldAttributes.Public | FieldAttributes.Static);
+            
+            var staticGetMethod= typeBuilder.DefineMethod("Get", MethodAttributes.Static | MethodAttributes.Public,
+                CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+            var ilG = staticGetMethod.GetILGenerator();
+            ilG.Emit(OpCodes.Ldsfld, staticIntField);
+            ilG.Emit(OpCodes.Ret);
+
+            var staticSetMethod = typeBuilder.DefineMethod("Set", MethodAttributes.Static | MethodAttributes.Public,
+                CallingConventions.Standard, null, new Type[]{typeof(int)});
+            var ilG2 = staticSetMethod.GetILGenerator();
+            ilG2.Emit(OpCodes.Ldarg_0);
+            ilG2.Emit(OpCodes.Stsfld, staticIntField);
+            ilG2.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            resultType.GetMethod("Set").Invoke(null, new object[1]{789});
+            var d= resultType.GetMethod("Get").Invoke(null, new object[0]);
+           
         }
 
         /// <summary>
