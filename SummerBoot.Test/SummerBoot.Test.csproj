@@ -47,7 +47,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="IlGenerator\Dto\" />
     <Folder Include="Model\" />
     <Folder Include="Cache\" />
   </ItemGroup>

@@ -106,16 +106,18 @@ namespace SummerBoot.Repository.Core
 
                 if (DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(realType))
                 {
-                    var typeHandlerType= DatabaseUnit.TypeHandlers[databaseUnit.Id][realType].GetType();
-                    il.Emit(OpCodes.Call, typeHandlerType.GetMethod(nameof(ITypeHandler.Parse)));
-                    if (nullableEntityFieldType != null)
-                    {
+                    //这里是一个静态类，可以直接调用。
+                    var typeHandlerCacheType = DatabaseUnit.TypeHandlers[databaseUnit.Id][realType];
+                    var c = typeHandlerCacheType.GetMethod("Parse");
+                    il.Emit(OpCodes.Call, typeHandlerCacheType.GetMethod("Parse"));
+                    //if (nullableEntityFieldType != null)
+                    //{
 
-                    }
-                    else
-                    {
-                        il.Emit(OpCodes.Unbox_Any, realType);
-                    }
+                    //}
+                    //else
+                    //{
+                    //    il.Emit(OpCodes.Unbox_Any, realType);
+                    //}
                     
                 }
                 else
@@ -239,6 +241,75 @@ namespace SummerBoot.Repository.Core
             {
                 throw new NotSupportedException(nameof(dbName));
             }
+        }
+
+        /// <summary>
+        /// 动态生成TypeHandlerCache类
+        /// </summary>
+        /// <returns></returns>
+        public static Type GenerateTypeHandlerCacheClass(Type defineType)
+        {
+            var name = "ITest";
+            string assemblyName = name + "ProxyAssembly";
+            string moduleName = name + "ProxyModule";
+            string typeName = name + "Proxy";
+
+            AssemblyName assyName = new AssemblyName(assemblyName);
+            AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public | TypeAttributes.Abstract |
+                                              TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = Type.EmptyTypes;
+            parentType = null;
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("GenerateTypeHandlerCacheClass", newTypeAttribute, parentType, interfaceTypes);
+
+            var typeParams = typeBuilder.DefineGenericParameters("T");
+
+            GenericTypeParameterBuilder first = typeParams[0];
+            //first.SetGenericParameterAttributes(
+            //    GenericParameterAttributes.ReferenceTypeConstraint);
+
+            var staticTypeHandlerField = typeBuilder.DefineField("handler", typeof(ITypeHandler<>).MakeGenericType(defineType),
+                FieldAttributes.Public | FieldAttributes.Static);
+
+            //SetValue方法
+            var staticSetValueMethod = typeBuilder.DefineMethod("SetValue", MethodAttributes.Static | MethodAttributes.Public,
+                CallingConventions.Standard, null, new Type[] { typeof(IDbDataParameter), defineType });
+            var ilGenerator = staticSetValueMethod.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldsfld, staticTypeHandlerField);
+            ilGenerator.Emit(OpCodes.Ldarg_0);
+            ilGenerator.Emit(OpCodes.Ldarg_1);
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(ITypeHandler<>).MakeGenericType(defineType).GetMethod("SetValue"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            //SetHandler方法
+            var staticSetMethod = typeBuilder.DefineMethod("SetHandler", MethodAttributes.Static | MethodAttributes.Public,
+                CallingConventions.Standard, null, new Type[] { typeof(ITypeHandler<>).MakeGenericType(defineType) });
+            var ilG2 = staticSetMethod.GetILGenerator();
+            ilG2.Emit(OpCodes.Ldarg_0);
+            ilG2.Emit(OpCodes.Stsfld, staticTypeHandlerField);
+            ilG2.Emit(OpCodes.Ret);
+
+            //Parse方法
+            var staticParseMethod = typeBuilder.DefineMethod("Parse", MethodAttributes.Static | MethodAttributes.Public,
+                CallingConventions.Standard, defineType, new Type[] { typeof(object) });
+            var ilParseGenerator = staticParseMethod.GetILGenerator();
+            ilParseGenerator.Emit(OpCodes.Ldsfld, staticTypeHandlerField);
+            ilParseGenerator.Emit(OpCodes.Ldarg_0);
+            ilParseGenerator.Emit(OpCodes.Callvirt, typeof(ITypeHandler<>).MakeGenericType(defineType).GetMethod("Parse"));
+            ilParseGenerator.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            resultType = resultType.MakeGenericType(defineType);
+            return resultType;
         }
     }
 }

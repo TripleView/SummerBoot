@@ -379,8 +379,8 @@ namespace SummerBoot.Repository
 
         public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
 
-        public static Dictionary<Guid, Dictionary<Type, ITypeHandler>> TypeHandlers { get; } =
-            new Dictionary<Guid, Dictionary<Type, ITypeHandler>>();
+        public static Dictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
+            new Dictionary<Guid, Dictionary<Type, Type>>();
 
         public Guid Id { private set; get; }
 
@@ -391,7 +391,7 @@ namespace SummerBoot.Repository
             this.ConnectionString = connectionString;
             this.ParameterTypeMaps = AllDatabaseParameterTypeMaps[DatabaseType];
             this.Id = Guid.NewGuid();
-            TypeHandlers.Add(Id,new Dictionary<Type, ITypeHandler>());
+            TypeHandlers.Add(Id,new Dictionary<Type, Type>());
         }
         public Type IUnitOfWorkType { get; }
         public List<Type> BindRepositoryTypes { get; private set; } = new List<Type>();
@@ -424,10 +424,11 @@ namespace SummerBoot.Repository
         /// <typeparam name="T"></typeparam>
         /// <param name="type"></param>
         /// <param name="t"></param>
-        public void SetTypeHandler<T>(Type type, T t) where T : ITypeHandler
+        public void SetTypeHandler<T>(Type type, ITypeHandler<T> t)
         {
-
-            TypeHandlers[this.Id][type]= t;
+            var typeHandlerCacheType = DatabaseContext.GenerateTypeHandlerCacheClass(type);
+            typeHandlerCacheType.GetMethod("SetHandler").Invoke(null, new object[] { t });
+            TypeHandlers[this.Id][type]= typeHandlerCacheType;
         }
 
         /// <summary>

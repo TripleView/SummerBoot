@@ -28,6 +28,71 @@ namespace SummerBoot.Test.IlGenerator
 {
     public class IlGeneratorTest
     {
+        [Fact]
+        public void TestGenerateTypeHandlerCacheClass()
+        {
+            //var intTypeHandler = new IntTypeHandler();
+            //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+
+                try
+                {
+                    cmd.CommandText = "DROP TABLE test";
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                }
+
+                cmd.CommandText = @"CREATE TABLE test (
+                id varchar(100),
+                Name varchar(100) NULL,
+                Age INT NULL
+                    )";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString() + "')";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',29,'" + Guid.NewGuid().ToString() + "')";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "select * from test where age=@age";
+
+                var p1 = cmd.CreateParameter();
+                p1.ParameterName = "age";
+                p1.Value = 29;
+                cmd.Parameters.Add(p1);
+                
+                //cacheType.GetMethod("SetValue").Invoke(null, new object[] { p1, 29 });
+                IDbCommand a;
+                IDataReader dr = cmd.ExecuteReader();
+                var list = new List<IlPerson>();
+
+                var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+                databaseUnit.SetTypeHandler(typeof(int), new IntTypeHandler());
+                databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+                while (dr.Read())
+                {
+                    //var c = dr.GetFieldType(0);
+                    //var c1 = dr.GetFieldType(1);
+                    var func = DatabaseContext.GetTypeDeserializer(typeof(IlPerson), dr, databaseUnit);
+                    var result = func(dr);
+                    list.Add((IlPerson)result);
+                }
+
+                conn.Close();
+            }
+        }
 
         /// <summary>
         /// 测试为真则跳转，结论，只有数字0和null，以及false是假，其余都为真，特别强调，-1也为真
@@ -471,7 +536,7 @@ namespace SummerBoot.Test.IlGenerator
                 
 
                 var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
-                databaseUnit.SetTypeHandler(typeof(Guid),new GuidTypeHandler());
+                databaseUnit.SetTypeHandler(typeof(Guid),new IntTypeHandler());
 
                 while (dr.Read())
                 {

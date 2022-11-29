@@ -5,16 +5,20 @@ using System.Data;
 namespace SummerBoot.Test.IlGenerator
 {
 
-    public class GuidTypeHandler : ITypeHandler
+    public class GuidTypeHandler : ITypeHandler<Guid>
     {
-        public object Parse(Type targetType, object value)
+        public Guid Parse(object value)
         {
-            throw new NotImplementedException();
+            if (value is string str)
+            {
+                return Guid.Parse(str);
+            }
+            return Guid.NewGuid();
         }
 
-        public void SetValue(IDbDataParameter parameter, object value)
+        public void SetValue(IDbDataParameter parameter, Guid value)
         {
-            throw new NotImplementedException();
+            parameter.Value = value;
         }
     }
 }

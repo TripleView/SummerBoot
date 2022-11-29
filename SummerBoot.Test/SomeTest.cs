@@ -11,6 +11,8 @@ using Xunit;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Repository.Core;
+using System.Data;
+using SummerBoot.Test.IlGenerator;
 
 namespace SummerBoot.Test
 {
@@ -25,9 +27,11 @@ namespace SummerBoot.Test
 
     public static class StaticClass
     {
-        public static int Test()
+        private static ITypeHandler<int> Int3;
+        public static int Test(int value)
         {
-            return 123;
+            Int3.SetValue(null,value);
+            return 3;
         }
     }
 
@@ -37,7 +41,7 @@ namespace SummerBoot.Test
         {
             void Write(string a);
         }
-        public interface IDynamicGenerateInterface2: IDynamicGenerateInterface
+        public interface IDynamicGenerateInterface2 : IDynamicGenerateInterface
         {
         }
         public class DynamicGenerateInterface : IDynamicGenerateInterface
@@ -63,17 +67,16 @@ namespace SummerBoot.Test
             }
         }
 
-        public class Three: SecondDynamicGenerateInterface
+        public class Three : SecondDynamicGenerateInterface
         {
-            public Three(IDynamicGenerateInterface2 a2):base(a2)
+            public Three(IDynamicGenerateInterface2 a2) : base(a2)
             {
-                
+
             }
         }
 
-
         /// <summary>
-        /// 动态生成静态类，并添加2个方法,实验结论Ldsfld可以直接emit一个FieldBuilder
+        /// 动态生成静态类，并添加2个方法,实验结论Ldsfld可以直接emit一个FieldBuilder,static方法中Ldarg_0为参数，class的方法里，则为class本身
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="constructorType"></param>
@@ -81,7 +84,7 @@ namespace SummerBoot.Test
         [Fact]
         public void GenerateStaticClass()
         {
-            var c= typeof(StaticClass).Attributes;
+            var c = typeof(StaticClass).Attributes;
             var name = "ITest";
             string assemblyName = name + "ProxyAssembly";
             string moduleName = name + "ProxyModule";
@@ -91,43 +94,53 @@ namespace SummerBoot.Test
             AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
             ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
             //新类型的属性
-            TypeAttributes newTypeAttribute = TypeAttributes.Public |TypeAttributes.Abstract|
-                                              TypeAttributes.Sealed|TypeAttributes.BeforeFieldInit|
+            TypeAttributes newTypeAttribute = TypeAttributes.Public | TypeAttributes.Abstract |
+                                              TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit |
                                               TypeAttributes.Class;
 
             //父类型
             Type parentType;
             //要实现的接口
             Type[] interfaceTypes = Type.EmptyTypes;
-            parentType =null;
+            parentType = null;
 
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType("GenerateStaticClass", newTypeAttribute, parentType, interfaceTypes);
 
-            var staticField = typeBuilder.DefineField("handler", typeof(ITypeHandler),
+            var typeParams = typeBuilder.DefineGenericParameters("T");
+
+            GenericTypeParameterBuilder first = typeParams[0];
+            //first.SetGenericParameterAttributes(
+            //    GenericParameterAttributes.ReferenceTypeConstraint);
+
+            var staticIntField = typeBuilder.DefineField("intF", first,
                 FieldAttributes.Public | FieldAttributes.Static);
 
-            var staticIntField = typeBuilder.DefineField("intF", typeof(int),
-                FieldAttributes.Public | FieldAttributes.Static);
-            
-            var staticGetMethod= typeBuilder.DefineMethod("Get", MethodAttributes.Static | MethodAttributes.Public,
-                CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+            var staticGetMethod = typeBuilder.DefineMethod("Get", MethodAttributes.Static | MethodAttributes.Public,
+                CallingConventions.Standard, first, new Type[] { typeof(int), typeof(int) });
             var ilG = staticGetMethod.GetILGenerator();
             ilG.Emit(OpCodes.Ldsfld, staticIntField);
+            ilG.Emit(OpCodes.Ldarg_0);
+            ilG.Emit(OpCodes.Add);
+            ilG.Emit(OpCodes.Ldarg_1);
+            ilG.Emit(OpCodes.Add);
             ilG.Emit(OpCodes.Ret);
 
             var staticSetMethod = typeBuilder.DefineMethod("Set", MethodAttributes.Static | MethodAttributes.Public,
-                CallingConventions.Standard, null, new Type[]{typeof(int)});
+                CallingConventions.Standard, null, new Type[] { first });
             var ilG2 = staticSetMethod.GetILGenerator();
             ilG2.Emit(OpCodes.Ldarg_0);
             ilG2.Emit(OpCodes.Stsfld, staticIntField);
             ilG2.Emit(OpCodes.Ret);
 
             var resultType = typeBuilder.CreateTypeInfo().AsType();
-            resultType.GetMethod("Set").Invoke(null, new object[1]{789});
-            var d= resultType.GetMethod("Get").Invoke(null, new object[0]);
-           
+            resultType = resultType.MakeGenericType(typeof(int));
+            resultType.GetMethod("Set").Invoke(null, new object[1] { 3 });
+            var d = (int)resultType.GetMethod("Get").Invoke(null, new object[] { 1, 2 });
+            Assert.Equal(6,d);
         }
+
+
 
         /// <summary>
         /// 测试动态生成interface并且注入到ioc容器里
@@ -152,15 +165,15 @@ namespace SummerBoot.Test
             services.AddScoped(interface1, class1);
             services.AddScoped(child);
             var pro = services.BuildServiceProvider();
-            var c= (IDynamicGenerateInterface)pro.GetRequiredService(interface1);
+            var c = (IDynamicGenerateInterface)pro.GetRequiredService(interface1);
             c.Write("456");
-            var d =(SecondDynamicGenerateInterface) pro.GetRequiredService(child);
-          
+            var d = (SecondDynamicGenerateInterface)pro.GetRequiredService(child);
+
             //(IDynamicGenerateInterface)
-                 d.Write("789");
+            d.Write("789");
         }
 
-        public Type GenerateClassWithSpecialConstructor(ModuleBuilder modBuilder,Type constructorType)
+        public Type GenerateClassWithSpecialConstructor(ModuleBuilder modBuilder, Type constructorType)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -177,9 +190,9 @@ namespace SummerBoot.Test
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
-           var constructor= typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] { constructorType });
-           var conIl= constructor.GetILGenerator();
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                 new Type[] { constructorType });
+            var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
             conIl.Emit(OpCodes.Call, parentConstruct);
@@ -211,14 +224,14 @@ namespace SummerBoot.Test
             return resultType;
         }
 
-        public Type GenerateClass(ModuleBuilder modBuilder,Type interface1)
+        public Type GenerateClass(ModuleBuilder modBuilder, Type interface1)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
             //父类型
             Type parentType;
             //要实现的接口
-            Type[] interfaceTypes = new Type[]{ interface1 };
+            Type[] interfaceTypes = new Type[] { interface1 };
             parentType = typeof(DynamicGenerateInterface);
 
             //得到类型生成器            
@@ -229,7 +242,7 @@ namespace SummerBoot.Test
         /// <summary>
         /// 测试动态生成interface并且注入到ioc容器里
         /// </summary>
-       
+
 
         [Fact]
         public void TestGenerateObject()
