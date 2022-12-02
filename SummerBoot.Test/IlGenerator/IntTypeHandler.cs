@@ -5,14 +5,14 @@ using System.Data;
 namespace SummerBoot.Test.IlGenerator
 {
 
-    public class IntTypeHandler : ITypeHandler<int>
+    public class IntTypeHandler : TypeHandler<int>
     {
-        public int Parse(object value)
+        public override int Parse(object value)
         {
             return (int)value;
         }
 
-        public void SetValue(IDbDataParameter parameter, int value)
+        public override void SetValue(IDbDataParameter parameter, int value)
         {
             parameter.Value = value;
         }

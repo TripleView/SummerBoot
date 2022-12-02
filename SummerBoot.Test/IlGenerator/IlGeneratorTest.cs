@@ -28,8 +28,105 @@ namespace SummerBoot.Test.IlGenerator
 {
     public class IlGeneratorTest
     {
+
+        /// <summary>
+        /// 测试类型转换函数
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         [Fact]
-        public void TestGenerateTypeHandlerCacheClass()
+        public void TestChangeTypeToOtherType()
+        {
+            var func = DatabaseContext.ChangeTypeToOtherType<IlEnum>(typeof(int));
+            var r1 = func(1);
+            Assert.Equal(IlEnum.a, r1);
+            var r2 = func(2);
+            Assert.Equal(IlEnum.b, r2);
+
+            //测试可空版本
+            var func2 = DatabaseContext.ChangeTypeToOtherType<IlEnum?>(typeof(int));
+            var r3 = func2(1);
+            Assert.Equal(IlEnum.a, r3);
+            var r4 = func2(2);
+            Assert.Equal(IlEnum.b, r4);
+
+            var func3 = DatabaseContext.ChangeTypeToOtherType<IlEnum?>(typeof(int?));
+            var r5 = func3(1);
+            Assert.Equal(IlEnum.a, r5);
+            var r6 = func3(2);
+            Assert.Equal(IlEnum.b, r6);
+            //测试string 类型
+            var func4 = DatabaseContext.ChangeTypeToOtherType<IlEnum?>(typeof(string));
+            var r7 = func4("1");
+            Assert.Equal(IlEnum.a, r7);
+            var r8 = func4("2");
+            Assert.Equal(IlEnum.b, r8);
+        }
+
+        /// <summary>
+        /// 测试TypeHandlerCache的SetHandler方法
+        /// </summary>
+        [Fact]
+        public void TestGenerateTypeHandlerCacheClass_Parse()
+        {
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+            var intTypeHandler = new IntTypeHandler();
+            var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+            cacheType.GetMethod("Parse").Invoke(null, new object[] { 123 });
+
+
+        }
+
+        /// <summary>
+        /// 测试TypeHandlerCache的SetHandler方法
+        /// </summary>
+        [Fact]
+        public void TestGenerateTypeHandlerCacheClass_SetHandler()
+        {
+            var intTypeHandler = new IntTypeHandler();
+            var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+            var result = cacheType.GetField("handler").GetValue(null);
+            Assert.Equal(intTypeHandler, result);
+        }
+
+        /// <summary>
+        /// 测试TypeHandlerCache的SetHandler方法
+        /// </summary>
+        [Fact]
+        public void TestGenerateTypeHandlerCacheClass_SetValue()
+        {
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+            var intTypeHandler = new IntTypeHandler();
+            var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+                var parameter = cmd.CreateParameter();
+                cacheType.GetMethod("SetValue").Invoke(null, new object[] { parameter, 123 });
+                Assert.Equal(parameter.Value, 123);
+            }
+
+
+        }
+
+        /// <summary>
+        /// 测试返回值为类这种情况
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Fact]
+        public void TestQueryWithClass()
         {
             //var intTypeHandler = new IntTypeHandler();
             //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
@@ -40,6 +137,10 @@ namespace SummerBoot.Test.IlGenerator
             {
                 throw new ArgumentNullException("mysql connectionString must not be null");
             }
+
+            var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+            databaseUnit.SetTypeHandler(typeof(int), new IntTypeHandler());
+            databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
 
             using (var conn = new MySqlConnection(connectionString))
             {
@@ -61,36 +162,106 @@ namespace SummerBoot.Test.IlGenerator
                 Age INT NULL
                     )";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString() + "')";
-                cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',29,'" + Guid.NewGuid().ToString() + "')";
-                cmd.ExecuteNonQuery();
-                cmd.CommandText = "select * from test where age=@age";
+                var insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString() + "')";
+                var effectiveRows = conn.Execute(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
 
-                var p1 = cmd.CreateParameter();
-                p1.ParameterName = "age";
-                p1.Value = 29;
-                cmd.Parameters.Add(p1);
+                var guidValue = Guid.NewGuid().ToString();
+                insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',2,'" + guidValue + "')";
+                effectiveRows = conn.Execute(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
                 
-                //cacheType.GetMethod("SetValue").Invoke(null, new object[] { p1, 29 });
-                IDbCommand a;
-                IDataReader dr = cmd.ExecuteReader();
-                var list = new List<IlPerson>();
+                var sql = "select * from test where id=@id";
+                var result = conn.Query<IlPerson>(databaseUnit, sql, new { id = guidValue }).ToList();
+                Assert.Equal(1, result.Count);
+                Assert.Equal(new Guid(guidValue), result[0].Id);
 
-                var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
-                databaseUnit.SetTypeHandler(typeof(int), new IntTypeHandler());
-                databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+                var sql2 = "select age from test where id=@id";
+                var result2 = conn.Query<IlEnum?>(databaseUnit, sql2, new { id = guidValue }).ToList();
+                Assert.Equal(1, result2.Count);
+                Assert.Equal(IlEnum.b, result2[0]);
 
-                while (dr.Read())
+                var sql3 = "select age from test where age=@age";
+                var result3 = conn.Query<IlPerson>(databaseUnit, sql3, new { age = 30 }).ToList();
+                Assert.Equal(1, result3.Count);
+                Assert.Equal(30, result3[0].Age);
+
+                var sql4 = "select age from test where id=@id";
+                var result4 = conn.Query<int>(databaseUnit, sql4, new { id = guidValue }).ToList();
+                Assert.Equal(1, result4.Count);
+                Assert.Equal(2, result4[0]);
+            }
+        }
+
+        /// <summary>
+        /// 测试异步返回值为类这种情况
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Fact]
+        public async Task TestQueryWithClassAsync()
+        {
+            //var intTypeHandler = new IntTypeHandler();
+            //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+
+            var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+            databaseUnit.SetTypeHandler(typeof(int), new IntTypeHandler());
+            databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+
+                try
                 {
-                    //var c = dr.GetFieldType(0);
-                    //var c1 = dr.GetFieldType(1);
-                    var func = DatabaseContext.GetTypeDeserializer(typeof(IlPerson), dr, databaseUnit);
-                    var result = func(dr);
-                    list.Add((IlPerson)result);
+                    cmd.CommandText = "DROP TABLE test";
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
                 }
 
-                conn.Close();
+                cmd.CommandText = @"CREATE TABLE test (
+                id varchar(100),
+                Name varchar(100) NULL,
+                Age INT NULL
+                    )";
+                cmd.ExecuteNonQuery();
+                var insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString() + "')";
+                var effectiveRows = await conn.ExecuteAsync(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
+
+                var guidValue = Guid.NewGuid().ToString();
+                insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',2,'" + guidValue + "')";
+                effectiveRows =await conn.ExecuteAsync(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
+
+                var sql = "select * from test where id=@id";
+                var result =(await conn.QueryAsync<IlPerson>(databaseUnit, sql, new { id = guidValue })).ToList();
+                Assert.Equal(1, result.Count);
+                Assert.Equal(new Guid(guidValue), result[0].Id);
+
+                var sql2 = "select age from test where id=@id";
+                var result2 =(await conn.QueryAsync<IlEnum?>(databaseUnit, sql2, new { id = guidValue })).ToList();
+                Assert.Equal(1, result2.Count);
+                Assert.Equal(IlEnum.b, result2[0]);
+
+                var sql3 = "select age from test where age=@age";
+                var result3 = (await conn.QueryAsync<IlPerson>(databaseUnit, sql3, new { age = 30 })).ToList();
+                Assert.Equal(1, result3.Count);
+                Assert.Equal(30, result3[0].Age);
+
+                var sql4 = "select age from test where id=@id";
+                var result4 = (await conn.QueryAsync<int>(databaseUnit, sql4, new { id = guidValue })).ToList();
+                Assert.Equal(1, result4.Count);
+                Assert.Equal(2, result4[0]);
             }
         }
 
@@ -116,8 +287,8 @@ namespace SummerBoot.Test.IlGenerator
             il.MarkLabel(isTrueLabel);
             il.Emit(OpCodes.Ldc_I4, 10);
             il.Emit(OpCodes.Ret);
-            var dd = (Func< int>)dynamicMethod.CreateDelegate(typeof(Func< int>));
-           
+            var dd = (Func<int>)dynamicMethod.CreateDelegate(typeof(Func<int>));
+
             var re = dd();
             Assert.Equal(0, re);
         }
@@ -126,14 +297,14 @@ namespace SummerBoot.Test.IlGenerator
         {
             var c = (int)obj;
             int ccc = 33;
-            ref int a =ref ccc;
+            ref int a = ref ccc;
             return person;
         }
 
 
         private class PrivateProperty
         {
-            public int Test { get;private set; }
+            public int Test { get; private set; }
         }
         /// <summary>
         /// 测试属性私有的情况下，是否可以赋值,结论是可以赋值,无论 set是否私有，都是CanWrite,没有set才不是canWrite。
@@ -142,20 +313,20 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestPrivateProperty()
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
-                new Type[]{typeof(PrivateProperty) });
-         
+                new Type[] { typeof(PrivateProperty) });
+
             var il = dynamicMethod.GetILGenerator();
-            
+
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldc_I4, 10);
-            il.Emit(OpCodes.Callvirt,typeof(PrivateProperty).GetProperties(BindingFlags.Instance|BindingFlags.Public).FirstOrDefault(it=>it.Name=="Test").SetMethod);
+            il.Emit(OpCodes.Callvirt, typeof(PrivateProperty).GetProperties(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(it => it.Name == "Test").SetMethod);
             il.Emit(OpCodes.Ldc_I4, 10);
             il.Emit(OpCodes.Ret);
 
-            var dd = (Func<PrivateProperty,int>)dynamicMethod.CreateDelegate(typeof(Func<PrivateProperty,int>));
+            var dd = (Func<PrivateProperty, int>)dynamicMethod.CreateDelegate(typeof(Func<PrivateProperty, int>));
             var param = new PrivateProperty()
             {
-            
+
             };
             var re = dd(param);
             Assert.Equal(10, re);
@@ -169,20 +340,20 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestUnbox()
         {
-             
-            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object), new Type[]{typeof(object), typeof(int) });
+
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object), new Type[] { typeof(object), typeof(int) });
             var ageProp = typeof(IlValueTypeItem).GetProperty(nameof(IlValueTypeItem.Age)).GetSetMethod();
             var il = dynamicMethod.GetILGenerator();
             var local = il.DeclareLocal(typeof(IlValueTypeItem).MakeByRefType());
-          
+
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Dup);
             il.Emit(OpCodes.Unbox, typeof(IlValueTypeItem));
             il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Call,ageProp);
+            il.Emit(OpCodes.Call, ageProp);
 
             il.Emit(OpCodes.Ret);
-            var dd = (Func<object, int, object>) dynamicMethod.CreateDelegate(typeof(Func<object,int, object>));
+            var dd = (Func<object, int, object>)dynamicMethod.CreateDelegate(typeof(Func<object, int, object>));
             var valueItem = new IlValueTypeItem()
             {
                 Age = 30,
@@ -206,7 +377,7 @@ namespace SummerBoot.Test.IlGenerator
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Unbox_Any, typeof(int));
             il.Emit(OpCodes.Stind_I4);
-            
+
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Dup);
             il.Emit(OpCodes.Ldarg_0);
@@ -235,21 +406,21 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestMatch()
         {
             int intV2 = 10;
-            ref int intV=ref intV2;
+            ref int intV = ref intV2;
             intV = 20;
 
-           var a  = new Regex(@"(?<![\p{L}\p{N}_])\{=([\p{L}\p{N}_]+)\}",
-                RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant |
-                RegexOptions.Compiled);
-           var sql = "select a.age,a.name from a where a.name=@ppx";
-           var c= a.Matches(sql);
+            var a = new Regex(@"(?<![\p{L}\p{N}_])\{=([\p{L}\p{N}_]+)\}",
+                 RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant |
+                 RegexOptions.Compiled);
+            var sql = "select a.age,a.name from a where a.name=@ppx";
+            var c = a.Matches(sql);
         }
 
 
-    /// <summary>
-    /// 测试引用类型传递
-    /// </summary>
-    [Fact]
+        /// <summary>
+        /// 测试引用类型传递
+        /// </summary>
+        [Fact]
         public static void TestReferenceModelUpdate()
         {
             var person = new IlPerson()
@@ -276,7 +447,7 @@ namespace SummerBoot.Test.IlGenerator
                 Age = 1
             };
         }
-        
+
         /// <summary>
         /// 测试try catch
         /// </summary>
@@ -286,7 +457,7 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
 
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
-                new Type[]{typeof(string)});
+                new Type[] { typeof(string) });
             ILGenerator methodIL = dynamicMethod.GetILGenerator();
             LocalBuilder num = methodIL.DeclareLocal(typeof(Int32));
 
@@ -313,7 +484,7 @@ namespace SummerBoot.Test.IlGenerator
             //return num;
             methodIL.Emit(OpCodes.Ldloc_0);
             methodIL.Emit(OpCodes.Ret);
-            var dd = (Func<string,int>)dynamicMethod.CreateDelegate(typeof(Func<string,int>));
+            var dd = (Func<string, int>)dynamicMethod.CreateDelegate(typeof(Func<string, int>));
             var re = dd("123");
             //Assert.Equal("何泽平", re);
         }
@@ -331,7 +502,7 @@ namespace SummerBoot.Test.IlGenerator
             var strLocal = il.DeclareLocal(typeof(string));
             //il.Emit(OpCodes.Ldstr, "何泽平");
             //il.Emit(OpCodes.Pop);
-            var tryLabel= il.BeginExceptionBlock();
+            var tryLabel = il.BeginExceptionBlock();
             il.Emit(OpCodes.Ldstr, "ab0");
             il.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ToInt32), new Type[] { typeof(string) }));
             il.Emit(OpCodes.Pop);
@@ -349,7 +520,7 @@ namespace SummerBoot.Test.IlGenerator
             //il.Emit(OpCodes.Ret);
             il.EndExceptionBlock();
             //il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintObject)));
-            il.Emit(OpCodes.Ldloc,strLocal);
+            il.Emit(OpCodes.Ldloc, strLocal);
             il.Emit(OpCodes.Ret);
             var dd = (Func<string>)dynamicMethod.CreateDelegate(typeof(Func<string>));
             var re = dd();
@@ -375,14 +546,14 @@ namespace SummerBoot.Test.IlGenerator
             il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintException)));
             //il.Emit(OpCodes.Call, typeof(Exception).GetMethod("get_Message"));
             //il.Emit(OpCodes.Call, typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) }));
-           
+
             ////il.Emit(OpCodes.Ret);
             il.EndExceptionBlock();
-      
+
             il.Emit(OpCodes.Ret);
             var dd = (Action)dynamicMethod.CreateDelegate(typeof(Action));
-             dd();
-        
+            dd();
+
         }
 
         /// <summary>
@@ -396,11 +567,11 @@ namespace SummerBoot.Test.IlGenerator
 
             var il = dynamicMethod.GetILGenerator();
             il.Emit(OpCodes.Ldc_I4, 10);
-            il.Emit(OpCodes.Newobj, typeof(int?).GetConstructor(new[] {typeof(int)}));
+            il.Emit(OpCodes.Newobj, typeof(int?).GetConstructor(new[] { typeof(int) }));
             il.Emit(OpCodes.Box, typeof(int?));
             il.Emit(OpCodes.Unbox_Any, typeof(int?));
             il.Emit(OpCodes.Ret);
-            var dd = (Func<int?>) dynamicMethod.CreateDelegate(typeof(Func<int?>));
+            var dd = (Func<int?>)dynamicMethod.CreateDelegate(typeof(Func<int?>));
             // var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
             var re = dd();
             Assert.Equal(10, re);
@@ -410,7 +581,7 @@ namespace SummerBoot.Test.IlGenerator
         {
             int? a = 3;
             object b = a;
-            int? c = (int?) b;
+            int? c = (int?)b;
         }
 
         /// <summary>
@@ -421,7 +592,7 @@ namespace SummerBoot.Test.IlGenerator
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int?),
                 Type.EmptyTypes);
-            var ctor = typeof(int?).GetConstructor(new Type[1] {typeof(int)});
+            var ctor = typeof(int?).GetConstructor(new Type[1] { typeof(int) });
             var il = dynamicMethod.GetILGenerator();
             var objLocal = il.DeclareLocal(typeof(int?));
 
@@ -431,7 +602,7 @@ namespace SummerBoot.Test.IlGenerator
 
             il.Emit(OpCodes.Ret);
 
-            var dd = (Func<int?>) dynamicMethod.CreateDelegate(typeof(Func<int?>));
+            var dd = (Func<int?>)dynamicMethod.CreateDelegate(typeof(Func<int?>));
             var re = dd();
             Assert.Equal(10, re);
         }
@@ -444,18 +615,18 @@ namespace SummerBoot.Test.IlGenerator
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int?),
                 Type.EmptyTypes);
-            var ctor = typeof(int?).GetConstructor(new Type[1] {typeof(int)});
+            var ctor = typeof(int?).GetConstructor(new Type[1] { typeof(int) });
             var il = dynamicMethod.GetILGenerator();
             var objLocal = il.DeclareLocal(typeof(int?));
             il.Emit(OpCodes.Ldc_I4, 10);
             il.Emit(OpCodes.Newobj, ctor);
             il.Emit(OpCodes.Ret);
 
-            var dd = (Func<int?>) dynamicMethod.CreateDelegate(typeof(Func<int?>));
+            var dd = (Func<int?>)dynamicMethod.CreateDelegate(typeof(Func<int?>));
             var re = dd();
             Assert.Equal(10, re);
         }
-        
+
         public static void PrintObject(object obj)
         {
 
@@ -510,7 +681,7 @@ namespace SummerBoot.Test.IlGenerator
             {
                 conn.Open();
                 var cmd = conn.CreateCommand();
-               
+
                 try
                 {
                     cmd.CommandText = "DROP TABLE test";
@@ -526,25 +697,25 @@ namespace SummerBoot.Test.IlGenerator
                 Age INT NULL
                     )";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES (null,30,'"+Guid.NewGuid().ToString("N")+"')";
+                cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES (null,30,'" + Guid.NewGuid().ToString("N") + "')";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString("N") + "')";
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = "select * from test";
                 IDataReader dr = cmd.ExecuteReader();
                 var list = new List<IlPerson>();
-                
+
 
                 var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
-                databaseUnit.SetTypeHandler(typeof(Guid),new IntTypeHandler());
+                databaseUnit.SetTypeHandler(typeof(Guid), new IntTypeHandler());
 
                 while (dr.Read())
                 {
                     //var c = dr.GetFieldType(0);
                     //var c1 = dr.GetFieldType(1);
-                    var func= DatabaseContext.GetTypeDeserializer(typeof(IlPerson),dr, databaseUnit);
+                    var func = DatabaseContext.GetTypeDeserializer(typeof(IlPerson), dr, databaseUnit);
                     var result = func(dr);
-                    list.Add((IlPerson) result);
+                    list.Add((IlPerson)result);
                 }
 
                 conn.Close();
@@ -566,8 +737,8 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(2, p1.Length);
             var type = p1[0].PropertyType;
             Assert.True(type.IsValueType);
-            var nullableType= Nullable.GetUnderlyingType(type);
-            Assert.Equal(typeof(int),nullableType);
+            var nullableType = Nullable.GetUnderlyingType(type);
+            Assert.Equal(typeof(int), nullableType);
             var type2 = p1[1].PropertyType;
             var nullableType2 = Nullable.GetUnderlyingType(type2);
             Assert.Null(nullableType2);
@@ -575,7 +746,7 @@ namespace SummerBoot.Test.IlGenerator
             var c2 = Type.GetTypeCode(type2);
         }
 
-  
+
         /// <summary>
         /// 测试枚举类型,执行Enum.GetUnderlyingType，获取枚举的实际类型，枚举可以是byte int long类型等
         /// </summary>
@@ -587,7 +758,7 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1, p1.Length);
             var type = p1[0].PropertyType;
             var nullableType = Enum.GetUnderlyingType(type);
-            Assert.Equal(typeof(long),nullableType);
+            Assert.Equal(typeof(long), nullableType);
         }
 
         /// <summary>
@@ -606,7 +777,7 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestIsNumberType()
         {
-            
+
             var result = typeof(string).IsNumberType();
             Assert.False(result);
             var decimalResult = typeof(decimal).IsNumberType();
@@ -624,7 +795,7 @@ namespace SummerBoot.Test.IlGenerator
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var objLocal = il.DeclareLocal(typeof(decimal));
-       
+
             il.Emit(OpCodes.Newobj, ctor);
             il.Emit(OpCodes.Isinst, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
@@ -644,7 +815,7 @@ namespace SummerBoot.Test.IlGenerator
             var objLocal = il.DeclareLocal(typeof(decimal));
 
             il.Emit(OpCodes.Newobj, ctor);
-            il.Emit(OpCodes.Castclass,typeof(IlPerson));
+            il.Emit(OpCodes.Castclass, typeof(IlPerson));
             il.Emit(OpCodes.Isinst, typeof(object));
             il.Emit(OpCodes.Ret);
 
@@ -684,7 +855,7 @@ namespace SummerBoot.Test.IlGenerator
             var dd = (Func<IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPerson>));
             var re = dd();
             Assert.NotNull(re);
-            Assert.Equal(0,re.Age);
+            Assert.Equal(0, re.Age);
         }
 
         /// <summary>
@@ -694,20 +865,20 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestIsInstanceObjectType()
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
-                new Type[]{typeof(object)});
+                new Type[] { typeof(object) });
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             //il.Emit(OpCodes.Box, typeof(long));
-           
-            il.Emit(OpCodes.Callvirt,typeof(object).GetMethod(nameof(object.GetType)));
+
+            il.Emit(OpCodes.Callvirt, typeof(object).GetMethod(nameof(object.GetType)));
             //il.Emit(OpCodes.Box,typeof(long));
             ////il.Emit(OpCodes.Box, typeof(long));
             //il.Emit(OpCodes.Box, typeof(object));
             //il.Emit(OpCodes.Unbox_Any, typeof(IlEnum));
             //il.Emit(OpCodes.Box, typeof(object));
             il.Emit(OpCodes.Ret);
-           
+
             var dd = (Func<object, object>)dynamicMethod.CreateDelegate(typeof(Func<object, object>));
             var re = dd(2L);
             //Assert.True(re);
@@ -720,13 +891,13 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestLdToken()
         {
-           
+
             //var re2=  method.Invoke(null,new Object[]{1L});
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(Type),
                 new Type[] { typeof(object) });
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-          il.Emit(OpCodes.Ldtoken,typeof(IlPerson));
+            il.Emit(OpCodes.Ldtoken, typeof(IlPerson));
 
             il.Emit(OpCodes.Ret);
 
@@ -739,40 +910,40 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestLdTokenWithTypeHandle()
         {
-           
+
             //var re2=  method.Invoke(null,new Object[]{1L});
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(Type),
                 new Type[] { typeof(object) });
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             il.Emit(OpCodes.Ldtoken, typeof(IlPerson));
-            il.Emit(OpCodes.Call,typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)));
+            il.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)));
             il.Emit(OpCodes.Ret);
 
             var dd = (Func<Type>)dynamicMethod.CreateDelegate(typeof(Func<Type>));
             var re = dd();
             ;
-            Assert.Equal(typeof(IlPerson),re);
+            Assert.Equal(typeof(IlPerson), re);
         }
 
         [Fact]
-       
+
         public static void TestGenerateTypeMethod()
         {
-            var method= typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.GenerateTypeMethod));
-           //var re2= method.Invoke(null,new Object[]{1L,typeof(IlPerson)});
+            var method = typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.GenerateTypeMethod));
+            //var re2= method.Invoke(null,new Object[]{1L,typeof(IlPerson)});
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(bool),
                 new Type[] { typeof(object) });
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-           
-            il.Emit(OpCodes.Ldc_I4,10);
+
+            il.Emit(OpCodes.Ldc_I4, 10);
             il.Emit(OpCodes.Box, typeof(int));
 
             il.Emit(OpCodes.Ldtoken, typeof(int));
             il.Emit(OpCodes.Call, SbUtil.GetTypeFromHandleMethod);
             il.Emit(OpCodes.Call, method);
-            
+
             il.Emit(OpCodes.Ret);
 
             var dd = (Func<bool>)dynamicMethod.CreateDelegate(typeof(Func<bool>));
@@ -780,10 +951,10 @@ namespace SummerBoot.Test.IlGenerator
             Assert.True(re);
         }
 
-        public static bool GenerateTypeMethod(object value,Type type)
+        public static bool GenerateTypeMethod(object value, Type type)
         {
             //var a = typeof(T);
-            var b = value?.GetType()==type;
+            var b = value?.GetType() == type;
             return true;
         }
 
@@ -792,11 +963,11 @@ namespace SummerBoot.Test.IlGenerator
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
                 Type.EmptyTypes);
-            
+
             var il = dynamicMethod.GetILGenerator();
             //il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Sizeof, typeof(short));
-           
+
             il.Emit(OpCodes.Ret);
 
             var dd = (Func<int>)dynamicMethod.CreateDelegate(typeof(Func<int>));
@@ -810,7 +981,7 @@ namespace SummerBoot.Test.IlGenerator
         {
             decimal f = 1m;
             object d = f;
-   
+
             var g = d.GetType();
             var f2 = d is decimal;
 
@@ -822,7 +993,7 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestOp_Explicit()
         {
-            var op_method= typeof(decimal).GetMethods().Where(it=>it.Name== "op_Explicit" && it.ReturnType == typeof(double) && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType==typeof(decimal)).ToList().First();
+            var op_method = typeof(decimal).GetMethods().Where(it => it.Name == "op_Explicit" && it.ReturnType == typeof(double) && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == typeof(decimal)).ToList().First();
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(double),
                 Type.EmptyTypes);
 
@@ -830,8 +1001,8 @@ namespace SummerBoot.Test.IlGenerator
             var il = dynamicMethod.GetILGenerator();
             var objLocal = il.DeclareLocal(typeof(decimal));
             //il.Emit(OpCodes.Ldloca_S,objLocal);
-            il.Emit(OpCodes.Ldc_I4,10);
-            il.Emit(OpCodes.Newobj,ctor);
+            il.Emit(OpCodes.Ldc_I4, 10);
+            il.Emit(OpCodes.Newobj, ctor);
             il.Emit(OpCodes.Call, op_method);
             il.Emit(OpCodes.Ret);
 
@@ -844,7 +1015,7 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestConvertChangeType()
         {
             var c2 = typeof(DateTime);
-           var c= Convert.ChangeType(2L,typeof(string));
+            var c = Convert.ChangeType(2L, typeof(string));
             var op_method = typeof(decimal).GetMethods().Where(it => it.Name == "op_Explicit" && it.ReturnType == typeof(double) && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == typeof(decimal)).ToList().First();
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(double),
                 Type.EmptyTypes);
@@ -872,15 +1043,15 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
 
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(IlPerson),
-                new Type[]{typeof(IlPersonSubClass)});
+                new Type[] { typeof(IlPersonSubClass) });
             var il = dynamicMethod.GetILGenerator();
             var lable = il.DeclareLocal(typeof(object));
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Castclass, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
 
-            var dd = (Func<IlPersonSubClass,IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPersonSubClass,IlPerson>));
-            var re = dd(new IlPersonSubClass(){Address = "路边",Age = 1,Name = "草药"});
+            var dd = (Func<IlPersonSubClass, IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPersonSubClass, IlPerson>));
+            var re = dd(new IlPersonSubClass() { Address = "路边", Age = 1, Name = "草药" });
             Assert.Equal("草药", re.Name);
         }
 
@@ -894,7 +1065,7 @@ namespace SummerBoot.Test.IlGenerator
 
             Assert.Equal(2, p1.Length);
             var type = p1[0].PropertyType;
-            var c= Type.GetTypeCode(type);
+            var c = Type.GetTypeCode(type);
             if (c == TypeCode.Int32)
             {
 
@@ -914,7 +1085,7 @@ namespace SummerBoot.Test.IlGenerator
         {
             var p1 = typeof(IlResult).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             Assert.Equal(1, p1.Length);
-           
+
         }
 
         /// <summary>
@@ -923,8 +1094,8 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestGetItemMethod()
         {
-            var p1 = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance ).FirstOrDefault(it=>it.Name=="get_Item"&& it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == typeof(int));
-                //;
+            var p1 = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(it => it.Name == "get_Item" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == typeof(int));
+            //;
             Assert.NotNull(p1);
         }
 
@@ -957,7 +1128,7 @@ namespace SummerBoot.Test.IlGenerator
             var il = dynamicMethod.GetILGenerator();
             var lable = il.DeclareLocal(typeof(object));
             var ctor = typeof(IlEnumBody).GetConstructor(Type.EmptyTypes);
-            il.Emit(OpCodes.Ldc_I4,1);
+            il.Emit(OpCodes.Ldc_I4, 1);
             il.Emit(OpCodes.Conv_I8);
             il.Emit(OpCodes.Box, typeof(long));
             il.Emit(OpCodes.Unbox_Any, typeof(IlEnum));
@@ -973,12 +1144,12 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void TestEnumParseAndSettingProperty()
         {
-          //var c=  Convert.ChangeType(1m, typeof(bool));
+            //var c=  Convert.ChangeType(1m, typeof(bool));
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(IlEnumBody),
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var ctor = typeof(IlEnumBody).GetConstructor(Type.EmptyTypes);
-            
+
             il.Emit(OpCodes.Newobj, ctor); //stack is ilResult
             il.Emit(OpCodes.Dup);
             il.Emit(OpCodes.Ldc_I4, 2);
@@ -996,9 +1167,9 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public static void Test()
         {
-            var op_method = typeof(decimal).GetMethods().Where(it => it.Name == "op_Explicit" && it.ReturnType==typeof(uint)).ToList();
-            var c= typeof(int).IsPrimitive;
-            var d= typeof(string).IsPrimitive;
+            var op_method = typeof(decimal).GetMethods().Where(it => it.Name == "op_Explicit" && it.ReturnType == typeof(uint)).ToList();
+            var c = typeof(int).IsPrimitive;
+            var d = typeof(string).IsPrimitive;
         }
 
         /// <summary>
@@ -1013,45 +1184,45 @@ namespace SummerBoot.Test.IlGenerator
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var lable = il.DeclareLocal(typeof(object));
-             il.Emit(OpCodes.Ldstr,"测试");
-             il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
-             il.Emit(OpCodes.Ldstr,"测试");
+            il.Emit(OpCodes.Ldstr, "测试");
+            il.Emit(OpCodes.Call, typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) }));
+            il.Emit(OpCodes.Ldstr, "测试");
             il.Emit(OpCodes.Ret);
 
-            var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
+            var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
             var re = dd();
-            Assert.Equal("测试",re);
+            Assert.Equal("测试", re);
         }
-        
+
         /// <summary>
         /// 测试InitObject和Ldloca，该指令仅针对值类型的结构体，而不是原生的int等
         /// </summary>
         [Fact]
         public static void TestInitObjectAndLdloca()
         {
-           Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
+            Assert.Equal(true, typeof(IlValueTypeItem).IsValueType);
 
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(object),
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var ilRe = il.DeclareLocal(typeof(IlValueTypeItem));
-            var nameProperty= typeof(IlValueTypeItem).GetProperty("Name");
+            var nameProperty = typeof(IlValueTypeItem).GetProperty("Name");
             var ctor = typeof(IlResult).GetConstructor(Type.EmptyTypes);
-        
+
             il.Emit(OpCodes.Ldloca, ilRe);
 
             il.Emit(OpCodes.Initobj, typeof(IlValueTypeItem)); //stack is 
 
-            il.Emit(OpCodes.Ldloca,ilRe);
-            il.Emit(OpCodes.Ldstr,"何泽平");
-            il.Emit(OpCodes.Call,nameProperty.GetSetMethod());
+            il.Emit(OpCodes.Ldloca, ilRe);
+            il.Emit(OpCodes.Ldstr, "何泽平");
+            il.Emit(OpCodes.Call, nameProperty.GetSetMethod());
             il.Emit(OpCodes.Ldloc_0);
-            il.Emit(OpCodes.Box,typeof(IlValueTypeItem));
+            il.Emit(OpCodes.Box, typeof(IlValueTypeItem));
             il.Emit(OpCodes.Ret);
 
-            var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
-            var re =(IlValueTypeItem) dd();
-             Assert.Equal("何泽平",re.Name);
+            var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
+            var re = (IlValueTypeItem)dd();
+            Assert.Equal("何泽平", re.Name);
         }
 
         /// <summary>
@@ -1067,22 +1238,22 @@ namespace SummerBoot.Test.IlGenerator
             // il.Emit(OpCodes.Initobj, typeof(int)); //stack is 
             // il.Emit(OpCodes.Newobj,ctor);
             il.Emit(OpCodes.Ldc_I4_1);
-          
-            il.Emit(OpCodes.Box,typeof(int));
+
+            il.Emit(OpCodes.Box, typeof(int));
             il.Emit(OpCodes.Ret);
             var cccc = typeof(IlResult).GetConstructors();
-   
-            var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
+
+            var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
             var re = dd();
-            Assert.Equal(1,re);
+            Assert.Equal(1, re);
         }
-        
+
         public object test()
         {
             object c = 1;
             return c;
         }
-        
+
         /// <summary>
         /// 测试方法里返回一个实体类
         /// </summary>
@@ -1101,8 +1272,8 @@ namespace SummerBoot.Test.IlGenerator
 
             var cccc = typeof(IlResult).GetConstructors();
             //var dd = (Func<Type, IlResult>)dynamicMethod.CreateDelegate(typeof(Func<Type, IlResult>));
-            var dd = (Func<object>) dynamicMethod.CreateDelegate(typeof(Func<object>));
-            var re = (IlResult) dd();
+            var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
+            var re = (IlResult)dd();
             Assert.Equal("何泽平", re.Name);
         }
 
@@ -1114,7 +1285,7 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestAdd()
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), typeof(int),
-                new Type[] {typeof(int), typeof(int)});
+                new Type[] { typeof(int), typeof(int) });
             var il = dynamicMethod.GetILGenerator();
             var ret = il.DeclareLocal(typeof(int));
             il.Emit(OpCodes.Ldarg_0);
@@ -1123,7 +1294,7 @@ namespace SummerBoot.Test.IlGenerator
             il.SteadOfLocal(ret);
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Ret);
-            var dd = (Func<int, int, int>) dynamicMethod.CreateDelegate(typeof(Func<int, int, int>));
+            var dd = (Func<int, int, int>)dynamicMethod.CreateDelegate(typeof(Func<int, int, int>));
             var re = dd(5, 6);
             Assert.Equal(11, re);
         }
@@ -1135,9 +1306,9 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestIfElse()
         {
             var dynamicMethod = new DynamicMethod("test2" + Guid.NewGuid().ToString("N"), typeof(string),
-                new Type[] {typeof(int)});
+                new Type[] { typeof(int) });
             var debugWriteMethod = typeof(Debug)
-                .GetMethod(nameof(Debug.WriteLine), new Type[] {typeof(object)});
+                .GetMethod(nameof(Debug.WriteLine), new Type[] { typeof(object) });
             var il = dynamicMethod.GetILGenerator();
             var endLabel = il.DefineLabel();
             var elseLabel = il.DefineLabel();
@@ -1151,7 +1322,7 @@ namespace SummerBoot.Test.IlGenerator
             il.Emit(OpCodes.Ldstr, "不相等");
             il.MarkLabel(endLabel);
             il.Emit(OpCodes.Ret);
-            var func = (Func<int, string>) dynamicMethod.CreateDelegate(typeof(Func<int, string>));
+            var func = (Func<int, string>)dynamicMethod.CreateDelegate(typeof(Func<int, string>));
             var re = func(5);
             Assert.Equal("相等", re);
             var re2 = func(6);
@@ -1170,12 +1341,12 @@ namespace SummerBoot.Test.IlGenerator
                 .GetMethod(nameof(Debug.WriteLine), new Type[] { typeof(object) });
             var il = dynamicMethod.GetILGenerator();
             var endLabel = il.DefineLabel();
-            il.Emit(OpCodes.Ldc_I4,10);
+            il.Emit(OpCodes.Ldc_I4, 10);
             il.MarkLabel(endLabel);
             il.Emit(OpCodes.Ret);
             var func = (Func<int>)dynamicMethod.CreateDelegate(typeof(Func<int>));
             var re = func();
-            Assert.Equal(10,re);
+            Assert.Equal(10, re);
         }
 
         /// <summary>
@@ -1186,7 +1357,7 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestBrtrue_SLabel()
         {
             var dynamicMethod = new DynamicMethod("test2" + Guid.NewGuid().ToString("N"), typeof(int),
-                new Type[]{typeof(int)});
+                new Type[] { typeof(int) });
             var debugWriteMethod = typeof(Debug)
                 .GetMethod(nameof(Debug.WriteLine), new Type[] { typeof(object) });
             var il = dynamicMethod.GetILGenerator();
@@ -1194,19 +1365,19 @@ namespace SummerBoot.Test.IlGenerator
             var finishLabel = il.DefineLabel();
             il.Emit(OpCodes.Ldc_I4_1);
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Brtrue_S,endLabel);
+            il.Emit(OpCodes.Brtrue_S, endLabel);
             il.Emit(OpCodes.Ldc_I4_0);
             il.Emit(OpCodes.Ldc_I4_0);
             il.Emit(OpCodes.Ldc_I4_0);
             il.Emit(OpCodes.Ldc_I4_0);
-            il.Emit(OpCodes.Leave_S,finishLabel);
+            il.Emit(OpCodes.Leave_S, finishLabel);
             il.MarkLabel(endLabel);
             //il.Emit(OpCodes.Ldc_I4_1);
             il.Emit(OpCodes.Ret);
             il.MarkLabel(finishLabel);
             il.Emit(OpCodes.Ldc_I4_0);
             il.Emit(OpCodes.Ret);
-            var func = (Func<int,int>)dynamicMethod.CreateDelegate(typeof(Func<int,int>));
+            var func = (Func<int, int>)dynamicMethod.CreateDelegate(typeof(Func<int, int>));
             var re = func(1);
             Assert.Equal(1, re);
             var re2 = func(0);
@@ -1220,60 +1391,60 @@ namespace SummerBoot.Test.IlGenerator
         public static void TestConvertTypeToTargetTypeNumberToString()
         {
             //数值转string
-            
+
             //bool =>string
-            Delegate dd;object re;
-             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool),typeof(string));
-             re = dd.DynamicInvoke(true) ;
+            Delegate dd; object re;
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool), typeof(string));
+            re = dd.DynamicInvoke(true);
             Assert.Equal("True", re);
-           
+
             //byte=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(byte), typeof(string));
             re = dd.DynamicInvoke((byte)1);
             Assert.Equal("1", re);
             //sbyte=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(sbyte), typeof(string));
-            re = dd.DynamicInvoke((sbyte)1) ;
+            re = dd.DynamicInvoke((sbyte)1);
             Assert.Equal("1", re);
             //short=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(short), typeof(string));
-            re = dd.DynamicInvoke((short)1) ;
+            re = dd.DynamicInvoke((short)1);
             Assert.Equal("1", re);
             //ushort=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ushort), typeof(string));
-            re = dd.DynamicInvoke((ushort)1) ;
+            re = dd.DynamicInvoke((ushort)1);
             Assert.Equal("1", re);
             //int=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(int), typeof(string));
-            re = dd.DynamicInvoke((int)1) ;
+            re = dd.DynamicInvoke((int)1);
             Assert.Equal("1", re);
             //uint=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(uint), typeof(string));
-            re = dd.DynamicInvoke((uint)1) ;
+            re = dd.DynamicInvoke((uint)1);
             Assert.Equal("1", re);
             //long=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(long), typeof(string));
-            re = dd.DynamicInvoke((long)1) ;
+            re = dd.DynamicInvoke((long)1);
             Assert.Equal("1", re);
             //ulong=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ulong), typeof(string));
-            re = dd.DynamicInvoke((ulong)1) ;
+            re = dd.DynamicInvoke((ulong)1);
             Assert.Equal("1", re);
 
             //float=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(float), typeof(string));
-            re = dd.DynamicInvoke((float)1) ;
+            re = dd.DynamicInvoke((float)1);
             Assert.Equal("1", re);
             //double=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(double), typeof(string));
-            re = dd.DynamicInvoke((double)1) ;
+            re = dd.DynamicInvoke((double)1);
             Assert.Equal("1", re);
             //decimal=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal), typeof(string));
-            re = dd.DynamicInvoke((decimal)1) ;
+            re = dd.DynamicInvoke((decimal)1);
             Assert.Equal("1", re);
 
-           //开始反转
+            //开始反转
             //string =>bool
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(bool));
             re = dd.DynamicInvoke("true");
@@ -1331,7 +1502,7 @@ namespace SummerBoot.Test.IlGenerator
             //string =>decimal
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(decimal));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((decimal) 1, re);
+            Assert.Equal((decimal)1, re);
         }
 
         /// <summary>
@@ -1346,53 +1517,53 @@ namespace SummerBoot.Test.IlGenerator
             Delegate dd;
             object re;
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(string));
-            re = dd.DynamicInvoke((bool?) true);
+            re = dd.DynamicInvoke((bool?)true);
             Assert.Equal("True", re);
 
             //byte?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(byte?), typeof(string));
-            re = dd.DynamicInvoke((byte?) 1);
+            re = dd.DynamicInvoke((byte?)1);
             Assert.Equal("1", re);
             //sbyte?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(sbyte?), typeof(string));
-            re = dd.DynamicInvoke((sbyte?) 1);
+            re = dd.DynamicInvoke((sbyte?)1);
             Assert.Equal("1", re);
             //short?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(short?), typeof(string));
-            re = dd.DynamicInvoke((short?) 1);
+            re = dd.DynamicInvoke((short?)1);
             Assert.Equal("1", re);
             //ushort?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ushort?), typeof(string));
-            re = dd.DynamicInvoke((ushort?) 1);
+            re = dd.DynamicInvoke((ushort?)1);
             Assert.Equal("1", re);
             //int?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(int?), typeof(string));
-            re = dd.DynamicInvoke((int?) 1);
+            re = dd.DynamicInvoke((int?)1);
             Assert.Equal("1", re);
             //uint?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(uint?), typeof(string));
-            re = dd.DynamicInvoke((uint?) 1);
+            re = dd.DynamicInvoke((uint?)1);
             Assert.Equal("1", re);
             //long?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(long?), typeof(string));
-            re = dd.DynamicInvoke((long?) 1);
+            re = dd.DynamicInvoke((long?)1);
             Assert.Equal("1", re);
             //ulong?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ulong?), typeof(string));
-            re = dd.DynamicInvoke((ulong?) 1);
+            re = dd.DynamicInvoke((ulong?)1);
             Assert.Equal("1", re);
 
             //float?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(float?), typeof(string));
-            re = dd.DynamicInvoke((float?) 1);
+            re = dd.DynamicInvoke((float?)1);
             Assert.Equal("1", re);
             //double?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(double?), typeof(string));
-            re = dd.DynamicInvoke((double?) 1);
+            re = dd.DynamicInvoke((double?)1);
             Assert.Equal("1", re);
             //decimal?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(string));
-            re = dd.DynamicInvoke((decimal?) 1);
+            re = dd.DynamicInvoke((decimal?)1);
             Assert.Equal("1", re);
 
             //开始反转
@@ -1403,59 +1574,59 @@ namespace SummerBoot.Test.IlGenerator
             //string =>byte?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(byte?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((byte?) 1, re);
+            Assert.Equal((byte?)1, re);
 
             //string =>sbyte?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(sbyte?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((sbyte?) 1, re);
+            Assert.Equal((sbyte?)1, re);
 
             //string =>short?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(short?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((short?) 1, re);
+            Assert.Equal((short?)1, re);
 
             //string =>ushort?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(ushort?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((ushort?) 1, re);
+            Assert.Equal((ushort?)1, re);
 
             //string =>uint?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(uint?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((uint?) 1, re);
+            Assert.Equal((uint?)1, re);
 
             //string =>int?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(int?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((int?) 1, re);
+            Assert.Equal((int?)1, re);
 
             //string =>long?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(long?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((long?) 1, re);
+            Assert.Equal((long?)1, re);
 
             //string =>ulong?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(ulong?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((ulong?) 1, re);
+            Assert.Equal((ulong?)1, re);
 
             //string =>float?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(float?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((float?) 1, re);
+            Assert.Equal((float?)1, re);
 
             //string =>double?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(double?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((double?) 1, re);
+            Assert.Equal((double?)1, re);
 
             //string =>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(decimal?));
             re = dd.DynamicInvoke("1");
-            Assert.Equal((decimal?) 1, re);
+            Assert.Equal((decimal?)1, re);
         }
-        
+
         /// <summary>
         /// 测试类型转换，数值转数值
         /// </summary>
@@ -1585,111 +1756,111 @@ namespace SummerBoot.Test.IlGenerator
             Delegate dd;
             object re;
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(byte?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((byte?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((byte?)1, re);
 
             //bool? =>sbyte?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(sbyte?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((sbyte?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((sbyte?)1, re);
 
             //bool?=>short?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(short?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((short?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((short?)1, re);
 
             //bool? =>ushort?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(ushort?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((ushort?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((ushort?)1, re);
 
             //bool? =>uint?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(uint?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((uint?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((uint?)1, re);
 
             //bool? =>int?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(int?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((int?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((int?)1, re);
 
             //bool? =>long?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(long?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((long?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((long?)1, re);
 
             //bool? =>ulong?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(ulong?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((ulong?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((ulong?)1, re);
 
             //bool? =>float?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(float?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((float?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((float?)1, re);
 
             //bool? =>double?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(double?));
-            re = dd.DynamicInvoke((bool?) true);
-            Assert.Equal((double?) 1, re);
+            re = dd.DynamicInvoke((bool?)true);
+            Assert.Equal((double?)1, re);
             //开始反转
             //bool?=>bool ?
 
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(bool?));
-            re = dd.DynamicInvoke((bool?) true);
+            re = dd.DynamicInvoke((bool?)true);
             Assert.Equal(true, re);
 
             //byte?=>bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(byte?), typeof(bool?));
-            re = dd.DynamicInvoke((byte?) 1);
+            re = dd.DynamicInvoke((byte?)1);
             Assert.Equal(true, re);
 
             // sbyte ? => bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(sbyte?), typeof(bool?));
-            re = dd.DynamicInvoke((sbyte?) 1);
+            re = dd.DynamicInvoke((sbyte?)1);
             Assert.Equal(true, re);
 
             //short? => bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(short?), typeof(bool?));
-            re = dd.DynamicInvoke((short?) 1);
+            re = dd.DynamicInvoke((short?)1);
             Assert.Equal(true, re);
 
             //ushort?=>bool ?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ushort?), typeof(bool?));
-            re = dd.DynamicInvoke((ushort?) 1);
+            re = dd.DynamicInvoke((ushort?)1);
             Assert.Equal(true, re);
 
             //uint?=> bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(uint?), typeof(bool?));
-            re = dd.DynamicInvoke((uint?) 1);
+            re = dd.DynamicInvoke((uint?)1);
             Assert.Equal(true, re);
 
             //int?=>bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(int?), typeof(bool?));
-            re = dd.DynamicInvoke((int?) 1);
+            re = dd.DynamicInvoke((int?)1);
             Assert.Equal(true, re);
 
             //long?=>bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(long?), typeof(bool?));
-            re = dd.DynamicInvoke((long?) 1);
+            re = dd.DynamicInvoke((long?)1);
             Assert.Equal(true, re);
 
             //ulong?=>bool?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ulong?), typeof(bool?));
-            re = dd.DynamicInvoke((ulong?) 1);
+            re = dd.DynamicInvoke((ulong?)1);
             Assert.Equal(true, re);
 
             //float?=>bool ?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(float?), typeof(bool?));
-            re = dd.DynamicInvoke((float) 1);
+            re = dd.DynamicInvoke((float)1);
             Assert.Equal(true, re);
 
             //double=>bool 
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(double), typeof(bool));
-            re = dd.DynamicInvoke((double?) 1);
+            re = dd.DynamicInvoke((double?)1);
             Assert.Equal(true, re);
         }
-        
+
         /// <summary>
         /// 测试类型转换，数值转数值,主要是decimal
         /// </summary>
@@ -1757,17 +1928,17 @@ namespace SummerBoot.Test.IlGenerator
             //开始反转
             //bool=>decimal 
 
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool), typeof(decimal));
             re = dd.DynamicInvoke(true);
             Assert.Equal(1m, re);
 
             //byte=>decimal
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(byte),typeof(decimal) );
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(byte), typeof(decimal));
             re = dd.DynamicInvoke((byte)1);
             Assert.Equal(1m, re);
 
             // sbyte  => decimal
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(sbyte),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(sbyte), typeof(decimal));
             re = dd.DynamicInvoke((sbyte)1);
             Assert.Equal(1m, re);
 
@@ -1777,37 +1948,37 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(1m, re);
 
             //ushort=>decimal 
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(ushort),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(ushort), typeof(decimal));
             re = dd.DynamicInvoke((ushort)1);
             Assert.Equal(1m, re);
 
             //uint=> decimal
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(uint),typeof(decimal) );
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(uint), typeof(decimal));
             re = dd.DynamicInvoke((uint)1);
             Assert.Equal(1m, re);
 
             //int=>decimal
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(int),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(int), typeof(decimal));
             re = dd.DynamicInvoke((int)1);
             Assert.Equal(1m, re);
 
             //long=>decimal
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(long),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(long), typeof(decimal));
             re = dd.DynamicInvoke((long)1);
             Assert.Equal(1m, re);
 
             //ulong=>decimal
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(ulong),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(ulong), typeof(decimal));
             re = dd.DynamicInvoke((ulong)1);
             Assert.Equal(1m, re);
 
             //float=>decimal 
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(float),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(float), typeof(decimal));
             re = dd.DynamicInvoke((float)1);
             Assert.Equal(1m, re);
 
             //double=>decimal 
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(double),typeof(decimal));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(double), typeof(decimal));
             re = dd.DynamicInvoke((double)1);
             Assert.Equal(1m, re);
         }
@@ -1823,117 +1994,117 @@ namespace SummerBoot.Test.IlGenerator
             Delegate dd;
             object re;
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(bool?));
-            re = dd.DynamicInvoke((decimal?) 1);
+            re = dd.DynamicInvoke((decimal?)1);
             Assert.Equal(true, re);
 
             //decimal? =>byte?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(byte?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((byte?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((byte?)1, re);
 
             //decimal? =>sbyte?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(sbyte?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((sbyte?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((sbyte?)1, re);
 
             //decimal ?=>short?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(short?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((short?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((short?)1, re);
 
             //decimal? =>ushort?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(ushort?));
             re = dd.DynamicInvoke(1m);
-            Assert.Equal((ushort?) 1, re);
+            Assert.Equal((ushort?)1, re);
 
             //decimal ?=>uint?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(uint?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((uint?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((uint?)1, re);
 
             //decimal? =>int?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(int?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((int?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((int?)1, re);
 
             //decimal? =>long?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(long?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((long?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((long?)1, re);
 
             //decimal? =>ulong?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(ulong?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((ulong?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((ulong?)1, re);
 
             //decimal? =>float?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(float?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((float?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((float?)1, re);
 
             //decimal? =>double?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(decimal?), typeof(double?));
-            re = dd.DynamicInvoke((decimal?) 1);
-            Assert.Equal((double?) 1, re);
+            re = dd.DynamicInvoke((decimal?)1);
+            Assert.Equal((double?)1, re);
 
             //开始反转
             //bool?=>decimal ?
 
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(bool?), typeof(decimal?));
-            re = dd.DynamicInvoke((bool?) true);
+            re = dd.DynamicInvoke((bool?)true);
             Assert.Equal(1m, re);
 
             //byte?=>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(byte?), typeof(decimal?));
-            re = dd.DynamicInvoke((byte?) 1);
+            re = dd.DynamicInvoke((byte?)1);
             Assert.Equal(1m, re);
 
             // sbyte?  => decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(sbyte?), typeof(decimal?));
-            re = dd.DynamicInvoke((sbyte?) 1);
+            re = dd.DynamicInvoke((sbyte?)1);
             Assert.Equal(1m, re);
 
             //short? => decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(short?), typeof(decimal?));
-            re = dd.DynamicInvoke((short?) 1);
+            re = dd.DynamicInvoke((short?)1);
             Assert.Equal(1m, re);
 
             //ushort?=>decimal ?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ushort?), typeof(decimal?));
-            re = dd.DynamicInvoke((ushort?) 1);
+            re = dd.DynamicInvoke((ushort?)1);
             Assert.Equal(1m, re);
 
             //uint?=> decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(uint?), typeof(decimal?));
-            re = dd.DynamicInvoke((uint?) 1);
+            re = dd.DynamicInvoke((uint?)1);
             Assert.Equal(1m, re);
 
             //int?=>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(int?), typeof(decimal?));
-            re = dd.DynamicInvoke((int?) 1);
+            re = dd.DynamicInvoke((int?)1);
             Assert.Equal(1m, re);
 
             //long?=>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(long?), typeof(decimal?));
-            re = dd.DynamicInvoke((long?) 1);
+            re = dd.DynamicInvoke((long?)1);
             Assert.Equal(1m, re);
 
             //ulong?=>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(ulong?), typeof(decimal?));
-            re = dd.DynamicInvoke((ulong?) 1);
+            re = dd.DynamicInvoke((ulong?)1);
             Assert.Equal(1m, re);
 
             //float?=>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(float?), typeof(decimal?));
-            re = dd.DynamicInvoke((float?) 1);
+            re = dd.DynamicInvoke((float?)1);
             Assert.Equal(1m, re);
 
             //double?=>decimal?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(double?), typeof(decimal?));
-            re = dd.DynamicInvoke((double?) 1);
+            re = dd.DynamicInvoke((double?)1);
             Assert.Equal(1m, re);
         }
-        
+
         /// <summary>
         /// 测试类型转换，dateTime与其他类型互转
         /// </summary>
@@ -1947,10 +2118,10 @@ namespace SummerBoot.Test.IlGenerator
             object re;
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(DateTime));
             re = dd.DynamicInvoke("2022-10-28 16:00:00");
-            Assert.Equal(new DateTime(2022,10,28,16,0,0), re);
+            Assert.Equal(new DateTime(2022, 10, 28, 16, 0, 0), re);
 
             //dateTime=>string
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(DateTime),typeof(string));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(DateTime), typeof(string));
             re = dd.DynamicInvoke(new DateTime(2022, 10, 28, 16, 0, 0));
             Assert.Equal("10/28/2022 16:00:00", re);
         }
@@ -1972,12 +2143,12 @@ namespace SummerBoot.Test.IlGenerator
 
             //dateTime?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(DateTime?), typeof(string));
-            re = dd.DynamicInvoke((DateTime?) new DateTime(2022, 10, 28, 16, 0, 0));
+            re = dd.DynamicInvoke((DateTime?)new DateTime(2022, 10, 28, 16, 0, 0));
             Assert.Equal("10/28/2022 16:00:00", re);
         }
 
-        
-        
+
+
         /// <summary>
         /// 测试类型转换，枚举与其他类型互转
         /// </summary>
@@ -1993,7 +2164,7 @@ namespace SummerBoot.Test.IlGenerator
             re = dd.DynamicInvoke(IlEnum.a);
             Assert.Equal(1L, re);
             //long=>enum
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(long),typeof(IlEnum));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(long), typeof(IlEnum));
             re = dd.DynamicInvoke(1L);
             Assert.Equal(IlEnum.a, re);
 
@@ -2003,7 +2174,7 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal("a", re);
 
             //string=>enum
-            dd = BuildConvertTypeToTargetTypeDelegate(typeof(string),typeof(IlEnum));
+            dd = BuildConvertTypeToTargetTypeDelegate(typeof(string), typeof(IlEnum));
             re = dd.DynamicInvoke("a");
             Assert.Equal(IlEnum.a, re);
 
@@ -2025,16 +2196,16 @@ namespace SummerBoot.Test.IlGenerator
             Delegate dd;
             object re;
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(IlEnum?), typeof(long?));
-            re = dd.DynamicInvoke((IlEnum?) IlEnum.a);
+            re = dd.DynamicInvoke((IlEnum?)IlEnum.a);
             Assert.Equal(1L, re);
             //long?=>enum?
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(long?), typeof(IlEnum?));
-            re = dd.DynamicInvoke((long?) 1L);
+            re = dd.DynamicInvoke((long?)1L);
             Assert.Equal(IlEnum.a, re);
 
             //enum?=>string
             dd = BuildConvertTypeToTargetTypeDelegate(typeof(IlEnum?), typeof(string));
-            re = dd.DynamicInvoke((IlEnum?) IlEnum.a);
+            re = dd.DynamicInvoke((IlEnum?)IlEnum.a);
             Assert.Equal("a", re);
 
             //string=>enum?
@@ -2047,8 +2218,8 @@ namespace SummerBoot.Test.IlGenerator
             re = dd.DynamicInvoke("1");
             Assert.Equal(IlEnum.a, re);
         }
-        
-        public static Delegate BuildConvertTypeToTargetTypeDelegate(Type fromType,Type toType)
+
+        public static Delegate BuildConvertTypeToTargetTypeDelegate(Type fromType, Type toType)
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), toType,
                 new Type[] { fromType });

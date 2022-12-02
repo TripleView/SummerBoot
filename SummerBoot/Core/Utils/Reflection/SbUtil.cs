@@ -132,6 +132,17 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
+        /// 判断是否为原生值类型
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsPrimitiveValueType(this Type type)
+        {
+            return type.IsValueType && type.IsPrimitive;
+        }
+
+
+        /// <summary>
         /// 根据类名获得Type实例
         /// </summary>
         /// <param name="typeName"></param>
@@ -248,11 +259,11 @@ namespace SummerBoot.Core
             else
             {
                 il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Castclass,type);
+                il.Emit(OpCodes.Castclass, type);
                 il.Emit(OpCodes.Callvirt, property.GetGetMethod());
                 il.Emit(OpCodes.Box, property.PropertyType);
             }
-           
+
             il.Emit(OpCodes.Ret);
 
             var lambda = dynamicMethod.CreateDelegate(typeof(Func<T, object>));
@@ -540,7 +551,7 @@ namespace SummerBoot.Core
                 {
                     var propertyInfo = propertyInfos[i];
 
-                    if (propertyInfo.GetIndexParameters().Length> 0)
+                    if (propertyInfo.GetIndexParameters().Length > 0)
                     {
                         continue;
                     }

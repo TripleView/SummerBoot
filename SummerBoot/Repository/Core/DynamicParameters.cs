@@ -64,8 +64,8 @@ namespace SummerBoot.Repository.Core
             var memberInfos=type.GetMemberInfoCachesForGetting();
             foreach (var memberInfoCache in memberInfos)
             {
-                var name = memberInfoCache.PropertyName;
-                var value = entity.GetPropertyValueByEmit(memberInfoCache.PropertyName);
+                var name = memberInfoCache.Name;
+                var value = entity.GetPropertyValueByEmit(name);
                 paramInfos[name] = new ParamInfo
                 {
                     Name = name,

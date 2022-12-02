@@ -382,6 +382,11 @@ namespace SummerBoot.Repository
         public static Dictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
             new Dictionary<Guid, Dictionary<Type, Type>>();
 
+        /// <summary>
+        /// 查询超时时间
+        /// </summary>
+        public int CommandTimeout { get; set; } = 3000;
+
         public Guid Id { private set; get; }
 
         public DatabaseUnit(Type iUnitOfWorkType, Type dbConnectionType, string connectionString)
@@ -424,12 +429,30 @@ namespace SummerBoot.Repository
         /// <typeparam name="T"></typeparam>
         /// <param name="type"></param>
         /// <param name="t"></param>
-        public void SetTypeHandler<T>(Type type, ITypeHandler<T> t)
+        public void SetTypeHandler(Type type, ITypeHandler t)
+        {
+            this.InternalSetTypeHandler(type,t);
+            return;
+            //说明为可空类型
+            //var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
+            //if (nullableUnderlyingType != null)
+            //{
+            //    this.InternalSetTypeHandler(nullableUnderlyingType, t);
+            //}
+            //else
+            //{
+            //    nullableUnderlyingType = typeof(Nullable<>).MakeGenericType(type);
+            //    this.InternalSetTypeHandler(nullableUnderlyingType, t);
+            //}
+        }
+
+        public void InternalSetTypeHandler(Type type, ITypeHandler t)
         {
             var typeHandlerCacheType = DatabaseContext.GenerateTypeHandlerCacheClass(type);
             typeHandlerCacheType.GetMethod("SetHandler").Invoke(null, new object[] { t });
-            TypeHandlers[this.Id][type]= typeHandlerCacheType;
+            TypeHandlers[this.Id][type] = typeHandlerCacheType;
         }
+
 
         /// <summary>
         /// 数据库连接器类型

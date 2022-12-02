@@ -10,6 +10,7 @@ namespace SummerBoot.Repository.TypeHandler.Dialect.Oracle
     {
         public override bool Parse(object value)
         {
+            
             if ( value is bool boolValue)
             {
                 return boolValue;

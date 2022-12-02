@@ -24,6 +24,12 @@ namespace SummerBoot.Test.Cache
 
             };
             param.AddEntity(dog);
+
+            var actualParameters = param.GetParamInfos;
+            Assert.Equal(3, actualParameters.Count);
+            Assert.Equal("何pp", actualParameters["Name"].Value);
+            Assert.Equal(10, actualParameters["Age"].Value);
+            Assert.Equal(null, actualParameters["Kind"].Value);
         }
 
         [Fact]
@@ -49,7 +55,7 @@ namespace SummerBoot.Test.Cache
             Assert.Equal(3,para.Count);
             Assert.Equal("何pp", para[nameof(DogStruct3.Name)].Value);
             Assert.Equal(10, para[nameof(DogStruct3.Age)].Value);
-            Assert.Equal(null, para[nameof(DogStruct3.kind)].Value);
+            Assert.Equal(null, para[nameof(DogStruct3.Kind)].Value);
         }
 
     }

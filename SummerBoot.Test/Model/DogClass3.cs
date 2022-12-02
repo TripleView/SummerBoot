@@ -9,13 +9,13 @@
     {
         public string Name { get; set; }
         public int? Age { get; set; }
-        public DogKind? kind { get; set; }
+        public DogKind? Kind { get; set; }
     }
 
     public struct DogStruct3
     {
         public string Name { get; set; }
         public int? Age { get; set; }
-        public DogKind? kind { get; set; }
+        public DogKind? Kind { get; set; }
     }
 }

@@ -5,9 +5,9 @@ using System.Data;
 namespace SummerBoot.Test.IlGenerator
 {
 
-    public class GuidTypeHandler : ITypeHandler<Guid>
+    public class GuidTypeHandler : TypeHandler<Guid>
     {
-        public Guid Parse(object value)
+        public override Guid Parse(object value)
         {
             if (value is string str)
             {
@@ -16,7 +16,7 @@ namespace SummerBoot.Test.IlGenerator
             return Guid.NewGuid();
         }
 
-        public void SetValue(IDbDataParameter parameter, Guid value)
+        public override void SetValue(IDbDataParameter parameter, Guid value)
         {
             parameter.Value = value;
         }

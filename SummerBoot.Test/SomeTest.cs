@@ -27,7 +27,7 @@ namespace SummerBoot.Test
 
     public static class StaticClass
     {
-        private static ITypeHandler<int> Int3;
+        private static ITypeHandler Int3;
         public static int Test(int value)
         {
             Int3.SetValue(null,value);

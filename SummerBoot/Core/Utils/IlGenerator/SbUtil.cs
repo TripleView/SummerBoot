@@ -179,8 +179,19 @@ namespace SummerBoot.Core
                         return;
                     }
 
-                    throw new Exception(
-                        $"convert source type :{tempFromType.Name} to target type {tempToType.Name} error");
+                    il.Emit(OpCodes.Ldtoken, enumUnderlyingType);
+                    il.Emit(OpCodes.Call, GetTypeFromHandleMethod);
+                    il.Emit(OpCodes.Call, InvariantCulture);
+                    il.Emit(OpCodes.Call, ConvertChangeTypeMethod);
+                    il.Emit(OpCodes.Unbox_Any, tempToType);
+                    //如果是可空类型，则返回值要转为可空类型
+                    if (toTypeNullableType != null)
+                    {
+                        il.Emit(OpCodes.Newobj, toType.GetConstructor(new[] { tempToType }));
+                    }
+                    return;
+                    //throw new Exception(
+                    //    $"convert source type :{tempFromType.Name} to target type {tempToType.Name} error");
                 }
                 else
                 {
@@ -286,7 +297,7 @@ namespace SummerBoot.Core
                     il.Emit(OpCodes.Ceq);
                 }
 
-                //如果是可控类型，则返回值要转为可空类型
+                //如果是可空类型，则返回值要转为可空类型
                 if (toTypeNullableType != null)
                 {
                     il.Emit(OpCodes.Newobj, toType.GetConstructor(new[] {tempToType}));
