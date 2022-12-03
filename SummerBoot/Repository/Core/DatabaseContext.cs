@@ -209,6 +209,23 @@ namespace SummerBoot.Repository.Core
             }
         }
 
+        private static IDataReader ExecuteReaderWithFlagsFallback(IDbCommand cmd, bool wasClosed, CommandBehavior behavior)
+        {
+            try
+            {
+                return cmd.ExecuteReader(GetBehavior(wasClosed, behavior));
+            }
+            catch (ArgumentException ex)
+            { 
+                throw;
+            }
+        }
+
+        private static CommandBehavior GetBehavior(bool close, CommandBehavior behavior)
+        {
+            return close ? (behavior | CommandBehavior.CloseConnection) : behavior;
+        }
+
         public static async Task<int> ExecuteAsync(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
             if (sql.IsNullOrWhiteSpace())
