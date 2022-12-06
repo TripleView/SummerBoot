@@ -119,6 +119,7 @@ namespace SummerBoot.Repository
         {
             var dbConnection = (IDbConnection)DatabaseUnit.DbConnectionType.CreateInstance(null);
             dbConnection.ConnectionString = DatabaseUnit.ConnectionString;
+            
             dbConnection.Open();
             return dbConnection;
         }
@@ -136,7 +137,11 @@ namespace SummerBoot.Repository
             }
 
             shareDbTransactionLinkDbConnection ??= this.GetDbConnection();
-
+            if (shareDbTransactionLinkDbConnection.State == ConnectionState.Closed)
+            {
+                shareDbTransactionLinkDbConnection.Open();
+            }
+            
             shareDbTransaction = shareDbTransactionLinkDbConnection.BeginTransaction();
 
             return shareDbTransaction;

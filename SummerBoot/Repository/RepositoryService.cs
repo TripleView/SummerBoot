@@ -12,6 +12,10 @@ namespace SummerBoot.Repository
 {
     public class RepositoryService : RepositoryAspectSupport
     {
+        public RepositoryService(IUnitOfWork uow, IDbFactory dbFactory):base(uow, dbFactory)
+        {
+        }
+
         public async Task ExecuteNoReturnAsync(List<object> originArgs, MethodInfo method, IServiceProvider serviceProvider)
         {
             var args = new List<object>();

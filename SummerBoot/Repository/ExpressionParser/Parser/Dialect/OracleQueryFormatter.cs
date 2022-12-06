@@ -169,7 +169,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 var softDeleteColumn = tablex.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
                 if (softDeleteColumn != null)
                 {
-                    var softDeleteParameterName = BoxParameter(1);
+                    var softDeleteParameterName = BoxParameter(1, typeof(int));
                     if (!hasWhere)
                     {
                         _sb.Append(" WHERE ");
@@ -200,16 +200,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             var hasSkip = select.Skip.HasValue;
             if (hasSkip)
             {
-                _sb.Append(BoxParameter(select.Skip.Value));
+                _sb.Append(BoxParameter(select.Skip.Value, typeof(int?)));
             }
             else
             {
-                _sb.Append(BoxParameter(0));
+                _sb.Append(BoxParameter(0, typeof(int)));
             }
 
             _sb.AppendFormat(" AND {0}.pageNo<=", BoxTableNameOrColumnName(externalAlias));
             var theLast = select.Skip.GetValueOrDefault(0) + select.Take.GetValueOrDefault(0);
-            _sb.Append(BoxParameter(theLast));
+            _sb.Append(BoxParameter(theLast, typeof(int)));
         }
 
         public override DbQueryResult Insert<T>(T insertEntity)

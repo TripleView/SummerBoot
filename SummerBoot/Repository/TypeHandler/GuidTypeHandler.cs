@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Data;
-using Dapper;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.TypeHandler
 {
     /// <summary>
     /// Conversion between <see cref="Guid"/> and byte array data type 
     /// </summary>
-    public class GuidTypeHandler : SqlMapper.TypeHandler<Guid>
+    public class GuidTypeHandler : TypeHandler<Guid>
     {
         public override void SetValue(IDbDataParameter parameter, Guid value)
         {

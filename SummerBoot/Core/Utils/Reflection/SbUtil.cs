@@ -234,6 +234,7 @@ namespace SummerBoot.Core
         {
             var type = model.GetType();
             var property = type.GetProperty(propertyName);
+            
             if (property == null)
             {
                 throw new ArgumentNullException($"could not find property with name {propertyName}");

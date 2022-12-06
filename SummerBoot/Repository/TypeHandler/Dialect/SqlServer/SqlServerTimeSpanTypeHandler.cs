@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Data;
-using Dapper;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.TypeHandler.Dialect.SqlServer
 {
-    public class SqlServerTimeSpanTypeHandler : SqlMapper.TypeHandler<TimeSpan>
+    public class SqlServerTimeSpanTypeHandler : TypeHandler<TimeSpan>
     {
         public override void SetValue(IDbDataParameter parameter, TimeSpan value)
         {

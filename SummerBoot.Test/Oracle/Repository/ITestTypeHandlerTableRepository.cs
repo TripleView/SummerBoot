@@ -3,7 +3,7 @@ using SummerBoot.Test.Oracle.Models;
 
 namespace SummerBoot.Test.Oracle.Repository
 {
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface ITestTypeHandlerTableRepository : IBaseRepository<TestTypeHandlerTable>
     {
         

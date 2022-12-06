@@ -28,13 +28,141 @@ namespace SummerBoot.Test.IlGenerator
 {
     public class IlGeneratorTest
     {
-
         /// <summary>
-        /// 测试类型转换函数
+        /// 查询多结果集
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         [Fact]
-        public void TestChangeTypeToOtherType()
+        public void TestQueryMulti()
+        {
+            //var intTypeHandler = new IntTypeHandler();
+            //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+
+            var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+    
+            databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+
+                try
+                {
+                    cmd.CommandText = "DROP TABLE TestQueryMulti";
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                }
+
+                cmd.CommandText = @"CREATE TABLE TestQueryMulti(
+                Id INT auto_increment NOT null,
+                Name varchar(100) NULL,
+                Age INT NULL,
+CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
+                    )";
+                cmd.ExecuteNonQuery();
+                var insertSql = @"INSERT INTO TestQueryMulti(Name,Age) VALUES ('何泽平',30);Select LAST_INSERT_ID() id";
+                var gridReader = conn.QueryMultiple(databaseUnit, insertSql);
+                var id= gridReader.Read<int>().FirstOrDefault();
+                Assert.Equal(1, id);
+
+                using (var grid = conn.QueryMultiple(databaseUnit,"select 1; select 2; select @x; select 4", new { x = 3 }))
+                {
+                    var a = grid.Read<int>();
+                    var b = grid.Read<int>();
+                    var c = grid.Read<int>();
+                    var d = grid.Read<int>();
+
+                    Assert.Equal(1, a.Single());
+                    Assert.Equal(2, b.Single());
+                    Assert.Equal(3, c.Single());
+                    Assert.Equal(4, d.Single());
+                }
+               
+            }
+
+          
+        }
+
+        /// <summary>
+        /// 异步查询多结果集
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Fact]
+        public async Task TestQueryMultiAsync()
+        {
+            //var intTypeHandler = new IntTypeHandler();
+            //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+
+            var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+
+            databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+
+                try
+                {
+                    cmd.CommandText = "DROP TABLE TestQueryMulti";
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                }
+
+                cmd.CommandText = @"CREATE TABLE TestQueryMulti(
+                Id INT auto_increment NOT null,
+                Name varchar(100) NULL,
+                Age INT NULL,
+CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
+                    )";
+                cmd.ExecuteNonQuery();
+                var insertSql = @"INSERT INTO TestQueryMulti(Name,Age) VALUES ('何泽平',30);Select LAST_INSERT_ID() id";
+                var gridReader = await conn.QueryMultipleAsync(databaseUnit, insertSql);
+                var id = (await gridReader.ReadAsync<int>()).FirstOrDefault();
+                Assert.Equal(1, id);
+
+                using (var grid = await conn.QueryMultipleAsync(databaseUnit, "select 1; select 2; select @x; select 4", new { x = 3 }))
+                {
+                    var a = await grid.ReadAsync<int>();
+                    var b = await grid.ReadAsync<int>();
+                    var c = await grid.ReadAsync<int>();
+                    var d = await grid.ReadAsync<int>();
+
+                    Assert.Equal(1, a.Single());
+                    Assert.Equal(2, b.Single());
+                    Assert.Equal(3, c.Single());
+                    Assert.Equal(4, d.Single());
+                }
+
+            }
+
+
+        }
+        /// <summary>
+        /// 测试类型转换函数-枚举
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Fact]
+        public void TestChangeTypeToOtherType_Enum()
         {
             var func = DatabaseContext.ChangeTypeToOtherType<IlEnum>(typeof(int));
             var r1 = func(1);
@@ -42,6 +170,14 @@ namespace SummerBoot.Test.IlGenerator
             var r2 = func(2);
             Assert.Equal(IlEnum.b, r2);
 
+        }
+
+        /// <summary>
+        /// 测试类型转换函数-可空类型
+        /// </summary>
+        [Fact]
+        public void TestChangeTypeToOtherType_Nullable()
+        {
             //测试可空版本
             var func2 = DatabaseContext.ChangeTypeToOtherType<IlEnum?>(typeof(int));
             var r3 = func2(1);
@@ -54,12 +190,35 @@ namespace SummerBoot.Test.IlGenerator
             Assert.Equal(IlEnum.a, r5);
             var r6 = func3(2);
             Assert.Equal(IlEnum.b, r6);
+       
+        }
+
+        /// <summary>
+        /// 测试类型转换函数-字符串类型
+        /// </summary>
+        [Fact]
+        public void TestChangeTypeToOtherType_String()
+        {
             //测试string 类型
             var func4 = DatabaseContext.ChangeTypeToOtherType<IlEnum?>(typeof(string));
             var r7 = func4("1");
             Assert.Equal(IlEnum.a, r7);
             var r8 = func4("2");
             Assert.Equal(IlEnum.b, r8);
+        }
+
+        /// <summary>
+        /// 测试类型转换函数-可空类型
+        /// </summary>
+        [Fact]
+        public void TestChangeTypeToOtherType_Dynamic()
+        {
+            dynamic a = "abc";
+            //测试string 类型
+            var func4 = DatabaseContext.ChangeTypeToOtherType<dynamic>(typeof(string));
+            var r7 = func4("1");
+            Assert.Equal("1", r7);
+          
         }
 
         /// <summary>
@@ -128,6 +287,7 @@ namespace SummerBoot.Test.IlGenerator
         [Fact]
         public void TestQueryWithClass()
         {
+            var c = 1 & 2;
             //var intTypeHandler = new IntTypeHandler();
             //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
             //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
@@ -190,6 +350,126 @@ namespace SummerBoot.Test.IlGenerator
                 var result4 = conn.Query<int>(databaseUnit, sql4, new { id = guidValue }).ToList();
                 Assert.Equal(1, result4.Count);
                 Assert.Equal(2, result4[0]);
+            }
+        }
+
+        /// <summary>
+        /// 查询单个或默认
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Fact]
+        public void TestQueryFirstOrDefaultWithClass()
+        {
+            var c = 1 & 2;
+            //var intTypeHandler = new IntTypeHandler();
+            //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+
+            var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+            databaseUnit.SetTypeHandler(typeof(int), new IntTypeHandler());
+            databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+
+                try
+                {
+                    cmd.CommandText = "DROP TABLE test";
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                }
+
+                cmd.CommandText = @"CREATE TABLE test (
+                id varchar(100),
+                Name varchar(100) NULL,
+                Age INT NULL
+                    )";
+                cmd.ExecuteNonQuery();
+                var insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString() + "')";
+                var effectiveRows = conn.Execute(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
+
+                var guidValue = Guid.NewGuid().ToString();
+                insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',2,'" + guidValue + "')";
+                effectiveRows = conn.Execute(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
+
+                var sql = "select * from test where id=@id";
+                var result = conn.QueryFirstOrDefault<IlPerson>(databaseUnit, sql, new { id = guidValue });
+                Assert.Equal(new Guid(guidValue), result.Id);
+
+                var result2 = conn.QueryFirstOrDefault<IlPerson>(databaseUnit, sql, new { id = Guid.NewGuid().ToString() });
+                Assert.Equal(null, result2);
+            }
+        }
+
+        /// <summary>
+        /// 异步查询单个或默认
+        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Fact]
+        public async Task TestQueryFirstOrDefaultWithClassAsync()
+        {
+            var c = 1 & 2;
+            //var intTypeHandler = new IntTypeHandler();
+            //var cacheType = DatabaseContext.GenerateTypeHandlerCacheClass(typeof(int));
+            //cacheType.GetMethod("SetHandler").Invoke(null, new object[] { intTypeHandler });
+
+            var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentNullException("mysql connectionString must not be null");
+            }
+
+            var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
+            databaseUnit.SetTypeHandler(typeof(int), new IntTypeHandler());
+            databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+
+                try
+                {
+                    cmd.CommandText = "DROP TABLE test";
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                }
+
+                cmd.CommandText = @"CREATE TABLE test (
+                id varchar(100),
+                Name varchar(100) NULL,
+                Age INT NULL
+                    )";
+                cmd.ExecuteNonQuery();
+                var insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',30,'" + Guid.NewGuid().ToString() + "')";
+                var effectiveRows = conn.Execute(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
+
+                var guidValue = Guid.NewGuid().ToString();
+                insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',2,'" + guidValue + "')";
+                effectiveRows = conn.Execute(databaseUnit, insertSql);
+                Assert.Equal(1, effectiveRows);
+
+                var sql = "select * from test where id=@id";
+                var result =await conn.QueryFirstOrDefaultAsync<IlPerson>(databaseUnit, sql, new { id = guidValue });
+                Assert.Equal(new Guid(guidValue), result.Id);
+
+                var result2 = await conn.QueryFirstOrDefaultAsync<IlPerson>(databaseUnit, sql, new { id = Guid.NewGuid().ToString() });
+                Assert.Equal(null, result2);
             }
         }
 

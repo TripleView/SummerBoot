@@ -178,26 +178,28 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <param name="obj"></param>
         /// <param name="returnRealValue">是否返回实际值</param>
         /// <returns></returns>
-        protected string BoxParameter(object obj, bool returnRealValue = false)
+        protected string BoxParameter(object obj,Type valueType, bool returnRealValue = false)
         {
             var value = obj?.ToString();
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "";
-            }
-            if (char.IsNumber(value, 0))
-            {
-                value = value;
-            }
-            else
-            {
-                value = $"'{value}'";
-            }
 
             if (returnRealValue)
             {
                 return value;
             }
+
+            
+            //if (string.IsNullOrWhiteSpace(value))
+            //{
+            //    return "";
+            //}
+            //if (char.IsNumber(value, 0))
+            //{
+            //    value = value;
+            //}
+            //else
+            //{
+            //    value = $"'{value}'";
+            //}
 
             var finalValue = obj;
             if (obj is bool objBool)
@@ -209,7 +211,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var sqlParameter = new SqlParameter()
             {
                 ParameterName = parameterName,
-                ParameterType = obj.GetType(),
+                ParameterType = valueType,
                 Value = finalValue
             };
             this.sqlParameters.Add(sqlParameter);
@@ -225,7 +227,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var value = columnExpression.Value;
             if (value != null)
             {
-                tempStringBuilder.AppendFormat("{0} As {1}", BoxParameter(value, true), BoxTableNameOrColumnName(columnExpression.ColumnName));
+                tempStringBuilder.AppendFormat("{0} As {1}", BoxParameter(value, columnExpression.ValueType, true), BoxTableNameOrColumnName(columnExpression.ColumnName));
             }
             else
             {
@@ -322,7 +324,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var softDeleteColumn = tablex.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
                 if (softDeleteColumn != null)
                 {
-                    var softDeleteParameterName = BoxParameter(1);
+                    var softDeleteParameterName = BoxParameter(1, typeof(int));
                     if (!hasWhere)
                     {
                         _sb.Append(" WHERE ");
@@ -413,7 +415,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 _sb.Append(" ");
                 _sb.Append(whereConditionExpression.Operator);
                 _sb.Append(" ");
-                _sb.Append(BoxParameter(whereConditionExpression.Value));
+                _sb.Append(BoxParameter(whereConditionExpression.Value,whereConditionExpression.ValueType));
             }
             else if (whereExpression is FunctionWhereConditionExpression functionWhereConditionExpression)
             {
@@ -472,7 +474,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
-                var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                var parameterName = this.parameterPrefix + column.ColumnName;
                 parameterNameList.Add(parameterName);
             }
 
@@ -645,7 +647,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     {
                         this.VisitColumn(columnExpression);
                         _sb.Append("=");
-                        _sb.Append(BoxParameter(selectItem.Value));
+                        _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
                         var columnSetValueClause = _sb.ToString();
                         columnSetValueClauses.Add(columnSetValueClause);
                         _sb.Clear();
@@ -658,7 +660,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     {
                         this.VisitColumn(columnExpression);
                         _sb.Append("=");
-                        _sb.Append(BoxParameter(selectItem.Value));
+                        _sb.Append(BoxParameter(selectItem.Value,columnExpression.ValueType));
                         var columnSetValueClause = _sb.ToString();
                         columnSetValueClauses.Add(columnSetValueClause);
                         _sb.Clear();
@@ -709,7 +711,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var softDeleteColumn = table.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
                 if (softDeleteColumn != null)
                 {
-                    var softDeleteParameterName = BoxParameter(1);
+                    var softDeleteParameterName = BoxParameter(1, typeof(int));
                     _sb.Append($" where {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
 
@@ -723,7 +725,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return result;
         }
 
-        public DbQueryResult Get<T>(dynamic id)
+        public DbQueryResult Get<T>(object id)
         {
             Clear();
             var table = this.getTableExpression(typeof(T));
@@ -742,7 +744,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 throw new Exception("not exist key column like id");
             }
 
-            var parameterName = BoxParameter(id);
+            var parameterName = BoxParameter(id,id.GetType());
 
             _sb.Append($"select {string.Join(",", columnNameList)} from {tableName} where {BoxTableNameOrColumnName(keyColumn.ColumnName)}={parameterName}");
             //添加软删除过滤逻辑
@@ -752,7 +754,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var softDeleteColumn = table.Columns.FirstOrDefault(it => it.ColumnName.ToLower() == "active");
                 if (softDeleteColumn != null)
                 {
-                    var softDeleteParameterName = BoxParameter(1);
+                    var softDeleteParameterName = BoxParameter(1, typeof(int));
                     _sb.Append($" and {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
             }

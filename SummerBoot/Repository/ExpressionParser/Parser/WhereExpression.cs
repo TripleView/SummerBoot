@@ -30,5 +30,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 左边的部分
         /// </summary>
         public WhereExpression Right { get; set; }
+
+        /// <summary>
+        /// 值的类型
+        /// </summary>
+        public Type ValueType { get; set; }
     }
 }

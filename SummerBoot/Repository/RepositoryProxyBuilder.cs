@@ -27,7 +27,7 @@ namespace SummerBoot.Repository
         private string[] solidMethodNames = new string[] { "FastBatchInsertAsync","FastBatchInsert", "ToPage","ToPageAsync","InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
         public object Build(Type interfaceType, params object[] constructor)
         {
-            var temp = TargetTypeCache.ToJson();
+            throw new NotImplementedException();
             var cacheKey = interfaceType.FullName;
             Type resultType;
           
@@ -37,20 +37,34 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public void InitInterface(Type interfaceType)
+        public object Build(Type interfaceType, Type customBaseRepositoryType, Type repositoryServiceType, params object[] constructor)
         {
-            var cacheKey = interfaceType.FullName;
-            var resultType = BuildTargetType(interfaceType);
+            var cacheKey = GetCacheKey(interfaceType, customBaseRepositoryType, repositoryServiceType);
+            TargetTypeCache.TryGetValue(cacheKey, out var resultType);
+            //var resultType= TargetTypeCache.GetOrAdd(cacheKey, it => BuildTargetType(interfaceType, constructor));
+            var result = Activator.CreateInstance(resultType, args: constructor);
+            return result;
+        }
+
+        public void InitInterface(Type interfaceType,Type customBaseRepositoryType,Type repositoryServiceType)
+        {
+            var cacheKey = GetCacheKey(interfaceType, customBaseRepositoryType, repositoryServiceType);
+            var resultType = BuildTargetType(interfaceType, customBaseRepositoryType, repositoryServiceType);
             TargetTypeCache.TryAdd(cacheKey, resultType);
         }
 
+        public string GetCacheKey(Type interfaceType, Type customBaseRepositoryType, Type repositoryServiceType)
+        {
+            var cacheKey = interfaceType.FullName + ":" + customBaseRepositoryType.FullName + ":" + repositoryServiceType.FullName;
+            return cacheKey;
+        }
         /// <summary>
         /// 动态生成接口的实现类
         /// </summary>
         /// <param name="interfaceType"></param>
         /// <param name="constructor"></param>
         /// <returns></returns>
-        private Type BuildTargetType(Type interfaceType)
+        private Type BuildTargetType(Type interfaceType, Type customBaseRepositoryType, Type repositoryServiceType)
         {
             targetType = interfaceType;
             string assemblyName = targetType.Name + "ProxyAssembly";
@@ -105,7 +119,7 @@ namespace SummerBoot.Repository
                     {
                         targetMethods.AddRange(iInterface.GetMethods());
                         var genericType = iInterface.GetGenericArguments().First();
-                        baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(genericType);
+                        baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         targetMethods.AddRange(typeof(IQueryable).GetMethods());
@@ -126,7 +140,7 @@ namespace SummerBoot.Repository
             }
 
             //定义一个字段存放repositoryService
-            var repositoryType = typeof(RepositoryService);
+            var repositoryType = repositoryServiceType;
             FieldBuilder repositoryServiceField = typeBuilder.DefineField("repositoryService",
                 repositoryType, FieldAttributes.Public);
 

@@ -1,19 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using SummerBoot.Core;
+using SummerBoot.Repository.Generator.Dto;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Dapper;
-using SummerBoot.Core;
-using SummerBoot.Repository.Generator.Dto;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.Oracle
 {
     public class OracleDatabaseInfo : IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
-
+        private readonly DatabaseUnit databaseUnit;
         public OracleDatabaseInfo(IDbFactory dbFactory)
         {
             this.dbFactory = dbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
         }
 
         public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
@@ -193,11 +194,11 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 (select cu.* from all_cons_columns cu, all_constraints au where cu.constraint_name = au.constraint_name and au.constraint_type = 'P' and au.Table_Name=:tableName and au.owner=:schemaName  and cu.Table_Name=:tableName and cu.owner=:schemaName) b on 
                 b.table_name = a.Table_Name and a.column_name = b.column_name where a.Table_Name=:tableName and a.owner=:schemaName ORDER BY a.column_id) c left join all_col_comments d on c.ColumnName = d.column_name  and d.owner=:schemaName  where d.table_name =:tableName
                 ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(databaseUnit,sql, new { tableName, schemaName=schema }).ToList();
 
             var tableDescriptionSql = @"	SELECT comments FROM all_tab_comments WHERE table_name =:tableName AND TABLE_TYPE ='TABLE' and owner=:schemaName";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(databaseUnit,tableDescriptionSql, new { tableName, schemaName = schema });
 
             var result = new DatabaseTableInfoDto()
             {
@@ -239,7 +240,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
 
             var dbConnection = dbFactory.GetDbConnection();
             
-            var result = dbConnection.QueryFirstOrDefault<string>("select USERNAME  from user_users");
+            var result = dbConnection.QueryFirstOrDefault<string>(databaseUnit,"select USERNAME  from user_users");
             return result;
         }
     }

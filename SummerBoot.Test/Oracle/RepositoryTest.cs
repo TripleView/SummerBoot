@@ -16,7 +16,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using SummerBoot.Repository.TypeHandler;
 using SummerBoot.Test.Model;
 using Xunit;
 using Xunit.Priority;
@@ -37,7 +39,7 @@ namespace SummerBoot.Test.Oracle
         {
             InitOracleDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IOracleUnitOfWork>();
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -1030,6 +1032,7 @@ namespace SummerBoot.Test.Oracle
             using (var database = new OracleDb())    //????
             {
                 database.Database.EnsureDeleted();
+                //Thread.Sleep(2000);
                 database.Database.EnsureCreated();
                 database.Database.ExecuteSqlRaw(
                     "COMMENT ON TABLE NULLABLETABLE IS 'NullableTable'");
@@ -1093,8 +1096,11 @@ namespace SummerBoot.Test.Oracle
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(OracleConnection);
-                it.ConnectionString = connectionString;
+                it.AddDatabaseUnit<OracleConnection, IOracleUnitOfWork>(connectionString,
+                    x =>
+                    {
+                        x.BindIRepositoryTypeWithAttribute<OracleAutoRepositoryAttribute>();
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -1103,7 +1109,7 @@ namespace SummerBoot.Test.Oracle
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IOracleUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1257,13 +1263,16 @@ namespace SummerBoot.Test.Oracle
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IOracleUnitOfWork>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+           
+            
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
+       
 
             customerRepository.Where(it => it.Name == "testCustomer")
                 .SetValue(it => it.Age, 5)

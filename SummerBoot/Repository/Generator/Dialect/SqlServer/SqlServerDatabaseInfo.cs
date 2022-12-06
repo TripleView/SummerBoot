@@ -1,20 +1,20 @@
-﻿using SummerBoot.Repository.Generator.Dto;
+﻿using SummerBoot.Core;
+using SummerBoot.Repository.Generator.Dto;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using Dapper;
-using SummerBoot.Core;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 {
     public class SqlServerDatabaseInfo : IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
-
+        private readonly DatabaseUnit databaseUnit;
         public SqlServerDatabaseInfo(IDbFactory dbFactory)
         {
             this.dbFactory = dbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
         }
 
         public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
@@ -169,13 +169,13 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                left join sys.extended_properties ETP on ETP.major_id = c.id and ETP.minor_id = c.colid and ETP.name ='MS_Description' 
                left join syscomments CM on c.cdefault=CM.id
                where c.id = (select t.object_id  from sys.tables t join sys.schemas s on t.schema_id=s.schema_id where s.name =@schemaName and t.name =@tableName) ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(databaseUnit,sql, new { tableName, schemaName=schema }).ToList();
 
             var tableDescriptionSql = @"select etp.value from SYS.OBJECTS c
                     left join sys.extended_properties ETP on ETP.major_id = c.object_id   
                     where c.object_id =(select t.object_id  from sys.tables t join sys.schemas s on t.schema_id=s.schema_id where s.name =@schemaName and t.name =@tableName) and minor_id =0";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(databaseUnit, tableDescriptionSql, new { tableName, schemaName = schema });
 
             var result=new DatabaseTableInfoDto()
             {
@@ -216,7 +216,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 return schema;
             }
             var dbConnection = dbFactory.GetDbConnection();
-            var result = dbConnection.QueryFirstOrDefault<string>("select SCHEMA_name()");
+            var result = dbConnection.QueryFirstOrDefault<string>(databaseUnit, "select SCHEMA_name()");
             return result;
         }
     }

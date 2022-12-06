@@ -1,21 +1,22 @@
-﻿using System;
+﻿using SummerBoot.Core;
+using SummerBoot.Repository.Generator.Dto;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Dapper;
-using SummerBoot.Core;
-using SummerBoot.Repository.Generator.Dto;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.Sqlite
 {
     public class SqliteDatabaseInfo : IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
-
+        private readonly DatabaseUnit databaseUnit;
         public SqliteDatabaseInfo(IDbFactory dbFactory)
         {
             this.dbFactory = dbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
         }
 
         public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
@@ -106,7 +107,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             var sql = @"SELECT sql FROM sqlite_master WHERE tbl_name = @tableName";
             var fieldInfos = new List<DatabaseFieldInfoDto>();
 
-            var tableStruct = dbConnection.QueryFirstOrDefault<string>(sql, new { tableName });
+            var tableStruct = dbConnection.QueryFirstOrDefault<string>(databaseUnit,sql, new { tableName });
             if (tableStruct.HasText())
             {
                 var tableStructArr = tableStruct.Split(Environment.NewLine).ToList();

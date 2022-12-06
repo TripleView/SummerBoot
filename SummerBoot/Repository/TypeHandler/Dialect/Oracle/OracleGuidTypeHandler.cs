@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Data;
-using Dapper;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.TypeHandler.Dialect.Oracle
 {
-    public class OracleGuidTypeHandler : SqlMapper.TypeHandler<Guid>
+    public class OracleGuidTypeHandler : TypeHandler<Guid>
     {
         public override void SetValue(IDbDataParameter parameter, Guid value)
         {

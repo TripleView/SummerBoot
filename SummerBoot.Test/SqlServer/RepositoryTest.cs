@@ -1205,7 +1205,7 @@ namespace SummerBoot.Test.SqlServer
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
-            var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
+            //var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
 
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };

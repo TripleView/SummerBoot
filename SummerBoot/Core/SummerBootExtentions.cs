@@ -1,43 +1,27 @@
 ﻿
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using SummerBoot.Cache;
 using SummerBoot.Core.MvcExtension;
 using SummerBoot.Feign;
 using SummerBoot.Feign.Attributes;
 using SummerBoot.Feign.Nacos;
 using SummerBoot.Repository;
-using SummerBoot.Repository.Generator;
-using SummerBoot.Repository.Generator.Dialect;
-using SummerBoot.Repository.Generator.Dialect.Oracle;
-using SummerBoot.Repository.Generator.Dialect.Sqlite;
-using SummerBoot.Repository.Generator.Dialect.SqlServer;
-using SummerBoot.Repository.TypeHandler;
 using SummerBoot.Resource;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Globalization;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using SummerBoot.Cache;
-using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
-using SummerBoot.Repository.TypeHandler.Dialect.Sqlite;
-using SummerBoot.Repository.TypeHandler.Dialect.SqlServer;
-using Guid = System.Guid;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
-using System.Xml.Linq;
+using System.Threading.Tasks;
+using Guid = System.Guid;
 
 namespace SummerBoot.Core
 {
@@ -114,6 +98,8 @@ namespace SummerBoot.Core
             return services;
         }
 
+        private static readonly object lockObj=new object();
+
         public static IServiceCollection AddSummerBootRepository(this IServiceCollection services, Action<RepositoryOption> action)
         {
             if (action == null)
@@ -129,7 +115,9 @@ namespace SummerBoot.Core
             {
                 throw new ArgumentNullException("please add database");
             }
-
+            var repositoryProxyBuilder = new RepositoryProxyBuilder();
+            services.TryAddSingleton<IRepositoryProxyBuilder>(it => repositoryProxyBuilder);
+            
             var name = "Repository";
             string assemblyName = name + "ProxyAssembly";
             string moduleName = name + "ProxyModule";
@@ -152,290 +140,172 @@ namespace SummerBoot.Core
                 //注册工作单元
                 services.AddScoped(optionDatabaseUnit.Value.IUnitOfWorkType, customUnitOfWorkType);
                 //动态生成仓储基类
-                var customBaseRepository= GenerateCustomBaseRepository(modBuilder, optionDatabaseUnit.Value.IUnitOfWorkType, iCustomDbFactoryType);
-                services.AddScoped(typeof(IBaseRepository<>),customBaseRepository);
+                var customBaseRepositoryType= GenerateCustomBaseRepository(modBuilder, optionDatabaseUnit.Value.IUnitOfWorkType, iCustomDbFactoryType);
+                services.AddScoped(typeof(IBaseRepository<>), customBaseRepositoryType);
+                services.AddScoped(customBaseRepositoryType);
+                //动态生成RepositoryService
+                var repositoryServiceType= GenerateRepositoryService(modBuilder, optionDatabaseUnit.Value.IUnitOfWorkType, iCustomDbFactoryType);
+                services.AddScoped(repositoryServiceType);
+
+                var autoRepositoryTypes = optionDatabaseUnit.Value.BindRepositoryTypes;
+                foreach (var type in autoRepositoryTypes)
+                {
+
+                    var baseRepositoryType = type.GetInterfaces().FirstOrDefault(it =>
+                        it.IsGenericType && it.GetGenericTypeDefinition() == typeof(IBaseRepository<>));
+                    if (baseRepositoryType == null)
+                    {
+                        continue;
+                    }
+
+                    repositoryProxyBuilder.InitInterface(type, customBaseRepositoryType, repositoryServiceType);
+                    services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, optionDatabaseUnit.Value);
+                }
             }
 
-            if (option.ConnectionString.IsNullOrWhiteSpace()) throw new Exception("ConnectionString is Require");
-
-            if (option.DbConnectionType == null) throw new Exception("DbConnectionType is Require");
-
-            ResetDapperSqlMapperTypeMapDictionary();
             services.AddSingleton(t => option);
             RepositoryOption.Instance = option;
             return services;
 
-            services.TryAddScoped<IDbFactory, DbFactory>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped(typeof(BaseRepository<>));
-            //services.AddSbSingleton<IDataSource, DruidDataSource>();
-            services.AddScoped<RepositoryService>();
+            //services.AddTransient<IDbGenerator, DbGenerator>();
+            //if (option.IsSqlServer)
+            //{
+            //    services.AddTransient<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
+            //    services.AddTransient<IDatabaseInfo, SqlServerDatabaseInfo>();
+            //    //先缓存SqlBulkCopy的type类型
 
-            services.AddTransient<IDbGenerator, DbGenerator>();
-            if (option.IsSqlServer)
-            {
-                services.AddTransient<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
-                services.AddTransient<IDatabaseInfo, SqlServerDatabaseInfo>();
-                //先缓存SqlBulkCopy的type类型
+            //    try
+            //    {
+            //        var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
+            //        var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
+            //        var sqlBulkCopyOptionsType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
 
-                try
-                {
-                    var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
-                    var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
-                    var sqlBulkCopyOptionsType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
+            //        var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
+            //            it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
+            //                .Any(x => x == typeof(IDbConnection)));
+            //        var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
 
-                    var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
-                        it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
-                            .Any(x => x == typeof(IDbConnection)));
-                    var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
+            //        var constructorInfo3 = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
+            //            it.GetParameters().Length == 3 && it.GetParameters()[2].ParameterType.GetInterfaces()
+            //                .Any(x => x == typeof(IDbTransaction)));
+            //        var generateObjectDelegate3 = SbUtil.BuildGenerateObjectDelegate(constructorInfo3);
 
-                    var constructorInfo3 = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
-                        it.GetParameters().Length == 3 && it.GetParameters()[2].ParameterType.GetInterfaces()
-                            .Any(x => x == typeof(IDbTransaction)));
-                    var generateObjectDelegate3 = SbUtil.BuildGenerateObjectDelegate(constructorInfo3);
+            //        var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+            //             it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
+            //             it.GetParameters()[0].ParameterType == typeof(DataTable));
+            //        var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+            //            it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
+            //            it.GetParameters()[0].ParameterType == typeof(DataTable));
 
-                    var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                         it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
-                         it.GetParameters()[0].ParameterType == typeof(DataTable));
-                    var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                        it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
-                        it.GetParameters()[0].ParameterType == typeof(DataTable));
+            //        var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
+            //            .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 2 && it.GetParameters()[0].ParameterType == typeof(string)
+            //                       && it.GetParameters()[1].ParameterType == typeof(string));
 
-                    var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-                        .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 2 && it.GetParameters()[0].ParameterType == typeof(string)
-                                   && it.GetParameters()[1].ParameterType == typeof(string));
+            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
+            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
+            //        SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
+            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
 
-                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
-                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
-                    SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
-                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
+            //        //缓存委托
+            //        var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
+            //        var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
+            //        var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
+            //        SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
 
-                    //缓存委托
-                    var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
-                    var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
-                    var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
-                    SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
+            //        var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
+            //        var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
+            //        var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
+            //        SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodAsyncDelegate", sqlBulkCopyWriteMethodAsyncDelegate);
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegateErr", e);
+            //    }
+            //}
+            //else if (option.IsOracle)
+            //{
+            //    services.AddTransient<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
+            //    services.AddTransient<IDatabaseInfo, OracleDatabaseInfo>();
 
-                    var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
-                    var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
-                    var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
-                    SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodAsyncDelegate", sqlBulkCopyWriteMethodAsyncDelegate);
-                }
-                catch (Exception e)
-                {
-                    SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegateErr", e);
-                }
-            }
-            else if (option.IsOracle)
-            {
-                services.AddTransient<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
-                services.AddTransient<IDatabaseInfo, OracleDatabaseInfo>();
+            //}
+            //else if (option.IsMysql)
+            //{
+            //    services.AddTransient<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
+            //    services.AddTransient<IDatabaseInfo, MysqlDatabaseInfo>();
+            //    try
+            //    {
+            //        var mysqlAssembly = Assembly.Load("MySqlConnector");
+            //        var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
+            //        var mySqlBulkCopyResultType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyResult");
 
-            }
-            else if (option.IsMysql)
-            {
-                services.AddTransient<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
-                services.AddTransient<IDatabaseInfo, MysqlDatabaseInfo>();
-                try
-                {
-                    var mysqlAssembly = Assembly.Load("MySqlConnector");
-                    var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
-                    var mySqlBulkCopyResultType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyResult");
+            //        var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
 
-                    var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
+            //        var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+            //             it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
+            //             it.GetParameters()[0].ParameterType == typeof(DataTable));
+            //        var mysqlBulkCopyWriteMethodAsync = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+            //            it.Name == "WriteToServerAsync" && it.GetParameters().Length == 2 &&
+            //            it.GetParameters()[0].ParameterType == typeof(DataTable));
+            //        var addColumnMappingMethodInfo = mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
+            //            .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
+            //                      );
 
-                    var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                         it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
-                         it.GetParameters()[0].ParameterType == typeof(DataTable));
-                    var mysqlBulkCopyWriteMethodAsync = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                        it.Name == "WriteToServerAsync" && it.GetParameters().Length == 2 &&
-                        it.GetParameters()[0].ParameterType == typeof(DataTable));
-                    var addColumnMappingMethodInfo = mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-                        .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
-                                  );
+            //        //缓存委托
+            //        var mysqlBulkCopyWriteMethodTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(object) };
+            //        var mysqlBulkCopyWriteMethodFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodTypes);
+            //        var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
+            //        SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodDelegate", mysqlBulkCopyWriteMethodDelegate);
+            //        var mySqlBulkCopyResultValueTaskType = typeof(ValueTask<>).MakeGenericType(mySqlBulkCopyResultType);
+            //        var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
+            //        var mysqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodAsyncTypes);
+            //        var mysqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodAsyncFuncType, mysqlBulkCopyWriteMethodAsync);
+            //        SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodAsyncDelegate", mysqlBulkCopyWriteMethodAsyncDelegate);
 
-                    //缓存委托
-                    var mysqlBulkCopyWriteMethodTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(object) };
-                    var mysqlBulkCopyWriteMethodFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodTypes);
-                    var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
-                    SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodDelegate", mysqlBulkCopyWriteMethodDelegate);
-                    var mySqlBulkCopyResultValueTaskType = typeof(ValueTask<>).MakeGenericType(mySqlBulkCopyResultType);
-                    var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
-                    var mysqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodAsyncTypes);
-                    var mysqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodAsyncFuncType, mysqlBulkCopyWriteMethodAsync);
-                    SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodAsyncDelegate", mysqlBulkCopyWriteMethodAsyncDelegate);
+            //        var addColumnMappingMethodInfoTypes = new Type[] { mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType, mySqlBulkCopyColumnMappingType };
+            //        var addColumnMappingMethodInfoType = Expression.GetActionType(addColumnMappingMethodInfoTypes);
+            //        var addColumnMappingMethodInfoDelegate = Delegate.CreateDelegate(addColumnMappingMethodInfoType, addColumnMappingMethodInfo);
+            //        SbUtil.CacheDelegateDictionary.TryAdd("addColumnMappingMethodInfoDelegate", addColumnMappingMethodInfoDelegate);
 
-                    var addColumnMappingMethodInfoTypes = new Type[] { mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType, mySqlBulkCopyColumnMappingType };
-                    var addColumnMappingMethodInfoType = Expression.GetActionType(addColumnMappingMethodInfoTypes);
-                    var addColumnMappingMethodInfoDelegate = Delegate.CreateDelegate(addColumnMappingMethodInfoType, addColumnMappingMethodInfo);
-                    SbUtil.CacheDelegateDictionary.TryAdd("addColumnMappingMethodInfoDelegate", addColumnMappingMethodInfoDelegate);
+            //        SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethodAsync", mysqlBulkCopyWriteMethodAsync);
+            //        SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
+            //        SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
+            //        SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
 
-                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethodAsync", mysqlBulkCopyWriteMethodAsync);
-                    SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
-                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
-                    SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyDelegateErr", e);
+            //    }
+            //}
+            //else if (option.IsSqlite)
+            //{
+            //    services.AddTransient<IDatabaseFieldMapping, SqliteDatabaseFieldMapping>();
+            //    services.AddTransient<IDatabaseInfo, SqliteDatabaseInfo>();
+            //}
 
-                }
-                catch (Exception e)
-                {
-                    SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyDelegateErr", e);
-                }
-            }
-            else if (option.IsSqlite)
-            {
-                services.AddTransient<IDatabaseFieldMapping, SqliteDatabaseFieldMapping>();
-                services.AddTransient<IDatabaseInfo, SqliteDatabaseInfo>();
-            }
-
-            
-            var repositoryProxyBuilder = new RepositoryProxyBuilder();
-
-            var autoRepositoryTypes = new List<Type>();
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
-            foreach (var assembly in allAssemblies)
-            {
-                autoRepositoryTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<AutoRepositoryAttribute>() != null).ToList());
-            }
-
-            foreach (var type in autoRepositoryTypes)
-            {
-
-                var baseRepositoryType = type.GetInterfaces().FirstOrDefault(it =>
-                    it.IsGenericType && it.GetGenericTypeDefinition() == typeof(IBaseRepository<>));
-                if (baseRepositoryType == null)
-                {
-                    continue;
-                }
-
-                //注册dapper映射
-                RegisterDapperTypeMapTAndHandler(baseRepositoryType, option);
-                repositoryProxyBuilder.InitInterface(type);
-                services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped);
-            }
-
-            services.TryAddSingleton<IRepositoryProxyBuilder>(it => repositoryProxyBuilder);
-
-            return services;
+            //return services;
         }
-        /// <summary>
-        /// 重置dapper里类型映射的数组
-        /// </summary>
-        private static void ResetDapperSqlMapperTypeMapDictionary()
-        {
-            var typeMapField = typeof(SqlMapper).GetField("typeMap", BindingFlags.NonPublic | BindingFlags.Static);
-            typeMapField.SetValue(null, new Dictionary<Type, DbType?>(37)
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = null,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = null,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(byte?)] = DbType.Byte,
-                [typeof(sbyte?)] = DbType.SByte,
-                [typeof(short?)] = DbType.Int16,
-                [typeof(ushort?)] = DbType.UInt16,
-                [typeof(int?)] = DbType.Int32,
-                [typeof(uint?)] = DbType.UInt32,
-                [typeof(long?)] = DbType.Int64,
-                [typeof(ulong?)] = DbType.UInt64,
-                [typeof(float?)] = DbType.Single,
-                [typeof(double?)] = DbType.Double,
-                [typeof(decimal?)] = DbType.Decimal,
-                [typeof(bool?)] = DbType.Boolean,
-                [typeof(char?)] = DbType.StringFixedLength,
-                [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = null,
-                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan?)] = null,
-                [typeof(object)] = DbType.Object
-            });
-
-            var resetTypeHandlersMethod = typeof(SqlMapper).GetMethod("ResetTypeHandlers", BindingFlags.NonPublic | BindingFlags.Static);
-            resetTypeHandlersMethod.Invoke(null, new object?[1] { false });
-        }
-        /// <summary>
-        /// 注册dapper类型映射和类型处理程序
-        /// </summary>
-        /// <param name="baseRepositoryType"></param>
-        private static void RegisterDapperTypeMapTAndHandler(Type baseRepositoryType, RepositoryOption repositoryOption)
-        {
-            var entityType = baseRepositoryType.GetGenericArguments()[0];
-
-            var map = new CustomPropertyTypeMap(entityType, (type, columnName)
-                =>
-            {
-                return type.GetProperties().FirstOrDefault(prop =>
-                    (prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name).ToLower() == columnName.ToLower());
-            });
-
-            //oracle
-            if (repositoryOption.IsOracle || repositoryOption.IsMysql)
-            {
-                SqlMapper.RemoveTypeMap(typeof(TimeSpan));
-                SqlMapper.AddTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
-                if (repositoryOption.IsOracle)
-                {
-                    SqlMapper.RemoveTypeMap(typeof(bool));
-                    SqlMapper.AddTypeHandler(typeof(bool), new BoolNumericTypeHandler());
-                    SqlMapper.RemoveTypeMap(typeof(Guid));
-                    SqlMapper.AddTypeHandler(typeof(Guid), new OracleGuidTypeHandler());
-                }
-                else
-                {
-                    SqlMapper.RemoveTypeMap(typeof(Guid));
-                    SqlMapper.AddTypeHandler(typeof(Guid), new GuidTypeHandler());
-                }
-            }
-
-            if (repositoryOption.IsSqlite)
-            {
-                SqlMapper.RemoveTypeMap(typeof(Guid));
-                SqlMapper.AddTypeHandler(typeof(Guid), new SqliteGuidTypeHandler());
-                SqlMapper.RemoveTypeMap(typeof(TimeSpan));
-                SqlMapper.AddTypeHandler(typeof(TimeSpan), new SqliteTimeSpanTypeHandler());
-            }
-            if (repositoryOption.IsSqlServer)
-            {
-                SqlMapper.AddTypeMap(typeof(DateTime), DbType.DateTime2);
-            }
-
-
-            Dapper.SqlMapper.SetTypeMap(entityType, map);
-        }
-
+        
         private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
-            ServiceLifetime lifetime)
+            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType,DatabaseUnit databaseUnit)
         {
             if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
 
             object Factory(IServiceProvider provider)
             {
-                var repositoyProxyBuilder = provider.GetService<IRepositoryProxyBuilder>();
-                var repositoyService = provider.GetService<RepositoryService>();
+                var repositoyProxyBuilder = (RepositoryProxyBuilder)provider.GetService<IRepositoryProxyBuilder>();
+                var repositoyService = (RepositoryService)provider.GetService(repositoryServiceType);
+                repositoyService!.SetDatabaseUnit(databaseUnit);
                 var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IBaseRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
                 if (repositoryType != null)
                 {
                     var genericType = repositoryType.GetGenericArguments().First();
-                    var baseRepositoryType = typeof(BaseRepository<>).MakeGenericType(genericType);
+                    var baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
                     var baseRepository = provider.GetService(baseRepositoryType);
-                    var proxy1 = repositoyProxyBuilder.Build(serviceType, repositoyService, provider, baseRepository);
+                    var proxy1 = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider, baseRepository);
                     return proxy1;
                 }
-                var proxy = repositoyProxyBuilder.Build(serviceType, repositoyService, provider);
+                var proxy = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider);
                 return proxy;
             };
 
@@ -563,6 +433,46 @@ namespace SummerBoot.Core
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
                 new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
             
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+
+        /// <summary>
+        /// 生成RepositoryService类
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="ICustomUnitOfWorkType"></param>
+        /// <param name="ICustomDbFactoryType"></param>
+        /// <returns></returns>
+        private static Type GenerateRepositoryService(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type ICustomDbFactoryType)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = Type.EmptyTypes;
+            parentType = typeof(RepositoryService);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("RepositoryService" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+            string[] typeParamNames = { "T" };
+            
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
+
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);

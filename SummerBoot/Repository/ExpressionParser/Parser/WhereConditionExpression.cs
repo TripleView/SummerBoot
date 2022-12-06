@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq.Expressions;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -24,6 +25,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 具体的值
         /// </summary>
         public object Value { get; set; }
+    
         
     }
 }

@@ -14,7 +14,18 @@ namespace SummerBoot.Repository.Core
 
         public DynamicParameters(object entity)
         {
-            this.AddEntity(entity);
+            if (entity is DynamicParameters dp)
+            {
+                foreach (var dpGetParamInfo in dp.GetParamInfos)
+                {
+                    this.paramInfos.Add(dpGetParamInfo.Key,dpGetParamInfo.Value);
+                }
+            }
+            else
+            {
+                this.AddEntity(entity);
+            }
+            
         }
         private readonly Dictionary<string,ParamInfo> paramInfos = new Dictionary<string, ParamInfo>();
         public Dictionary<string, ParamInfo> GetParamInfos => paramInfos;
@@ -38,7 +49,23 @@ namespace SummerBoot.Repository.Core
             return parameterName;
         }
 
-        public void Add(string name, object value = null, DbType? dbType = null, ParameterDirection? direction = null, int? size = null, byte? precision = null, byte? scale = null)
+        public T Get<T>(string name)
+        {
+            var paramInfo = paramInfos[CleanParameterName(name)];
+
+            object val =paramInfo.AssociatedActualParameters!=null? paramInfo.AssociatedActualParameters.Value: paramInfo.Value;
+            if (val == DBNull.Value)
+            {
+                if (default(T) != null)
+                {
+                    throw new ApplicationException("Attempting to cast a DBNull to a non nullable type! Note that out/return parameters will not have updated values until the data stream completes (after the 'foreach' for Query(..., buffered: false), or after the GridReader has been disposed for QueryMultiple)");
+                }
+                return default;
+            }
+            return (T)val;
+        }
+
+        public void Add(string name, object value = null, DbType? dbType = null, ParameterDirection? direction = null, int? size = null, byte? precision = null, byte? scale = null,Type valueType=null)
         {
             name = CleanParameterName(name);
             paramInfos[name] = new ParamInfo
@@ -49,7 +76,8 @@ namespace SummerBoot.Repository.Core
                 DbType = dbType,
                 Size = size,
                 Precision = precision,
-                Scale = scale
+                Scale = scale,
+                ValueType = valueType
             };
         }
 
@@ -65,12 +93,13 @@ namespace SummerBoot.Repository.Core
             foreach (var memberInfoCache in memberInfos)
             {
                 var name = memberInfoCache.Name;
-                var value = entity.GetPropertyValueByEmit(name);
+                var value = entity.GetPropertyValueByEmit(memberInfoCache.PropertyName);
                 paramInfos[name] = new ParamInfo
                 {
                     Name = name,
                     Value = value,
-                    ParameterDirection = ParameterDirection.Input
+                    ParameterDirection = ParameterDirection.Input,
+                    ValueType = memberInfoCache.PropertyInfo.PropertyType
                 };
             }
         }

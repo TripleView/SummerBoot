@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <Compile Remove="Feign\HeaderAttribute.cs" />
+    <Compile Remove="Repository\BaseRepository.cs" />
     <Compile Remove="Repository\RepositoryAspectSupport3.cs" />
     <Compile Remove="Repository\RepositoryInterceptor.cs" />
     <Compile Remove="Repository\RepositoryInterceptor2.cs" />
@@ -41,8 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="3.1.27" />
+	  <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="3.1.27" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Polly" Version="7.2.3" />
     <PackageReference Include="YamlDotNet" Version="12.0.0" />

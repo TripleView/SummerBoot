@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using StackExchange.Redis;
 using SummerBoot.Core;
 using SummerBoot.Repository.Core;
+using SummerBoot.Repository.TypeHandler;
+using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
+using SummerBoot.Repository.TypeHandler.Dialect.Sqlite;
 
 namespace SummerBoot.Repository
 {
@@ -37,73 +41,73 @@ namespace SummerBoot.Repository
             get => connectionString;
         }
 
-        public bool IsSqlite
-        {
-            get
-            {
-                var dbName = DbConnectionType.FullName;
-                return dbName.ToLower().IndexOf("sqlite") > -1;
-            }
-        }
-        public bool IsMysql
-        {
-            get
-            {
-                var dbName = DbConnectionType.FullName;
-                return dbName.ToLower().IndexOf("mysql") > -1;
-            }
-        }
+        //public bool IsSqlite
+        //{
+        //    get
+        //    {
+        //        var dbName = DbConnectionType.FullName;
+        //        return dbName.ToLower().IndexOf("sqlite") > -1;
+        //    }
+        //}
+        //public bool IsMysql
+        //{
+        //    get
+        //    {
+        //        var dbName = DbConnectionType.FullName;
+        //        return dbName.ToLower().IndexOf("mysql") > -1;
+        //    }
+        //}
 
-        public bool IsSqlServer
-        {
-            get
-            {
-                var dbName = DbConnectionType.FullName;
-                return dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("microsoft") > -1
-                       || (dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("system") > -1);
-            }
-        }
-        public bool IsOracle
-        {
-            get
-            {
-                var dbName = DbConnectionType.FullName;
-                return dbName.ToLower().IndexOf("oracle") > -1;
-            }
-        }
+        //public bool IsSqlServer
+        //{
+        //    get
+        //    {
+        //        var dbName = DbConnectionType.FullName;
+        //        return dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("microsoft") > -1
+        //               || (dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("system") > -1);
+        //    }
+        //}
+        //public bool IsOracle
+        //{
+        //    get
+        //    {
+        //        var dbName = DbConnectionType.FullName;
+        //        return dbName.ToLower().IndexOf("oracle") > -1;
+        //    }
+        //}
 
-        /// <summary>
-        /// 数据库类型
-        /// </summary>
-        public DatabaseType DatabaseType
-        {
-            get
-            {
-                DatabaseType databaseType = DatabaseType.SqlServer;
-                if (IsMysql)
-                {
-                    databaseType = DatabaseType.Mysql;
-                }
+        ///// <summary>
+        ///// 数据库类型
+        ///// </summary>
+        //public DatabaseType DatabaseType
+        //{
+        //    get
+        //    {
+        //        DatabaseType databaseType = DatabaseType.SqlServer;
+        //        if (IsMysql)
+        //        {
+        //            databaseType = DatabaseType.Mysql;
+        //        }
 
-                if (IsOracle)
-                {
-                    databaseType = DatabaseType.Oracle;
-                }
+        //        if (IsOracle)
+        //        {
+        //            databaseType = DatabaseType.Oracle;
+        //        }
 
 
-                if (IsSqlServer)
-                {
-                    databaseType = DatabaseType.SqlServer;
-                }
+        //        if (IsSqlServer)
+        //        {
+        //            databaseType = DatabaseType.SqlServer;
+        //        }
 
-                if (IsSqlite)
-                {
-                    databaseType = DatabaseType.Sqlite;
-                }
+        //        if (IsSqlite)
+        //        {
+        //            databaseType = DatabaseType.Sqlite;
+        //        }
 
-                return databaseType;
-            }
-        }
+        //        return databaseType;
+        //    }
+        //}
         /// <summary>
         /// sql语句里的参数标识符
         /// </summary>
@@ -197,6 +201,33 @@ namespace SummerBoot.Repository
             }
 
             var databaseUnit = new DatabaseUnit(typeof(TUnitOfWork), typeof(TDbConnection), connectionString);
+            
+            //oracle
+            if (databaseUnit.IsOracle || databaseUnit.IsMysql)
+            {
+          
+                databaseUnit.SetTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
+                if (databaseUnit.IsOracle)
+                {
+                    databaseUnit.SetTypeHandler(typeof(bool), new BoolNumericTypeHandler());
+                    databaseUnit.SetTypeHandler(typeof(Guid), new OracleGuidTypeHandler());
+                }
+                else
+                {
+                    databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+                }
+            }
+
+            if (databaseUnit.IsSqlite)
+            {
+       
+                databaseUnit.SetTypeHandler(typeof(Guid), new SqliteGuidTypeHandler());
+                databaseUnit.SetTypeHandler(typeof(TimeSpan), new SqliteTimeSpanTypeHandler());
+            }
+            if (databaseUnit.IsSqlServer)
+            {
+                databaseUnit.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
+            }
 
             optionAction(databaseUnit);
 
@@ -312,7 +343,7 @@ namespace SummerBoot.Repository
                 [typeof(string)] = DbType.String,
                 [typeof(char)] = DbType.StringFixedLength,
                 [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = null,
+                [typeof(DateTime)] = DbType.DateTime,
                 [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
                 [typeof(TimeSpan)] = null,
                 [typeof(byte[])] = DbType.Binary,
@@ -330,7 +361,7 @@ namespace SummerBoot.Repository
                 [typeof(bool?)] = DbType.Boolean,
                 [typeof(char?)] = DbType.StringFixedLength,
                 [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = null,
+                [typeof(DateTime?)] = DbType.DateTime,
                 [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
                 [typeof(TimeSpan?)] = null,
                 [typeof(object)] = DbType.Object
@@ -407,6 +438,28 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
+        /// 通过特性绑定仓储接口
+        /// </summary>
+        /// <typeparam name="TAttribute"></typeparam>
+        public void BindIRepositoryTypeWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
+        {
+            var autoRepositoryTypes = new List<Type>();
+            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
+            foreach (var assembly in allAssemblies)
+            {
+                autoRepositoryTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>() != null).ToList());
+            }
+            foreach (var autoRepositoryType in autoRepositoryTypes)
+            {
+                this.Bind(autoRepositoryType);
+            }
+        }
+
+        public void Bind(Type iRepositoryType)
+        {
+            this.BindRepositoryTypes.Add(iRepositoryType);
+        }
+        /// <summary>
         /// 设置参数类型映射
         /// </summary>
         /// <param name="type"></param>
@@ -446,7 +499,7 @@ namespace SummerBoot.Repository
             //}
         }
 
-        public void InternalSetTypeHandler(Type type, ITypeHandler t)
+        private void InternalSetTypeHandler(Type type, ITypeHandler t)
         {
             var typeHandlerCacheType = DatabaseContext.GenerateTypeHandlerCacheClass(type);
             typeHandlerCacheType.GetMethod("SetHandler").Invoke(null, new object[] { t });

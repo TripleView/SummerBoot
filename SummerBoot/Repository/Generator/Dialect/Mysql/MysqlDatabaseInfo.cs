@@ -1,20 +1,20 @@
-﻿using SummerBoot.Repository.Generator.Dto;
+﻿using SummerBoot.Core;
+using SummerBoot.Repository.Generator.Dto;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using Dapper;
-using SummerBoot.Core;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 {
     public class MysqlDatabaseInfo : IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
-
+        private readonly DatabaseUnit databaseUnit;
         public MysqlDatabaseInfo(IDbFactory dbFactory)
         {
             this.dbFactory = dbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
         }
 
         public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
@@ -171,14 +171,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                     ORDER BY
                         TABLE_NAME,
                         ORDINAL_POSITION ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(databaseUnit,sql, new { tableName, schemaName=schema }).ToList();
 
             var tableDescriptionSql = @"SELECT 
                                         TABLE_COMMENT
                                         FROM information_schema.tables
                                         WHERE TABLE_SCHEMA =@schemaName and TABLE_NAME = @tableName ";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(databaseUnit, tableDescriptionSql, new { tableName, schemaName = schema });
 
             var result = new DatabaseTableInfoDto()
             {

@@ -6,9 +6,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Dapper;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Repository.Core;
 using SummerBoot.Repository.Generator.Dto;
 
 namespace SummerBoot.Repository.Generator
@@ -18,11 +18,13 @@ namespace SummerBoot.Repository.Generator
         private readonly IDatabaseFieldMapping databaseFieldMapping;
         private readonly IDbFactory dbFactory;
         private readonly IDatabaseInfo databaseInfo;
+        private readonly DatabaseUnit databaseUnit;
 
         public DbGenerator(IDatabaseFieldMapping databaseFieldMapping, IDbFactory dbFactory, IDatabaseInfo databaseInfo)
         {
             this.databaseFieldMapping = databaseFieldMapping;
             this.dbFactory = dbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
             this.databaseInfo = databaseInfo;
         }
 
@@ -31,17 +33,17 @@ namespace SummerBoot.Repository.Generator
             var dbConnection = dbFactory.GetDbConnection();
             if (generateDatabaseSqlResult.Body.HasText())
             {
-                dbConnection.Execute(generateDatabaseSqlResult.Body);
+                dbConnection.Execute(databaseUnit,generateDatabaseSqlResult.Body);
             }
 
             foreach (var fieldModifySql in generateDatabaseSqlResult.FieldModifySqls)
             {
-                dbConnection.Execute(fieldModifySql);
+                dbConnection.Execute(databaseUnit, fieldModifySql);
             }
 
             foreach (var description in generateDatabaseSqlResult.Descriptions)
             {
-                dbConnection.Execute(description);
+                dbConnection.Execute(databaseUnit, description);
             }
 
             dbConnection.Close();

@@ -1,4 +1,4 @@
-﻿using Dapper;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
@@ -11,12 +11,17 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository
 {
     public class RepositoryAspectSupport
     {
+        public RepositoryAspectSupport(IUnitOfWork uow, IDbFactory dbFactory)
+        {
+            this.uow = uow;
+            this.dbFactory = dbFactory;
+        }
         private IPageable pageable;
         private IServiceProvider ServiceProvider { set; get; }
 
@@ -27,6 +32,14 @@ namespace SummerBoot.Repository
         private IUnitOfWork uow;
 
         private IDbFactory dbFactory;
+
+        private DatabaseUnit databaseUnit;
+
+        public void SetDatabaseUnit(DatabaseUnit databaseUnit)
+        {
+            this.databaseUnit = databaseUnit;
+        }
+
         /// <summary>
         /// 参数字典
         /// </summary>
@@ -41,8 +54,8 @@ namespace SummerBoot.Repository
         private void Init()
         {
             //先获得工作单元和数据库工厂以及序列化器
-            uow = ServiceProvider.GetService<IUnitOfWork>();
-            dbFactory = ServiceProvider.GetService<IDbFactory>();
+            //uow = ServiceProvider.GetService<IUnitOfWork>();
+            //dbFactory = ServiceProvider.GetService<IDbFactory>();
             repositoryOption = ServiceProvider.GetService<RepositoryOption>();
             configuration = ServiceProvider.GetService<IConfiguration>();
             parameterDictionary.Clear();
@@ -128,15 +141,15 @@ namespace SummerBoot.Repository
 
                 SqlParser.SqlParser parser;
 
-                if (repositoryOption.IsOracle)
+                if (databaseUnit.IsOracle)
                 {
                     parser = new OracleParser();
                 }
-                else if (repositoryOption.IsSqlServer)
+                else if (databaseUnit.IsSqlServer)
                 {
                     parser = new SqlServerParser();
                 }
-                else if (repositoryOption.IsMysql)
+                else if (databaseUnit.IsMysql)
                 {
                     parser = new MysqlParser();
                 }
@@ -149,8 +162,8 @@ namespace SummerBoot.Repository
 
                 ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
 
-                var count = dbConnection.QueryFirst<int>(parseResult.CountSql, dbArgs, transaction: dbTransaction);
-                var resultList = dbConnection.Query<T>(parseResult.PageSql, dbArgs, transaction: dbTransaction).ToList();
+                var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit,parseResult.CountSql, dbArgs, transaction: dbTransaction);
+                var resultList = dbConnection.Query<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction).ToList();
                 result.TotalPages = count;
                 result.Data = resultList;
 
@@ -194,15 +207,15 @@ namespace SummerBoot.Repository
 
                 SqlParser.SqlParser parser;
 
-                if (repositoryOption.IsOracle)
+                if (databaseUnit.IsOracle)
                 {
                     parser = new OracleParser();
                 }
-                else if (repositoryOption.IsSqlServer)
+                else if (databaseUnit.IsSqlServer)
                 {
                     parser = new SqlServerParser();
                 }
-                else if (repositoryOption.IsMysql)
+                else if (databaseUnit.IsMysql)
                 {
                     parser = new MysqlParser();
                 }
@@ -215,8 +228,8 @@ namespace SummerBoot.Repository
 
                 ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
 
-                var count = await dbConnection.QueryFirstAsync<int>(parseResult.CountSql, dbArgs, transaction: dbTransaction);
-                var resultList = (await dbConnection.QueryAsync<T>(parseResult.PageSql, dbArgs, transaction: dbTransaction)).ToList();
+                var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, parseResult.CountSql, dbArgs, transaction: dbTransaction);
+                var resultList = (await dbConnection.QueryAsync<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction)).ToList();
                 result.TotalPages = count;
                 result.Data = resultList;
 
@@ -253,15 +266,15 @@ namespace SummerBoot.Repository
                 OpenDb();
                 if (baseTypeIsSameReturnType)
                 {
-                    var queryResult = dbConnection.QueryFirst<T>(sql, dbArgs, transaction: dbTransaction);
+                    var queryResult = dbConnection.QueryFirstOrDefault<T>(databaseUnit, sql, dbArgs, transaction: dbTransaction);
                     return queryResult;
                 }
                 else
                 {
-                    var queryResult = dbConnection.Query<TBaseType>(sql, dbArgs, transaction: dbTransaction);
+                    var queryResult = dbConnection.Query<TBaseType>(databaseUnit, sql, dbArgs, transaction: dbTransaction).ToList();
                     if (targetType.IsCollection())
                     {
-                        return (T)queryResult;
+                        return (T)(object)queryResult;
                     }
                 }
                 CloseDb();
@@ -294,15 +307,15 @@ namespace SummerBoot.Repository
 
                 if (baseTypeIsSameReturnType)
                 {
-                    var queryResult = await dbConnection.QueryAsync<T>(sql, dbArgs, transaction: dbTransaction);
+                    var queryResult = await dbConnection.QueryAsync<T>(databaseUnit, sql, dbArgs, transaction: dbTransaction);
                     return queryResult.FirstOrDefault();
                 }
                 else
                 {
-                    var queryResult = await dbConnection.QueryAsync<TBaseType>(sql, dbArgs, transaction: dbTransaction);
+                    var queryResult =( await dbConnection.QueryAsync<TBaseType>(databaseUnit, sql, dbArgs, transaction: dbTransaction)).ToList();
                     if (targetType.IsCollection())
                     {
-                        return (T)queryResult;
+                        return (T)(object)queryResult;
                     }
                 }
             }
@@ -337,7 +350,7 @@ namespace SummerBoot.Repository
             sql = ReplaceSqlBindWhereCondition(sql);
 
             OpenDb();
-            var executeResult = dbConnection.Execute(sql, dbArgs, transaction: dbTransaction);
+            var executeResult = dbConnection.Execute(databaseUnit, sql, dbArgs, transaction: dbTransaction);
             CloseDb();
 
             return executeResult;
@@ -357,7 +370,7 @@ namespace SummerBoot.Repository
             sql = GetValueByConfiguration(sql);
             sql = ReplaceSqlBindWhereCondition(sql);
             OpenDb();
-            var executeResult = await dbConnection.ExecuteAsync(sql, dbArgs, transaction: dbTransaction);
+            var executeResult = await dbConnection.ExecuteAsync(databaseUnit, sql, dbArgs, transaction: dbTransaction);
             CloseDb();
 
             return executeResult;
@@ -374,7 +387,7 @@ namespace SummerBoot.Repository
 
             //参数前缀
             var parameterPrefix = "";
-            switch (repositoryOption.DatabaseType)
+            switch (databaseUnit.DatabaseType)
             {
                 case DatabaseType.Mysql:
                 case DatabaseType.SqlServer:

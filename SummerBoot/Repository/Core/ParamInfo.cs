@@ -9,6 +9,11 @@ namespace SummerBoot.Repository.Core
     public class ParamInfo
     {
         /// <summary>
+        /// 实际关联的数据库参数
+        /// </summary>
+        public IDbDataParameter AssociatedActualParameters { get; set; }
+       
+        /// <summary>
         /// 参数名称
         /// </summary>
         public string Name { get; set; }
@@ -16,6 +21,10 @@ namespace SummerBoot.Repository.Core
         /// 参数值
         /// </summary>
         public object Value { get; set; }
+        /// <summary>
+        /// 值的类型
+        /// </summary>
+        public Type ValueType { get; set; }
         /// <summary>
         /// 参数方向
         /// </summary>

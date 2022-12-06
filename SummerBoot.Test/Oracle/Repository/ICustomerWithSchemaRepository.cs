@@ -5,12 +5,12 @@ using SummerBoot.Test.Oracle.Models;
 
 namespace SummerBoot.Test.Oracle.Repository
 {
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface ICustomerWithSchemaRepository : IBaseRepository<CustomerWithSchema>
     {
         
     }
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface ICustomerWithSchema2Repository : IBaseRepository<CustomerWithSchema2>
     {
         [Select("select * from TEST1.CUSTOMERWITHSCHEMA order by age")]
