@@ -3,7 +3,7 @@ using SummerBoot.Test.Sqlite.Models;
 
 namespace SummerBoot.Test.Sqlite.Repository
 {
-    [AutoRepository]
+    [SqliteAutoRepositoryAttribute]
     public interface IOrderDetailRepository:IBaseRepository<OrderDetail>
     {
     }

@@ -38,7 +38,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 }
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
-                var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                var parameterName = this.parameterPrefix + column.ColumnName;
                 parameterNameList.Add(parameterName);
             }
 

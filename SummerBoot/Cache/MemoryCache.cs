@@ -42,7 +42,7 @@ namespace SummerBoot.Cache
 
         public async Task<CacheEntity<T>> GetValueAsync<T>(string key)
         {
-            return GetValue<T>(key);
+            return await Task.FromResult( GetValue<T>(key));
         }
 
         public bool Remove(string key)
@@ -53,7 +53,7 @@ namespace SummerBoot.Cache
 
         public async Task<bool> RemoveAsync(string key)
         {
-            return Remove(key);
+            return await Task.FromResult(Remove(key));
         }
 
         public bool SetValueWithAbsolute<T>(string key, T value, TimeSpan absoluteExpiration)
@@ -71,7 +71,7 @@ namespace SummerBoot.Cache
 
         public async Task<bool> SetValueWithAbsoluteAsync<T>(string key, T value, TimeSpan absoluteExpiration)
         {
-            return SetValueWithAbsolute(key, value, absoluteExpiration);
+            return await Task.FromResult(SetValueWithAbsolute(key, value, absoluteExpiration));
         }
 
         public bool SetValueWithSliding<T>(string key, T value, TimeSpan slidingExpiration)
@@ -89,7 +89,7 @@ namespace SummerBoot.Cache
 
         public async Task<bool> SetValueWithSlidingAsync<T>(string key, T value, TimeSpan slidingExpiration)
         {
-            return SetValueWithSliding(key, value, slidingExpiration);
+            return await Task.FromResult(SetValueWithSliding(key, value, slidingExpiration));
         }
     }
 }

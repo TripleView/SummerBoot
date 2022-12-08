@@ -30,7 +30,9 @@ namespace Example.WebApi.Controllers
         private readonly ITestUnitOfWork testUnitOfWork;
         private readonly IBaseRepository<Customer> baseRepository;
 
-        public HomeController(IConfiguration configuration, ITestUnitOfWork testUnitOfWork, IBaseRepository<Customer> baseRepository)
+        public HomeController(IConfiguration configuration, ITestUnitOfWork testUnitOfWork, IBaseRepository<Customer>
+            
+            baseRepository)
         {
             this.customerRepository = customerRepository;
             this.dbGenerator = dbGenerator;

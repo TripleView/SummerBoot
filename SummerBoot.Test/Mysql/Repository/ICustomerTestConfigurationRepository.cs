@@ -6,7 +6,7 @@ using SummerBoot.Test.Mysql.Models;
 
 namespace SummerBoot.Test.Mysql.Repository
 {
-    [AutoRepository]
+    [MysqlAutoRepositoryAttribute]
     public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer>
     {
         //异步

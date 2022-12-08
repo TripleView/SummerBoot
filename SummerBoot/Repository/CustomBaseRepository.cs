@@ -285,9 +285,9 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                    dynamicParameters.Add("id", null);
+      
                     var multiResult = dbConnection.QueryMultiple(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                    var id = multiResult.Read<int>();
+                    var id = multiResult.Read<int>().FirstOrDefault();
 
                     if (id != null)
                     {
@@ -305,9 +305,9 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                    //dynamicParameters.Add("id", null);
+                    
                     var multiResult = dbConnection.QueryMultiple(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                    var id = multiResult.Read<int>();
+                    var id = multiResult.Read<int>().FirstOrDefault();
 
                     if (id != null)
                     {
@@ -647,9 +647,9 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                    dynamicParameters.Add("id", null);
+                   
                     var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                    var id = multiResult.Read<int>();
+                    var id = multiResult.Read<int>().FirstOrDefault();
 
 
                     if (id != null)
@@ -670,7 +670,7 @@ namespace SummerBoot.Repository
                     var dynamicParameters = new DynamicParameters(t);
 
                     var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                    var id = multiResult.Read<int>();
+                    var id = multiResult.Read<int>().FirstOrDefault(); ;
 
                     if (id != null)
                     {

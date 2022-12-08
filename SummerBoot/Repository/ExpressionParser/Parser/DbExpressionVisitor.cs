@@ -412,7 +412,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                                 {
                                     var newValue = new List<object>(tempResult);
 
-                                    var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", newValue);
+                                    var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", newValue)
+                                    {
+                                        ValueType = method.DeclaringType
+                                    };
                                     conditionExpressions.Add(whereConditionExpression2);
                                     tempResult.Clear();
                                 }
@@ -425,7 +428,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         }
                         else
                         {
-                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", values);
+                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", values)
+                            {
+                                ValueType = method.DeclaringType
+                            };
                             return whereConditionExpression2;
                         }
 

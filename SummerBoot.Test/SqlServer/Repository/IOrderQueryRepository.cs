@@ -6,7 +6,7 @@ using SummerBoot.Test.SqlServer.Models;
 namespace SummerBoot.Test.SqlServer.Repository
 {
 
-    [AutoRepository]
+    [SqlServerAutoRepositoryAttribute]
     public interface IOrderQueryRepository
     {
         [Select("select a.OrderNo,b.ProductName from OrderHeader a join OrderDetail b on a.id=b.OrderHeaderId")]

@@ -987,7 +987,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
 
 
                 var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
-                databaseUnit.SetTypeHandler(typeof(Guid), new IntTypeHandler());
+                databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
 
                 while (dr.Read())
                 {
@@ -1090,12 +1090,9 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         {
             var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(bool),
                 Type.EmptyTypes);
-            var ctor = typeof(object).GetConstructor(Type.EmptyTypes);
+            var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-            var objLocal = il.DeclareLocal(typeof(decimal));
-
             il.Emit(OpCodes.Newobj, ctor);
-            il.Emit(OpCodes.Castclass, typeof(IlPerson));
             il.Emit(OpCodes.Isinst, typeof(object));
             il.Emit(OpCodes.Ret);
 
@@ -1114,7 +1111,6 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 Type.EmptyTypes);
             var ctor2 = typeof(DogClass3).GetConstructor(Type.EmptyTypes);
             var il2 = nullDynamicMethod.GetILGenerator();
-            var objLocal2 = il2.DeclareLocal(typeof(decimal));
             il2.Emit(OpCodes.Newobj, ctor2);
             il2.Emit(OpCodes.Isinst, typeof(IlPerson));
             il2.Emit(OpCodes.Ret);
@@ -1127,11 +1123,10 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 Type.EmptyTypes);
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-            var objLocal = il.DeclareLocal(typeof(decimal));
             il.Emit(OpCodes.Newobj, ctor);
             il.Emit(OpCodes.Isinst, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
-
+           
             var dd = (Func<IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPerson>));
             var re = dd();
             Assert.NotNull(re);

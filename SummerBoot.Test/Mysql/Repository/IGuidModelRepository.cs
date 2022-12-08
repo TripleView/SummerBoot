@@ -3,7 +3,7 @@ using SummerBoot.Test.Mysql.Models;
 
 namespace SummerBoot.Test.Mysql.Repository
 {
-    [AutoRepository]
+    [MysqlAutoRepositoryAttribute]
     public interface IGuidModelRepository : IBaseRepository<GuidModel>
     {
         

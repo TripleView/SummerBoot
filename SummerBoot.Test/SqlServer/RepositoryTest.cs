@@ -40,7 +40,7 @@ namespace SummerBoot.Test.SqlServer
         {
             InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
           
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
@@ -79,7 +79,7 @@ namespace SummerBoot.Test.SqlServer
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
 
@@ -334,7 +334,7 @@ namespace SummerBoot.Test.SqlServer
             var total = 2000;
             InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+       
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
 
@@ -554,7 +554,7 @@ namespace SummerBoot.Test.SqlServer
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
             var sb = new StringBuilder();
 
@@ -627,7 +627,7 @@ namespace SummerBoot.Test.SqlServer
         public void TestCreateTableFromEntityAndCrud()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -720,7 +720,7 @@ namespace SummerBoot.Test.SqlServer
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -876,7 +876,7 @@ namespace SummerBoot.Test.SqlServer
         {
 
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
@@ -1026,8 +1026,12 @@ namespace SummerBoot.Test.SqlServer
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(SqlConnection);
-                it.ConnectionString = connectionString;
+                it.AddDatabaseUnit<SqlConnection, IUnitOfWork1>(connectionString,
+                    x =>
+                    {
+                        x.BindIRepositoryTypeWithAttribute<SqlServerAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -1036,7 +1040,7 @@ namespace SummerBoot.Test.SqlServer
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1200,7 +1204,7 @@ namespace SummerBoot.Test.SqlServer
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1364,7 +1368,7 @@ namespace SummerBoot.Test.SqlServer
 
         public void TestLinq()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1382,7 +1386,7 @@ namespace SummerBoot.Test.SqlServer
 
         public void TestBaseQuery()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();

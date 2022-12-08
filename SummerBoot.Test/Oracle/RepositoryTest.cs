@@ -39,7 +39,7 @@ namespace SummerBoot.Test.Oracle
         {
             InitOracleDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IOracleUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -74,7 +74,7 @@ namespace SummerBoot.Test.Oracle
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
      
             var nullableTableList = new List<NullableTable>();
 
@@ -148,7 +148,7 @@ namespace SummerBoot.Test.Oracle
             var total = 2000;
             InitOracleDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
             sw.Start();
@@ -340,7 +340,7 @@ namespace SummerBoot.Test.Oracle
             var total = 2000;
             InitOracleDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
             sw.Start();
@@ -584,7 +584,7 @@ namespace SummerBoot.Test.Oracle
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
             var sb = new StringBuilder();
 
@@ -665,7 +665,7 @@ namespace SummerBoot.Test.Oracle
         {
             InitOracleDatabase();
 
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -747,7 +747,7 @@ namespace SummerBoot.Test.Oracle
         public void TestTypeHandler()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var testTypeHandlerTableRepository = serviceProvider.GetService<ITestTypeHandlerTableRepository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(TestTypeHandlerTable) });
             foreach (var generateDatabaseSqlResult in sqls)
@@ -795,7 +795,7 @@ namespace SummerBoot.Test.Oracle
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "CUSTOMER", "NULLABLETABLE", "NOTNULLABLETABLE" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -947,7 +947,7 @@ namespace SummerBoot.Test.Oracle
         public void TestGenerateDatabaseTableByCsharpClass()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
@@ -1096,10 +1096,11 @@ namespace SummerBoot.Test.Oracle
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<OracleConnection, IOracleUnitOfWork>(connectionString,
+                it.AddDatabaseUnit<OracleConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
                         x.BindIRepositoryTypeWithAttribute<OracleAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
                     });
             });
 
@@ -1109,7 +1110,7 @@ namespace SummerBoot.Test.Oracle
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IOracleUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1263,7 +1264,7 @@ namespace SummerBoot.Test.Oracle
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IOracleUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
            
             

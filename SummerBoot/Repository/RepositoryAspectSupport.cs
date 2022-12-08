@@ -474,8 +474,9 @@ namespace SummerBoot.Repository
 
                     if (value != null && active)
                     {
+                        var valueType = parameterType.GetGenericArguments()[0];
                         parameterDictionary.Add(parameterName, value);
-                        dbArgs.Add(parameterName, value);
+                        dbArgs.Add(parameterName, value,valueType: valueType);
                     }
                 }
                 else
@@ -483,7 +484,7 @@ namespace SummerBoot.Repository
                     //如果是值类型或者字符串直接添加到参数里
                     if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
                     {
-                        dbArgs.Add(parameterInfos[i].Name, args[i]);
+                        dbArgs.Add(parameterInfos[i].Name, args[i], valueType: parameterType);
                     }
                     //如果是类，则读取属性值，然后添加到参数里
                     else if (parameterType.IsClass)
@@ -495,7 +496,7 @@ namespace SummerBoot.Repository
                             var propertyTypeIsString = propertyType.GetTypeInfo() == typeof(string);
                             if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
                             {
-                                dbArgs.Add(info.Name, info.GetValue(args[i]));
+                                dbArgs.Add(info.Name, info.GetValue(args[i]), valueType: parameterType);
                             }
                             //查找所有条件语句替换
                             var propertyBindWhere = propertyType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition());
@@ -523,7 +524,7 @@ namespace SummerBoot.Repository
                                 if (value != null && active)
                                 {
                                     parameterDictionary.Add(parameterName, value);
-                                    dbArgs.Add(parameterName, value);
+                                    dbArgs.Add(parameterName, value, valueType: parameterType);
                                 }
                             }
                         }
@@ -545,7 +546,7 @@ namespace SummerBoot.Repository
 
             foreach (var parameter in originSqlParameters)
             {
-                dynamicParameters.Add(parameter.ParameterName, parameter.Value);
+                dynamicParameters.Add(parameter.ParameterName, parameter.Value,valueType:parameter.ParameterType);
             }
         }
 

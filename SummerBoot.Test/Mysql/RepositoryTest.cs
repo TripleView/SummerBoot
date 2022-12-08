@@ -41,7 +41,7 @@ namespace SummerBoot.Test.Mysql
         {
             InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -78,7 +78,7 @@ namespace SummerBoot.Test.Mysql
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
 
@@ -160,7 +160,7 @@ namespace SummerBoot.Test.Mysql
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var nullableTableList3 = new List<NullableTable>();
             var nullableTableList = new List<NullableTable>();
             for (int i = 0; i < total; i++)
@@ -398,7 +398,7 @@ namespace SummerBoot.Test.Mysql
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var nullableTableList3 = new List<NullableTable>();
             var nullableTableList = new List<NullableTable>();
 
@@ -679,7 +679,7 @@ namespace SummerBoot.Test.Mysql
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
             var sb = new StringBuilder();
 
@@ -751,7 +751,7 @@ namespace SummerBoot.Test.Mysql
         public void TestCreateTableFromEntityAndCrud()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -845,7 +845,7 @@ namespace SummerBoot.Test.Mysql
         {
             InitDatabase();
 
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -1001,7 +1001,7 @@ namespace SummerBoot.Test.Mysql
         {
 
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
 
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
@@ -1148,8 +1148,12 @@ namespace SummerBoot.Test.Mysql
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(MySqlConnection);
-                it.ConnectionString = connectionString;
+                it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(connectionString,
+                    x =>
+                    {
+                        x.BindIRepositoryTypeWithAttribute<MysqlAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -1158,7 +1162,7 @@ namespace SummerBoot.Test.Mysql
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1315,7 +1319,7 @@ namespace SummerBoot.Test.Mysql
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1475,7 +1479,7 @@ namespace SummerBoot.Test.Mysql
 
         public void TestLinq()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1493,7 +1497,7 @@ namespace SummerBoot.Test.Mysql
 
         public void TestBaseQuery()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();

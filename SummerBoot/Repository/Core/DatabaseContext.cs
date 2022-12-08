@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -14,9 +15,12 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
@@ -89,7 +93,7 @@ namespace SummerBoot.Repository.Core
 
             var effectiveType = typeof(T);
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
-            
+
             DbDataReader reader = null;
             IDbCommand cmd = null;
 
@@ -103,7 +107,7 @@ namespace SummerBoot.Repository.Core
 
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType, token);
 
-               
+
 
                 reader = await cmd.ExecuteReaderWithCommandBehaviorAsync(GetBehavior(wasClosed, queryFirstOrDefaultBehavior), token);
 
@@ -128,7 +132,7 @@ namespace SummerBoot.Repository.Core
         {
             var cmd = dbConnection.CreateCommand();
             cmd.Init();
-            cmd.CommandText = sql;
+
             cmd.CommandType = commandType ?? CommandType.Text;
             cmd.CommandTimeout = commandTimeout ?? databaseUnit.CommandTimeout;
 
@@ -141,13 +145,15 @@ namespace SummerBoot.Repository.Core
             if (param != null)
             {
                 var dbParameters = new DynamicParameters(param);
-                cmd.SetUpParameter(dbParameters, databaseUnit);
+                cmd.SetUpParameter(dbParameters, databaseUnit, ref sql);
             }
+
+            cmd.CommandText = sql;
 
             return cmd;
         }
 
-        public static async Task<IEnumerable<T>> QueryAsync<T>(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token=default)
+        public static async Task<IEnumerable<T>> QueryAsync<T>(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token = default)
         {
             if (sql.IsNullOrWhiteSpace())
             {
@@ -156,7 +162,7 @@ namespace SummerBoot.Repository.Core
 
             var effectiveType = typeof(T);
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
-            
+
             IDataReader reader = null;
             IDbCommand cmd = null;
             try
@@ -167,7 +173,7 @@ namespace SummerBoot.Repository.Core
                 }
 
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType, token);
-               
+
 
                 reader = await cmd.ExecuteReaderWithCommandBehaviorAsync(GetBehavior(wasClosed, queryBehavior), token);
 
@@ -211,7 +217,7 @@ namespace SummerBoot.Repository.Core
         }
 
 
-        public static async Task<GridReader> QueryMultipleAsync(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token=default)
+        public static async Task<GridReader> QueryMultipleAsync(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token = default)
         {
             if (sql.IsNullOrWhiteSpace())
             {
@@ -219,7 +225,7 @@ namespace SummerBoot.Repository.Core
             }
 
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
-            
+
             IDataReader reader = null;
             IDbCommand cmd = null;
             try
@@ -229,7 +235,7 @@ namespace SummerBoot.Repository.Core
                     await dbConnection.TryOpenAsync(token);
                 }
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType, token);
-               
+
 
                 reader = await ExecuteReaderWithCommandBehaviorAsync(cmd, GetBehavior(wasClosed, queryMultipleBehavior), token);
 
@@ -263,7 +269,7 @@ namespace SummerBoot.Repository.Core
             }
 
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
-            
+
             IDataReader reader = null;
             IDbCommand cmd = null;
             try
@@ -273,7 +279,7 @@ namespace SummerBoot.Repository.Core
                     dbConnection.Open();
                 }
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType);
-               
+
 
                 reader = ExecuteReaderWithCommandBehavior(cmd, GetBehavior(wasClosed, queryMultipleBehavior));
 
@@ -297,7 +303,7 @@ namespace SummerBoot.Repository.Core
 
             var effectiveType = typeof(T);
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
-            
+
             IDataReader reader = null;
             IDbCommand cmd = null;
             try
@@ -307,12 +313,12 @@ namespace SummerBoot.Repository.Core
                     dbConnection.Open();
                 }
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType);
-                
+
                 reader = ExecuteReaderWithCommandBehavior(cmd, GetBehavior(wasClosed, queryBehavior));
 
                 var func = GetDeserializer(typeof(T), reader, databaseUnit);
 
-                while (reader.Read())
+                while (reader.Read() && reader.FieldCount != 0)
                 {
                     object val = func(reader);
                     yield return GetValue<T>(reader, effectiveType, val);
@@ -353,7 +359,7 @@ namespace SummerBoot.Repository.Core
 
             var effectiveType = typeof(T);
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
-            
+
             IDataReader reader = null;
             IDbCommand cmd = null;
             T result = default;
@@ -364,7 +370,7 @@ namespace SummerBoot.Repository.Core
                     dbConnection.Open();
                 }
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType);
-               
+
 
                 reader = ExecuteReaderWithCommandBehavior(cmd, GetBehavior(wasClosed, queryFirstOrDefaultBehavior));
 
@@ -416,7 +422,7 @@ namespace SummerBoot.Repository.Core
             }
         }
 
-        public static async Task<int> ExecuteAsync(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token=default)
+        public static async Task<int> ExecuteAsync(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token = default)
         {
             if (sql.IsNullOrWhiteSpace())
             {
@@ -434,8 +440,8 @@ namespace SummerBoot.Repository.Core
                     await dbConnection.TryOpenAsync(token).ConfigureAwait(false);
                 }
 
-                cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType,token);
-               
+                cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType, token);
+
 
                 result = await cmd.ExecuteNonQueryAsync(token);
             }
@@ -460,7 +466,7 @@ namespace SummerBoot.Repository.Core
 
             bool wasClosed = dbConnection.State == ConnectionState.Closed;
             IDbCommand cmd = null;
-           
+
             try
             {
                 if (wasClosed)
@@ -469,7 +475,7 @@ namespace SummerBoot.Repository.Core
                 }
 
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType);
-               
+
 
                 result = cmd.ExecuteNonQuery();
             }
@@ -486,7 +492,11 @@ namespace SummerBoot.Repository.Core
         {
             //初始化command
             var cmdFunc = GetInit(cmd.GetType());
-            cmdFunc(cmd);
+            if (cmdFunc != null)
+            {
+                cmdFunc(cmd);
+            }
+
         }
 
         private static MethodInfo GetBasicPropertySetter(Type declaringType, string name, Type expectedType)
@@ -611,50 +621,164 @@ namespace SummerBoot.Repository.Core
             return result;
         }
 
-        public static void SetUpParameter(this IDbCommand dbCommand, DynamicParameters dynamicParameters, DatabaseUnit databaseUnit)
+        /// <summary>
+        /// set up parameter
+        /// 设置参数
+        /// </summary>
+        /// <param name="dbCommand"></param>
+        /// <param name="dynamicParameters"></param>
+        /// <param name="databaseUnit"></param>
+        /// <param name="sql"></param>
+        public static void SetUpParameter(this IDbCommand dbCommand, DynamicParameters dynamicParameters, DatabaseUnit databaseUnit, ref string sql)
         {
             var parameters = dynamicParameters.GetParamInfos;
             foreach (var info in parameters)
             {
-                var parameter = dbCommand.CreateParameter();
-                parameter.ParameterName = info.Key;
-                parameter.Direction = info.Value.ParameterDirection;
-
-                if (info.Value.DbType != null)
+                var paramInfo = info.Value;
+                //判断参数是否为列表
+                if (paramInfo.ValueType != null && paramInfo.ValueType.IsEnumerable() && !paramInfo.ValueType.IsString())
                 {
-                    parameter.DbType = info.Value.DbType.Value;
+                    var tempValues = paramInfo.Value as IEnumerable;
+                    if (tempValues == null)
+                    {
+                        var tempParamInfo = new ParamInfo()
+                        {
+                            Name = info.Key,
+                            Value = DBNull.Value,
+                            ValueType = typeof(DBNull)
+                        };
+                        SetUpSingleParameter(dbCommand, info.Key, tempParamInfo, databaseUnit);
+                        continue;
+                    }
+
+                    var count = 0;
+                    foreach (var tempValue in tempValues)
+                    {
+                        count++;
+                        if (count == 1 && tempValue == null)
+                        {
+                            throw new NotSupportedException("The first item in a list-expansion cannot be null");
+                        }
+                        var tempParamInfo = new ParamInfo()
+                        {
+                            Name = info.Key + count,
+                            Value = tempValue,
+                            ValueType = tempValue.GetType()
+                        };
+                        SetUpSingleParameter(dbCommand, tempParamInfo.Name, tempParamInfo, databaseUnit);
+                    }
+
+                    sql = GetInListSql(sql, paramInfo.Name, count);
+                }
+                //参数为单个类型
+                else
+                {
+                    SetUpSingleParameter(dbCommand, info.Key, info.Value, databaseUnit);
+                }
+            }
+        }
+
+        public static void SetUpSingleParameter(this IDbCommand dbCommand, string parameterName, ParamInfo paramInfo,
+            DatabaseUnit databaseUnit)
+        {
+            var parameter = dbCommand.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.Direction = paramInfo.ParameterDirection;
+
+            var isSetValue = true;
+            if (paramInfo.DbType != null)
+            {
+                parameter.DbType = paramInfo.DbType.Value;
+            }
+            else
+            {
+                var propertyType = paramInfo.ValueType;
+                if (propertyType == null)
+                {
+                    throw new NotSupportedException(parameter.ParameterName);
+                }
+
+                if (propertyType.IsNullable())
+                {
+                    propertyType = Nullable.GetUnderlyingType(propertyType);
+                }
+
+                if (propertyType == null)
+                {
+                    throw new NotSupportedException(parameter.ParameterName);
+                }
+
+                if (propertyType.IsEnum)
+                {
+                    propertyType = Enum.GetUnderlyingType(propertyType);
+                }
+
+                if (DatabaseUnit.TypeHandlers.ContainsKey(databaseUnit.Id) &&
+                    DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(propertyType))
+                {
+                    var typeHandlerCache = DatabaseUnit.TypeHandlers[databaseUnit.Id][propertyType];
+                    typeHandlerCache.GetMethod("SetValue").Invoke(null, new object[] { parameter, paramInfo.Value });
+                    isSetValue = false;
+                }
+
+                else if (databaseUnit.ParameterTypeMaps.ContainsKey(propertyType) && databaseUnit.ParameterTypeMaps[propertyType].HasValue)
+                {
+                    parameter.DbType = databaseUnit.ParameterTypeMaps[propertyType].Value;
                 }
                 else
                 {
-
-                    var propertyType = info.Value.ValueType ?? info.Value.Value.GetType();
-
-                    if (DatabaseUnit.TypeHandlers.ContainsKey(databaseUnit.Id) &&
-                        DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(propertyType))
-                    {
-                        var typeHandlerCache = DatabaseUnit.TypeHandlers[databaseUnit.Id][propertyType];
-                        typeHandlerCache.GetMethod("SetValue").Invoke(null, new object[] { parameter, info.Value.Value });
-                    }
-                    else if (databaseUnit.ParameterTypeMaps.ContainsKey(propertyType) && databaseUnit.ParameterTypeMaps[propertyType].HasValue)
-                    {
-                        parameter.DbType = databaseUnit.ParameterTypeMaps[propertyType].Value;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException(parameter.ParameterName + ":" + propertyType.Name);
-                    }
-
+                    throw new NotSupportedException(parameter.ParameterName + ":" + propertyType.Name);
                 }
 
-                parameter.Value = info.Value.Value;
-
-
-               
-                
-                info.Value.AssociatedActualParameters = parameter;
-
-                dbCommand.Parameters.Add(parameter);
             }
+
+            if (isSetValue)
+            {
+                if (paramInfo.Value is DBNull || paramInfo.Value is null)
+                {
+                    parameter.Value = DBNull.Value;
+                }
+                else
+                {
+                    parameter.Value = paramInfo.Value;
+                }
+            }
+
+            paramInfo.AssociatedActualParameters = parameter;
+
+            dbCommand.Parameters.Add(parameter);
+        }
+
+        private static string GetInListSql(string sql, string parameterName, int count)
+        {
+            var pattern = ("([?@:]" + Regex.Escape(parameterName) + @")(?!\w)(\s+(?i)unknown(?-i))?");
+            var result = Regex.Replace(sql, pattern, match =>
+            {
+                var variableName = match.Groups[1].Value;
+                if (match.Groups[2].Success)
+                {
+                    // looks like an optimize hint; expand it
+                    var suffix = match.Groups[2].Value;
+
+                    var sb = new StringBuilder().Append(variableName).Append(1).Append(suffix);
+                    for (int i = 2; i <= count; i++)
+                    {
+                        sb.Append(',').Append(variableName).Append(i).Append(suffix);
+                    }
+                    return sb.ToString();
+                }
+                else
+                {
+                    var sb = new StringBuilder().Append('(').Append(variableName).Append(1);
+                    for (int i = 2; i <= count; i++)
+                    {
+                        sb.Append(',').Append(variableName).Append(i);
+                    }
+                    return sb.Append(')').ToString();
+                }
+            }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+
+            return result;
         }
 
         //通过索引获取值
@@ -758,6 +882,7 @@ namespace SummerBoot.Repository.Core
 
             var backUpObject = il.DeclareLocal(typeof(object));
             var endLabel = il.DefineLabel();
+            queryMemberCacheInfos = queryMemberCacheInfos.OrderBy(it => it.DataReaderIndex).ToList();
             // 
             for (var i = 0; i < queryMemberCacheInfos.Count; i++)
             {
@@ -874,7 +999,7 @@ namespace SummerBoot.Repository.Core
         }
         public static void DebugObj(Exception ex)
         {
-          
+
         }
         public static void ThrowRepositoryException(Exception ex, object value, int index, IDataReader reader)
         {

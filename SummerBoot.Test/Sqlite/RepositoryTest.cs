@@ -45,7 +45,7 @@ namespace SummerBoot.Test.Sqlite
         {
             InitSqliteDatabase("Data Source=./TestModelUseGuidAsId.db");
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -132,7 +132,7 @@ namespace SummerBoot.Test.Sqlite
         public void TestCreateTableFromEntityAndCrud()
         {
             InitSqliteDatabase("Data Source=./TestCreateTableFromEntityAndCrud.db");
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -225,7 +225,7 @@ namespace SummerBoot.Test.Sqlite
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitSqliteDatabase("Data Source=./TestGenerateCsharpClassByDatabaseInfo.db");
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -359,7 +359,7 @@ namespace SummerBoot.Test.Sqlite
         {
 
             InitSqliteDatabase("Data Source=./TestGenerateDatabaseTableByCsharpClass.db");
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
@@ -461,8 +461,12 @@ namespace SummerBoot.Test.Sqlite
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(SQLiteConnection);
-                it.ConnectionString = databaseString;
+                it.AddDatabaseUnit<SQLiteConnection, IUnitOfWork1>(databaseString,
+                    x =>
+                    {
+                        x.BindIRepositoryTypeWithAttribute<SqliteAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -483,7 +487,7 @@ namespace SummerBoot.Test.Sqlite
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -636,7 +640,7 @@ namespace SummerBoot.Test.Sqlite
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -797,7 +801,7 @@ namespace SummerBoot.Test.Sqlite
 
         public void TestLinq()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -815,7 +819,7 @@ namespace SummerBoot.Test.Sqlite
 
         public void TestBaseQuery()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();

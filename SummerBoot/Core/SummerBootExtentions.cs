@@ -17,10 +17,17 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Http;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using System.Threading.Tasks;
+using SummerBoot.Repository.Generator;
+using SummerBoot.Repository.Generator.Dialect;
+using SummerBoot.Repository.Generator.Dialect.Oracle;
+using SummerBoot.Repository.Generator.Dialect.Sqlite;
+using SummerBoot.Repository.Generator.Dialect.SqlServer;
 using Guid = System.Guid;
 
 namespace SummerBoot.Core
@@ -98,7 +105,7 @@ namespace SummerBoot.Core
             return services;
         }
 
-        private static readonly object lockObj=new object();
+        private static readonly object lockObj = new object();
 
         public static IServiceCollection AddSummerBootRepository(this IServiceCollection services, Action<RepositoryOption> action)
         {
@@ -117,7 +124,7 @@ namespace SummerBoot.Core
             }
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
             services.TryAddSingleton<IRepositoryProxyBuilder>(it => repositoryProxyBuilder);
-            
+
             var name = "Repository";
             string assemblyName = name + "ProxyAssembly";
             string moduleName = name + "ProxyModule";
@@ -130,24 +137,167 @@ namespace SummerBoot.Core
             //添加数据库单元
             foreach (var optionDatabaseUnit in option.DatabaseUnits)
             {
-                
+                var databaseUnit = optionDatabaseUnit.Value;
                 //动态生成IDbFactory接口类型
-                var iCustomDbFactoryType = GenerateCustomDbFactoryInterface(modBuilder);
+                var iCustomDbFactoryType = GenerateCustomInterface(modBuilder, typeof(IDbFactory));
+           
                 //注册工厂
-                AddSummerBootRepositoryCustomDbFactory(services, iCustomDbFactoryType, optionDatabaseUnit.Value, modBuilder);
+                AddSummerBootRepositoryCustomDbFactory(services, iCustomDbFactoryType, databaseUnit, modBuilder);
                 //动态生成ICustomUnitOfWork接口类型
-                var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, optionDatabaseUnit.Value.IUnitOfWorkType);
+                var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, databaseUnit.IUnitOfWorkType);
                 //注册工作单元
-                services.AddScoped(optionDatabaseUnit.Value.IUnitOfWorkType, customUnitOfWorkType);
+                services.AddScoped(databaseUnit.IUnitOfWorkType, customUnitOfWorkType);
                 //动态生成仓储基类
-                var customBaseRepositoryType= GenerateCustomBaseRepository(modBuilder, optionDatabaseUnit.Value.IUnitOfWorkType, iCustomDbFactoryType);
+                var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType);
                 services.AddScoped(typeof(IBaseRepository<>), customBaseRepositoryType);
                 services.AddScoped(customBaseRepositoryType);
                 //动态生成RepositoryService
-                var repositoryServiceType= GenerateRepositoryService(modBuilder, optionDatabaseUnit.Value.IUnitOfWorkType, iCustomDbFactoryType);
+                var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType);
                 services.AddScoped(repositoryServiceType);
+                //添加数据库生成器类
+                if (databaseUnit.IDbGeneratorType!=null)
+                {
+                    //动态生成IDatabaseFieldMapping接口类型
+                    var iDatabaseFieldMappingType = GenerateCustomInterface(modBuilder, typeof(IDatabaseFieldMapping));
+                    var iDatabaseInfoType = GenerateCustomInterface(modBuilder, typeof(IDatabaseInfo));
+                    var dbGeneratorType = GenerateCustomDbGenerator(modBuilder, iDatabaseFieldMappingType, iCustomDbFactoryType,
+                        iDatabaseInfoType,new Type[]{ databaseUnit.IDbGeneratorType });
+                    services.AddTransient(databaseUnit.IDbGeneratorType, dbGeneratorType);
+                    if (databaseUnit.IsSqlServer)
+                    {
+                        var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(SqlServerDatabaseFieldMapping),
+                            iDatabaseFieldMappingType, Type.EmptyTypes);
+                        services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
+                        var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(SqlServerDatabaseInfo),
+                            iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
+                        services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
+                        //先缓存SqlBulkCopy的type类型
 
-                var autoRepositoryTypes = optionDatabaseUnit.Value.BindRepositoryTypes;
+                        try
+                        {
+                            var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
+                            var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
+                            var sqlBulkCopyOptionsType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
+
+                            var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
+                                it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
+                                    .Any(x => x == typeof(IDbConnection)));
+                            var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
+
+                            var constructorInfo3 = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
+                                it.GetParameters().Length == 3 && it.GetParameters()[2].ParameterType.GetInterfaces()
+                                    .Any(x => x == typeof(IDbTransaction)));
+                            var generateObjectDelegate3 = SbUtil.BuildGenerateObjectDelegate(constructorInfo3);
+
+                            var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                                 it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
+                                 it.GetParameters()[0].ParameterType == typeof(DataTable));
+                            var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                                it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
+                                it.GetParameters()[0].ParameterType == typeof(DataTable));
+
+                            var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
+                                .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 2 && it.GetParameters()[0].ParameterType == typeof(string)
+                                           && it.GetParameters()[1].ParameterType == typeof(string));
+
+                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
+                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
+                            SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
+                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
+
+                            //缓存委托
+                            var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
+                            var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
+                            var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
+                            SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
+
+                            var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
+                            var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
+                            var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
+                            SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodAsyncDelegate", sqlBulkCopyWriteMethodAsyncDelegate);
+                        }
+                        catch (Exception e)
+                        {
+                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegateErr", e);
+                        }
+                    }
+                    else if (databaseUnit.IsOracle)
+                    {
+                        
+                        var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(OracleDatabaseFieldMapping),
+                            iDatabaseFieldMappingType, Type.EmptyTypes);
+                        services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
+                        var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(OracleDatabaseInfo),
+                            iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
+                        services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
+                    }
+                    else if (databaseUnit.IsMysql)
+                    {
+                        var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(MysqlDatabaseFieldMapping),
+                            iDatabaseFieldMappingType, Type.EmptyTypes);
+                        services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
+                        var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(MysqlDatabaseInfo),
+                            iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
+                        services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
+
+                        try
+                        {
+                            var mysqlAssembly = Assembly.Load("MySqlConnector");
+                            var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
+                            var mySqlBulkCopyResultType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyResult");
+
+                            var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
+
+                            var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                                 it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
+                                 it.GetParameters()[0].ParameterType == typeof(DataTable));
+                            var mysqlBulkCopyWriteMethodAsync = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
+                                it.Name == "WriteToServerAsync" && it.GetParameters().Length == 2 &&
+                                it.GetParameters()[0].ParameterType == typeof(DataTable));
+                            var addColumnMappingMethodInfo = mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
+                                .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
+                                          );
+
+                            //缓存委托
+                            var mysqlBulkCopyWriteMethodTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(object) };
+                            var mysqlBulkCopyWriteMethodFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodTypes);
+                            var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
+                            SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodDelegate", mysqlBulkCopyWriteMethodDelegate);
+                            var mySqlBulkCopyResultValueTaskType = typeof(ValueTask<>).MakeGenericType(mySqlBulkCopyResultType);
+                            var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
+                            var mysqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodAsyncTypes);
+                            var mysqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodAsyncFuncType, mysqlBulkCopyWriteMethodAsync);
+                            SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodAsyncDelegate", mysqlBulkCopyWriteMethodAsyncDelegate);
+
+                            var addColumnMappingMethodInfoTypes = new Type[] { mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType, mySqlBulkCopyColumnMappingType };
+                            var addColumnMappingMethodInfoType = Expression.GetActionType(addColumnMappingMethodInfoTypes);
+                            var addColumnMappingMethodInfoDelegate = Delegate.CreateDelegate(addColumnMappingMethodInfoType, addColumnMappingMethodInfo);
+                            SbUtil.CacheDelegateDictionary.TryAdd("addColumnMappingMethodInfoDelegate", addColumnMappingMethodInfoDelegate);
+
+                            SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethodAsync", mysqlBulkCopyWriteMethodAsync);
+                            SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
+                            SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
+                            SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
+
+                        }
+                        catch (Exception e)
+                        {
+                            SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyDelegateErr", e);
+                        }
+                    }
+                    else if (databaseUnit.IsSqlite)
+                    {
+                        var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(SqliteDatabaseFieldMapping),
+                            iDatabaseFieldMappingType, Type.EmptyTypes);
+                        services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
+                        var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(SqliteDatabaseInfo),
+                            iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
+                        services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
+                    }
+                }
+
+
+                var autoRepositoryTypes = databaseUnit.BindRepositoryTypes;
                 foreach (var type in autoRepositoryTypes)
                 {
 
@@ -159,7 +309,7 @@ namespace SummerBoot.Core
                     }
 
                     repositoryProxyBuilder.InitInterface(type, customBaseRepositoryType, repositoryServiceType);
-                    services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, optionDatabaseUnit.Value);
+                    services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, databaseUnit);
                 }
             }
 
@@ -167,127 +317,10 @@ namespace SummerBoot.Core
             RepositoryOption.Instance = option;
             return services;
 
-            //services.AddTransient<IDbGenerator, DbGenerator>();
-            //if (option.IsSqlServer)
-            //{
-            //    services.AddTransient<IDatabaseFieldMapping, SqlServerDatabaseFieldMapping>();
-            //    services.AddTransient<IDatabaseInfo, SqlServerDatabaseInfo>();
-            //    //先缓存SqlBulkCopy的type类型
-
-            //    try
-            //    {
-            //        var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
-            //        var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
-            //        var sqlBulkCopyOptionsType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
-
-            //        var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
-            //            it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
-            //                .Any(x => x == typeof(IDbConnection)));
-            //        var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
-
-            //        var constructorInfo3 = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
-            //            it.GetParameters().Length == 3 && it.GetParameters()[2].ParameterType.GetInterfaces()
-            //                .Any(x => x == typeof(IDbTransaction)));
-            //        var generateObjectDelegate3 = SbUtil.BuildGenerateObjectDelegate(constructorInfo3);
-
-            //        var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-            //             it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
-            //             it.GetParameters()[0].ParameterType == typeof(DataTable));
-            //        var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-            //            it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
-            //            it.GetParameters()[0].ParameterType == typeof(DataTable));
-
-            //        var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-            //            .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 2 && it.GetParameters()[0].ParameterType == typeof(string)
-            //                       && it.GetParameters()[1].ParameterType == typeof(string));
-
-            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
-            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
-            //        SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
-            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
-
-            //        //缓存委托
-            //        var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
-            //        var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
-            //        var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
-            //        SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
-
-            //        var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
-            //        var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
-            //        var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
-            //        SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodAsyncDelegate", sqlBulkCopyWriteMethodAsyncDelegate);
-            //    }
-            //    catch (Exception e)
-            //    {
-            //        SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegateErr", e);
-            //    }
-            //}
-            //else if (option.IsOracle)
-            //{
-            //    services.AddTransient<IDatabaseFieldMapping, OracleDatabaseFieldMapping>();
-            //    services.AddTransient<IDatabaseInfo, OracleDatabaseInfo>();
-
-            //}
-            //else if (option.IsMysql)
-            //{
-            //    services.AddTransient<IDatabaseFieldMapping, MysqlDatabaseFieldMapping>();
-            //    services.AddTransient<IDatabaseInfo, MysqlDatabaseInfo>();
-            //    try
-            //    {
-            //        var mysqlAssembly = Assembly.Load("MySqlConnector");
-            //        var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
-            //        var mySqlBulkCopyResultType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyResult");
-
-            //        var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
-
-            //        var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-            //             it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
-            //             it.GetParameters()[0].ParameterType == typeof(DataTable));
-            //        var mysqlBulkCopyWriteMethodAsync = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-            //            it.Name == "WriteToServerAsync" && it.GetParameters().Length == 2 &&
-            //            it.GetParameters()[0].ParameterType == typeof(DataTable));
-            //        var addColumnMappingMethodInfo = mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-            //            .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
-            //                      );
-
-            //        //缓存委托
-            //        var mysqlBulkCopyWriteMethodTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(object) };
-            //        var mysqlBulkCopyWriteMethodFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodTypes);
-            //        var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
-            //        SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodDelegate", mysqlBulkCopyWriteMethodDelegate);
-            //        var mySqlBulkCopyResultValueTaskType = typeof(ValueTask<>).MakeGenericType(mySqlBulkCopyResultType);
-            //        var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
-            //        var mysqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodAsyncTypes);
-            //        var mysqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodAsyncFuncType, mysqlBulkCopyWriteMethodAsync);
-            //        SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodAsyncDelegate", mysqlBulkCopyWriteMethodAsyncDelegate);
-
-            //        var addColumnMappingMethodInfoTypes = new Type[] { mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType, mySqlBulkCopyColumnMappingType };
-            //        var addColumnMappingMethodInfoType = Expression.GetActionType(addColumnMappingMethodInfoTypes);
-            //        var addColumnMappingMethodInfoDelegate = Delegate.CreateDelegate(addColumnMappingMethodInfoType, addColumnMappingMethodInfo);
-            //        SbUtil.CacheDelegateDictionary.TryAdd("addColumnMappingMethodInfoDelegate", addColumnMappingMethodInfoDelegate);
-
-            //        SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethodAsync", mysqlBulkCopyWriteMethodAsync);
-            //        SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
-            //        SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
-            //        SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
-
-            //    }
-            //    catch (Exception e)
-            //    {
-            //        SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyDelegateErr", e);
-            //    }
-            //}
-            //else if (option.IsSqlite)
-            //{
-            //    services.AddTransient<IDatabaseFieldMapping, SqliteDatabaseFieldMapping>();
-            //    services.AddTransient<IDatabaseInfo, SqliteDatabaseInfo>();
-            //}
-
-            //return services;
         }
-        
+
         private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
-            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType,DatabaseUnit databaseUnit)
+            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType, DatabaseUnit databaseUnit)
         {
             if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
 
@@ -325,15 +358,15 @@ namespace SummerBoot.Core
         /// <param name="modBuilder"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        private static IServiceCollection AddSummerBootRepositoryCustomDbFactory( IServiceCollection services, Type serviceType,
+        private static IServiceCollection AddSummerBootRepositoryCustomDbFactory(IServiceCollection services, Type serviceType,
             DatabaseUnit databaseUnit, ModuleBuilder modBuilder)
         {
             if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
 
             object Factory(IServiceProvider provider)
             {
-                var customDbFactoryType= GenerateCustomDbFactory(modBuilder,serviceType);
-                var customDbFactory= customDbFactoryType.CreateInstance(new object[]{ databaseUnit });
+                var customDbFactoryType = GenerateCustomDbFactory(modBuilder, serviceType);
+                var customDbFactory = customDbFactoryType.CreateInstance(new object[] { databaseUnit });
                 return customDbFactory;
             };
 
@@ -369,7 +402,7 @@ namespace SummerBoot.Core
             return resultType;
         }
 
-        private static Type GenerateCustomUnitOfWork(ModuleBuilder modBuilder, Type constructorType,Type interfaceType)
+        private static Type GenerateCustomUnitOfWork(ModuleBuilder modBuilder, Type constructorType, Type interfaceType)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -378,20 +411,67 @@ namespace SummerBoot.Core
             //父类型
             Type parentType;
             //要实现的接口
-            Type[] interfaceTypes = new Type[]{interfaceType};
+            Type[] interfaceTypes = new Type[] { interfaceType };
             parentType = typeof(UnitOfWork);
 
             //得到类型生成器            
-            TypeBuilder typeBuilder = modBuilder.DefineType("CustomUnitOfWork"+Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomUnitOfWork" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] {typeof(ILogger<UnitOfWork>), constructorType });
+                new Type[] { typeof(ILogger<UnitOfWork>), constructorType });
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
             conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+        /// <summary>
+        /// 生成父类为指定类并且实现某接口的新类
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="parentType"></param>
+        /// <param name="interfaceType"></param>
+        /// <param name="constructorTypes"></param>
+        /// <returns></returns>
+        private static Type GenerateClassImplementInterface(ModuleBuilder modBuilder,Type parentType, Type interfaceType, Type[] constructorTypes)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //要实现的接口
+            Type[] interfaceTypes = new Type[] { interfaceType };
+         
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType(parentType.Name + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                constructorTypes );
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            if (constructorTypes.Length >= 1)
+            {
+                conIl.Emit(OpCodes.Ldarg_1);
+            }
+            if (constructorTypes.Length >= 2)
+            {
+                conIl.Emit(OpCodes.Ldarg_2);
+            }
+            if (constructorTypes.Length >= 3)
+            {
+                conIl.Emit(OpCodes.Ldarg_3);
+            }
+            
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 
@@ -420,7 +500,7 @@ namespace SummerBoot.Core
 
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomBaseRepository" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
-            string[] typeParamNames = { "T"};
+            string[] typeParamNames = { "T" };
             GenericTypeParameterBuilder[] typeParams =
                 typeBuilder.DefineGenericParameters(typeParamNames);
 
@@ -432,7 +512,7 @@ namespace SummerBoot.Core
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
                 new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
-            
+
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
@@ -444,6 +524,43 @@ namespace SummerBoot.Core
             return resultType;
         }
 
+        /// <summary>
+        /// 生成数据库生成器类
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="ICustomUnitOfWorkType"></param>
+        /// <param name="ICustomDbFactoryType"></param>
+        /// <returns></returns>
+        private static Type GenerateCustomDbGenerator(ModuleBuilder modBuilder, Type IDatabaseFieldMappingType, Type ICustomDbFactoryType,Type IDatabaseInfoType, Type[] interfaceTypes)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            
+            parentType = typeof(DbGenerator);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomDbGenerator" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { IDatabaseFieldMappingType, ICustomDbFactoryType, IDatabaseInfoType });
+
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Ldarg_3);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
 
         /// <summary>
         /// 生成RepositoryService类
@@ -467,7 +584,7 @@ namespace SummerBoot.Core
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType("RepositoryService" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
             string[] typeParamNames = { "T" };
-            
+
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
@@ -485,12 +602,17 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// 生成自定义的dbFactory接口
+        /// 生成继承与特定接口的接口
         /// </summary>
         /// <param name="modBuilder"></param>
+        /// <param name="interfaceType"></param>
         /// <returns></returns>
-        private static Type GenerateCustomDbFactoryInterface(ModuleBuilder modBuilder)
+        private static Type GenerateCustomInterface(ModuleBuilder modBuilder, Type interfaceType)
         {
+            if (interfaceType == null || !interfaceType.IsInterface)
+            {
+                throw new ArgumentNullException(nameof(interfaceType));
+            }
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Interface |
@@ -499,9 +621,9 @@ namespace SummerBoot.Core
                                               TypeAttributes.AnsiClass |
                                               TypeAttributes.BeforeFieldInit |
                                               TypeAttributes.AutoLayout;
-            
+
             //得到类型生成器            
-            TypeBuilder typeBuilder = modBuilder.DefineType("ICustomDbFactory"+Guid.NewGuid().ToString("N"), newTypeAttribute, null, new Type[] { typeof(IDbFactory) });
+            TypeBuilder typeBuilder = modBuilder.DefineType(interfaceType.Name + Guid.NewGuid().ToString("N"), newTypeAttribute, null, new Type[] { interfaceType });
             var resultType = typeBuilder.CreateTypeInfo().AsType();
             return resultType;
         }

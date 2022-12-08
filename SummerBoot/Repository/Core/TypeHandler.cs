@@ -16,9 +16,9 @@ namespace SummerBoot.Repository.Core
 
         void ITypeHandler.SetValue(IDbDataParameter parameter, object value)
         {
-            if (value is DBNull)
+            if (value is DBNull || value is null)
             {
-                parameter.Value = value;
+                parameter.Value = DBNull.Value;
             }
             else
             {

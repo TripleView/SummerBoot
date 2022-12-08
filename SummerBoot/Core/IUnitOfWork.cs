@@ -34,4 +34,16 @@ namespace SummerBoot.Core
 
         IDbFactory DbFactory { get; }
     }
+
+    public interface IUnitOfWork1: IUnitOfWork{}
+    public interface IUnitOfWork2 : IUnitOfWork { }
+    public interface IUnitOfWork3 : IUnitOfWork { }
+    public interface IUnitOfWork4 : IUnitOfWork { }
+    public interface IUnitOfWork5 : IUnitOfWork { }
+    public interface IUnitOfWork6 : IUnitOfWork { }
+
+    public interface IUnitOfWork7 : IUnitOfWork { }
+    public interface IUnitOfWork8 : IUnitOfWork { }
+
+    public interface IUnitOfWork9 : IUnitOfWork { }
 }
