@@ -3,11 +3,14 @@ using System.Data;
 using System;
 using System.Linq;
 using System.Reflection;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
 using SummerBoot.Repository.Core;
 using SummerBoot.Repository.Generator;
 
 namespace SummerBoot.Repository
 {
+    public delegate void RepositoryEvent(object entity);
+
     /// <summary>
     /// 数据库单元
     /// </summary>
@@ -184,7 +187,30 @@ namespace SummerBoot.Repository
 
         public static Dictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
             new Dictionary<Guid, Dictionary<Type, Type>>();
+        /// <summary>
+        /// 插入前事件
+        /// </summary>
+        public event RepositoryEvent BeforeInsert;
 
+        public void OnBeforeInsert(object entity)
+        {
+            if (BeforeInsert != null)
+            {
+                BeforeInsert(entity);
+            }
+        }
+        /// <summary>
+        /// 更新前事件
+        /// </summary>
+        public event RepositoryEvent BeforeUpdate;
+        public void OnBeforeUpdate(object entity)
+        {
+            if (BeforeUpdate != null)
+            {
+                BeforeUpdate(entity);
+            }
+           
+        }
         /// <summary>
         /// 查询超时时间
         /// </summary>
@@ -265,7 +291,7 @@ namespace SummerBoot.Repository
             if (this.ParameterTypeMaps.ContainsKey(type))
             {
                 this.ParameterTypeMaps[type] = dbType;
-          
+
                 //添加可空和非空类型
                 var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
                 if (nullableUnderlyingType == null)

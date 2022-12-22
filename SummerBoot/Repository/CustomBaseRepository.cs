@@ -243,7 +243,10 @@ namespace SummerBoot.Repository
 
         public T Insert(T t)
         {
+            databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
+
+           
             //if (databaseUnit.AutoAddCreateOn)
             //{
 
@@ -363,7 +366,7 @@ namespace SummerBoot.Repository
             //        oracleBaseEntity.LastUpdateOn = databaseUnit.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
             //    }
             //}
-
+            databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
 
             OpenDb();
@@ -419,16 +422,7 @@ namespace SummerBoot.Repository
         {
             foreach (var t in list)
             {
-                if (t is BaseEntity baseEntity)
-                {
-                    //baseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-                    baseEntity.Active = 1;
-                }
-                else if (t is OracleBaseEntity oracleBaseEntity)
-                {
-                    //oracleBaseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-                    oracleBaseEntity.Active = 1;
-                }
+               databaseUnit.OnBeforeInsert(t);
             }
 
             var internalResult = InternalFastInsert(list);
@@ -605,8 +599,9 @@ namespace SummerBoot.Repository
 
         public async Task<T> InsertAsync(T t)
         {
+            databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
-
+            
             //if (databaseUnit.AutoAddCreateOn)
             //{
 
@@ -726,7 +721,7 @@ namespace SummerBoot.Repository
             //        oracleBaseEntity.LastUpdateOn = databaseUnit.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
             //    }
             //}
-
+            databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
 
             OpenDb();
@@ -794,19 +789,10 @@ namespace SummerBoot.Repository
 
         public async Task FastBatchInsertAsync(List<T> list)
         {
-            //foreach (var t in list)
-            //{
-            //    if (t is BaseEntity baseEntity)
-            //    {
-            //        baseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //        baseEntity.Active = 1;
-            //    }
-            //    else if (t is OracleBaseEntity oracleBaseEntity)
-            //    {
-            //        oracleBaseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //        oracleBaseEntity.Active = 1;
-            //    }
-            //}
+            foreach (var t in list)
+            {
+                databaseUnit.OnBeforeInsert(t);
+            }
 
             var internalResult = InternalFastInsert(list);
 
