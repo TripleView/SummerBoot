@@ -44,9 +44,9 @@ namespace SummerBoot.Repository.Core
 
             if (parameterName.Length > 0 && RepositoryOption.ParameterIdentifiers.Contains(parameterName[0]))
             {
-                return parameterName.Substring(1);
+                return parameterName.Substring(1).ToLower();
             }
-            return parameterName;
+            return parameterName.ToLower();
         }
 
         public T Get<T>(string name)

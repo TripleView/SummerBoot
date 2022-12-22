@@ -541,6 +541,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
                 keyColumnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                if (column.MemberInfo is PropertyInfo propertyInfo)
+                {
+                    if (propertyInfo.GetValue(updateEntity) is null)
+                    {
+                        keyList.Add(columnName + " is null ");
+                        continue;
+                    }
+                }
                 keyList.Add(columnName + "=" + parameterName);
             }
 
@@ -565,6 +573,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 var columnName = BoxTableNameOrColumnName(column.ColumnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                if (column.MemberInfo is PropertyInfo propertyInfo)
+                {
+                    if (propertyInfo.GetValue(deleteEntity) is null)
+                    {
+                        middleList.Add(columnName + " is null ");
+                        continue;
+                    }
+                }
                 middleList.Add(columnName + "=" + parameterName);
             }
 

@@ -496,7 +496,7 @@ namespace SummerBoot.Repository
                             var propertyTypeIsString = propertyType.GetTypeInfo() == typeof(string);
                             if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
                             {
-                                dbArgs.Add(info.Name, info.GetValue(args[i]), valueType: parameterType);
+                                dbArgs.Add(info.Name, info.GetValue(args[i]), valueType: propertyType);
                             }
                             //查找所有条件语句替换
                             var propertyBindWhere = propertyType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition());
@@ -518,13 +518,13 @@ namespace SummerBoot.Repository
                                     throw new ArgumentNullException(nameof(argValue));
                                 }
 
-                                var value = propertyType.GetProperty("Name").GetValue(argValue);
+                                var value = propertyType.GetProperty("Value").GetValue(argValue);
                                 var active = (bool)propertyType.GetProperty("Active").GetValue(argValue);
 
                                 if (value != null && active)
                                 {
                                     parameterDictionary.Add(parameterName, value);
-                                    dbArgs.Add(parameterName, value, valueType: parameterType);
+                                    dbArgs.Add(parameterName, value, valueType: propertyType.GetGenericArguments()[0]);
                                 }
                             }
                         }
