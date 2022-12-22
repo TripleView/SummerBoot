@@ -12,7 +12,7 @@ namespace SummerBoot.Test.Oracle.Models
 
         protected bool Equals(GuidModel other)
         {
-            return Id.Equals(other.Id) && Name == other.Name;
+            return Id.Equals(other.Id) && Name == other.Name && Address == other.Address;
         }
 
         public override bool Equals(object obj)
@@ -25,10 +25,13 @@ namespace SummerBoot.Test.Oracle.Models
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Id, Name);
+            return HashCode.Combine(Id, Name, Address);
         }
+
         [Column("Name")]
         public string Name { get; set; }
 
+        [Column("Address")]
+        public string Address { get; set; }
     }
 }

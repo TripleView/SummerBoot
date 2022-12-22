@@ -32,6 +32,40 @@ namespace SummerBoot.Test.Oracle
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试插入实体和更新实体前的自定义函数
+        /// </summary>
+        [Fact, Priority(113)]
+        public async Task TestBeforeInsertAndUpdateEvent()
+        {
+            InitOracleDatabase();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            Assert.Equal("abc", guidModel.Address);
+            guidModel.Name = "ccd";
+            await guidModelRepository.UpdateAsync(guidModel);
+            Assert.Equal("ppp", guidModel.Address);
+
+            id = Guid.NewGuid();
+            var guidModel2 = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            guidModelRepository.Insert(guidModel2);
+            Assert.Equal("abc", guidModel2.Address);
+            guidModel2.Name = "ccd";
+            guidModelRepository.UpdateAsync(guidModel2);
+            Assert.Equal("ppp", guidModel2.Address);
+        }
+
+        /// <summary>
         /// 测试id类型为guid的model的增删改查
         /// </summary>
         [Fact, Priority(214)]
@@ -1101,6 +1135,20 @@ namespace SummerBoot.Test.Oracle
                     {
                         x.BindIRepositoryTypeWithAttribute<OracleAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
+                        x.BeforeInsert += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "abc";
+                            }
+                        });
+                        x.BeforeUpdate += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "ppp";
+                            }
+                        });
                     });
             });
 
