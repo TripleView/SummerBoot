@@ -93,7 +93,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
             var columnDataType = fieldInfo.ColumnDataType;
             var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY " : "";
-            var defaultString = fieldInfo.ColumnType.IsNumberType() && !fieldInfo.IsNullable  ? " DEFAULT 0 ":"";
+            var defaultString = fieldInfo.ColumnType.IsNumberType() && !fieldInfo.IsNullable && isAlter ? " DEFAULT 0 ":"";
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "nvarchar")
             {
@@ -114,7 +114,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             }
 
             var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
-            var result = $"{columnName} {columnDataType} {defaultString} {identityString} {primaryKeyString}{nullableString}";
+            var result = $"{columnName} {columnDataType} {defaultString} {identityString} {primaryKeyString} {nullableString}".MergeSpace();
             return result;
         }
 

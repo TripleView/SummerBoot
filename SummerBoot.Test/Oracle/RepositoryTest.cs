@@ -1008,7 +1008,7 @@ namespace SummerBoot.Test.Oracle
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
-
+            
             Assert.Equal(4, result[0].Descriptions.Count);
             Assert.Equal("COMMENT ON TABLE TEST.\"NULLABLETABLE2\" IS 'NullableTable2'", result[0].Descriptions[0]);
             Assert.Equal("COMMENT ON COLUMN TEST.\"NULLABLETABLE2\".\"INT2\" IS 'Int2'", result[0].Descriptions[1]);
@@ -1058,6 +1058,10 @@ namespace SummerBoot.Test.Oracle
             Assert.Equal(exceptStr
                 , result[0].Body);
 
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
         }
 
         private void InitOracleDatabase()

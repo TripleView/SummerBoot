@@ -236,7 +236,12 @@ namespace SummerBoot.Repository
         public Type IUnitOfWorkType { get; }
         public List<Type> BindRepositoryTypes { get; private set; } = new List<Type>();
 
-        public void Bind<T, TEntity>() where T : IBaseRepository<TEntity> where TEntity : class
+        /// <summary>
+        /// 绑定单个仓储
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TEntity"></typeparam>
+        public void BindRepository<T, TEntity>() where T : IBaseRepository<TEntity> where TEntity : class
         {
             this.BindRepositoryTypes.Add(typeof(T));
         }
@@ -245,7 +250,7 @@ namespace SummerBoot.Repository
         /// 通过特性绑定仓储接口
         /// </summary>
         /// <typeparam name="TAttribute"></typeparam>
-        public void BindIRepositoryTypeWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
+        public void BindRepositorysWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
         {
             var autoRepositoryTypes = new List<Type>();
             var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
@@ -255,7 +260,7 @@ namespace SummerBoot.Repository
             }
             foreach (var autoRepositoryType in autoRepositoryTypes)
             {
-                this.Bind(autoRepositoryType);
+                this.BindRepository(autoRepositoryType);
             }
         }
 
@@ -277,7 +282,7 @@ namespace SummerBoot.Repository
             this.IDbGeneratorType = typeof(T);
         }
 
-        public void Bind(Type iRepositoryType)
+        public void BindRepository(Type iRepositoryType)
         {
             this.BindRepositoryTypes.Add(iRepositoryType);
         }

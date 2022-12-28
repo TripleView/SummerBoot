@@ -29,20 +29,9 @@ net core 3.1,net 6
 	- [Nuget](#nuget)
 - [支持框架](#支持框架)
 - [文档目录](#文档目录)
-- [SummerBoot中操作数据库](#summerboot中操作数据库)
+- [SummerBoot中使用ORM-repository操作数据库](#summerboot中使用orm-repository操作数据库)
 	- [准备工作](#准备工作)
 	- [1.首先在startup.cs类中注册服务](#1首先在startupcs类中注册服务)
-	- [2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成修改数据库表)
-		- [2.1 根据实体类自动生成/修改数据库表](#21-根据实体类自动生成修改数据库表)
-			- [2.1.1 定义一个数据库实体类](#211-定义一个数据库实体类)
-			- [2.1.1 表的命名空间](#211-表的命名空间)
-			- [2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql](#212-注入idbgenerator接口调用generatesql方法生成建表或者修改表结构的sql)
-				- [2.1.2.1 如果数据库中不存在该表名的表](#2121-如果数据库中不存在该表名的表)
-				- [2.1.2.2 如果数据库中已存在该表名的表](#2122-如果数据库中已存在该表名的表)
-				- [2.1.2.3 可以选择执行这些sql](#2123-可以选择执行这些sql)
-			- [2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射](#212-自定义实体类字段到数据库字段的类型映射或名称映射)
-		- [2.2 根据数据库表自动生成实体类](#22-根据数据库表自动生成实体类)
-			- [2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本](#221-注入idbgenerator接口调用generatecsharpclass方法生成c类的文本)
 	- [3.定义接口，并继承于IBaseRepository，同时在接口上添加AutoRepository注解表示让框架自动注册并生成实现类](#3定义接口并继承于ibaserepository同时在接口上添加autorepository注解表示让框架自动注册并生成实现类)
 	- [4.增删改查操作，均支持异步同步](#4增删改查操作均支持异步同步)
 		- [4.1 查](#41-查)
@@ -64,6 +53,17 @@ net core 3.1,net 6
 		- [4.6 如果有些特殊情况需要自己手写实现类怎么办?](#46-如果有些特殊情况需要自己手写实现类怎么办)
 			- [4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#461-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
 			- [4.6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#462-添加一个实现类继承于baserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
+	- [2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成修改数据库表)
+		- [2.1 根据实体类自动生成/修改数据库表](#21-根据实体类自动生成修改数据库表)
+			- [2.1.1 定义一个数据库实体类](#211-定义一个数据库实体类)
+			- [2.1.1 表的命名空间](#211-表的命名空间)
+			- [2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql](#212-注入idbgenerator接口调用generatesql方法生成建表或者修改表结构的sql)
+				- [2.1.2.1 如果数据库中不存在该表名的表](#2121-如果数据库中不存在该表名的表)
+				- [2.1.2.2 如果数据库中已存在该表名的表](#2122-如果数据库中已存在该表名的表)
+				- [2.1.2.3 可以选择执行这些sql](#2123-可以选择执行这些sql)
+			- [2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射](#212-自定义实体类字段到数据库字段的类型映射或名称映射)
+		- [2.2 根据数据库表自动生成实体类](#22-根据数据库表自动生成实体类)
+			- [2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本](#221-注入idbgenerator接口调用generatecsharpclass方法生成c类的文本)
 - [SummerBoot中使用feign进行http调用](#summerboot中使用feign进行http调用)
 	- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务)
 	- [2.定义接口](#2定义接口)
@@ -95,218 +95,62 @@ net core 3.1,net 6
 	- [3.注入接口后即可使用](#3注入接口后即可使用)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
-# SummerBoot中操作数据库
-summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，底层基于dapper，上层通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为多表查询直接写sql更好更易理解。
+# SummerBoot中使用ORM-repository操作数据库
+summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，在项目中支持多数据库多链接，通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为本人认为多表查询直接写sql更好更易理解。
 
 ## 准备工作
 需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core
 
 ## 1.首先在startup.cs类中注册服务
+repository支持多数据库多链接，在repository中称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库，第二个是sqlserver数据库，通过AddDatabaseUnit方法添加单元，参数为相应的dbConnection类和工作单元接口，框架默认提供了9个工作单元接口IUnitOfWork1~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里绑定插入前回调和更新前回调,添加自定义类型映射,添加添加自定义字段映射处理程序等
+
 ````csharp
 services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
 {
-	//-----------以下为必填参数---------
-	//注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
-	it.DbConnectionType = typeof(SqliteConnection);
-	//添加数据库连接字符串
-	it.ConnectionString = "Data source=./mydb.db";
+		//添加第一个mysql的链接
+		it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
+				x =>
+				{
+						//绑定单个仓储
+						x.BindRepository<IMysqlCustomerRepository,Customer>();
+						//通过自定义注解批量绑定仓储
+						x.BindRepositorysWithAttribute<MysqlAutoRepositoryAttribute>();
+						
+						//绑定数据库生成接口
+						x.BindDbGeneratorType<IDbGenerator1>();
+						//绑定插入前回调
+						x.BeforeInsert += entity =>
+						{
+								if (entity is BaseEntity baseEntity)
+								{
+										baseEntity.CreateOn = DateTime.Now;
+								}
+						};
+						//绑定更新前回调
+						x.BeforeUpdate += entity =>
+						{
+								if (entity is BaseEntity baseEntity)
+								{
+										baseEntity.LastUpdateOn = DateTime.Now;
+								}
+						};
+						//添加自定义类型映射
+						//x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
+						//添加自定义字段映射处理程序
+						//x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
 
-	//-----------以下为可选参数---------
-	//插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
-	it.AutoUpdateLastUpdateOn = true;
-	//插入的时候自动添加创建时间，使用utc时间
-	it.AutoUpdateLastUpdateOnUseUtc = false;
-	//update的时候自动更新最后更新时间字段，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
-	it.AutoAddCreateOn = true;
-	//update的时候自动更新最后更新时间字段,使用utc时间
-	it.AutoAddCreateOnUseUtc = false;
-	//启用软删除，数据库实体类必须继承于BaseEntity,oracle继承于OracleBaseEntity
-	it.IsUseSoftDelete = true;
+				});
+
+		//添加第二个sqlserver的链接
+		it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
+				x =>
+				{
+						x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
+						x.BindDbGeneratorType<IDbGenerator2>();
+				});
 });
-
-````
-## 2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表
-### 2.1 根据实体类自动生成/修改数据库表
-#### 2.1.1 定义一个数据库实体类
-其中注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,列名Column,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
-同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
-
-```` csharp
-public class Customer : BaseEntity
-{
-    public string Name { set; get; }
-    
-    public int Age { set; get; } = 0;
-    
-    /// <summary>
-    /// 会员号
-    /// </summary>
-    public string CustomerNo { set; get; }
-    
-    /// <summary>
-    /// 总消费金额
-    /// </summary>
-    public decimal TotalConsumptionAmount { set; get; }
-}
-````
-#### 2.1.1 表的命名空间
-sqlserver里命名空间即schemas,oracle里命名空间即模式，sqlite和mysql里命名空间即数据库，
-如果要定义不同命名空间下的表，添加[Table("CustomerWithSchema", Schema = "test")]注解即可。
-
-````csharp
-[Table("CustomerWithSchema", Schema = "test")]
-public class CustomerWithSchema
-{
-		public string Name { set; get; }
-		public int Age { set; get; } = 0;
-}
-````
-
-#### 2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql
-```` csharp
-public class TestController : Controller
-{
-		private readonly IDbGenerator dbGenerator;
-
-		public TestController(IDbGenerator dbGenerator)
-		{
-				this.dbGenerator = dbGenerator;
-		}
-
-		[HttpGet("GenerateSql")]
-		public async Task<IActionResult> GenerateSql()
-		{
-				var generateSqls = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
-				return Content("ok");
-		}
-}
-````
-##### 2.1.2.1 如果数据库中不存在该表名的表
-这里以mysql为例，生成的sql如下:
-````sql
-CREATE TABLE Customer (
-    `Id` int NOT NULL AUTO_INCREMENT,
-    `Name` text NULL ,
-    `Age` int NOT NULL ,
-    `CustomerNo` text NULL ,
-    `TotalConsumptionAmount` decimal(18,2) NOT NULL ,
-    `LastUpdateOn` datetime NULL ,
-    `LastUpdateBy` text NULL ,
-    `CreateOn` datetime NULL ,
-    `CreateBy` text NULL ,
-    `Active` int NULL ,
-    PRIMARY KEY (`Id`)
-)
-````
-##### 2.1.2.2 如果数据库中已存在该表名的表
-那么生成的sql为,新增字段的sql或者更新注释的sql，为了避免数据丢失，不会有删除字段的sql，这里以Customer表举例，如果刚开始没有继承BaseEntity，生成了表，后来继承BaseEntity了，那么此时生成的sql为
-
-````sql
-ALTER TABLE Customer ADD `Id` int NOT NULL PRIMARY KEY AUTO_INCREMENT
-ALTER TABLE Customer ADD `LastUpdateOn` datetime NULL 
-ALTER TABLE Customer ADD `LastUpdateBy` text NULL 
-ALTER TABLE Customer ADD `CreateOn` datetime NULL 
-ALTER TABLE Customer ADD `CreateBy` text NULL 
-ALTER TABLE Customer ADD `Active` int NULL 
-````
-##### 2.1.2.3 可以选择执行这些sql
-把生成sql和执行sql分成2部分操作，对于日常而言是更方便的，我们可以快速拿到要执行的sql，进行检查，确认没问题后，可以保存下来，在正式发布应用时，留给dba审查。执行sql的代码如下
-```` csharp
-var generateSqls = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
-foreach (var sqlResult in generateSqls)
-{
-	dbGenerator.ExecuteGenerateSql(sqlResult);
-}
-````
-#### 2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射
-这里统一使用column注解,如[Column("Age",TypeName = "float")]
-```` csharp
-public class Customer : BaseEntity
-{
-		public string Name { set; get; }
-		
-		[Column("Age",TypeName = "float")]
-		public int Age { set; get; } = 0;
-		/// <summary>
-		/// 会员号
-		/// </summary>
-		public string CustomerNo { set; get; }
-		/// <summary>
-		/// 总消费金额
-		/// </summary>
-		public decimal TotalConsumptionAmount { set; get; }
-}
-````
-生成的sql如下
-````sql
-CREATE TABLE `Customer2` (
-    `Id` int NOT NULL AUTO_INCREMENT,
-    `Name` text NULL ,
-    `Age` float NOT NULL ,
-    `CustomerNo` text NULL ,
-    `TotalConsumptionAmount` decimal(18,2) NOT NULL ,
-    PRIMARY KEY (`Id`)
-)
-````
-
-
-### 2.2 根据数据库表自动生成实体类
-#### 2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本
-参数为数据库表名的集合和生成的实体类的命名空间
-```` csharp
-public class TestController : Controller
-{
-		private readonly IDbGenerator dbGenerator;
-
-		public TestController(IDbGenerator dbGenerator)
-		{
-				this.dbGenerator = dbGenerator;
-		}
-
-		[HttpGet("GenerateClass")]
-		public async Task<IActionResult> GenerateClass()
-		{
-				var generateClasses = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer" },"Test.Model");
-				return Content("ok");
-		}
-}
-````
-生成的c#实体类如下,新建一个类文件并把文本黏贴进去即可
-```` csharp
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-namespace Test.Model
-{
-   [Table("Customer")]
-   public class Customer
-   {
-      [Key]
-      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-      [Column("Id")]
-      public int Id { get; set; }
-      [Column("Name")]
-      public string Name { get; set; }
-      [Column("Age")]
-      public int Age { get; set; }
-      [Column("CustomerNo")]
-      public string CustomerNo { get; set; }
-      [Column("TotalConsumptionAmount")]
-      public decimal TotalConsumptionAmount { get; set; }
-      [Column("LastUpdateOn")]
-      public DateTime? LastUpdateOn { get; set; }
-      [Column("LastUpdateBy")]
-      public string LastUpdateBy { get; set; }
-      [Column("CreateOn")]
-      public DateTime? CreateOn { get; set; }
-      [Column("CreateBy")]
-      public string CreateBy { get; set; }
-      [Column("Active")]
-      public int? Active { get; set; }
-   }
-}
 
 ````
 
@@ -573,6 +417,190 @@ public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustome
     }
 }
 ````
+
+## 2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表
+### 2.1 根据实体类自动生成/修改数据库表
+#### 2.1.1 定义一个数据库实体类
+其中注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,列名Column,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
+同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
+
+```` csharp
+public class Customer : BaseEntity
+{
+    public string Name { set; get; }
+    
+    public int Age { set; get; } = 0;
+    
+    /// <summary>
+    /// 会员号
+    /// </summary>
+    public string CustomerNo { set; get; }
+    
+    /// <summary>
+    /// 总消费金额
+    /// </summary>
+    public decimal TotalConsumptionAmount { set; get; }
+}
+````
+#### 2.1.1 表的命名空间
+sqlserver里命名空间即schemas,oracle里命名空间即模式，sqlite和mysql里命名空间即数据库，
+如果要定义不同命名空间下的表，添加[Table("CustomerWithSchema", Schema = "test")]注解即可。
+
+````csharp
+[Table("CustomerWithSchema", Schema = "test")]
+public class CustomerWithSchema
+{
+		public string Name { set; get; }
+		public int Age { set; get; } = 0;
+}
+````
+
+#### 2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql
+```` csharp
+public class TestController : Controller
+{
+		private readonly IDbGenerator dbGenerator;
+
+		public TestController(IDbGenerator dbGenerator)
+		{
+				this.dbGenerator = dbGenerator;
+		}
+
+		[HttpGet("GenerateSql")]
+		public async Task<IActionResult> GenerateSql()
+		{
+				var generateSqls = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
+				return Content("ok");
+		}
+}
+````
+##### 2.1.2.1 如果数据库中不存在该表名的表
+这里以mysql为例，生成的sql如下:
+````sql
+CREATE TABLE Customer (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` text NULL ,
+    `Age` int NOT NULL ,
+    `CustomerNo` text NULL ,
+    `TotalConsumptionAmount` decimal(18,2) NOT NULL ,
+    `LastUpdateOn` datetime NULL ,
+    `LastUpdateBy` text NULL ,
+    `CreateOn` datetime NULL ,
+    `CreateBy` text NULL ,
+    `Active` int NULL ,
+    PRIMARY KEY (`Id`)
+)
+````
+##### 2.1.2.2 如果数据库中已存在该表名的表
+那么生成的sql为,新增字段的sql或者更新注释的sql，为了避免数据丢失，不会有删除字段的sql，这里以Customer表举例，如果刚开始没有继承BaseEntity，生成了表，后来继承BaseEntity了，那么此时生成的sql为
+
+````sql
+ALTER TABLE Customer ADD `Id` int NOT NULL PRIMARY KEY AUTO_INCREMENT
+ALTER TABLE Customer ADD `LastUpdateOn` datetime NULL 
+ALTER TABLE Customer ADD `LastUpdateBy` text NULL 
+ALTER TABLE Customer ADD `CreateOn` datetime NULL 
+ALTER TABLE Customer ADD `CreateBy` text NULL 
+ALTER TABLE Customer ADD `Active` int NULL 
+````
+##### 2.1.2.3 可以选择执行这些sql
+把生成sql和执行sql分成2部分操作，对于日常而言是更方便的，我们可以快速拿到要执行的sql，进行检查，确认没问题后，可以保存下来，在正式发布应用时，留给dba审查。执行sql的代码如下
+```` csharp
+var generateSqls = dbGenerator.GenerateSql(new List<Type>() { typeof(Customer) });
+foreach (var sqlResult in generateSqls)
+{
+	dbGenerator.ExecuteGenerateSql(sqlResult);
+}
+````
+#### 2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射
+这里统一使用column注解,如[Column("Age",TypeName = "float")]
+```` csharp
+public class Customer : BaseEntity
+{
+		public string Name { set; get; }
+		
+		[Column("Age",TypeName = "float")]
+		public int Age { set; get; } = 0;
+		/// <summary>
+		/// 会员号
+		/// </summary>
+		public string CustomerNo { set; get; }
+		/// <summary>
+		/// 总消费金额
+		/// </summary>
+		public decimal TotalConsumptionAmount { set; get; }
+}
+````
+生成的sql如下
+````sql
+CREATE TABLE `Customer2` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` text NULL ,
+    `Age` float NOT NULL ,
+    `CustomerNo` text NULL ,
+    `TotalConsumptionAmount` decimal(18,2) NOT NULL ,
+    PRIMARY KEY (`Id`)
+)
+````
+
+
+### 2.2 根据数据库表自动生成实体类
+#### 2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本
+参数为数据库表名的集合和生成的实体类的命名空间
+```` csharp
+public class TestController : Controller
+{
+		private readonly IDbGenerator dbGenerator;
+
+		public TestController(IDbGenerator dbGenerator)
+		{
+				this.dbGenerator = dbGenerator;
+		}
+
+		[HttpGet("GenerateClass")]
+		public async Task<IActionResult> GenerateClass()
+		{
+				var generateClasses = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer" },"Test.Model");
+				return Content("ok");
+		}
+}
+````
+生成的c#实体类如下,新建一个类文件并把文本黏贴进去即可
+```` csharp
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+namespace Test.Model
+{
+   [Table("Customer")]
+   public class Customer
+   {
+      [Key]
+      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+      [Column("Id")]
+      public int Id { get; set; }
+      [Column("Name")]
+      public string Name { get; set; }
+      [Column("Age")]
+      public int Age { get; set; }
+      [Column("CustomerNo")]
+      public string CustomerNo { get; set; }
+      [Column("TotalConsumptionAmount")]
+      public decimal TotalConsumptionAmount { get; set; }
+      [Column("LastUpdateOn")]
+      public DateTime? LastUpdateOn { get; set; }
+      [Column("LastUpdateBy")]
+      public string LastUpdateBy { get; set; }
+      [Column("CreateOn")]
+      public DateTime? CreateOn { get; set; }
+      [Column("CreateBy")]
+      public string CreateBy { get; set; }
+      [Column("Active")]
+      public int? Active { get; set; }
+   }
+}
+
+````
+
 
 # SummerBoot中使用feign进行http调用
 >feign底层基于httpClient。

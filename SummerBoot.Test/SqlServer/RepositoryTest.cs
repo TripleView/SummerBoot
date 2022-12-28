@@ -916,22 +916,22 @@ namespace SummerBoot.Test.SqlServer
             var sb = new StringBuilder();
             sb.AppendLine("CREATE TABLE dbo.[NullableTable2] (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
-            sb.AppendLine("    [Int2] int  NULL,");
-            sb.AppendLine("    [Long2] bigint  NULL,");
-            sb.AppendLine("    [Float2] real  NULL,");
-            sb.AppendLine("    [Double2] float  NULL,");
-            sb.AppendLine("    [Decimal2] decimal(18,2)  NULL,");
-            sb.AppendLine("    [Decimal3] decimal(20,4)  NULL,");
-            sb.AppendLine("    [Guid2] uniqueidentifier  NULL,");
-            sb.AppendLine("    [Short2] smallint  NULL,");
-            sb.AppendLine("    [DateTime2] datetime2  NULL,");
-            sb.AppendLine("    [Bool2] bit  NULL,");
-            sb.AppendLine("    [TimeSpan2] time  NULL,");
-            sb.AppendLine("    [Byte2] tinyint  NULL,");
-            sb.AppendLine("    [String2] nvarchar(100)  NULL,");
-            sb.AppendLine("    [String3] nvarchar(max)  NULL,");
-            sb.AppendLine("    [Enum2] int  NULL,");
-            sb.AppendLine("    [TestInt3] int  NULL,");
+            sb.AppendLine("    [Int2] int NULL,");
+            sb.AppendLine("    [Long2] bigint NULL,");
+            sb.AppendLine("    [Float2] real NULL,");
+            sb.AppendLine("    [Double2] float NULL,");
+            sb.AppendLine("    [Decimal2] decimal(18,2) NULL,");
+            sb.AppendLine("    [Decimal3] decimal(20,4) NULL,");
+            sb.AppendLine("    [Guid2] uniqueidentifier NULL,");
+            sb.AppendLine("    [Short2] smallint NULL,");
+            sb.AppendLine("    [DateTime2] datetime2 NULL,");
+            sb.AppendLine("    [Bool2] bit NULL,");
+            sb.AppendLine("    [TimeSpan2] time NULL,");
+            sb.AppendLine("    [Byte2] tinyint NULL,");
+            sb.AppendLine("    [String2] nvarchar(100) NULL,");
+            sb.AppendLine("    [String3] nvarchar(max) NULL,");
+            sb.AppendLine("    [Enum2] int NULL,");
+            sb.AppendLine("    [TestInt3] int NULL,");
             sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
@@ -948,20 +948,20 @@ namespace SummerBoot.Test.SqlServer
             sb.Clear();
             sb.AppendLine("CREATE TABLE dbo.[NotNullableTable2] (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
-            sb.AppendLine("    [Int2] int  NOT NULL,");
-            sb.AppendLine("    [Long2] bigint  NOT NULL,");
-            sb.AppendLine("    [Float2] real  NOT NULL,");
-            sb.AppendLine("    [Double2] float  NOT NULL,");
-            sb.AppendLine("    [Decimal2] decimal(18,2)  NOT NULL,");
-            sb.AppendLine("    [Decimal3] decimal(20,4)  NOT NULL,");
-            sb.AppendLine("    [Guid2] uniqueidentifier  NOT NULL,");
-            sb.AppendLine("    [Short2] smallint  NOT NULL,");
-            sb.AppendLine("    [DateTime2] datetime2  NOT NULL,");
-            sb.AppendLine("    [Bool2] bit  NOT NULL,");
-            sb.AppendLine("    [TimeSpan2] time  NOT NULL,");
-            sb.AppendLine("    [Byte2] tinyint  NOT NULL,");
-            sb.AppendLine("    [String2] nvarchar(100)  NOT NULL,");
-            sb.AppendLine("    [String3] nvarchar(max)  NOT NULL,");
+            sb.AppendLine("    [Int2] int NOT NULL,");
+            sb.AppendLine("    [Long2] bigint NOT NULL,");
+            sb.AppendLine("    [Float2] real NOT NULL,");
+            sb.AppendLine("    [Double2] float NOT NULL,");
+            sb.AppendLine("    [Decimal2] decimal(18,2) NOT NULL,");
+            sb.AppendLine("    [Decimal3] decimal(20,4) NOT NULL,");
+            sb.AppendLine("    [Guid2] uniqueidentifier NOT NULL,");
+            sb.AppendLine("    [Short2] smallint NOT NULL,");
+            sb.AppendLine("    [DateTime2] datetime2 NOT NULL,");
+            sb.AppendLine("    [Bool2] bit NOT NULL,");
+            sb.AppendLine("    [TimeSpan2] time NOT NULL,");
+            sb.AppendLine("    [Byte2] tinyint NOT NULL,");
+            sb.AppendLine("    [String2] nvarchar(100) NOT NULL,");
+            sb.AppendLine("    [String3] nvarchar(max) NOT NULL,");
             sb.AppendLine("    CONSTRAINT PK_NotNullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
@@ -974,18 +974,23 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(1, result[0].Descriptions.Count);
             Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'test add column', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'int3'", result[0].Descriptions[0]);
             Assert.Equal(1, result[0].FieldModifySqls.Count);
-            Assert.Equal("ALTER TABLE dbo.[NullableTable] ADD [int3] int  NULL", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE dbo.[NullableTable] ADD [int3] int NULL", result[0].FieldModifySqls[0]);
 
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
             Assert.Equal(1, result.Count());
             sb.Clear();
             sb.AppendLine("CREATE TABLE dbo.[SpecifiedMapTestTable] (");
-            sb.AppendLine("    [NormalTxt] nvarchar(max)  NULL,");
-            sb.AppendLine("    [SpecifiedTxt] text  NULL");
+            sb.AppendLine("    [NormalTxt] nvarchar(max) NULL,");
+            sb.AppendLine("    [SpecifiedTxt] text NULL");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
+
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
         }
 
 

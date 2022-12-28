@@ -36,14 +36,14 @@ namespace Example.WebApi
             {
                 //-----------以下为必填参数---------
                 //注册数据库类型，比如SqliteConnection，MySqlConnection,OracleConnection,SqlConnection
-                it.DbConnectionType = typeof(MySqlConnection);
-                //添加数据库连接字符串
-                it.ConnectionString = "Server=localhost;Database=test;User ID=root;Password=123456;AllowLoadLocalInfile=true";
+                //it.DbConnectionType = typeof(MySqlConnection);
+                ////添加数据库连接字符串
+                //it.ConnectionString = "Server=localhost;Database=test;User ID=root;Password=123456;AllowLoadLocalInfile=true";
                 
                 it.AddDatabaseUnit<MySqlConnection, ITestUnitOfWork>("Server=localhost;Database=test;User ID=root;Password=123456;AllowLoadLocalInfile=true",
                     x=>
                     {
-                        x.Bind<ICustomerRepository, Customer>();
+                        x.BindRepository<ICustomerRepository, Customer>();
                     });
             });
 

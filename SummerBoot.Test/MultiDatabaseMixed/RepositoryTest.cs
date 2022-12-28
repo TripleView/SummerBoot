@@ -12,6 +12,7 @@ using SummerBoot.Test.MultiDatabaseMixed.Models;
 using SummerBoot.Test.MultiDatabaseMixed.Repository;
 using Xunit;
 using Xunit.Priority;
+using SummerBoot.Repository;
 
 namespace SummerBoot.Test.MultiDatabaseMixed
 {
@@ -133,17 +134,40 @@ namespace SummerBoot.Test.MultiDatabaseMixed
 
             services.AddSummerBootRepository(it =>
             {
+                //添加第一个mysql的链接
                 it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
                     x =>
                     {
-                        x.BindIRepositoryTypeWithAttribute<MysqlAutoRepositoryAttribute>();
+                        //绑定单个仓储
+                        x.BindRepository<IMysqlCustomerRepository,Customer>();
+                        //通过自定义注解批量绑定仓储
+                        x.BindRepositorysWithAttribute<MysqlAutoRepositoryAttribute>();
+                        
+                        //绑定数据库生成接口
                         x.BindDbGeneratorType<IDbGenerator1>();
+                        //绑定插入前回调
+                        x.BeforeInsert += entity =>
+                        {
+                            if (entity is BaseEntity baseEntity)
+                            {
+                                baseEntity.CreateOn = DateTime.Now;
+                            }
+                        };
+                        //绑定更新前回调
+                        x.BeforeUpdate += entity =>
+                        {
+                            if (entity is BaseEntity baseEntity)
+                            {
+                                baseEntity.LastUpdateOn = DateTime.Now;
+                            }
+                        };
                     });
 
+                //添加第二个sqlserver的链接
                 it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
                     x =>
                     {
-                        x.BindIRepositoryTypeWithAttribute<SqlServerAutoRepositoryAttribute>();
+                        x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator2>();
                     });
             });
