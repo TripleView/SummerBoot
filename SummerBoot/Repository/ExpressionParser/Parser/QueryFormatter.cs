@@ -447,6 +447,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         protected void Clear()
         {
             this._sb.Clear();
+            this.countSqlSb.Clear();
             this.sqlParameters.Clear();
         }
 

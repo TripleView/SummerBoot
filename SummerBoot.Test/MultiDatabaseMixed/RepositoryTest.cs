@@ -13,6 +13,7 @@ using SummerBoot.Test.MultiDatabaseMixed.Repository;
 using Xunit;
 using Xunit.Priority;
 using SummerBoot.Repository;
+using System.Data;
 
 namespace SummerBoot.Test.MultiDatabaseMixed
 {
@@ -139,9 +140,9 @@ namespace SummerBoot.Test.MultiDatabaseMixed
                     x =>
                     {
                         //绑定单个仓储
-                        x.BindRepository<IMysqlCustomerRepository,Customer>();
+                        //x.BindRepository<IMysqlCustomerRepository,Customer>();
                         //通过自定义注解批量绑定仓储
-                        x.BindRepositorysWithAttribute<MysqlAutoRepositoryAttribute>();
+                        x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
                         
                         //绑定数据库生成接口
                         x.BindDbGeneratorType<IDbGenerator1>();
@@ -161,13 +162,18 @@ namespace SummerBoot.Test.MultiDatabaseMixed
                                 baseEntity.LastUpdateOn = DateTime.Now;
                             }
                         };
+                        //添加自定义类型映射
+                        //x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
+                        //添加自定义字段映射处理程序
+                        //x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
                     });
 
                 //添加第二个sqlserver的链接
                 it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
                     x =>
                     {
-                        x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
+                        x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
                         x.BindDbGeneratorType<IDbGenerator2>();
                     });
             });

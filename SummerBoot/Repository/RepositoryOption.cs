@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using StackExchange.Redis;
-using SummerBoot.Core;
-using SummerBoot.Repository.Core;
+﻿using SummerBoot.Core;
 using SummerBoot.Repository.TypeHandler;
 using SummerBoot.Repository.TypeHandler.Dialect.Oracle;
 using SummerBoot.Repository.TypeHandler.Dialect.Sqlite;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace SummerBoot.Repository
 {
@@ -77,24 +74,6 @@ namespace SummerBoot.Repository
         public static RepositoryOption Instance { set; get; }
 
         /// <summary>
-        /// 插入的时候自动添加创建时间，数据库实体类必须继承于BaseEntity
-        /// </summary>
-        public bool AutoAddCreateOn { get; set; } = false;
-
-        /// <summary>
-        /// 插入的时候自动添加创建时间，使用utc时间
-        /// </summary>
-        public bool AutoAddCreateOnUseUtc { get; set; } = false;
-
-        /// <summary>
-        /// update的时候自动更新最后更新时间字段，数据库实体类必须继承于BaseEntity
-        /// </summary>
-        public bool AutoUpdateLastUpdateOn { get; set; } = false;
-        /// <summary>
-        /// update的时候自动更新最后更新时间字段，使用utc时间
-        /// </summary>
-        public bool AutoUpdateLastUpdateOnUseUtc { get; set; } = false;
-        /// <summary>
         /// 是否使用软删除
         /// </summary>
         public bool IsUseSoftDelete { get; set; }
@@ -105,7 +84,7 @@ namespace SummerBoot.Repository
         {
             if (connectionString.IsNullOrWhiteSpace())
             {
-                throw new ArgumentNullException("ConnectionString can not be null");
+                throw new Exception("ConnectionString can not be null");
             }
 
             var databaseUnit = new DatabaseUnit(typeof(TUnitOfWork), typeof(TDbConnection), connectionString);

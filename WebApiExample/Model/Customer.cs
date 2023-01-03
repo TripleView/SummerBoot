@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Example.WebApi.Model
+namespace WebApiExample.Model
 {
     public class Customer
     {

@@ -120,7 +120,7 @@ namespace SummerBoot.Core
 
             if (option.DatabaseUnits.Count == 0)
             {
-                throw new ArgumentNullException("please add database");
+                throw new ArgumentNullException("please add databaseUnit");
             }
             var repositoryProxyBuilder = new RepositoryProxyBuilder();
             services.TryAddSingleton<IRepositoryProxyBuilder>(it => repositoryProxyBuilder);

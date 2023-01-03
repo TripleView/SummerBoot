@@ -1068,7 +1068,7 @@ namespace SummerBoot.Test.SqlServer
                 it.AddDatabaseUnit<SqlConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
-                        x.BindIRepositoryTypeWithAttribute<SqlServerAutoRepositoryAttribute>();
+                        x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {

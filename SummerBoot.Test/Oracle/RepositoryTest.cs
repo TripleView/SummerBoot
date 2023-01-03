@@ -1137,7 +1137,7 @@ namespace SummerBoot.Test.Oracle
                 it.AddDatabaseUnit<OracleConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
-                        x.BindIRepositoryTypeWithAttribute<OracleAutoRepositoryAttribute>();
+                        x.BindRepositorysWithAttribute<OracleAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {

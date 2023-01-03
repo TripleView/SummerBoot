@@ -4,10 +4,10 @@
 <a href="https://jb.gg/OpenSourceSupport"> <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png?_ga=2.140768178.1037783001.1644161957-503565267.1643800664&_gl=1*1rs8z57*_ga*NTAzNTY1MjY3LjE2NDM4MDA2NjQ.*_ga_V0XZL7QHEB*MTY0NDE2MTk1Ny4zLjEuMTY0NDE2NTE2Mi4w" width = "200" height = "200" alt="" align=center /></a>
 
 # SummerBoot的核心理念
-> 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是目标，而不是底层算法实现的过程，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单优雅。
+> 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是结果，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单更优雅。
 
 # 框架说明
-这是一个注解 + 接口的方式实现各种调用的全声明式框架，框架会通过Reflection Emit技术，自动生成接口的实现类。
+这是一个注解 + 接口的方式实现各种调用的全声明式框架，包括但不限于数据库，http，缓存等，框架会通过Reflection Emit技术，自动生成接口的实现类。
 
 # 加入QQ群反馈建议
 群号:799648362
@@ -29,10 +29,10 @@ net core 3.1,net 6
 	- [Nuget](#nuget)
 - [支持框架](#支持框架)
 - [文档目录](#文档目录)
-- [SummerBoot中使用ORM-repository操作数据库](#summerboot中使用orm-repository操作数据库)
+- [SummerBoot中使用repository进行数据库操作](#summerboot中使用repository进行数据库操作)
 	- [准备工作](#准备工作)
 	- [1.首先在startup.cs类中注册服务](#1首先在startupcs类中注册服务)
-	- [3.定义接口，并继承于IBaseRepository，同时在接口上添加AutoRepository注解表示让框架自动注册并生成实现类](#3定义接口并继承于ibaserepository同时在接口上添加autorepository注解表示让框架自动注册并生成实现类)
+	- [3.定义接口](#3定义接口)
 	- [4.增删改查操作，均支持异步同步](#4增删改查操作均支持异步同步)
 		- [4.1 查](#41-查)
 			- [4.1.1 IQueryable链式语法查询。](#411-iqueryable链式语法查询)
@@ -41,7 +41,7 @@ net core 3.1,net 6
 			- [4.1.3 select注解这种方式拼接where查询条件](#413-select注解这种方式拼接where查询条件)
 			- [4.1.4 IBaseRepository接口自带的查方法](#414-ibaserepository接口自带的查方法)
 		- [4.2 增](#42-增)
-			- [4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。](#421-接口自带了insert方法可以插入单个实体或者实体列表如果实体类的主键名称为id且有key注解并且是自增的那么插入后框架会自动为实体的id这个字段赋值值为自增的id值)
+			- [4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表](#421-接口自带了insert方法可以插入单个实体或者实体列表)
 			- [4.2.2 快速批量插入，接口自带了FastBatchInsert方法，可以快速插入实体列表。](#422-快速批量插入接口自带了fastbatchinsert方法可以快速插入实体列表)
 		- [4.3 删](#43-删)
 			- [4.3.1 接口自带了Delete方法，可以删除单个实体，或者实体列表](#431-接口自带了delete方法可以删除单个实体或者实体列表)
@@ -52,7 +52,7 @@ net core 3.1,net 6
 		- [4.5.事务支持](#45事务支持)
 		- [4.6 如果有些特殊情况需要自己手写实现类怎么办?](#46-如果有些特殊情况需要自己手写实现类怎么办)
 			- [4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#461-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
-			- [4.6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#462-添加一个实现类继承于baserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
+			- [4.6.2 添加一个实现类，继承于CustomBaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#462-添加一个实现类继承于custombaserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
 	- [2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成修改数据库表)
 		- [2.1 根据实体类自动生成/修改数据库表](#21-根据实体类自动生成修改数据库表)
 			- [2.1.1 定义一个数据库实体类](#211-定义一个数据库实体类)
@@ -95,72 +95,74 @@ net core 3.1,net 6
 	- [3.注入接口后即可使用](#3注入接口后即可使用)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
-# SummerBoot中使用ORM-repository操作数据库
-summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，在项目中支持多数据库多链接，通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为本人认为多表查询直接写sql更好更易理解。
+# SummerBoot中使用repository进行数据库操作
+summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，在项目中支持多数据库多链接，通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为本人认为多表查询直接写sql更容易理解。
 
 ## 准备工作
 需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core
 
 ## 1.首先在startup.cs类中注册服务
-repository支持多数据库多链接，在repository中称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库，第二个是sqlserver数据库，通过AddDatabaseUnit方法添加单元，参数为相应的dbConnection类和工作单元接口，框架默认提供了9个工作单元接口IUnitOfWork1~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里绑定插入前回调和更新前回调,添加自定义类型映射,添加添加自定义字段映射处理程序等
+repository支持多数据库多链接，在repository中称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库，第二个是sqlserver数据库，通过AddDatabaseUnit方法添加单元，参数为相应的dbConnection类和工作单元接口，框架默认提供了9个工作单元接口IUnitOfWork1~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里绑定插入前回调和更新前回调,添加自定义类型映射,添加自定义字段映射处理程序等
 
 ````csharp
 services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
-{
-		//添加第一个mysql的链接
-		it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
-				x =>
-				{
-						//绑定单个仓储
-						x.BindRepository<IMysqlCustomerRepository,Customer>();
-						//通过自定义注解批量绑定仓储
-						x.BindRepositorysWithAttribute<MysqlAutoRepositoryAttribute>();
-						
-						//绑定数据库生成接口
-						x.BindDbGeneratorType<IDbGenerator1>();
-						//绑定插入前回调
-						x.BeforeInsert += entity =>
-						{
-								if (entity is BaseEntity baseEntity)
-								{
-										baseEntity.CreateOn = DateTime.Now;
-								}
-						};
-						//绑定更新前回调
-						x.BeforeUpdate += entity =>
-						{
-								if (entity is BaseEntity baseEntity)
-								{
-										baseEntity.LastUpdateOn = DateTime.Now;
-								}
-						};
-						//添加自定义类型映射
-						//x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
-						//添加自定义字段映射处理程序
-						//x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+            {
+                //添加第一个mysql的链接
+                it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
+                    x =>
+                    {
+                        //绑定单个仓储
+                        //x.BindRepository<IMysqlCustomerRepository,Customer>();
+                        //通过自定义注解批量绑定仓储
+                        x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+                        
+                        //绑定数据库生成接口
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                        //绑定插入前回调
+                        x.BeforeInsert += entity =>
+                        {
+                            if (entity is BaseEntity baseEntity)
+                            {
+                                baseEntity.CreateOn = DateTime.Now;
+                            }
+                        };
+                        //绑定更新前回调
+                        x.BeforeUpdate += entity =>
+                        {
+                            if (entity is BaseEntity baseEntity)
+                            {
+                                baseEntity.LastUpdateOn = DateTime.Now;
+                            }
+                        };
+                        //添加自定义类型映射
+                        //x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
+                        //添加自定义字段映射处理程序
+                        //x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
 
-				});
+                    });
 
-		//添加第二个sqlserver的链接
-		it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
-				x =>
-				{
-						x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
-						x.BindDbGeneratorType<IDbGenerator2>();
-				});
-});
+                //添加第二个sqlserver的链接
+                it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
+                    x =>
+                    {
+                        x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
+                        x.BindDbGeneratorType<IDbGenerator2>();
+                    });
+            });
 
 ````
 
-## 3.定义接口，并继承于IBaseRepository，同时在接口上添加AutoRepository注解表示让框架自动注册并生成实现类
+## 3.定义接口
+接口继承于IBaseRepository，为了便于批量注册仓储，可以在接口上添加AutoRepository1注解，框架自带了AutoRepository1~AutoRepository9注解，当然，也可以自定义注解，只需要继承于AutoRepositoryAttribute即可
 ````csharp
-[AutoRepository]
+[AutoRepository1]
 public interface ICustomerRepository : IBaseRepository<Customer>
 {
 }
 ````
+
 ## 4.增删改查操作，均支持异步同步
 ### 4.1 查
 通过DI注入自定义仓储接口以后，就可以开始查了，支持正常查询与分页查询，查询有2种方式。
@@ -175,7 +177,7 @@ var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).To
 #### 4.1.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete
  然后在Select,Update,Delete里写sql语句,如
 ````csharp
-[AutoRepository]
+[AutoRepository1]
 public interface ICustomerRepository : IBaseRepository<Customer>
 {
     //async
@@ -293,7 +295,13 @@ var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, name
 Get方法，通过id获取结果，GetAll(),获取表里的所有结果集。
 
 ### 4.2 增
-#### 4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表，如果实体类的主键名称为Id,且有Key注解，并且是自增的，那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。
+#### 4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表
+如果实体类的主键名称为Id,且有Key注解，并且是自增的，如下：
+````csharp
+[Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]     
+public int Id { set; get; }
+````
+那么插入后，框架会自动为实体的ID这个字段赋值，值为自增的ID值。
 ````csharp
 var customer = new Customer() { Name = "testCustomer" };
 customerRepository.Insert(customer);
@@ -376,12 +384,12 @@ public interface ICustomCustomerRepository : IBaseRepository<Customer>
     Task<int> CustomQueryAsync();
 }
 ````
-#### 4.6.2 添加一个实现类，继承于BaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。
+#### 4.6.2 添加一个实现类，继承于CustomBaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。
 注解的参数为这个类对应的自定义接口的类型和服务的声明周期ServiceLifetime（周期默认为scope级别），添加AutoRegister注解的目的是让模块自动将自定义接口和自定义类注册到IOC容器中，后续直接注入使用即可，BaseRepository自带了Execute，QueryFirstOrDefault和QueryList方法，如果要接触更底层的dbConnection进行查询，参考下面的CustomQueryAsync方法，首先OpenDb()，然后查询，查询中一定要带上transaction:dbTransaction这个参数，查询结束以后CloseDb();
 
 ````csharp
 [AutoRegister(typeof(ICustomCustomerRepository))]
-public class CustomCustomerRepository : BaseRepository<Customer>, ICustomCustomerRepository
+public class CustomCustomerRepository : CustomBaseRepository<Customer>, ICustomCustomerRepository
 {
     public CustomCustomerRepository(IUnitOfWork uow, IDbFactory dbFactory, RepositoryOption repositoryOption) : base(uow, dbFactory, repositoryOption)
     {

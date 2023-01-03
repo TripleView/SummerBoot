@@ -1,8 +1,7 @@
 ﻿using SummerBoot.Repository;
-using SummerBoot.Test.MultiDatabaseMixed.Models;
+using WebApiExample.Model;
 
-
-namespace SummerBoot.Test.MultiDatabaseMixed.Repository
+namespace WebApiExample.Repository
 {
     [AutoRepository1]
     public interface IMysqlCustomerRepository : IBaseRepository<Customer>
