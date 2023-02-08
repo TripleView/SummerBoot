@@ -49,7 +49,7 @@ namespace SummerBoot.Repository.Generator
             dbConnection.Close();
         }
 
-        public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace)
+        public List<string> GenerateCsharpClass( List<string> tableNames,  string classNameSpace, string namesapce = "")
         {
             //c#中可空的基本类型
             var csharpCanBeNullableType = new List<string>()
@@ -70,7 +70,7 @@ namespace SummerBoot.Repository.Generator
             var result = new List<string>();
             foreach (var tableName in tableNames)
             {
-                var tableInfo = databaseInfo.GetTableInfoByName("", tableName);
+                var tableInfo = databaseInfo.GetTableInfoByName(namesapce, tableName);
                 var columnInfos = tableInfo.FieldInfos;
                 var sb = new StringBuilder();
                 sb.AppendLine("using System;");

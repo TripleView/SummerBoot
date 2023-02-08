@@ -44,11 +44,11 @@ namespace SummerBoot.Repository.Core
 
             if (parameterName.Length > 0 && RepositoryOption.ParameterIdentifiers.Contains(parameterName[0]))
             {
-                return parameterName.Substring(1);
+                //return parameterName.Substring(1);
                 return parameterName.Substring(1).ToLower();
             }
 
-            return parameterName;
+            //return parameterName;
             return parameterName.ToLower();
         }
 
@@ -97,6 +97,7 @@ namespace SummerBoot.Repository.Core
             {
                 var name = memberInfoCache.Name;
                 var value = entity.GetPropertyValueByEmit(memberInfoCache.PropertyName);
+                name = CleanParameterName(name);
                 paramInfos[name] = new ParamInfo
                 {
                     Name = name,
