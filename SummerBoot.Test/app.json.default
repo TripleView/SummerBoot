@@ -2,6 +2,7 @@
   "oracleDbConnectionString": "Data Source=(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = <your ip>)(PORT = <port>))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = <your servicename>)));Persist Security Info=True;User ID=<your useName>;Password=<your Password>;",
   "sqlServerDbConnectionString": "Server= <your ip>,1433;Database=<your Database>;Trusted_Connection=false;User ID=<your useName>;Password=<your Password>;",
   "mysqlDbConnectionString": "Server= <your ip>;Database=<your Database>;User ID=<your useName>;Password=<your Password>;",
+  "pgsqlDbConnectionString": "Host=<your ip>;Username=<your useName>;Password=<your Password>;Database=<your Database>",
   "configurationTest": {
     "url": "http://localhost:5001/home",
     "path": "/query"

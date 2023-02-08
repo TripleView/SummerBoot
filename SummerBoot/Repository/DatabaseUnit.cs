@@ -180,7 +180,47 @@ namespace SummerBoot.Repository
                 [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
                 [typeof(TimeSpan?)] = null,
                 [typeof(object)] = DbType.Object
-            }}
+            }},
+            {DatabaseType.Pgsql,new Dictionary<Type, DbType?>(37)
+            {
+                [typeof(byte)] = DbType.Byte,
+                [typeof(sbyte)] = DbType.SByte,
+                [typeof(short)] = DbType.Int16,
+                [typeof(ushort)] = DbType.UInt16,
+                [typeof(int)] = DbType.Int32,
+                [typeof(uint)] = DbType.UInt32,
+                [typeof(long)] = DbType.Int64,
+                [typeof(ulong)] = DbType.UInt64,
+                [typeof(float)] = DbType.Single,
+                [typeof(double)] = DbType.Double,
+                [typeof(decimal)] = DbType.Decimal,
+                [typeof(bool)] = DbType.Boolean,
+                [typeof(string)] = DbType.String,
+                [typeof(char)] = DbType.StringFixedLength,
+                [typeof(Guid)] = DbType.Guid,
+                [typeof(DateTime)] = DbType.DateTime,
+                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan)] = null,
+                [typeof(byte[])] = DbType.Binary,
+                [typeof(byte?)] = DbType.Byte,
+                [typeof(sbyte?)] = DbType.SByte,
+                [typeof(short?)] = DbType.Int16,
+                [typeof(ushort?)] = DbType.UInt16,
+                [typeof(int?)] = DbType.Int32,
+                [typeof(uint?)] = DbType.UInt32,
+                [typeof(long?)] = DbType.Int64,
+                [typeof(ulong?)] = DbType.UInt64,
+                [typeof(float?)] = DbType.Single,
+                [typeof(double?)] = DbType.Double,
+                [typeof(decimal?)] = DbType.Decimal,
+                [typeof(bool?)] = DbType.Boolean,
+                [typeof(char?)] = DbType.StringFixedLength,
+                [typeof(Guid?)] = DbType.Guid,
+                [typeof(DateTime?)] = DbType.DateTime,
+                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan?)] = null,
+                [typeof(object)] = DbType.Object
+            }},
         };
 
         public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
@@ -396,6 +436,15 @@ namespace SummerBoot.Repository
             }
         }
 
+        public bool IsPgsql
+        {
+            get
+            {
+                var dbName = DbConnectionType.FullName;
+                return dbName.ToLower().IndexOf("pgsql") > -1;
+            }
+        }
+
         /// <summary>
         /// 数据库类型
         /// </summary>
@@ -414,6 +463,10 @@ namespace SummerBoot.Repository
                     databaseType = DatabaseType.Oracle;
                 }
 
+                if (IsPgsql)
+                {
+                    databaseType = DatabaseType.Pgsql;
+                }
 
                 if (IsSqlServer)
                 {

@@ -1070,7 +1070,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         [Fact]
         public static void TestIsInstanceWithBool()
         {
-            var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(bool),
+            var dynamicMethod = new DynamicMethod("TestIsInstanceWithBool" + Guid.NewGuid().ToString("N"), typeof(bool),
                 Type.EmptyTypes);
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();

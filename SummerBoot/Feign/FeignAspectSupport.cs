@@ -71,7 +71,7 @@ namespace SummerBoot.Feign
 
             var feignClientAttribute = interfaceType.GetCustomAttribute<FeignClientAttribute>();
             if (feignClientAttribute == null) throw new Exception(nameof(feignClientAttribute));
-
+           
             var url = await GetUrlBody(feignClientAttribute);
 
             var clientName = feignClientAttribute.Name.GetValueOrDefault(interfaceType.FullName);
@@ -87,8 +87,6 @@ namespace SummerBoot.Feign
 
             //处理请求头逻辑
             ProcessHeaders(method, requestTemplate, interfaceType);
-
-
 
             var path = "";
 

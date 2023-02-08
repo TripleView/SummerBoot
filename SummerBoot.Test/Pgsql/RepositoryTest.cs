@@ -1,14 +1,7 @@
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.DependencyInjection;
-using SummerBoot.Core;
-using SummerBoot.Repository;
-using SummerBoot.Test.SqlServer.Db;
-using SummerBoot.Test.SqlServer.Models;
-using SummerBoot.Test.SqlServer.Repository;
-using System;
+Ôªøusing System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -17,14 +10,20 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
+using SummerBoot.Core;
+using SummerBoot.Repository;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
+using SummerBoot.Test.Pgsql.Db;
+using SummerBoot.Test.Pgsql.Models;
+using SummerBoot.Test.Pgsql.Repository;
 using Xunit;
 using Xunit.Priority;
 
-namespace SummerBoot.Test.SqlServer
+namespace SummerBoot.Test.Pgsql
 {
     [Collection("test")]
     [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
@@ -32,10 +31,11 @@ namespace SummerBoot.Test.SqlServer
     {
         private IServiceProvider serviceProvider;
 
+
         /// <summary>
-        /// ≤‚ ‘≤Â»Î µÃÂ∫Õ∏¸–¬ µÃÂ«∞µƒ◊‘∂®“Â∫Ø ˝
+        /// ÊµãËØïÊèíÂÖ•ÂÆû‰ΩìÂíåÊõ¥Êñ∞ÂÆû‰ΩìÂâçÁöÑËá™ÂÆö‰πâÂáΩÊï∞
         /// </summary>
-        [Fact, Priority(113)]
+        [Fact, Priority(513)]
         public async Task TestBeforeInsertAndUpdateEvent()
         {
             InitDatabase();
@@ -52,7 +52,7 @@ namespace SummerBoot.Test.SqlServer
             guidModel.Name = "ccd";
             await guidModelRepository.UpdateAsync(guidModel);
             Assert.Equal("ppp", guidModel.Address);
-
+            
             id = Guid.NewGuid();
             var guidModel2 = new GuidModel()
             {
@@ -67,15 +67,14 @@ namespace SummerBoot.Test.SqlServer
         }
 
         /// <summary>
-        /// ≤‚ ‘id¿‡–ÕŒ™guidµƒmodelµƒ‘ˆ…æ∏ƒ≤È
+        /// ÊµãËØïidÁ±ªÂûã‰∏∫guidÁöÑmodelÁöÑÂ¢ûÂà†ÊîπÊü•
         /// </summary>
-        [Fact, Priority(413)]
+        [Fact, Priority(513)]
         public async Task TestModelUseGuidAsId()
         {
             InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
             var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
-          
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -95,18 +94,17 @@ namespace SummerBoot.Test.SqlServer
             var nullDbGuidModel = await guidModelRepository.GetAsync(id);
             Assert.Null(nullDbGuidModel);
         }
-
         /// <summary>
-        /// ≤‚ ‘ ¬ŒÒ÷–≈˙¡ø≤Â»Î
+        /// ÊµãËØï‰∫ãÂä°‰∏≠ÊâπÈáèÊèíÂÖ•
         /// </summary>
-        [Fact, Priority(412)]
+        [Fact, Priority(512)]
         public async Task TestBatchInsertWithDbtransation()
         {
             InitDatabase();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            var connectionString = MyConfiguration.GetConfiguration("pgsqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("sqlServer connectionString must not be null");
+                throw new ArgumentNullException("pgsql connectionString must not be null");
             }
             var guid = Guid.NewGuid();
             var now = DateTime.Now;
@@ -177,356 +175,483 @@ namespace SummerBoot.Test.SqlServer
         }
 
         /// <summary>
-        /// ≤‚ ‘≈˙¡ø≤Â»Î
+        /// ÊµãËØïÊâπÈáèÊèíÂÖ•
         /// </summary>
-        [Fact, Priority(411)]
-        public async Task TestBatchInsertAsync()
-        {
-            InitDatabase();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new ArgumentNullException("sqlServer connectionString must not be null");
-            }
-            var guid = Guid.NewGuid();
-            var now = DateTime.Now;
-            var now2 = now;
-            var total = 2000;
-            InitDatabase();
-            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
-            var sw = new Stopwatch();
-            var nullableTableList = new List<NullableTable>();
+        //[Fact, Priority(511)]
+        //public async Task TestBatchInsertAsync()
+        //{
+        //    InitDatabase();
+        //    //InitService();
+        //    var connectionString = MyConfiguration.GetConfiguration("pgsqlDbConnectionString");
+        //    if (string.IsNullOrWhiteSpace(connectionString))
+        //    {
+        //        throw new ArgumentNullException("pgsql connectionString must not be null");
+        //    }
 
-            for (int i = 0; i < total; i++)
-            {
-                var a = new NullableTable()
-                {
-                    Int2 = 2,
-                    Bool2 = true,
-                    Byte2 = 1,
-                    DateTime2 = now,
-                    Decimal2 = 1m,
-                    Decimal3 = 1.1m,
-                    Double2 = 1.1,
-                    Float2 = (float)1.1,
-                    Guid2 = Guid.NewGuid(),
-                    Id = 1,
-                    Short2 = 1,
-                    TimeSpan2 = TimeSpan.FromHours(1),
-                    String2 = "sb",
-                    String3 = "sb",
-                    Long2 = 2,
-                    Enum2 = Model.Enum2.y,
-                    Int3 = 4
-                };
-                if (i == 0)
-                {
-                    a.Guid2 = guid;
-                }
-                nullableTableList.Add(a);
-            }
+        //    var guid = Guid.NewGuid();
+        //    var now = DateTime.Now;
+        //    var now2 = now;
+        //    var total = 2000;
+        //    var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+        //    var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
+        //    var nullableTableList3 = new List<NullableTable>();
+        //    var nullableTableList = new List<NullableTable>();
+        //    for (int i = 0; i < total; i++)
+        //    {
+        //        var a = new NullableTable()
+        //        {
+        //            Int2 = 2,
+        //            Bool2 = true,
+        //            Byte2 = 1,
+        //            DateTime2 = now,
+        //            Decimal2 = 1m,
+        //            Decimal3 = 1.1m,
+        //            Double2 = 1.1,
+        //            Float2 = (float)1.1,
+        //            Guid2 = Guid.NewGuid(),
+        //            Id = 0,
+        //            Short2 = 1,
+        //            TimeSpan2 = TimeSpan.FromHours(1),
+        //            String2 = "sb",
+        //            String3 = "sb",
+        //            Long2 = 2,
+        //            Enum2 = Model.Enum2.y,
+        //            Int3 = 4
+        //        };
+        //        if (i == 0)
+        //        {
+        //            a.Guid2 = guid;
+        //            a.Int2 = 1;
+        //        }
+        //        nullableTableList3.Add(a);
+        //    }
 
-            sw.Start();
-            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+        //    //È¢ÑÁÉ≠
+        //    using (var dbConnection = new MySqlConnection(connectionString))
+        //    {
+        //        dbConnection.Open();
+        //        //var dbtran = dbConnection.BeginTransaction();
+        //        //MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection,
+        //        //    dbtran);
+        //        MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection, null);
+        //        sqlBulkCopy.DestinationTableName = "NullableTable";
+        //        var propertys = typeof(NullableTable).GetProperties()
+        //            .Where(it => it.CanRead && it.GetCustomAttribute<NotMappedAttribute>() == null).ToList();
 
-            sw.Stop();
-            var l1 = sw.ElapsedMilliseconds;
-            var nullableTableList2 = new List<NullableTable>();
 
-            for (int i = 0; i < total; i++)
-            {
-                var a = new NullableTable()
-                {
-                    Int2 = 2,
-                    Bool2 = true,
-                    Byte2 = 1,
-                    DateTime2 = now2,
-                    Decimal2 = 1m,
-                    Decimal3 = 1.1m,
-                    Double2 = 1.1,
-                    Float2 = (float)1.1,
-                    Guid2 = Guid.NewGuid(),
-                    Id = 1,
-                    Short2 = 1,
-                    TimeSpan2 = TimeSpan.FromHours(1),
-                    String2 = "sb",
-                    String3 = "sb",
-                    Long2 = 2,
-                    Enum2 = Model.Enum2.y,
-                    Int3 = 4
-                };
-                if (i == 0)
-                {
-                    a.Guid2 = guid;
-                }
-                nullableTableList2.Add(a);
-            }
-            sw.Restart();
-            await nullableTableRepository.InsertAsync(nullableTableList2);
-            sw.Stop();
-            var l3 = sw.ElapsedMilliseconds;
-            var nullableTableList3 = new List<NullableTable>();
+        //        for (int i = 0; i < propertys.Count; i++)
+        //        {
+        //            var property = propertys[i];
+        //            var columnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
 
-            for (int i = 0; i < total; i++)
-            {
-                var a = new NullableTable()
-                {
-                    Int2 = 2,
-                    Bool2 = true,
-                    Byte2 = 1,
-                    DateTime2 = now,
-                    Decimal2 = 1m,
-                    Decimal3 = 1.1m,
-                    Double2 = 1.1,
-                    Float2 = (float)1.1,
-                    Guid2 = Guid.NewGuid(),
-                    Id = 0,
-                    Short2 = 1,
-                    TimeSpan2 = TimeSpan.FromHours(1),
-                    String2 = "sb",
-                    String3 = "sb",
-                    Long2 = 2,
-                    Enum2 = Model.Enum2.y,
-                    Int3 = 4
-                };
-                if (i == 0)
-                {
-                    a.Guid2 = guid;
-                }
-                nullableTableList3.Add(a);
-            }
-            sw.Restart();
-            using (var dbConnection = new SqlConnection(connectionString))
-            {
-                //&SqlBulkCopyOptions.KeepNulls
-                dbConnection.Open();
-                var dbtran = dbConnection.BeginTransaction();
-                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection, SqlBulkCopyOptions.KeepIdentity,
-                    dbtran);
 
-                sqlBulkCopy.BatchSize = total;
-                sqlBulkCopy.DestinationTableName = "NullableTable";
-                sqlBulkCopy.ColumnMappings.Add("Int2", "Int2");
-                sqlBulkCopy.ColumnMappings.Add("Bool2", "Bool2");
-                sqlBulkCopy.ColumnMappings.Add("Byte2", "Byte2");
-                sqlBulkCopy.ColumnMappings.Add("DateTime2", "DateTime2");
-                sqlBulkCopy.ColumnMappings.Add("Decimal2", "Decimal2");
-                sqlBulkCopy.ColumnMappings.Add("Decimal3", "Decimal3");
-                sqlBulkCopy.ColumnMappings.Add("Double2", "Double2");
-                sqlBulkCopy.ColumnMappings.Add("Float2", "Float2");
-                sqlBulkCopy.ColumnMappings.Add("Guid2", "Guid2");
-                sqlBulkCopy.ColumnMappings.Add("Short2", "Short2");
-                sqlBulkCopy.ColumnMappings.Add("TimeSpan2", "TimeSpan2");
+        //            if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} =unhex(@tmp)"));
+        //            }
+        //            else
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columnName));
+        //            }
+        //        }
 
-                sqlBulkCopy.ColumnMappings.Add("String2", "String2");
-                sqlBulkCopy.ColumnMappings.Add("String3", "String3");
-                sqlBulkCopy.ColumnMappings.Add("Long2", "Long2");
-                sqlBulkCopy.ColumnMappings.Add("Enum2", "Enum2");
-                sqlBulkCopy.ColumnMappings.Add("Int3", "TestInt3");
+        //        var table = nullableTableList3.ToDataTable();
 
-                var table = nullableTableList3.ToDataTable();
-                //sqlserverÃÊªªtimespan¿‡–ÕŒ™long¿‡–Õ
-                //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(table);
-                //table.Columns.Remove("id");
-                await sqlBulkCopy.WriteToServerAsync(table);
-                dbtran.Commit();
-            }
-            sw.Stop();
-            var l2 = sw.ElapsedMilliseconds;
-            var rate = l1 / l2;
-            var rate2 = l3 / l1;
-            var rate3 = l3 / l2;
-            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
-            Assert.Equal(3, result.Count);
-            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
-            Assert.Equal(6000, result.Count);
-            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
-                .ToList();
-            var count = nullableTableRepository.Count(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id));
-            Assert.Equal(3, count);
-            Assert.Equal(3, models.Count);
-            Assert.True(models[0].Equals(models[1]));
-            Assert.True(models[0].Equals(models[2]));
-        }
+        //        SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(table, guid1 => guid1.ToByteArray());
+
+        //        var c = await sqlBulkCopy.WriteToServerAsync(table);
+
+        //        if (c.Warnings.Count > 1)
+        //        {
+        //            throw new Exception(string.Join(',', c.Warnings.Select(it => it.Message)));
+        //        }
+        //        //dbtran.Commit();
+
+        //    }
+
+        //    nullableTableRepository.Delete(it => true);
+        //    for (int i = 0; i < total; i++)
+        //    {
+        //        var a = new NullableTable()
+        //        {
+        //            Int2 = 2,
+        //            Bool2 = true,
+        //            Byte2 = 1,
+        //            DateTime2 = now,
+        //            Decimal2 = 1m,
+        //            Decimal3 = 1.1m,
+        //            Double2 = 1.1,
+        //            Float2 = (float)1.1,
+        //            Guid2 = Guid.NewGuid(),
+        //            Id = 1,
+        //            Short2 = 1,
+        //            TimeSpan2 = TimeSpan.FromHours(1),
+        //            String2 = "sb",
+        //            String3 = "sb",
+        //            Long2 = 2,
+        //            Enum2 = Model.Enum2.y,
+        //            Int3 = 4
+        //        };
+        //        if (i == 0)
+        //        {
+        //            a.Guid2 = guid;
+        //            a.Int2 = 1;
+        //        }
+        //        nullableTableList.Add(a);
+        //    }
+
+        //    var l1 = await SbUtil.CalculateTimeAsync("FastBatchInsertAsync", async () =>
+        //    {
+        //        await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+        //    });
+
+        //    //Ê≠£ÂºèÂºÄÂßã
+        //    var sw = new Stopwatch();
+        //    sw.Start();
+
+        //    using (var dbConnection = new MySqlConnection(connectionString))
+        //    {
+        //        dbConnection.Open();
+        //        //var dbtran = dbConnection.BeginTransaction();
+        //        //MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection,
+        //        //    dbtran);
+        //        MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection, null);
+        //        sqlBulkCopy.DestinationTableName = "NullableTable";
+        //        var propertys = typeof(NullableTable).GetProperties()
+        //            .Where(it => it.CanRead && it.GetCustomAttribute<NotMappedAttribute>() == null).ToList();
+
+
+        //        for (int i = 0; i < propertys.Count; i++)
+        //        {
+        //            var property = propertys[i];
+        //            var columnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+
+        //            if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} =unhex(@tmp)"));
+        //            }
+        //            else
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columnName));
+        //            }
+
+        //        }
+
+        //        var table = nullableTableList3.ToDataTable();
+
+        //        SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(table, guid1 => guid1.ToByteArray());
+
+        //        var cccccc = await SbUtil.CalculateTimeAsync("normalInsert", async () =>
+        //        {
+        //            var c = await sqlBulkCopy.WriteToServerAsync(table);
+        //        });
+
+
+        //        //if (c.Warnings.Count > 1)
+        //        //{
+        //        //    throw new Exception(string.Join(',', c.Warnings.Select(it => it.Message)));
+        //        //}
+        //        //dbtran.Commit();
+
+        //    }
+        //    sw.Stop();
+        //    var l2 = sw.ElapsedMilliseconds;
+
+        //    var nullableTableList2 = new List<NullableTable>();
+
+        //    for (int i = 0; i < total; i++)
+        //    {
+        //        var a = new NullableTable()
+        //        {
+        //            Int2 = 2,
+        //            Bool2 = true,
+        //            Byte2 = 1,
+        //            DateTime2 = now2,
+        //            Decimal2 = 1m,
+        //            Decimal3 = 1.1m,
+        //            Double2 = 1.1,
+        //            Float2 = (float)1.1,
+        //            Guid2 = Guid.NewGuid(),
+        //            Id = 1,
+        //            Short2 = 1,
+        //            TimeSpan2 = TimeSpan.FromHours(1),
+        //            String2 = "sb",
+        //            String3 = "sb",
+        //            Long2 = 2,
+        //            Enum2 = Model.Enum2.y,
+        //            Int3 = 4
+        //        };
+        //        if (i == 0)
+        //        {
+        //            a.Guid2 = guid;
+        //            a.Int2 = 1;
+        //        }
+        //        nullableTableList2.Add(a);
+        //    }
+        //    sw.Restart();
+        //    await nullableTableRepository.InsertAsync(nullableTableList2);
+        //    sw.Stop();
+        //    var l3 = sw.ElapsedMilliseconds;
+
+        //    sw.Restart();
+
+        //    var rate = l1 / l2;
+        //    var rate2 = l3 / l1;
+        //    var rate3 = l3 / l2;
+
+        //    var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+        //    Assert.Equal(3, result.Count);
+        //    result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+        //    Assert.Equal(total * 3, result.Count);
+        //    var models = nullableTableRepository.Where(it => it.Int2 == 1)
+        //        .ToList();
+        //    var count = nullableTableRepository.Count(it => it.Int2 == 1);
+        //    Assert.Equal(3, count);
+        //    Assert.Equal(3, models.Count);
+        //    Assert.True(models[0].Equals(models[1]));
+        //    Assert.True(models[0].Equals(models[2]));
+        //}
+
+        ///// <summary>
+        ///// ÊµãËØïÊâπÈáèÊèíÂÖ•
+        ///// </summary>
+        //[Fact, Priority(510)]
+        //public async Task TestBatchInsert()
+        //{
+        //    InitDatabase();
+        //    //InitService();
+        //    var connectionString = MyConfiguration.GetConfiguration("pgsqlDbConnectionString");
+        //    if (string.IsNullOrWhiteSpace(connectionString))
+        //    {
+        //        throw new ArgumentNullException("pgsql connectionString must not be null");
+        //    }
+
+        //    var guid = Guid.NewGuid();
+        //    var now = DateTime.Now;
+        //    var now2 = now;
+        //    var total = 2000;
+        //    var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+        //    var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
+        //    var nullableTableList3 = new List<NullableTable>();
+        //    var nullableTableList = new List<NullableTable>();
+
+        //    for (int i = 0; i < total; i++)
+        //    {
+        //        var a = new NullableTable()
+        //        {
+        //            Int2 = 2,
+        //            Bool2 = true,
+        //            Byte2 = 1,
+        //            DateTime2 = now,
+        //            Decimal2 = 1m,
+        //            Decimal3 = 1.1m,
+        //            Double2 = 1.1,
+        //            Float2 = (float)1.1,
+        //            Guid2 = Guid.NewGuid(),
+        //            Id = 0,
+        //            Short2 = 1,
+        //            TimeSpan2 = TimeSpan.FromHours(1),
+        //            String2 = "sb",
+        //            String3 = "sb",
+        //            Long2 = 2,
+        //            Enum2 = Model.Enum2.y,
+        //            Int3 = 4
+        //        };
+        //        if (i == 0)
+        //        {
+        //            a.Guid2 = guid;
+        //            a.Int2 = 1;
+        //        }
+        //        nullableTableList3.Add(a);
+        //    }
+
+        //    //È¢ÑÁÉ≠
+        //    using (var dbConnection = new MySqlConnection(connectionString))
+        //    {
+        //        dbConnection.Open();
+        //        //var dbtran = dbConnection.BeginTransaction();
+        //        //MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection,
+        //        //    dbtran);
+        //        MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection, null);
+        //        sqlBulkCopy.DestinationTableName = "NullableTable";
+        //        var propertys = typeof(NullableTable).GetProperties()
+        //            .Where(it => it.CanRead && it.GetCustomAttribute<NotMappedAttribute>() == null).ToList();
+
+
+        //        for (int i = 0; i < propertys.Count; i++)
+        //        {
+        //            var property = propertys[i];
+        //            var columnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+
+
+        //            if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} =unhex(@tmp)"));
+        //            }
+        //            else
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columnName));
+        //            }
+        //        }
+
+        //        var table = nullableTableList3.ToDataTable();
+
+        //        SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(table, guid1 => guid1.ToByteArray());
+
+        //        var c = sqlBulkCopy.WriteToServer(table);
+
+        //        if (c.Warnings.Count > 1)
+        //        {
+        //            throw new Exception(string.Join(',', c.Warnings.Select(it => it.Message)));
+        //        }
+        //        //dbtran.Commit();
+
+        //    }
+
+        //    nullableTableRepository.Delete(it => true);
+        //    for (int i = 0; i < total; i++)
+        //    {
+        //        var a = new NullableTable()
+        //        {
+        //            Int2 = 2,
+        //            Bool2 = true,
+        //            Byte2 = 1,
+        //            DateTime2 = now,
+        //            Decimal2 = 1m,
+        //            Decimal3 = 1.1m,
+        //            Double2 = 1.1,
+        //            Float2 = (float)1.1,
+        //            Guid2 = Guid.NewGuid(),
+        //            Id = 1,
+        //            Short2 = 1,
+        //            TimeSpan2 = TimeSpan.FromHours(1),
+        //            String2 = "sb",
+        //            String3 = "sb",
+        //            Long2 = 2,
+        //            Enum2 = Model.Enum2.y,
+        //            Int3 = 4
+        //        };
+        //        if (i == 0)
+        //        {
+        //            a.Guid2 = guid;
+        //            a.Int2 = 1;
+        //        }
+        //        nullableTableList.Add(a);
+        //    }
+
+        //    var l1 = SbUtil.CalculateTime("FastBatchInsert", (() =>
+        //    {
+        //        nullableTableRepository.FastBatchInsert(nullableTableList);
+        //    }));
+        //    //Ê≠£ÂºèÂºÄÂßã
+        //    var sw = new Stopwatch();
+        //    sw.Start();
+
+        //    using (var dbConnection = new MySqlConnection(connectionString))
+        //    {
+        //        dbConnection.Open();
+        //        //var dbtran = dbConnection.BeginTransaction();
+        //        //MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection,
+        //        //    dbtran);
+        //        MySqlBulkCopy sqlBulkCopy = new MySqlBulkCopy(dbConnection, null);
+        //        sqlBulkCopy.DestinationTableName = "NullableTable";
+        //        var propertys = typeof(NullableTable).GetProperties()
+        //            .Where(it => it.CanRead && it.GetCustomAttribute<NotMappedAttribute>() == null).ToList();
+
+
+        //        for (int i = 0; i < propertys.Count; i++)
+        //        {
+        //            var property = propertys[i];
+        //            var columnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+
+        //            if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} =unhex(@tmp)"));
+        //            }
+        //            else
+        //            {
+        //                sqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columnName));
+        //            }
+
+        //        }
+
+        //        var table = nullableTableList3.ToDataTable();
+
+        //        SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(table, guid1 => guid1.ToByteArray());
+        //        SbUtil.CalculateTime("zs", () =>
+        //        {
+        //            var c = sqlBulkCopy.WriteToServer(table);
+        //        });
+
+        //        //if (c.Warnings.Count > 1)
+        //        //{
+        //        //    throw new Exception(string.Join(',', c.Warnings.Select(it => it.Message)));
+        //        //}
+        //        //dbtran.Commit();
+
+        //    }
+        //    sw.Stop();
+        //    var l2 = sw.ElapsedMilliseconds;
+
+        //    var nullableTableList2 = new List<NullableTable>();
+
+        //    for (int i = 0; i < total; i++)
+        //    {
+        //        var a = new NullableTable()
+        //        {
+        //            Int2 = 2,
+        //            Bool2 = true,
+        //            Byte2 = 1,
+        //            DateTime2 = now2,
+        //            Decimal2 = 1m,
+        //            Decimal3 = 1.1m,
+        //            Double2 = 1.1,
+        //            Float2 = (float)1.1,
+        //            Guid2 = Guid.NewGuid(),
+        //            Id = 1,
+        //            Short2 = 1,
+        //            TimeSpan2 = TimeSpan.FromHours(1),
+        //            String2 = "sb",
+        //            String3 = "sb",
+        //            Long2 = 2,
+        //            Enum2 = Model.Enum2.y,
+        //            Int3 = 4
+        //        };
+        //        if (i == 0)
+        //        {
+        //            a.Guid2 = guid;
+        //            a.Int2 = 1;
+        //        }
+        //        nullableTableList2.Add(a);
+        //    }
+        //    sw.Restart();
+        //    nullableTableRepository.Insert(nullableTableList2);
+        //    sw.Stop();
+        //    var l3 = sw.ElapsedMilliseconds;
+
+        //    sw.Restart();
+
+        //    var rate = l1 / l2;
+        //    var rate2 = l3 / l1;
+        //    var rate3 = l3 / l2;
+
+        //    var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
+        //    Assert.Equal(3, result.Count);
+        //    result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
+        //    Assert.Equal(total * 3, result.Count);
+        //    var models = nullableTableRepository.Where(it => it.Int2 == 1)
+        //        .ToList();
+        //    var count = nullableTableRepository.Count(it => it.Int2 == 1);
+        //    Assert.Equal(3, count);
+        //    Assert.Equal(3, models.Count);
+        //    Assert.True(models[0].Equals(models[1]));
+        //    Assert.True(models[0].Equals(models[2]));
+        //}
 
         /// <summary>
-        /// ≤‚ ‘≈˙¡ø≤Â»Î
+        /// ÊµãËØï‰ªéÈÖçÁΩÆÊñá‰ª∂ËØªÂèñsql
         /// </summary>
-        [Fact, Priority(410)]
-        public async Task TestBatchInsert()
-        {
-            InitDatabase();
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new ArgumentNullException("sqlServer connectionString must not be null");
-            }
-            var guid = Guid.NewGuid();
-            var now = DateTime.Now;
-            var now2 = now;
-            var total = 2000;
-            InitDatabase();
-            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-       
-            var sw = new Stopwatch();
-            var nullableTableList = new List<NullableTable>();
-
-            for (int i = 0; i < total; i++)
-            {
-                var a = new NullableTable()
-                {
-                    Int2 = 2,
-                    Bool2 = true,
-                    Byte2 = 1,
-                    DateTime2 = now,
-                    Decimal2 = 1m,
-                    Decimal3 = 1.1m,
-                    Double2 = 1.1,
-                    Float2 = (float)1.1,
-                    Guid2 = Guid.NewGuid(),
-                    Id = 1,
-                    Short2 = 1,
-                    TimeSpan2 = TimeSpan.FromHours(1),
-                    String2 = "sb",
-                    String3 = "sb",
-                    Long2 = 2,
-                    Enum2 = Model.Enum2.y,
-                    Int3 = 4
-                };
-                if (i == 0)
-                {
-                    a.Guid2 = guid;
-                }
-                nullableTableList.Add(a);
-            }
-
-            sw.Start();
-            nullableTableRepository.FastBatchInsert(nullableTableList);
-
-            sw.Stop();
-            var l1 = sw.ElapsedMilliseconds;
-            var nullableTableList2 = new List<NullableTable>();
-
-            for (int i = 0; i < total; i++)
-            {
-                var a = new NullableTable()
-                {
-                    Int2 = 2,
-                    Bool2 = true,
-                    Byte2 = 1,
-                    DateTime2 = now2,
-                    Decimal2 = 1m,
-                    Decimal3 = 1.1m,
-                    Double2 = 1.1,
-                    Float2 = (float)1.1,
-                    Guid2 = Guid.NewGuid(),
-                    Id = 1,
-                    Short2 = 1,
-                    TimeSpan2 = TimeSpan.FromHours(1),
-                    String2 = "sb",
-                    String3 = "sb",
-                    Long2 = 2,
-                    Enum2 = Model.Enum2.y,
-                    Int3 = 4
-                };
-                if (i == 0)
-                {
-                    a.Guid2 = guid;
-                }
-                nullableTableList2.Add(a);
-            }
-            sw.Restart();
-            nullableTableRepository.Insert(nullableTableList2);
-            sw.Stop();
-            var l3 = sw.ElapsedMilliseconds;
-            var nullableTableList3 = new List<NullableTable>();
-
-            for (int i = 0; i < total; i++)
-            {
-                var a = new NullableTable()
-                {
-                    Int2 = 2,
-                    Bool2 = true,
-                    Byte2 = 1,
-                    DateTime2 = now,
-                    Decimal2 = 1m,
-                    Decimal3 = 1.1m,
-                    Double2 = 1.1,
-                    Float2 = (float)1.1,
-                    Guid2 = Guid.NewGuid(),
-                    Id = 0,
-                    Short2 = 1,
-                    TimeSpan2 = TimeSpan.FromHours(1),
-                    String2 = "sb",
-                    String3 = "sb",
-                    Long2 = 2,
-                    Enum2 = Model.Enum2.y,
-                    Int3 = 4
-                };
-                if (i == 0)
-                {
-                    a.Guid2 = guid;
-                }
-                nullableTableList3.Add(a);
-            }
-            sw.Restart();
-            using (var dbConnection = new SqlConnection(connectionString))
-            {
-                //&SqlBulkCopyOptions.KeepNulls
-                dbConnection.Open();
-                var dbtran = dbConnection.BeginTransaction();
-                SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(dbConnection, SqlBulkCopyOptions.KeepIdentity,
-                    dbtran);
-                sqlBulkCopy.BatchSize = total;
-                sqlBulkCopy.DestinationTableName = "NullableTable";
-                sqlBulkCopy.ColumnMappings.Add("Int2", "Int2");
-                sqlBulkCopy.ColumnMappings.Add("Bool2", "Bool2");
-                sqlBulkCopy.ColumnMappings.Add("Byte2", "Byte2");
-                sqlBulkCopy.ColumnMappings.Add("DateTime2", "DateTime2");
-                sqlBulkCopy.ColumnMappings.Add("Decimal2", "Decimal2");
-                sqlBulkCopy.ColumnMappings.Add("Decimal3", "Decimal3");
-                sqlBulkCopy.ColumnMappings.Add("Double2", "Double2");
-                sqlBulkCopy.ColumnMappings.Add("Float2", "Float2");
-                sqlBulkCopy.ColumnMappings.Add("Guid2", "Guid2");
-                sqlBulkCopy.ColumnMappings.Add("Short2", "Short2");
-                sqlBulkCopy.ColumnMappings.Add("TimeSpan2", "TimeSpan2");
-
-                sqlBulkCopy.ColumnMappings.Add("String2", "String2");
-                sqlBulkCopy.ColumnMappings.Add("String3", "String3");
-                sqlBulkCopy.ColumnMappings.Add("Long2", "Long2");
-                sqlBulkCopy.ColumnMappings.Add("Enum2", "Enum2");
-                sqlBulkCopy.ColumnMappings.Add("Int3", "TestInt3");
-
-                var table = nullableTableList3.ToDataTable();
-                //sqlserverÃÊªªtimespan¿‡–ÕŒ™long¿‡–Õ
-                //SbUtil.ReplaceDataTableTimeSpanColumnForSqlserver(table);
-                //table.Columns.Remove("id");
-                sqlBulkCopy.WriteToServer(table);
-                dbtran.Commit();
-            }
-            sw.Stop();
-            var l2 = sw.ElapsedMilliseconds;
-            var rate = l1 / l2;
-            var rate2 = l3 / l1;
-            var rate3 = l3 / l2;
-            var result = nullableTableRepository.Where(it => it.Guid2 == guid).OrderBy(it => it.Id).ToList();
-            Assert.Equal(3, result.Count);
-            result = nullableTableRepository.Where(it => it.Enum2 == Model.Enum2.y).OrderBy(it => it.Id).ToList();
-            Assert.Equal(6000, result.Count);
-            var models = nullableTableRepository.Where(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id))
-                .ToList();
-            var count = nullableTableRepository.Count(it => new List<int>() { 1, 2001, 4001 }.Contains(it.Id));
-            Assert.Equal(3, count);
-            Assert.Equal(3, models.Count);
-            Assert.True(models[0].Equals(models[1]));
-            Assert.True(models[0].Equals(models[2]));
-        }
-
-        /// <summary>
-        /// ≤‚ ‘¥”≈‰÷√Œƒº˛∂¡»°sql
-        /// </summary>
-        [Fact, Priority(409)]
+        [Fact, Priority(509)]
         public async Task TestGetSqlByConfigurationAsync()
         {
             InitDatabase();
@@ -553,9 +678,9 @@ namespace SummerBoot.Test.SqlServer
         }
 
         /// <summary>
-        /// ≤‚ ‘¥”≈‰÷√Œƒº˛∂¡»°sql
+        /// ÊµãËØï‰ªéÈÖçÁΩÆÊñá‰ª∂ËØªÂèñsql
         /// </summary>
-        [Fact, Priority(408)]
+        [Fact, Priority(508)]
         public void TestGetSqlByConfiguration()
         {
             InitDatabase();
@@ -582,9 +707,9 @@ namespace SummerBoot.Test.SqlServer
         }
 
         /// <summary>
-        /// ≤‚ ‘¥¯√¸√˚ø’º‰µƒ«Èøˆ∫Õ–¬‘ˆ÷˜º¸
+        /// ÊµãËØïÂ∏¶ÂëΩÂêçÁ©∫Èó¥ÁöÑÊÉÖÂÜµÂíåÊñ∞Â¢û‰∏ªÈîÆ
         /// </summary>
-        [Fact, Priority(407)]
+        [Fact, Priority(507)]
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitDatabase();
@@ -594,11 +719,11 @@ namespace SummerBoot.Test.SqlServer
 
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema) });
             sb.Clear();
-            sb.AppendLine("CREATE TABLE test1.[CustomerWithSchema] (");
-            sb.AppendLine("    [Name] nvarchar(max) NULL,");
-            sb.AppendLine("    [Age] int NOT NULL,");
-            sb.AppendLine("    [CustomerNo] nvarchar(max) NULL,");
-            sb.AppendLine("    [TotalConsumptionAmount] decimal(18,2) NOT NULL");
+            sb.AppendLine("CREATE TABLE test1.\"customerwithschema\" (");
+            sb.AppendLine("    \"name\" text NULL ,");
+            sb.AppendLine("    \"age\" int4 NOT NULL ,");
+            sb.AppendLine("    \"customerno\" text NULL ,");
+            sb.AppendLine("    \"totalconsumptionamount\" numeric(18,2) NOT NULL ");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
@@ -608,12 +733,12 @@ namespace SummerBoot.Test.SqlServer
                 dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
             }
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema2) });
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Id] int IDENTITY(1,1) PRIMARY KEY NOT NULL", result[0].FieldModifySqls[0]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateOn] datetime2 NULL", result[0].FieldModifySqls[1]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateBy] nvarchar(max) NULL", result[0].FieldModifySqls[2]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateOn] datetime2 NULL", result[0].FieldModifySqls[3]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateBy] nvarchar(max) NULL", result[0].FieldModifySqls[4]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Active] int NULL", result[0].FieldModifySqls[5]);
+            Assert.Equal("ALTER TABLE test1.\"customerwithschema\" ADD \"ID\" int4 NOT NULL GENERATED BY DEFAULT AS IDENTITY", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE test1.\"customerwithschema\" ADD \"LASTUPDATEON\" timestamp NULL ", result[0].FieldModifySqls[1]);
+            Assert.Equal("ALTER TABLE test1.\"customerwithschema\" ADD \"LASTUPDATEBY\" text NULL ", result[0].FieldModifySqls[2]);
+            Assert.Equal("ALTER TABLE test1.\"customerwithschema\" ADD \"CREATEON\" timestamp NULL ", result[0].FieldModifySqls[3]);
+            Assert.Equal("ALTER TABLE test1.\"customerwithschema\" ADD \"CREATEBY\" text NULL ", result[0].FieldModifySqls[4]);
+            Assert.Equal("ALTER TABLE test1.\"customerwithschema\" ADD \"ACTIVE\" int4 NULL ", result[0].FieldModifySqls[5]);
             foreach (var generateDatabaseSqlResult in result)
             {
                 dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
@@ -652,12 +777,11 @@ namespace SummerBoot.Test.SqlServer
             var customerWithSchema4 = customerWithSchema2Repository.FirstOrDefault(it => it.Name == "sb3");
             Assert.Null(customerWithSchema4);
         }
-
-
         /// <summary>
-        /// ≤‚ ‘∏˘æ› µÃÂ¿‡¥¥Ω® ˝æ›ø‚±Ì∫ÕΩ¯––≤Â»Î≤È—Ø∂‘’’
+        /// ÊµãËØïÊ†πÊçÆÂÆû‰ΩìÁ±ªÂàõÂª∫Êï∞ÊçÆÂ∫ìË°®ÂíåËøõË°åÊèíÂÖ•Êü•ËØ¢ÂØπÁÖß
         /// </summary>
-        [Fact, Priority(406)]
+
+        [Fact, Priority(506)]
         public void TestCreateTableFromEntityAndCrud()
         {
             InitDatabase();
@@ -735,11 +859,10 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(entity.TimeSpan2, dbEntity.TimeSpan2);
         }
 
-
         /// <summary>
-        /// ≤‚ ‘±Ì√˚◊÷∂Œ√˚”≥…‰
+        /// ÊµãËØïË°®ÂêçÂ≠óÊÆµÂêçÊò†Â∞Ñ
         /// </summary>
-        [Fact, Priority(405)]
+        [Fact, Priority(505)]
         public void TestTableColumnMap()
         {
             InitDatabase();
@@ -750,12 +873,14 @@ namespace SummerBoot.Test.SqlServer
             Assert.NotNull(customer);
             Assert.Equal("sb", customer.CustomerName);
         }
-        [Fact, Priority(404)]
+
+        [Fact, Priority(504)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
+
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
-            var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
+            var result = dbGenerator.GenerateCsharpClass(new List<string>() { "customer", "nullabletable", "notnullabletable" }, "abc");
             Assert.Equal(3, result.Count);
 
             var sb = new StringBuilder();
@@ -764,21 +889,21 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
             sb.AppendLine("namespace abc");
             sb.AppendLine("{");
-            sb.AppendLine("   [Table(\"Customer\")]");
+            sb.AppendLine("   [Table(\"customer\")]");
             sb.AppendLine("   public class Customer");
             sb.AppendLine("   {");
             sb.AppendLine("      [Key]");
             sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
-            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      [Column(\"id\")]");
             sb.AppendLine("      public int Id { get; set; }");
-            sb.AppendLine("      [Column(\"Name\")]");
+            sb.AppendLine("      [Column(\"name\")]");
             sb.AppendLine("      public string Name { get; set; }");
-            sb.AppendLine("      [Column(\"Age\")]");
+            sb.AppendLine("      [Column(\"age\")]");
             sb.AppendLine("      public int Age { get; set; }");
-            sb.AppendLine("      [Column(\"CustomerNo\")]");
-            sb.AppendLine("      public string CustomerNo { get; set; }");
-            sb.AppendLine("      [Column(\"TotalConsumptionAmount\")]");
-            sb.AppendLine("      public decimal TotalConsumptionAmount { get; set; }");
+            sb.AppendLine("      [Column(\"customerno\")]");
+            sb.AppendLine("      public string Customerno { get; set; }");
+            sb.AppendLine("      [Column(\"totalconsumptionamount\")]");
+            sb.AppendLine("      public decimal Totalconsumptionamount { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
             var exceptStr = sb.ToString();
@@ -794,51 +919,51 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("   /// <summary>");
             sb.AppendLine("   ///NullableTable");
             sb.AppendLine("   /// </summary>");
-            sb.AppendLine("   [Table(\"NullableTable\")]");
-            sb.AppendLine("   public class NullableTable");
+            sb.AppendLine("   [Table(\"nullabletable\")]");
+            sb.AppendLine("   public class Nullabletable");
             sb.AppendLine("   {");
             sb.AppendLine("      [Key]");
             sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
-            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      [Column(\"id\")]");
             sb.AppendLine("      public int Id { get; set; }");
             sb.AppendLine("      /// <summary>");
             sb.AppendLine("      ///Int2");
             sb.AppendLine("      /// </summary>");
-            sb.AppendLine("      [Column(\"Int2\")]");
+            sb.AppendLine("      [Column(\"int2\")]");
             sb.AppendLine("      public int? Int2 { get; set; }");
             sb.AppendLine("      /// <summary>");
             sb.AppendLine("      ///Long2");
             sb.AppendLine("      /// </summary>");
-            sb.AppendLine("      [Column(\"Long2\")]");
+            sb.AppendLine("      [Column(\"long2\")]");
             sb.AppendLine("      public long? Long2 { get; set; }");
-            sb.AppendLine("      [Column(\"Float2\")]");
+            sb.AppendLine("      [Column(\"float2\")]");
             sb.AppendLine("      public float? Float2 { get; set; }");
-            sb.AppendLine("      [Column(\"Double2\")]");
+            sb.AppendLine("      [Column(\"double2\")]");
             sb.AppendLine("      public double? Double2 { get; set; }");
-            sb.AppendLine("      [Column(\"Decimal2\")]");
+            sb.AppendLine("      [Column(\"decimal2\")]");
             sb.AppendLine("      public decimal? Decimal2 { get; set; }");
-            sb.AppendLine("      [Column(\"Decimal3\")]");
+            sb.AppendLine("      [Column(\"decimal3\")]");
             sb.AppendLine("      public decimal? Decimal3 { get; set; }");
-            sb.AppendLine("      [Column(\"Guid2\")]");
+            sb.AppendLine("      [Column(\"guid2\")]");
             sb.AppendLine("      public Guid? Guid2 { get; set; }");
-            sb.AppendLine("      [Column(\"Short2\")]");
+            sb.AppendLine("      [Column(\"short2\")]");
             sb.AppendLine("      public short? Short2 { get; set; }");
-            sb.AppendLine("      [Column(\"DateTime2\")]");
-            sb.AppendLine("      public DateTime? DateTime2 { get; set; }");
-            sb.AppendLine("      [Column(\"Bool2\")]");
+            sb.AppendLine("      [Column(\"datetime2\")]");
+            sb.AppendLine("      public DateTime? Datetime2 { get; set; }");
+            sb.AppendLine("      [Column(\"bool2\")]");
             sb.AppendLine("      public bool? Bool2 { get; set; }");
-            sb.AppendLine("      [Column(\"TimeSpan2\")]");
-            sb.AppendLine("      public TimeSpan? TimeSpan2 { get; set; }");
-            sb.AppendLine("      [Column(\"Byte2\")]");
-            sb.AppendLine("      public byte? Byte2 { get; set; }");
-            sb.AppendLine("      [Column(\"String2\")]");
+            sb.AppendLine("      [Column(\"timespan2\")]");
+            sb.AppendLine("      public TimeSpan? Timespan2 { get; set; }");
+            sb.AppendLine("      [Column(\"byte2\")]");
+            sb.AppendLine("      public short? Byte2 { get; set; }");
+            sb.AppendLine("      [Column(\"string2\")]");
             sb.AppendLine("      public string String2 { get; set; }");
-            sb.AppendLine("      [Column(\"String3\")]");
+            sb.AppendLine("      [Column(\"string3\")]");
             sb.AppendLine("      public string String3 { get; set; }");
-            sb.AppendLine("      [Column(\"Enum2\")]");
+            sb.AppendLine("      [Column(\"enum2\")]");
             sb.AppendLine("      public int? Enum2 { get; set; }");
-            sb.AppendLine("      [Column(\"TestInt3\")]");
-            sb.AppendLine("      public int? TestInt3 { get; set; }");
+            sb.AppendLine("      [Column(\"testint3\")]");
+            sb.AppendLine("      public int? Testint3 { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
             exceptStr = sb.ToString();
@@ -854,46 +979,46 @@ namespace SummerBoot.Test.SqlServer
             sb.AppendLine("   /// <summary>");
             sb.AppendLine("   ///NotNullableTable");
             sb.AppendLine("   /// </summary>");
-            sb.AppendLine("   [Table(\"NotNullableTable\")]");
-            sb.AppendLine("   public class NotNullableTable");
+            sb.AppendLine("   [Table(\"notnullabletable\")]");
+            sb.AppendLine("   public class Notnullabletable");
             sb.AppendLine("   {");
             sb.AppendLine("      [Key]");
             sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
-            sb.AppendLine("      [Column(\"Id\")]");
+            sb.AppendLine("      [Column(\"id\")]");
             sb.AppendLine("      public int Id { get; set; }");
             sb.AppendLine("      /// <summary>");
             sb.AppendLine("      ///Int2");
             sb.AppendLine("      /// </summary>");
-            sb.AppendLine("      [Column(\"Int2\")]");
+            sb.AppendLine("      [Column(\"int2\")]");
             sb.AppendLine("      public int Int2 { get; set; }");
             sb.AppendLine("      /// <summary>");
             sb.AppendLine("      ///Long2");
             sb.AppendLine("      /// </summary>");
-            sb.AppendLine("      [Column(\"Long2\")]");
+            sb.AppendLine("      [Column(\"long2\")]");
             sb.AppendLine("      public long Long2 { get; set; }");
-            sb.AppendLine("      [Column(\"Float2\")]");
+            sb.AppendLine("      [Column(\"float2\")]");
             sb.AppendLine("      public float Float2 { get; set; }");
-            sb.AppendLine("      [Column(\"Double2\")]");
+            sb.AppendLine("      [Column(\"double2\")]");
             sb.AppendLine("      public double Double2 { get; set; }");
-            sb.AppendLine("      [Column(\"Decimal2\")]");
+            sb.AppendLine("      [Column(\"decimal2\")]");
             sb.AppendLine("      public decimal Decimal2 { get; set; }");
-            sb.AppendLine("      [Column(\"Decimal3\")]");
+            sb.AppendLine("      [Column(\"decimal3\")]");
             sb.AppendLine("      public decimal Decimal3 { get; set; }");
-            sb.AppendLine("      [Column(\"Guid2\")]");
+            sb.AppendLine("      [Column(\"guid2\")]");
             sb.AppendLine("      public Guid Guid2 { get; set; }");
-            sb.AppendLine("      [Column(\"Short2\")]");
+            sb.AppendLine("      [Column(\"short2\")]");
             sb.AppendLine("      public short Short2 { get; set; }");
-            sb.AppendLine("      [Column(\"DateTime2\")]");
-            sb.AppendLine("      public DateTime DateTime2 { get; set; }");
-            sb.AppendLine("      [Column(\"Bool2\")]");
+            sb.AppendLine("      [Column(\"datetime2\")]");
+            sb.AppendLine("      public DateTime Datetime2 { get; set; }");
+            sb.AppendLine("      [Column(\"bool2\")]");
             sb.AppendLine("      public bool Bool2 { get; set; }");
-            sb.AppendLine("      [Column(\"TimeSpan2\")]");
-            sb.AppendLine("      public TimeSpan TimeSpan2 { get; set; }");
-            sb.AppendLine("      [Column(\"Byte2\")]");
-            sb.AppendLine("      public byte Byte2 { get; set; }");
-            sb.AppendLine("      [Column(\"String2\")]");
+            sb.AppendLine("      [Column(\"timespan2\")]");
+            sb.AppendLine("      public TimeSpan Timespan2 { get; set; }");
+            sb.AppendLine("      [Column(\"byte2\")]");
+            sb.AppendLine("      public short Byte2 { get; set; }");
+            sb.AppendLine("      [Column(\"string2\")]");
             sb.AppendLine("      public string String2 { get; set; }");
-            sb.AppendLine("      [Column(\"String3\")]");
+            sb.AppendLine("      [Column(\"string3\")]");
             sb.AppendLine("      public string String3 { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
@@ -903,67 +1028,69 @@ namespace SummerBoot.Test.SqlServer
         }
 
         /// <summary>
-        /// ≤‚ ‘∏˘æ›c#¿‡…˙≥… ˝æ›ø‚±Ì
+        /// ÊµãËØïÊ†πÊçÆc#Á±ªÁîüÊàêÊï∞ÊçÆÂ∫ìË°®
         /// </summary>
-        [Fact, Priority(403)]
+        [Fact, Priority(503)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
 
             InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
+
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
-            sb.AppendLine("CREATE TABLE dbo.[NullableTable2] (");
-            sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
-            sb.AppendLine("    [Int2] int NULL,");
-            sb.AppendLine("    [Long2] bigint NULL,");
-            sb.AppendLine("    [Float2] real NULL,");
-            sb.AppendLine("    [Double2] float NULL,");
-            sb.AppendLine("    [Decimal2] decimal(18,2) NULL,");
-            sb.AppendLine("    [Decimal3] decimal(20,4) NULL,");
-            sb.AppendLine("    [Guid2] uniqueidentifier NULL,");
-            sb.AppendLine("    [Short2] smallint NULL,");
-            sb.AppendLine("    [DateTime2] datetime2 NULL,");
-            sb.AppendLine("    [Bool2] bit NULL,");
-            sb.AppendLine("    [TimeSpan2] time NULL,");
-            sb.AppendLine("    [Byte2] tinyint NULL,");
-            sb.AppendLine("    [String2] nvarchar(100) NULL,");
-            sb.AppendLine("    [String3] nvarchar(max) NULL,");
-            sb.AppendLine("    [Enum2] int NULL,");
-            sb.AppendLine("    [TestInt3] int NULL,");
-            sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
+            sb.AppendLine("CREATE TABLE public.\"nullabletable2\" (");
+            sb.AppendLine("    \"id\" int4 NOT NULL GENERATED BY DEFAULT AS IDENTITY,");
+            sb.AppendLine("    \"int2\" int4 NULL ,");
+            sb.AppendLine("    \"long2\" int8 NULL ,");
+            sb.AppendLine("    \"float2\" float4 NULL ,");
+            sb.AppendLine("    \"double2\" float8 NULL ,");
+            sb.AppendLine("    \"decimal2\" numeric(18,2) NULL ,");
+            sb.AppendLine("    \"decimal3\" numeric(20,4) NULL ,");
+            sb.AppendLine("    \"guid2\" uuid NULL ,");
+            sb.AppendLine("    \"short2\" int2 NULL ,");
+            sb.AppendLine("    \"datetime2\" timestamp NULL ,");
+            sb.AppendLine("    \"bool2\" bool NULL ,");
+            sb.AppendLine("    \"timespan2\" interval NULL ,");
+            sb.AppendLine("    \"byte2\" int2 NULL ,");
+            sb.AppendLine("    \"string2\" varchar(100) NULL ,");
+            sb.AppendLine("    \"string3\" text NULL ,");
+            sb.AppendLine("    \"enum2\" int4 NULL ,");
+            sb.AppendLine("    \"testint3\" int4 NULL ,");
+            sb.AppendLine(" CONSTRAINT nullabletable2_pk PRIMARY KEY (id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
 
             Assert.Equal(4, result[0].Descriptions.Count);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'NullableTable2', 'schema', N'dbo', 'table', N'NullableTable2'", result[0].Descriptions[0]);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'Int2'", result[0].Descriptions[1]);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Long2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'Long2'", result[0].Descriptions[2]);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'Int2', 'schema', N'dbo', 'table', N'NullableTable2', 'column', N'TestInt3'", result[0].Descriptions[3]);
-            //dbGenerator.ExecuteGenerateSql(result[0]);
+            Assert.Equal("COMMENT ON TABLE public.\"nullabletable2\" IS 'NullableTable2'", result[0].Descriptions[0]);
+            Assert.Equal("COMMENT ON COLUMN public.\"nullabletable2\".\"int2\" IS 'Int2'", result[0].Descriptions[1]);
+            Assert.Equal("COMMENT ON COLUMN public.\"nullabletable2\".\"long2\" IS 'Long2'", result[0].Descriptions[2]);
+            Assert.Equal("COMMENT ON COLUMN public.\"nullabletable2\".\"testint3\" IS 'Int2'", result[0].Descriptions[3]);
+            dbGenerator.ExecuteGenerateSql(result[0]);
 
             sb.Clear();
-            sb.AppendLine("CREATE TABLE dbo.[NotNullableTable2] (");
-            sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
-            sb.AppendLine("    [Int2] int NOT NULL,");
-            sb.AppendLine("    [Long2] bigint NOT NULL,");
-            sb.AppendLine("    [Float2] real NOT NULL,");
-            sb.AppendLine("    [Double2] float NOT NULL,");
-            sb.AppendLine("    [Decimal2] decimal(18,2) NOT NULL,");
-            sb.AppendLine("    [Decimal3] decimal(20,4) NOT NULL,");
-            sb.AppendLine("    [Guid2] uniqueidentifier NOT NULL,");
-            sb.AppendLine("    [Short2] smallint NOT NULL,");
-            sb.AppendLine("    [DateTime2] datetime2 NOT NULL,");
-            sb.AppendLine("    [Bool2] bit NOT NULL,");
-            sb.AppendLine("    [TimeSpan2] time NOT NULL,");
-            sb.AppendLine("    [Byte2] tinyint NOT NULL,");
-            sb.AppendLine("    [String2] nvarchar(100) NOT NULL,");
-            sb.AppendLine("    [String3] nvarchar(max) NOT NULL,");
-            sb.AppendLine("    CONSTRAINT PK_NotNullableTable2 PRIMARY KEY (Id)");
+            sb.AppendLine("CREATE TABLE public.\"notnullabletable2\" (");
+            sb.AppendLine("    \"id\" int4 NOT NULL GENERATED BY DEFAULT AS IDENTITY,");
+            sb.AppendLine("    \"int2\" int4 NOT NULL ,");
+            sb.AppendLine("    \"long2\" int8 NOT NULL ,");
+            sb.AppendLine("    \"float2\" float4 NOT NULL ,");
+            sb.AppendLine("    \"double2\" float8 NOT NULL ,");
+            sb.AppendLine("    \"decimal2\" numeric(18,2) NOT NULL ,");
+            sb.AppendLine("    \"decimal3\" numeric(20,4) NOT NULL ,");
+            sb.AppendLine("    \"guid2\" uuid NOT NULL ,");
+            sb.AppendLine("    \"short2\" int2 NOT NULL ,");
+            sb.AppendLine("    \"datetime2\" timestamp NOT NULL ,");
+            sb.AppendLine("    \"bool2\" bool NOT NULL ,");
+            sb.AppendLine("    \"timespan2\" interval NOT NULL ,");
+            sb.AppendLine("    \"byte2\" int2 NOT NULL ,");
+            sb.AppendLine("    \"string2\" varchar(100) NOT NULL ,");
+            sb.AppendLine("    \"string3\" text NOT NULL ,");
+            sb.AppendLine(" CONSTRAINT notnullabletable2_pk PRIMARY KEY (id)");
             sb.AppendLine(")");
+
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[1].Body);
@@ -972,39 +1099,32 @@ namespace SummerBoot.Test.SqlServer
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable3) });
             Assert.Equal(1, result.Count());
             Assert.Equal(1, result[0].Descriptions.Count);
-            Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'test add column', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'int3'", result[0].Descriptions[0]);
+            Assert.Equal("COMMENT ON COLUMN public.\"nullabletable\".\"int3\" IS 'test add column'", result[0].Descriptions[0]);
             Assert.Equal(1, result[0].FieldModifySqls.Count);
-            Assert.Equal("ALTER TABLE dbo.[NullableTable] ADD [int3] int NULL", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE public.\"nullabletable\" ADD \"int3\" int4 NULL ", result[0].FieldModifySqls[0]);
 
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
             Assert.Equal(1, result.Count());
             sb.Clear();
-            sb.AppendLine("CREATE TABLE dbo.[SpecifiedMapTestTable] (");
-            sb.AppendLine("    [NormalTxt] nvarchar(max) NULL,");
-            sb.AppendLine("    [SpecifiedTxt] text NULL");
+            sb.AppendLine("CREATE TABLE public.\"specifiedmaptesttable\" (");
+            sb.AppendLine("    \"normaltxt\" text NULL ,");
+            sb.AppendLine("    \"specifiedtxt\" CLOB NULL ");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
-
-            foreach (var generateDatabaseSqlResult in result)
-            {
-                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
-            }
         }
 
-
-
-        [Fact, Priority(402)]
-        public void TestSqlServer()
+        [Fact, Priority(502)]
+        public void TestPgsql()
         {
             InitDatabase();
             TestRepository();
 
         }
 
-        [Fact, Priority(401)]
-        public async Task TestSqlServerAsync()
+        [Fact, Priority(501)]
+        public async Task TestPgsqlAsync()
         {
             InitDatabase();
             await TestRepositoryAsync();
@@ -1012,63 +1132,59 @@ namespace SummerBoot.Test.SqlServer
 
         private void InitDatabase()
         {
-            //≥ı ºªØ ˝æ›ø‚
-            using (var database = new SqlServerDb())    //–¬‘ˆ
+            //ÂàùÂßãÂåñÊï∞ÊçÆÂ∫ì
+            using (var database = new PgsqlDb())    //Êñ∞Â¢û
             {
-
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
+                database.Database.ExecuteSqlRaw(
+                    "create schema test1");
+                //database.Database.ExecuteSqlRaw(
+                //    "ALTER TABLE nullabletable MODIFY COLUMN `Int2` int NULL COMMENT 'Int2'");
+                //database.Database.ExecuteSqlRaw(
+                //    "ALTER TABLE nullabletable MODIFY COLUMN `Long2` bigint NULL COMMENT 'Long2'");
 
-                ExecuteRaw(database.Database, "drop TABLE TEST1.[CUSTOMERWITHSCHEMA]");
+                //database.Database.ExecuteSqlRaw(
+                //    "ALTER TABLE notnullabletable COMMENT = 'NotNullableTable'");
+                //database.Database.ExecuteSqlRaw(
+                //    "ALTER TABLE notnullabletable MODIFY COLUMN `Int2` int not NULL COMMENT 'Int2'");
+                //database.Database.ExecuteSqlRaw(
+                //    "ALTER TABLE notnullabletable MODIFY COLUMN `Long2` bigint not NULL COMMENT 'Long2'");
+                //try
+                //{
+                //    database.Database.ExecuteSqlRaw(
+                //        "drop TABLE test1.`CustomerWithSchema`");
+                //}
+                //catch (Exception e)
+                //{
 
-                ExecuteRaw(database.Database, "create SCHEMA test1");
-
-                ExecuteRaw(database.Database, "create USER test WITH DEFAULT_SCHEMA = test1");
-
-                ExecuteRaw(database.Database, "GRANT SELECT,INSERT,UPDATE,delete ON SCHEMA :: test1 TO test; ");
-
+                //}
             }
-
             InitService();
         }
-
-        private void ExecuteRaw(DatabaseFacade db, string sql)
-        {
-            try
-            {
-
-                db.ExecuteSqlRaw(
-                    sql);
-            }
-            catch (Exception e)
-            {
-
-            }
-        }
-        static readonly string CONFIG_FILE = "app.json";  // ≈‰÷√Œƒº˛µÿ÷∑
+        static readonly string CONFIG_FILE = "app.json";  // ÈÖçÁΩÆÊñá‰ª∂Âú∞ÂùÄ
         private void InitService()
         {
             var build = new ConfigurationBuilder();
-            build.SetBasePath(Directory.GetCurrentDirectory());  // ªÒ»°µ±«∞≥Ã–Ú÷¥––ƒø¬º
+            build.SetBasePath(Directory.GetCurrentDirectory());  // Ëé∑ÂèñÂΩìÂâçÁ®ãÂ∫èÊâßË°åÁõÆÂΩï
             build.AddJsonFile(CONFIG_FILE, true, true);
             var configurationRoot = build.Build();
 
             var services = new ServiceCollection();
-
-            services.AddSummerBoot();
             services.AddSingleton<IConfiguration>(configurationRoot);
-            var connectionString = MyConfiguration.GetConfiguration("sqlServerDbConnectionString");
+            services.AddSummerBoot();
+            var connectionString = MyConfiguration.GetConfiguration("pgsqlDbConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentNullException("Sqlserver connectionString must not be null");
+                throw new ArgumentNullException("pgsql connectionString must not be null");
             }
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<SqlConnection, IUnitOfWork1>(connectionString,
+                it.AddDatabaseUnit<NpgsqlConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
-                        x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
+                        x.BindRepositorysWithAttribute<PgsqlAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {
@@ -1105,8 +1221,6 @@ namespace SummerBoot.Test.SqlServer
                 .SetValue(it => it.Age, 5)
                 .SetValue(it => it.TotalConsumptionAmount, 100)
                 .ExecuteUpdateAsync();
-
-            var ccc = customerRepository.Where(it => it.Name == "testCustomer").Distinct().FirstOrDefault();
 
             var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single((IEnumerable)age5Customers);
@@ -1151,12 +1265,10 @@ namespace SummerBoot.Test.SqlServer
             {
                 uow.BeginTransaction();
                 await customerRepository.InsertAsync(new Customer() { Name = "testCustomer2" });
-                var orderDetail3 = new OrderDetail
-                {
-                    OrderHeaderId = orderHeader.Id,
-                    ProductName = "ball",
-                    Quantity = 3
-                };
+                var orderDetail3 = new OrderDetail();
+                orderDetail3.OrderHeaderId = orderHeader.Id;
+                orderDetail3.ProductName = "ball";
+                orderDetail3.Quantity = 3;
                 await orderDetailRepository.InsertAsync(orderDetail3);
                 uow.Commit();
             }
@@ -1206,14 +1318,13 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(100, newCount.Count);
             var pageable = new Pageable(1, 10);
             var page = await customerRepository.GetCustomerByPageAsync(pageable, 5);
-            //0-99ÀÍ£¨¥Û”⁄5µƒ÷ª”–94∏ˆ
+            //0-99Â≤ÅÔºåÂ§ß‰∫é5ÁöÑÂè™Êúâ94‰∏™
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
             var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
-
-            //≤‚ ‘bindWhereππ‘ÏÃıº˛
+            //ÊµãËØïbindWhereÊûÑÈÄ†Êù°‰ª∂
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
             var nameWhereItem = WhereBuilder.HasValue("page5");
@@ -1235,8 +1346,6 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(2, bindResult7.Data.Count);
             var bindResult8 = await customerRepository.GetCustomerByPageByConditionAsync(pageable, nameWhereItem, ageWhereItem);
             Assert.Single(bindResult8.Data);
-
-            //var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).Take(10).ToList();
 
             //Test update 
             var newCount2 = await customerRepository.Where(it => it.Age > 5).SetValue(it => it.Name, "a")
@@ -1261,17 +1370,14 @@ namespace SummerBoot.Test.SqlServer
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-            //var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
-
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
-            var updateCount = customerRepository.Where(it => it.Name == "testCustomer")
-                 .SetValue(it => it.Age, 5)
-                 .SetValue(it => it.TotalConsumptionAmount, 100)
-                 .ExecuteUpdate();
+            customerRepository.Where(it => it.Name == "testCustomer")
+                .SetValue(it => it.Age, 5)
+                .SetValue(it => it.TotalConsumptionAmount, 100)
+                .ExecuteUpdate();
 
             var age5Customers = customerRepository.Where(it => it.Name == "testCustomer").ToList();
             Assert.Single((IEnumerable)age5Customers);
@@ -1369,15 +1475,14 @@ namespace SummerBoot.Test.SqlServer
             //Assert.Equal(100, newCount);
             var pageable = new Pageable(1, 10);
             var page = customerRepository.GetCustomerByPage(pageable, 5);
-            //0-99ÀÍ£¨¥Û”⁄5µƒ÷ª”–94∏ˆ
+            //0-99Â≤ÅÔºåÂ§ß‰∫é5ÁöÑÂè™Êúâ94‰∏™
             Assert.Equal(94, page.TotalPages);
             Assert.Equal(10, page.Data.Count);
             var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
-
-            //≤‚ ‘bindWhereππ‘ÏÃıº˛
-            var nameEmpty = WhereBuilder.Empty<string>();//
+            //ÊµãËØïbindWhereÊûÑÈÄ†Êù°‰ª∂
+            var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
             var nameWhereItem = WhereBuilder.HasValue("page5");
             var ageWhereItem = WhereBuilder.HasValue(5);
@@ -1400,7 +1505,7 @@ namespace SummerBoot.Test.SqlServer
             Assert.Single(bindResult8.Data);
 
 
-            //≤‚ ‘firstOrDefault
+            //ÊµãËØïfirstOrDefault
             var firstOrDefaultResult = customerRepository.FirstOrDefault(it => it.Name == "page5");
             Assert.NotNull(firstOrDefaultResult);
             var firstOrDefaultResult2 = customerRepository.First(it => it.Name == "page5");

@@ -153,6 +153,10 @@ namespace SummerBoot.Repository
                 {
                     parser = new MysqlParser();
                 }
+                else if (databaseUnit.IsPgsql)
+                {
+                    parser = new PgsqlParser();
+                }
                 else
                 {
                     parser = new SqliteParser();
@@ -218,6 +222,10 @@ namespace SummerBoot.Repository
                 else if (databaseUnit.IsMysql)
                 {
                     parser = new MysqlParser();
+                }
+                else if (databaseUnit.IsPgsql)
+                {
+                    parser = new PgsqlParser();
                 }
                 else
                 {
@@ -391,6 +399,7 @@ namespace SummerBoot.Repository
             {
                 case DatabaseType.Mysql:
                 case DatabaseType.SqlServer:
+                case DatabaseType.Pgsql:
                     parameterPrefix = "@";
                     break;
                 case DatabaseType.Sqlite:

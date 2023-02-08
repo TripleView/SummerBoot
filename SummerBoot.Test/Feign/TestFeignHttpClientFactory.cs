@@ -236,7 +236,7 @@ namespace SummerBoot.Test.Feign
 
                     return false;
                 })
-                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "abc=1;Domain=localhost") }, new StringContent("ok"));
+                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "abc=2;Domain=localhost") }, new StringContent("ok"));
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();
 

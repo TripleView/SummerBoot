@@ -33,7 +33,7 @@ namespace SummerBoot.Repository.Generator
             var dbConnection = dbFactory.GetDbConnection();
             if (generateDatabaseSqlResult.Body.HasText())
             {
-                dbConnection.Execute(databaseUnit,generateDatabaseSqlResult.Body);
+                dbConnection.Execute(databaseUnit, generateDatabaseSqlResult.Body);
             }
 
             foreach (var fieldModifySql in generateDatabaseSqlResult.FieldModifySqls)
@@ -70,7 +70,7 @@ namespace SummerBoot.Repository.Generator
             var result = new List<string>();
             foreach (var tableName in tableNames)
             {
-                var tableInfo = databaseInfo.GetTableInfoByName("",tableName);
+                var tableInfo = databaseInfo.GetTableInfoByName("", tableName);
                 var columnInfos = tableInfo.FieldInfos;
                 var sb = new StringBuilder();
                 sb.AppendLine("using System;");
@@ -85,7 +85,9 @@ namespace SummerBoot.Repository.Generator
                     sb.AppendLine("   /// </summary>");
                 }
                 sb.AppendLine($"   [Table(\"{tableName}\")]");
-                sb.AppendLine($"   public class {tableName}");
+                var cshapClassName = tableName.Length > 0 && char.IsLower(tableName[0]) ? char.ToUpper(tableName[0]) + tableName.Substring(1) : tableName;
+
+                sb.AppendLine($"   public class {cshapClassName}");
                 sb.AppendLine("   {");
                 foreach (var columnInfo in columnInfos)
                 {
@@ -195,7 +197,7 @@ namespace SummerBoot.Repository.Generator
                         isNullable = false;
                     }
                     //如果是枚举类型，统一转为int
-                    if (propertyInfo.PropertyType.IsEnum||(propertyInfo.PropertyType.IsNullable()&& propertyInfo.PropertyType.GetUnderlyingType().IsEnum))
+                    if (propertyInfo.PropertyType.IsEnum || (propertyInfo.PropertyType.IsNullable() && propertyInfo.PropertyType.GetUnderlyingType().IsEnum))
                     {
                         fieldTypeName = typeof(int);
                     }
@@ -254,7 +256,7 @@ namespace SummerBoot.Repository.Generator
                         {
                             item.Descriptions.Add(newTableDescriptionSql);
                         }
-                        
+
                     }
                     foreach (var fieldInfo in fieldInfos)
                     {

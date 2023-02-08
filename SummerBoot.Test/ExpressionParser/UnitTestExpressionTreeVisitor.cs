@@ -231,9 +231,9 @@ namespace ExpressionParser.Test
         public void TestSelect3()
         {
             var personRepository = new PersonRepository();
-            var r3 = personRepository.Select(it => new { it.Name, Address = "����" }).ToList();
+            var r3 = personRepository.Select(it => new { it.Name, Address = "福建省" }).ToList();
             var r3MiddleResult = personRepository.GetDbQueryDetail();
-            Assert.Equal("SELECT [p0].[Name], '����' As [Address] FROM [Person] [p0]", r3MiddleResult.Sql);
+            Assert.Equal("SELECT [p0].[Name], '福建省' As [Address] FROM [Person] [p0]", r3MiddleResult.Sql);
             Assert.Empty(r3MiddleResult.SqlParameters);
         }
 
@@ -1388,7 +1388,7 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = hrRepository.GetDbQueryDetail();
 
-            Assert.Equal("insert into [Hr2] ([hrEmployeeNo],[Name],[Age],[HaveChildren],[CreateOn]) values (@EmployeNo,@Name,@Age,@HaveChildren,@CreateOn)", r1MiddleResult.Sql);
+            Assert.Equal("insert into [Hr2] ([hrEmployeeNo],[Name],[Age],[HaveChildren],[CreateOn]) values (@hrEmployeeNo,@Name,@Age,@HaveChildren,@CreateOn)", r1MiddleResult.Sql);
 
             hrRepository.InternalUpdate(persion);
 

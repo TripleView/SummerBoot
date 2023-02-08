@@ -184,10 +184,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             if (returnRealValue)
             {
+                if (value is string)
+                {
+                    return $"'{value}'";
+                }
                 return value;
             }
 
-            
             //if (string.IsNullOrWhiteSpace(value))
             //{
             //    return "";
@@ -293,6 +296,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 //_sb.Append("(");
                 if (select.From is TableExpression table)
                 {
+                    if (table.Schema.HasText())
+                    {
+                        _sb.Append(table.Schema + ".");
+                    }
                     _sb.Append(BoxTableNameOrColumnName(table.Name));
                     _sb.AppendFormat(" {0}", BoxTableNameOrColumnName(select.Alias));
                 }

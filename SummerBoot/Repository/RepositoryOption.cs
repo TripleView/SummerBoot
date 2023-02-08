@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
+using SummerBoot.Repository.TypeHandler.Dialect.SqlServer;
 
 namespace SummerBoot.Repository
 {
@@ -116,6 +117,12 @@ namespace SummerBoot.Repository
                 databaseUnit.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
                 databaseUnit.SetTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
             }
+
+            if (databaseUnit.IsPgsql)
+            {
+                databaseUnit.SetTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
+            }
+
 
             optionAction(databaseUnit);
 

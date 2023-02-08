@@ -294,6 +294,15 @@ namespace SummerBoot.Core
                             iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
                         services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
                     }
+                    else if (databaseUnit.IsPgsql)
+                    {
+                        var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(PgsqlDatabaseFieldMapping),
+                            iDatabaseFieldMappingType, Type.EmptyTypes);
+                        services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
+                        var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(PgsqlDatabaseInfo),
+                            iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
+                        services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
+                    }
                 }
 
 

@@ -16,6 +16,7 @@
     <PackageReference Include="MySql.Data" Version="8.0.29" />
     <PackageReference Include="MySql.EntityFrameworkCore" Version="5.0.13" />
     <PackageReference Include="MySqlConnector" Version="2.1.10" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.10" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="5.21.4" />
     <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.112.1" />

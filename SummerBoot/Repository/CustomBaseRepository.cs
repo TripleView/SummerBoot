@@ -246,25 +246,9 @@ namespace SummerBoot.Repository
             databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
 
-           
-            //if (databaseUnit.AutoAddCreateOn)
-            //{
-
-            //    if (t is BaseEntity baseEntity)
-            //    {
-            //        baseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //        baseEntity.Active = 1;
-            //    }
-            //    else if (t is OracleBaseEntity oracleBaseEntity)
-            //    {
-            //        oracleBaseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //        oracleBaseEntity.Active = 1;
-            //    }
-            //}
-
             OpenDb();
 
-            if (databaseType == DatabaseType.Oracle)
+            if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
             {
                 var dynamicParameters = new Core.DynamicParameters(t);
                 if (internalResult.IdKeyPropertyInfo != null)
@@ -288,7 +272,7 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-      
+
                     var multiResult = dbConnection.QueryMultiple(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
                     var id = multiResult.Read<int>().FirstOrDefault();
 
@@ -308,7 +292,7 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                    
+
                     var multiResult = dbConnection.QueryMultiple(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
                     var id = multiResult.Read<int>().FirstOrDefault();
 
@@ -422,7 +406,7 @@ namespace SummerBoot.Repository
         {
             foreach (var t in list)
             {
-               databaseUnit.OnBeforeInsert(t);
+                databaseUnit.OnBeforeInsert(t);
             }
 
             var internalResult = InternalFastInsert(list);
@@ -601,25 +585,10 @@ namespace SummerBoot.Repository
         {
             databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
-            
-            //if (databaseUnit.AutoAddCreateOn)
-            //{
-
-            //    if (t is BaseEntity baseEntity)
-            //    {
-            //        baseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //        baseEntity.Active = 1;
-            //    }
-            //    else if (t is OracleBaseEntity oracleBaseEntity)
-            //    {
-            //        oracleBaseEntity.CreateOn = databaseUnit.AutoAddCreateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //        oracleBaseEntity.Active = 1;
-            //    }
-            //}
 
             OpenDb();
 
-            if (databaseType == DatabaseType.Oracle)
+            if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
             {
                 var dynamicParameters = new DynamicParameters(t);
                 if (internalResult.IdKeyPropertyInfo != null)
@@ -642,7 +611,7 @@ namespace SummerBoot.Repository
                 {
                     var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
                     var dynamicParameters = new DynamicParameters(t);
-                   
+
                     var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
                     var id = multiResult.Read<int>().FirstOrDefault();
 

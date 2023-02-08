@@ -28,6 +28,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 case DatabaseType.Sqlite:
                     this.queryFormatter = new SqliteQueryFormatter();
                     break;
+                case DatabaseType.Pgsql:
+                    this.queryFormatter = new PgsqlQueryFormatter();
+                    break;
             }
             
         }

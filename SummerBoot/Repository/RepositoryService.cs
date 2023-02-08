@@ -107,8 +107,7 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
-
+            
             return base.PageBaseExecute<T>(method, args.ToArray(), serviceProvider);
         }
 

@@ -39,7 +39,6 @@ namespace SummerBoot.Feign
                 var httpClient = HttpClientFactory.CreateClient(requestTemplate.ClientName);
                 var httpRequest = new HttpRequestMessage(requestTemplate.HttpMethod, requestTemplate.Url);
                 httpRequest.Content = requestTemplate.HttpContent;
-             
                 //处理header
                 foreach (var requestTemplateHeader in requestTemplate.Headers)
                 {
