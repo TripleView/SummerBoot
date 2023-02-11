@@ -23,16 +23,19 @@ using System.Text.RegularExpressions;
 using SummerBoot.Repository;
 using SummerBoot.Test.Model;
 using IlPerson = SummerBoot.Test.IlGenerator.Dto.IlPerson;
+using Xunit.Priority;
 
 namespace SummerBoot.Test.IlGenerator
 {
+    [Collection("test")]
+    [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class IlGeneratorTest
     {
         /// <summary>
         /// 查询多结果集
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Fact]
+        [Fact, Priority(1001)]
         public void TestQueryMulti()
         {
             //var intTypeHandler = new IntTypeHandler();
@@ -97,7 +100,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// 异步查询多结果集
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Fact]
+        [Fact, Priority(1002)]
         public async Task TestQueryMultiAsync()
         {
             //var intTypeHandler = new IntTypeHandler();
@@ -224,7 +227,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// <summary>
         /// 测试TypeHandlerCache的SetHandler方法
         /// </summary>
-        [Fact]
+        [Fact, Priority(1010)]
         public void TestGenerateTypeHandlerCacheClass_Parse()
         {
             var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
@@ -256,7 +259,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// <summary>
         /// 测试TypeHandlerCache的SetHandler方法
         /// </summary>
-        [Fact]
+        [Fact, Priority(1003)]
         public void TestGenerateTypeHandlerCacheClass_SetValue()
         {
             var connectionString = MyConfiguration.GetConfiguration("mysqlDbConnectionString");
@@ -284,7 +287,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// 测试返回值为类这种情况
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Fact]
+        [Fact, Priority(1004)]
         public void TestQueryWithClass()
         {
             var c = 1 & 2;
@@ -357,7 +360,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// 查询单个或默认
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Fact]
+        [Fact, Priority(1005)]
         public void TestQueryFirstOrDefaultWithClass()
         {
             var c = 1 & 2;
@@ -417,7 +420,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// 异步查询单个或默认
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Fact]
+        [Fact, Priority(1006)]
         public async Task TestQueryFirstOrDefaultWithClassAsync()
         {
             var c = 1 & 2;
@@ -477,7 +480,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// 测试异步返回值为类这种情况
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Fact]
+        [Fact, Priority(1007)]
         public async Task TestQueryWithClassAsync()
         {
             //var intTypeHandler = new IntTypeHandler();
@@ -947,7 +950,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         /// <summary>
         /// 测试反射获取属性
         /// </summary>
-        [Fact]
+        [Fact, Priority(1008)]
         public static void TestReader()
         {
 

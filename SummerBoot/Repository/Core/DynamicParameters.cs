@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Xml.Linq;
 using SummerBoot.Core;
 using YamlDotNet.Core.Tokens;
@@ -44,12 +45,10 @@ namespace SummerBoot.Repository.Core
 
             if (parameterName.Length > 0 && RepositoryOption.ParameterIdentifiers.Contains(parameterName[0]))
             {
-                //return parameterName.Substring(1);
-                return parameterName.Substring(1).ToLower();
+                return parameterName.Substring(1);
             }
 
-            //return parameterName;
-            return parameterName.ToLower();
+            return parameterName;
         }
 
         public T Get<T>(string name)
@@ -71,6 +70,7 @@ namespace SummerBoot.Repository.Core
         public void Add(string name, object value = null, DbType? dbType = null, ParameterDirection? direction = null, int? size = null, byte? precision = null, byte? scale = null,Type valueType=null)
         {
             name = CleanParameterName(name);
+         
             paramInfos[name] = new ParamInfo
             {
                 Name = name,

@@ -663,7 +663,8 @@ namespace SummerBoot.Repository.Core
                         {
                             Name = info.Key + count,
                             Value = tempValue,
-                            ValueType = tempValue.GetType()
+                            ValueType = tempValue.GetType(),
+                            ParameterDirection = ParameterDirection.Input
                         };
                         SetUpSingleParameter(dbCommand, tempParamInfo.Name, tempParamInfo, databaseUnit);
                     }
