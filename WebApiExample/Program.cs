@@ -68,6 +68,7 @@ namespace WebApiExample
                     });
             });
             builder.Services.AddSummerBootCache();
+            //builder.Host.UseNacosConfiguration();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

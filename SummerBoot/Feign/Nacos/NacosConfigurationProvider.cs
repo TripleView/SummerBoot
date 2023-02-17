@@ -85,7 +85,7 @@ namespace SummerBoot.Feign.Nacos
                 var param = sb.ToString();
                 var configListenerResult = await nacosService.ConfigListener(param);
 
-                if (configListenerResult.HasText())
+                if (nacosOption.NamespaceId == "public" || (nacosOption.NamespaceId != "public" && configListenerResult.HasText()))
                 {
                     var httpResponseMessage = await nacosService.GetConfigs(new GetConfigsDto()
                     {
@@ -145,7 +145,7 @@ namespace SummerBoot.Feign.Nacos
         }
         public void Dispose()
         {
-            
+
         }
     }
 }

@@ -15,20 +15,30 @@ namespace WebApiExample.Controllers
         private readonly ICustomerRepository customerRepository;
         private readonly IDbGenerator1 dbGenerator1;
         private readonly IOrderHistoryRepository orderHistoryRepository;
+        private readonly IConfiguration configuration;
 
-        public SingleDatabaseController(IUnitOfWork1 uow, ICustomerRepository customerRepository, IDbGenerator1 dbGenerator1, IOrderHistoryRepository orderHistoryRepository)
+        public SingleDatabaseController(IUnitOfWork1 uow, ICustomerRepository customerRepository, IDbGenerator1 dbGenerator1, IOrderHistoryRepository orderHistoryRepository, IConfiguration configuration)
         {
             this.uow = uow;
             this.customerRepository = customerRepository;
             this.dbGenerator1 = dbGenerator1;
             this.orderHistoryRepository = orderHistoryRepository;
+            this.configuration = configuration;
+        }
+
+
+        [HttpGet("Index")]
+        public async Task<IActionResult> Index()
+        {
+            var c = configuration["a"];
+            return Content(c);
         }
 
         /// <summary>
-        /// 生成数据库
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("GenerateTable")]
+            /// 生成数据库
+            /// </summary>
+            /// <returns></returns>
+            [HttpGet("GenerateTable")]
         public string GenerateTable()
         {
             var sqlResults = dbGenerator1.GenerateSql(new List<Type>() { typeof(Customer), typeof(OrderHistory) });
