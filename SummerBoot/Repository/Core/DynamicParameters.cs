@@ -19,7 +19,7 @@ namespace SummerBoot.Repository.Core
             {
                 foreach (var dpGetParamInfo in dp.GetParamInfos)
                 {
-                    this.paramInfos.Add(dpGetParamInfo.Key,dpGetParamInfo.Value);
+                    this.AddParamInfo(dpGetParamInfo.Key, dpGetParamInfo.Value);
                 }
             }
             else
@@ -28,7 +28,7 @@ namespace SummerBoot.Repository.Core
             }
             
         }
-        private readonly Dictionary<string,ParamInfo> paramInfos = new Dictionary<string, ParamInfo>();
+        private readonly Dictionary<string,ParamInfo> paramInfos = new Dictionary<string, ParamInfo>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, ParamInfo> GetParamInfos => paramInfos;
         /// <summary>
         /// 清除参数名称里的参数标识符
@@ -69,9 +69,7 @@ namespace SummerBoot.Repository.Core
 
         public void Add(string name, object value = null, DbType? dbType = null, ParameterDirection? direction = null, int? size = null, byte? precision = null, byte? scale = null,Type valueType=null)
         {
-            name = CleanParameterName(name);
-         
-            paramInfos[name] = new ParamInfo
+            var paramInfo = new ParamInfo
             {
                 Name = name,
                 Value = value,
@@ -82,6 +80,14 @@ namespace SummerBoot.Repository.Core
                 Scale = scale,
                 ValueType = valueType
             };
+            this.AddParamInfo(name,paramInfo);
+        }
+
+        private void AddParamInfo(string name, ParamInfo paramInfo)
+        {
+            name = CleanParameterName(name);
+            paramInfo.Name = name;
+            paramInfos[name] = paramInfo;
         }
 
         public void AddEntity<T>(T entity)
@@ -97,14 +103,15 @@ namespace SummerBoot.Repository.Core
             {
                 var name = memberInfoCache.Name;
                 var value = entity.GetPropertyValueByEmit(memberInfoCache.PropertyName);
-                name = CleanParameterName(name);
-                paramInfos[name] = new ParamInfo
+                var paramInfo = new ParamInfo
                 {
                     Name = name,
                     Value = value,
                     ParameterDirection = ParameterDirection.Input,
                     ValueType = memberInfoCache.PropertyInfo.PropertyType
                 };
+                this.AddParamInfo(name, paramInfo);
+                
             }
         }
     }

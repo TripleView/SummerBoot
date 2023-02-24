@@ -80,7 +80,7 @@ namespace SummerBoot.Test.Feign
 
             var xx = conf["a:c"];
             var c = conf["a"];
-            Assert.Equal("333", c);
+            Assert.Equal("public", c);
             //while (true)
             //{
             //    var c = conf["a"];

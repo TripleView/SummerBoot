@@ -1091,7 +1091,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         [Fact]
         public static void TestIsInstanceWithObject()
         {
-            var dynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(bool),
+            var dynamicMethod = new DynamicMethod("TestIsInstanceWithObject" + Guid.NewGuid().ToString("N"), typeof(bool),
                 Type.EmptyTypes);
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
@@ -1110,7 +1110,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         [Fact]
         public static void TestIsInstanceWithClass()
         {
-            var nullDynamicMethod = new DynamicMethod("TestIsInstance" + Guid.NewGuid().ToString("N"), typeof(IlPerson),
+            var nullDynamicMethod = new DynamicMethod("TestIsInstanceWithClass" + Guid.NewGuid().ToString("N"), typeof(IlPerson),
                 Type.EmptyTypes);
             var ctor2 = typeof(DogClass3).GetConstructor(Type.EmptyTypes);
             var il2 = nullDynamicMethod.GetILGenerator();
