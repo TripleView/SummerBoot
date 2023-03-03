@@ -6,7 +6,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 {
     public class MysqlQueryFormatter : QueryFormatter
     {
-        public MysqlQueryFormatter():base("@","`","`")
+        public MysqlQueryFormatter(DatabaseUnit databaseUnit):base("@","`","`",databaseUnit)
         {
             
         }

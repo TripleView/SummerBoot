@@ -6,7 +6,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 {
     public class PgsqlQueryFormatter : QueryFormatter
     {
-        public PgsqlQueryFormatter():base("@", "\"","\"")
+        public PgsqlQueryFormatter(DatabaseUnit databaseUnit):base("@", "\"","\"",databaseUnit)
         {
             
         }
@@ -17,7 +17,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             if (result.IdKeyPropertyInfo != null)
             {
 
-                result.Sql += $" RETURNING {BoxTableNameOrColumnName(result.IdName)}";
+                result.Sql += $" RETURNING {BoxColumnName(result.IdName)}";
             }
 
             return result;

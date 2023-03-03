@@ -7,17 +7,16 @@ using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 {
-    public class PgsqlDatabaseInfo : IDatabaseInfo
+    public class PgsqlDatabaseInfo :AbstractDatabaseInfo, IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
-        private readonly DatabaseUnit databaseUnit;
-        public PgsqlDatabaseInfo(IDbFactory dbFactory)
+        public PgsqlDatabaseInfo(IDbFactory dbFactory):base("\"", "\"", dbFactory.DatabaseUnit)
         {
             this.dbFactory = dbFactory;
-            this.databaseUnit = dbFactory.DatabaseUnit;
+
         }
 
-        public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
+        public override GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
         {
             var tableName = tableInfo.Name;
             var fieldInfos = tableInfo.FieldInfos;
@@ -116,12 +115,12 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 columnDataType = fieldInfo.SpecifiedColumnDataType;
             }
 
-            var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
+            var columnName = BoxColumnName(fieldInfo.ColumnName);
             var result = $"{columnName} {columnDataType} {nullableString} {identityString}";
             return result;
         }
 
-        public string CreateTableDescription(string schema, string tableName, string description)
+        public override string CreateTableDescription(string schema, string tableName, string description)
         {
             var schemaTableName = GetSchemaTableName(schema, tableName);
             var sql = $"COMMENT ON TABLE {schemaTableName} IS '{description}'";
@@ -129,12 +128,12 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         }
 
 
-        public string UpdateTableDescription(string schema, string tableName, string description)
+        public override string UpdateTableDescription(string schema, string tableName, string description)
         {
             return CreateTableDescription(schema, tableName, description);
         }
 
-        public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var schemaTableName = GetSchemaTableName(schema, tableName);
             var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo, true)}";
@@ -142,14 +141,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
-        public string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var schemaTableName = GetSchemaTableName(schema, tableName);
             var sql = $"COMMENT ON COLUMN {schemaTableName}.\"{fieldInfo.ColumnName}\" IS '{fieldInfo.Description}'";
             return sql;
         }
 
-        public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
+        public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
             schema = GetDefaultSchema(schema);
@@ -221,7 +220,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return result;
         }
 
-        public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             //var schemaTableName = GetSchemaTableName(schema, tableName);
             //var sql =
@@ -231,19 +230,15 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return "";
         }
 
-        public string BoxTableNameOrColumnName(string tableNameOrColumnName)
-        {
-            return "\"" + tableNameOrColumnName + "\"";
-        }
 
-        public string GetSchemaTableName(string schema, string tableName)
+        public override string GetSchemaTableName(string schema, string tableName)
         {
-            tableName = BoxTableNameOrColumnName(tableName);
+            tableName = BoxTableName(tableName);
             tableName = schema.HasText() ? schema + "." + tableName : tableName;
             return tableName;
         }
 
-        public string GetDefaultSchema(string schema)
+        public override string GetDefaultSchema(string schema)
         {
             if (schema.HasText())
             {

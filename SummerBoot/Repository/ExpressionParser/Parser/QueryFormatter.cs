@@ -12,12 +12,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     public class QueryFormatter : DbExpressionVisitor, IGetDbExecuteSql
     {
 
-        public QueryFormatter(string parameterPrefix, string leftQuote, string rightQuote)
+        public QueryFormatter(string parameterPrefix, string leftQuote, string rightQuote, DatabaseUnit databaseUnit)
         {
             this.parameterPrefix = parameterPrefix;
             this.leftQuote = leftQuote;
             this.rightQuote = rightQuote;
+            this.databaseUnit = databaseUnit;
         }
+
+        protected DatabaseUnit databaseUnit;
 
         protected readonly StringBuilder _sb = new StringBuilder();
         protected readonly StringBuilder countSqlSb = new StringBuilder();
@@ -51,26 +54,40 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 if (index++ > 0) _sb.Append(", ");
                 this.VisitColumn(column);
             }
-            _sb.AppendFormat(" FROM {0}", BoxTableNameOrColumnName(table.Name));
+            _sb.AppendFormat(" FROM {0}", BoxTableName(table.Name));
             //if (!table.Alias.IsNullOrWhiteSpace())
             //    _sb.AppendFormat(" As {0} ", BoxTableNameOrColumnName(table.Alias));
 
             return table;
         }
-        /// <summary>
-        /// 包装表名或者列名
-        /// </summary>
-        /// <param name="tableNameOrColumnName"></param>
-        /// <returns></returns>
-
-        protected string BoxTableNameOrColumnName(string tableNameOrColumnName)
+        
+        protected string BoxColumnName(string columnName)
         {
-            if (tableNameOrColumnName == "*")
+            if (columnName == "*")
             {
-                return tableNameOrColumnName;
+                return columnName;
             }
 
-            return leftQuote + tableNameOrColumnName + rightQuote;
+            if (databaseUnit.ColumnNameMapping != null)
+            {
+                columnName = databaseUnit.ColumnNameMapping(columnName);
+            }
+
+            return CombineQuoteAndName(columnName);
+        }
+
+        protected string BoxTableName(string tableName)
+        {
+            if (databaseUnit.TableNameMapping != null)
+            {
+                tableName = databaseUnit.TableNameMapping(tableName);
+            }
+            return CombineQuoteAndName(tableName);
+        }
+
+        private string CombineQuoteAndName(string name)
+        {
+            return leftQuote + name + rightQuote;
         }
 
         /// <summary>
@@ -178,7 +195,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <param name="obj"></param>
         /// <param name="returnRealValue">是否返回实际值</param>
         /// <returns></returns>
-        protected string BoxParameter(object obj,Type valueType, bool returnRealValue = false)
+        protected string BoxParameter(object obj, Type valueType, bool returnRealValue = false)
         {
             var value = obj?.ToString();
 
@@ -230,17 +247,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var value = columnExpression.Value;
             if (value != null)
             {
-                tempStringBuilder.AppendFormat("{0} As {1}", BoxParameter(value, columnExpression.ValueType, true), BoxTableNameOrColumnName(columnExpression.ColumnName));
+                tempStringBuilder.AppendFormat("{0} As {1}", BoxParameter(value, columnExpression.ValueType, true), BoxColumnName(columnExpression.ColumnName));
             }
             else
             {
                 if (!columnExpression.TableAlias.IsNullOrWhiteSpace() && columnExpression.ColumnName != "*")
                 {
-                    tempStringBuilder.AppendFormat("{0}.{1}", BoxTableNameOrColumnName(columnExpression.TableAlias), BoxTableNameOrColumnName(columnExpression.ColumnName));
+                    tempStringBuilder.AppendFormat("{0}.{1}", BoxTableName(columnExpression.TableAlias), BoxColumnName(columnExpression.ColumnName));
                 }
                 else
                 {
-                    tempStringBuilder.AppendFormat("{0}", BoxTableNameOrColumnName(columnExpression.ColumnName));
+                    tempStringBuilder.AppendFormat("{0}", BoxColumnName(columnExpression.ColumnName));
                 }
             }
 
@@ -253,7 +270,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             //添加列别名
             if (!columnExpression.ColumnAlias.IsNullOrWhiteSpace())
             {
-                tempStringBuilder.AppendFormat(" As {0}", BoxTableNameOrColumnName(columnExpression.ColumnAlias));
+                tempStringBuilder.AppendFormat(" As {0}", BoxColumnName(columnExpression.ColumnAlias));
             }
 
             _sb.Append(tempStringBuilder);
@@ -300,14 +317,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     {
                         _sb.Append(table.Schema + ".");
                     }
-                    _sb.Append(BoxTableNameOrColumnName(table.Name));
-                    _sb.AppendFormat(" {0}", BoxTableNameOrColumnName(select.Alias));
+                    _sb.Append(BoxTableName(table.Name));
+                    _sb.AppendFormat(" {0}", BoxTableName(select.Alias));
                 }
                 else if (select.From is SelectExpression subSelectExpression)
                 {
                     _sb.Append("(");
                     this.VisitSelect(subSelectExpression);
-                    _sb.AppendFormat(") {0}", BoxTableNameOrColumnName(select.Alias));
+                    _sb.AppendFormat(") {0}", BoxTableName(select.Alias));
                 }
 
             }
@@ -340,7 +357,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     {
                         _sb.Append(" and ");
                     }
-                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                    _sb.Append($" {BoxColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
             }
 
@@ -422,7 +439,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 _sb.Append(" ");
                 _sb.Append(whereConditionExpression.Operator);
                 _sb.Append(" ");
-                _sb.Append(BoxParameter(whereConditionExpression.Value,whereConditionExpression.ValueType));
+                _sb.Append(BoxParameter(whereConditionExpression.Value, whereConditionExpression.ValueType));
             }
             else if (whereExpression is FunctionWhereConditionExpression functionWhereConditionExpression)
             {
@@ -460,7 +477,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected string GetSchemaTableName(string schema, string tableName)
         {
-            tableName = BoxTableNameOrColumnName(tableName);
+            tableName = BoxTableName(tableName);
             tableName = schema.HasText() ? schema + "." + tableName : tableName;
             return tableName;
         }
@@ -480,7 +497,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     continue;
                 }
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+
+                var columnName = column.ColumnName;
+                columnName = BoxColumnName(columnName);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.ColumnName;
                 parameterNameList.Add(parameterName);
@@ -537,7 +556,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var middleList = new List<string>();
             foreach (var column in columns)
             {
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = column.ColumnName;
+                columnName = BoxColumnName(columnName);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
                 middleList.Add(columnName + "=" + parameterName);
@@ -546,7 +566,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var keyList = new List<string>();
             foreach (var column in keyColumnExpression)
             {
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.ColumnName);
                 keyColumnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
                 if (column.MemberInfo is PropertyInfo propertyInfo)
@@ -579,7 +599,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var middleList = new List<string>();
             foreach (var column in table.Columns)
             {
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.ColumnName);
                 var parameterName = this.parameterPrefix + column.MemberInfo.Name;
                 if (column.MemberInfo is PropertyInfo propertyInfo)
                 {
@@ -624,7 +644,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var column = table.Columns.FirstOrDefault(it => it.MemberInfo.Name == "Active");
                 if (column != null)
                 {
-                    var updateSql = $"update {tableName} set {BoxTableNameOrColumnName(column.ColumnName)}=0 where 1=1";
+                    var updateSql = $"update {tableName} set {BoxColumnName(column.ColumnName)}=0 where 1=1";
                     if (!string.IsNullOrWhiteSpace(whereSql))
                     {
                         updateSql += $" and {whereSql}";
@@ -684,7 +704,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     {
                         this.VisitColumn(columnExpression);
                         _sb.Append("=");
-                        _sb.Append(BoxParameter(selectItem.Value,columnExpression.ValueType));
+                        _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
                         var columnSetValueClause = _sb.ToString();
                         columnSetValueClauses.Add(columnSetValueClause);
                         _sb.Clear();
@@ -722,7 +742,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             foreach (var column in table.Columns)
             {
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
             }
 
@@ -736,7 +756,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 if (softDeleteColumn != null)
                 {
                     var softDeleteParameterName = BoxParameter(1, typeof(int));
-                    _sb.Append($" where {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                    _sb.Append($" where {BoxColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
 
             }
@@ -758,7 +778,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             foreach (var column in table.Columns)
             {
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
             }
 
@@ -768,9 +788,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 throw new Exception("not exist key column like id");
             }
 
-            var parameterName = BoxParameter(id,id.GetType());
+            var parameterName = BoxParameter(id, id.GetType());
 
-            _sb.Append($"select {string.Join(",", columnNameList)} from {tableName} where {BoxTableNameOrColumnName(keyColumn.ColumnName)}={parameterName}");
+            _sb.Append($"select {string.Join(",", columnNameList)} from {tableName} where {BoxColumnName(keyColumn.ColumnName)}={parameterName}");
             //添加软删除过滤逻辑
             if (RepositoryOption.Instance != null && RepositoryOption.Instance.IsUseSoftDelete && (
                 typeof(BaseEntity).IsAssignableFrom(typeof(T)) || typeof(OracleBaseEntity).IsAssignableFrom(typeof(T))))
@@ -779,7 +799,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 if (softDeleteColumn != null)
                 {
                     var softDeleteParameterName = BoxParameter(1, typeof(int));
-                    _sb.Append($" and {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                    _sb.Append($" and {BoxColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
             }
 

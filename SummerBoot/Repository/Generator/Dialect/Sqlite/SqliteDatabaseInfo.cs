@@ -9,23 +9,22 @@ using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.Sqlite
 {
-    public class SqliteDatabaseInfo : IDatabaseInfo
+    public class SqliteDatabaseInfo :AbstractDatabaseInfo, IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
-        private readonly DatabaseUnit databaseUnit;
-        public SqliteDatabaseInfo(IDbFactory dbFactory)
+        public SqliteDatabaseInfo(IDbFactory dbFactory):base("`", "`", dbFactory.DatabaseUnit)
         {
             this.dbFactory = dbFactory;
-            this.databaseUnit = dbFactory.DatabaseUnit;
         }
 
-        public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
+        public override GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
         {
             var tableName = tableInfo.Name;
             var fieldInfos = tableInfo.FieldInfos;
 
             var body = new StringBuilder();
-            body.AppendLine($"CREATE TABLE \"{tableName}\" (");
+            tableName = base.BoxTableName(tableName);
+            body.AppendLine($"CREATE TABLE {tableName} (");
            
             var hasKeyField = fieldInfos.Any(it => it.IsKey);
             
@@ -63,7 +62,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
         /// </summary>
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
-        private string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo)
+        private  string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo)
         {
             var identityString = fieldInfo.IsAutoCreate ? " AUTOINCREMENT" : "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
@@ -75,32 +74,33 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
                 columnDataType = fieldInfo.SpecifiedColumnDataType;
             }
 
-            var result = $"\"{fieldInfo.ColumnName}\" {columnDataType} {nullableString}{pk}{identityString}";
+            var columnName = BoxColumnName(fieldInfo.ColumnName);
+            var result = $"{columnName} {columnDataType} {nullableString}{pk}{identityString}";
             return result;
         }
 
-        public string CreateTableDescription(string schema, string tableName, string description)
+        public override string CreateTableDescription(string schema, string tableName, string description)
         {
             return "";
         }
 
-        public string UpdateTableDescription(string schema, string tableName, string description)
+        public override string UpdateTableDescription(string schema, string tableName, string description)
         {
             return "";
         }
 
-        public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var sql = $"ALTER TABLE {tableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo)}";
             return sql;
         }
 
-        public string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             return "";
         }
 
-        public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
+        public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
 
@@ -172,22 +172,18 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             return result;
         }
 
-        public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             throw new NotImplementedException();
         }
 
-        public string BoxTableNameOrColumnName(string tableNameOrColumnName)
+
+        public override string GetSchemaTableName(string schema, string tableName)
         {
             throw new NotImplementedException();
         }
 
-        public string GetSchemaTableName(string schema, string tableName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string GetDefaultSchema(string schema)
+        public override string GetDefaultSchema(string schema)
         {
             return "";
         }

@@ -223,6 +223,14 @@ namespace SummerBoot.Repository
             }},
         };
 
+        /// <summary>
+        /// Sets column name mapping at database unit scope;设置数据库单元范围内的列名映射
+        /// </summary>
+        public Func<string,string> ColumnNameMapping { get; set; }
+        /// <summary>
+        /// Set Table name mapping at database unit scope;设置数据库单元范围内的表名映射
+        /// </summary>
+        public Func<string, string> TableNameMapping { get; set; }
         public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
 
         public static Dictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =

@@ -10,21 +10,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 {
     public class Repository<T> : IRepository<T>
     {
-        public Repository(DatabaseType databaseType)
+        public Repository(DatabaseUnit databaseUnit)
         {
-            Provider = new DbQueryProvider(databaseType,this);
+            Provider = new DbQueryProvider(databaseUnit, this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
-
+        
         public Repository()
         {
 
         }
 
-        public void Init(DatabaseType databaseType)
+        public void Init(DatabaseUnit databaseUnit)
         {
-            Provider = new DbQueryProvider(databaseType,this);
+            Provider = new DbQueryProvider(databaseUnit, this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }

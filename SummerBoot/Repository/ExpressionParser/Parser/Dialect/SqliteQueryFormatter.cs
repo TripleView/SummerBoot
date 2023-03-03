@@ -2,7 +2,7 @@
 {
     public class SqliteQueryFormatter : QueryFormatter
     {
-        public SqliteQueryFormatter():base(":", "`","`")
+        public SqliteQueryFormatter(DatabaseUnit databaseUnit):base(":", "`","`",databaseUnit)
         {
             
         }

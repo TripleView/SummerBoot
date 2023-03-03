@@ -9,7 +9,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 {
     public class SqlServerQueryFormatter : QueryFormatter
     {
-        public SqlServerQueryFormatter() : base("@", "[", "]")
+        public SqlServerQueryFormatter(DatabaseUnit databaseUnit) : base("@", "[", "]",databaseUnit)
         {
 
         }
@@ -36,7 +36,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 {
                     continue;
                 }
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + column.ColumnName;
                 parameterNameList.Add(parameterName);
@@ -170,7 +170,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     var tableName = GetSchemaTableName(table.Schema, table.Name);
                     _sb.Append(tableName);
 
-                    tableNameAlias = BoxTableNameOrColumnName(select.Alias);
+                    tableNameAlias = BoxTableName(select.Alias);
                     _sb.AppendFormat(" {0}", tableNameAlias);
 
                 }
@@ -178,7 +178,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 {
                     subSelectExpression.IsIgnoreOrderBy = true;
                     //this.RenameSelectExpressionInternalAlias(subSelectExpression);
-                    tableNameAlias = BoxTableNameOrColumnName(select.Alias);
+                    tableNameAlias = BoxTableName(select.Alias);
                     _sb.Append("(");
                     this.VisitSelect(subSelectExpression);
                     _sb.AppendFormat(") {0}", tableNameAlias);
@@ -222,7 +222,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     {
                         _sb.Append(" and ");
                     }
-                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                    _sb.Append($" {BoxColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
             }
 
@@ -240,7 +240,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 }
             }
 
-            _sb.AppendFormat(") {0} WHERE {0}.[ROW]>", BoxTableNameOrColumnName(externalAlias));
+            _sb.AppendFormat(") {0} WHERE {0}.[ROW]>", BoxColumnName(externalAlias));
             var hasSkip = select.Skip.HasValue;
             if (hasSkip)
             {
@@ -251,7 +251,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 _sb.Append(BoxParameter(0, typeof(int)));
             }
 
-            _sb.AppendFormat(" AND {0}.[ROW]<=", BoxTableNameOrColumnName(externalAlias));
+            _sb.AppendFormat(" AND {0}.[ROW]<=", BoxColumnName(externalAlias));
             var theLast = select.Skip.GetValueOrDefault(0) + select.Take.GetValueOrDefault(0);
             _sb.Append(BoxParameter(theLast, typeof(int)));
         }
@@ -287,7 +287,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     var tableName = GetSchemaTableName(table.Schema, table.Name);
                     _sb.Append(tableName);
 
-                    var tableNameAlias = BoxTableNameOrColumnName(select.Alias);
+                    var tableNameAlias = BoxTableName(select.Alias);
                     _sb.AppendFormat(" {0}", tableNameAlias);
 
                 }
@@ -298,7 +298,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 
                     this.VisitSelect(subSelectExpression);
                     _sb.Append(")");
-                    var tableNameAlias = BoxTableNameOrColumnName(select.Alias);
+                    var tableNameAlias = BoxTableName(select.Alias);
                     _sb.AppendFormat(" {0}", tableNameAlias);
                 }
 
@@ -332,7 +332,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     {
                         _sb.Append(" and ");
                     }
-                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                    _sb.Append($" {BoxColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
             }
 

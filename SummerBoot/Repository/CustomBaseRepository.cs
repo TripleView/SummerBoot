@@ -21,7 +21,7 @@ namespace SummerBoot.Repository
             this.dbFactory = dbFactory;
             this.databaseUnit = dbFactory.DatabaseUnit;
             databaseType = databaseUnit.DatabaseType;
-            base.Init(databaseType);
+            base.Init(databaseUnit);
         }
 
         protected IUnitOfWork uow;

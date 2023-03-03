@@ -9,7 +9,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 {
     public class OracleQueryFormatter : QueryFormatter
     {
-        public OracleQueryFormatter() : base(":", "\"", "\"")
+        public OracleQueryFormatter(DatabaseUnit databaseUnit) : base(":", "\"", "\"",databaseUnit)
         {
 
         }
@@ -126,7 +126,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 
                     _sb.Append(tableName);
 
-                    tableNameAlias = BoxTableNameOrColumnName(select.Alias);
+                    tableNameAlias = BoxTableName(select.Alias);
                     _sb.AppendFormat(" {0}", tableNameAlias);
 
                 }
@@ -134,7 +134,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 {
                     subSelectExpression.IsIgnoreOrderBy = true;
                     //this.RenameSelectExpressionInternalAlias(subSelectExpression);
-                    tableNameAlias = BoxTableNameOrColumnName(select.Alias);
+                    tableNameAlias = BoxTableName(select.Alias);
                     _sb.Append("(");
                     this.VisitSelect(subSelectExpression);
                     _sb.AppendFormat(") {0}", tableNameAlias);
@@ -178,7 +178,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     {
                         _sb.Append(" and ");
                     }
-                    _sb.Append($" {BoxTableNameOrColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
+                    _sb.Append($" {BoxColumnName(softDeleteColumn.ColumnName)}={softDeleteParameterName}");
                 }
             }
 
@@ -196,7 +196,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 }
             }
 
-            _sb.AppendFormat(") {0} WHERE {0}.pageNo>", BoxTableNameOrColumnName(externalAlias));
+            _sb.AppendFormat(") {0} WHERE {0}.pageNo>", BoxColumnName(externalAlias));
             var hasSkip = select.Skip.HasValue;
             if (hasSkip)
             {
@@ -207,7 +207,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 _sb.Append(BoxParameter(0, typeof(int)));
             }
 
-            _sb.AppendFormat(" AND {0}.pageNo<=", BoxTableNameOrColumnName(externalAlias));
+            _sb.AppendFormat(" AND {0}.pageNo<=", BoxColumnName(externalAlias));
             var theLast = select.Skip.GetValueOrDefault(0) + select.Take.GetValueOrDefault(0);
             _sb.Append(BoxParameter(theLast, typeof(int)));
         }
@@ -218,7 +218,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             if (result.IdKeyPropertyInfo != null)
             {
 
-                result.Sql += $" RETURNING {BoxTableNameOrColumnName(result.IdName)} INTO {parameterPrefix}{result.IdName}";
+                result.Sql += $" RETURNING {BoxColumnName(result.IdName)} INTO {parameterPrefix}{result.IdName}";
             }
 
             return result;
@@ -247,7 +247,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 propertyNames.Add(column.MemberInfo.Name);
                 var type = (column.MemberInfo as PropertyInfo)!.PropertyType;
                 propertyTypes.Add(type);
-                var columnName = BoxTableNameOrColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.ColumnName);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + j;
                 j++;

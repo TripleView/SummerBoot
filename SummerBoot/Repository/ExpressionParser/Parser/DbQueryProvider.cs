@@ -11,25 +11,26 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public QueryFormatter queryFormatter;
 
         public IDbExecuteAndQuery linkRepository;
-        public DbQueryProvider(DatabaseType databaseType, IDbExecuteAndQuery linkRepository)
+        public DbQueryProvider(DatabaseUnit databaseUnit, IDbExecuteAndQuery linkRepository)
         {
+            var databaseType = databaseUnit.DatabaseType;
             this.linkRepository = linkRepository;
             switch (databaseType)
             {
                 case DatabaseType.SqlServer:
-                    this.queryFormatter = new SqlServerQueryFormatter();
+                    this.queryFormatter = new SqlServerQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Mysql:
-                    this.queryFormatter = new MysqlQueryFormatter();
+                    this.queryFormatter = new MysqlQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Oracle:
-                    this.queryFormatter = new OracleQueryFormatter();
+                    this.queryFormatter = new OracleQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Sqlite:
-                    this.queryFormatter = new SqliteQueryFormatter();
+                    this.queryFormatter = new SqliteQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Pgsql:
-                    this.queryFormatter = new PgsqlQueryFormatter();
+                    this.queryFormatter = new PgsqlQueryFormatter(databaseUnit);
                     break;
             }
             
