@@ -19,5 +19,20 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// </summary>
         /// <returns></returns>
         Task<Page<T>> ToPageAsync();
+        /// <summary>
+        /// 生成经过分页的结果
+        /// </summary>
+        /// <returns></returns>
+        Page<T> ToPage(IPageable pageable);
+        /// <summary>
+        /// 生成经过分页的结果
+        /// </summary>
+        /// <returns></returns>
+        Task<Page<T>> ToPageAsync(IPageable pageable);
+        /// <summary>
+        /// 生成经过分页的结果
+        /// </summary>
+        /// <returns></returns>
+        Task<List<T>> ToListAsync();
     }
 }

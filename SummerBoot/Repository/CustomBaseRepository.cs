@@ -94,6 +94,16 @@ namespace SummerBoot.Repository
             return result;
         }
 
+        public override async Task<List<TResult>> InternalQueryListAsync<TResult>(DbQueryResult param)
+        {
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+
+            var result = (await dbConnection.QueryAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction)).ToList();
+
+            CloseDb();
+            return result;
+        }
         /// <summary>
         /// 查询列表
         /// </summary>

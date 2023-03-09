@@ -185,6 +185,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName7 = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName7);
                     return result7;
+                case   nameof(Queryable.Max):
+                case   nameof(Queryable.Min):
+                    methodCallStack.Push(methodName);
+                    var result8 = this.VisitMaxMinCall(node);
+                    var lastMethodCallName8 = methodCallStack.Pop();
+                    lastMethodCalls.Add(lastMethodCallName8);
+                    return result8;
+                
             }
 
             //针对groupBy进行单独处理
@@ -661,6 +669,38 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
+        public virtual Expression VisitMaxMinCall(MethodCallExpression maxMinCall)
+        {
+            var methodName = maxMinCall.Method.Name;
+            var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
+            ColumnExpression column = null;
+            if (maxMinCall.Arguments.Count == 2)
+            {
+                var lambda = (LambdaExpression)this.StripQuotes(maxMinCall.Arguments[1]);
+                column = this.Visit(lambda.Body) as ColumnExpression;
+            }
+
+            if (sourceExpression is TableExpression table)
+            {
+                var result = new SelectExpression(null, "", table.Columns, table);
+
+                result.Columns.Clear();
+                column.FunctionName = methodName;
+                result.Columns.Add(column);
+
+                return result;
+            }
+            else if (sourceExpression is SelectExpression selectExpression)
+            {
+                return selectExpression;
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(maxMinCall));
+            }
+        }
+
+
         protected SelectExpression NestSelectExpression(SelectExpression selectExpression)
         {
             //如果是distinct，需要终结小查询，并作为子查询提供给下一个环节，比例原始数据为1,1,2，
@@ -963,6 +1003,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (middleResult is ColumnExpression columnExpression && columnExpression.Type == typeof(bool))
             {
                 var whereConditionExpression = new WhereConditionExpression(columnExpression, "=", 1);
+                whereConditionExpression.ValueType = typeof(int);
                 var result = new FunctionWhereConditionExpression(operatorString, whereConditionExpression);
                 return result;
             }

@@ -218,7 +218,10 @@ namespace SummerBoot.Repository.Generator
                     //decimal精度问题
                     var precision = decimalPrecisionAttribute?.Precision ?? 18;
                     var scale = decimalPrecisionAttribute?.Scale ?? 2;
-
+                    if (databaseUnit.ColumnNameMapping != null)
+                    {
+                        fieldName = databaseUnit.ColumnNameMapping(fieldName);
+                    }
                     var fieldInfo = new DatabaseFieldInfoDto()
                     {
                         ColumnName = fieldName,
@@ -237,8 +240,12 @@ namespace SummerBoot.Repository.Generator
                     fieldInfos.Add(fieldInfo);
                 }
 
+               
+                if (databaseUnit.TableNameMapping != null)
+                {
+                    tableName = databaseUnit.TableNameMapping(tableName);
+                }
                 //判断数据库中是否已经有这张表，如果有，则比较两张表的结构
-
                 var dbTableInfo = databaseInfo.GetTableInfoByName(schema, tableName);
                 //如果存在这张表
                 if (dbTableInfo.FieldInfos.Any())

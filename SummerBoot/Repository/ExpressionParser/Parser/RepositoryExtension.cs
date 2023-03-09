@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -68,6 +69,120 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (source == null) throw new ArgumentNullException("source");
 
             return  await source.ToPageAsync();
+        }
+
+        /// <summary>
+        /// 分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static Page<T> ToPage<T>(this IOrderedQueryable<T> source2)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return source.ToPage();
+        }
+
+        /// <summary>
+        /// 异步分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<Page<T>> ToPageAsync<T>(this IOrderedQueryable<T> source2)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return await source.ToPageAsync();
+        }
+
+        /// <summary>
+        /// 分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static Page<T> ToPage<T>(this IOrderedQueryable<T> source2,IPageable pageable)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return source.ToPage(pageable);
+        }
+
+        /// <summary>
+        /// 异步分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<Page<T>> ToPageAsync<T>(this IOrderedQueryable<T> source2, IPageable pageable)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return await source.ToPageAsync(pageable);
+        }
+
+        /// <summary>
+        /// 异步获取列表
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<List<T>> ToListAsync<T>(this IOrderedQueryable<T> source2)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return await source.ToListAsync();
+        }
+
+        /// <summary>
+        /// 异步获取列表
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source2"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<List<T>> ToListAsync<T>(this IQueryable<T> source2)
+        {
+            if (!(source2 is IRepository<T> source))
+            {
+                throw new Exception("only support IRepository");
+            }
+            if (source == null) throw new ArgumentNullException("source");
+
+            return await source.ToListAsync();
         }
     }
 }

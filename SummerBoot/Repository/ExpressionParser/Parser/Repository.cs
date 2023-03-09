@@ -58,7 +58,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             return default;
         }
-
+        public virtual Task<List<TResult>> InternalQueryListAsync<TResult>(DbQueryResult param)
+        {
+            return default;
+        }
         public Repository(Expression expression, IQueryProvider provider)
         {
             Provider = provider;
@@ -225,6 +228,53 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
                 var result =await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
+                return result;
+            }
+            return default;
+        }
+
+        private void CheckPageable(IPageable pageable)
+        {
+            if (pageable.PageNumber < 0)
+            {
+                throw new Exception("PageNumber cannot be less than 0");
+            }
+
+            if (pageable.PageSize < 0)
+            {
+                throw new Exception("PageSize cannot be less than 0");
+            }
+        }
+
+        public Page<T> ToPage(IPageable pageable)
+        {
+            CheckPageable(pageable);
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPage();
+                return result;
+            }
+            return default;
+        }
+
+        
+        public async Task<Page<T>> ToPageAsync(IPageable pageable)
+        {
+            CheckPageable(pageable);
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+               var result=await this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPageAsync();
+               return result;
+            }
+            return default;
+        }
+
+        public async Task<List<T>> ToListAsync()
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var result = await dbQueryProvider.linkRepository.InternalQueryListAsync<T>(dbParam);
                 return result;
             }
             return default;

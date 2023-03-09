@@ -693,11 +693,7 @@ namespace SummerBoot.Repository.Core
             }
             else
             {
-                var propertyType = paramInfo.ValueType;
-                if (propertyType == null)
-                {
-                    throw new NotSupportedException(parameter.ParameterName);
-                }
+                var propertyType = paramInfo.ValueType?? paramInfo.Value.GetType();
 
                 if (propertyType.IsNullable())
                 {
