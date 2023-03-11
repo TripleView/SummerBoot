@@ -292,6 +292,19 @@ namespace SummerBoot.Repository.Generator
                                 }
                             }
                         }
+                        
+                        else
+                        {
+                            //没有注释，补充注释
+                            if (dbFieldInfo.Description!=fieldInfo.Description)
+                            {
+                                var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo);
+                                if (createFieldDescriptionSql.HasText())
+                                {
+                                    item.Descriptions.Add(createFieldDescriptionSql);
+                                }
+                            }
+                        }
                     }
                     result.Add(item);
                 }
