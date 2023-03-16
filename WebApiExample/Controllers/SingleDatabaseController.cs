@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Core;
-using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Repository;
 using SummerBoot.Repository.Generator;
 using WebApiExample.Model;
 using WebApiExample.Repository;

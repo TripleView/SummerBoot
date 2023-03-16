@@ -12,7 +12,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         Task<int> InternalExecuteAsync(DbQueryResult param);
        
         TResult InternalQuery<TResult>(DbQueryResult param);
-      
+        Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param);
         List<TResult> InternalQueryList<TResult>(DbQueryResult param);
 
         Task<List<TResult>> InternalQueryListAsync<TResult>(DbQueryResult param);

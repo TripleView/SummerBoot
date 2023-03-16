@@ -10,6 +10,7 @@ using System.Threading;
 using System;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Core;
+using System.Data.Common;
 
 namespace SummerBoot.Repository
 {
@@ -207,7 +208,18 @@ namespace SummerBoot.Repository
 
             CloseDb();
             return result;
-            //return result.FirstOrDefault();
+           
+        }
+
+        public override async Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param)
+        {
+            OpenDb();
+            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
+
+            var result =await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
+            
+            CloseDb();
+            return result;
         }
 
         protected void OpenDb()

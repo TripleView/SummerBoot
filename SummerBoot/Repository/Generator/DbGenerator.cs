@@ -49,7 +49,7 @@ namespace SummerBoot.Repository.Generator
             dbConnection.Close();
         }
 
-        public List<string> GenerateCsharpClass( List<string> tableNames,  string classNameSpace, string namesapce = "")
+        public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace, string namesapce = "")
         {
             //c#中可空的基本类型
             var csharpCanBeNullableType = new List<string>()
@@ -210,6 +210,10 @@ namespace SummerBoot.Repository.Generator
 
                     var dbFieldTypeName = databaseFieldMapping.ConvertCsharpTypeToDatabaseType(new List<string>() { fieldTypeName.Name }).FirstOrDefault();
 
+                    if (columnAttribute != null && columnAttribute.TypeName.HasText())
+                    {
+                        dbFieldTypeName = columnAttribute.TypeName;
+                    }
                     if (dbFieldTypeName.IsNullOrWhiteSpace())
                     {
                         throw new Exception($"can not convert {propertyInfo.PropertyType.Name} to database type");
@@ -240,7 +244,7 @@ namespace SummerBoot.Repository.Generator
                     fieldInfos.Add(fieldInfo);
                 }
 
-               
+
                 if (databaseUnit.TableNameMapping != null)
                 {
                     tableName = databaseUnit.TableNameMapping(tableName);
@@ -292,11 +296,11 @@ namespace SummerBoot.Repository.Generator
                                 }
                             }
                         }
-                        
+
                         else
                         {
                             //没有注释，补充注释
-                            if (dbFieldInfo.Description!=fieldInfo.Description)
+                            if (dbFieldInfo.Description.HasText()&& fieldInfo.Description.HasText()&& dbFieldInfo.Description != fieldInfo.Description)
                             {
                                 var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo);
                                 if (createFieldDescriptionSql.HasText())

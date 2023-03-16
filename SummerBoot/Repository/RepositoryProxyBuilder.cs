@@ -24,13 +24,22 @@ namespace SummerBoot.Repository
             new ConcurrentDictionary<string, Type>();
 
         //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] { "FastBatchInsertAsync","FastBatchInsert", "ToListAsync","ToPage","ToPageAsync", "InternalQueryListAsync", "InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync", "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync" };
+        private string[] solidMethodNames = new string[] { "FastBatchInsertAsync","FastBatchInsert", "ToListAsync","ToPage","ToPageAsync", "InternalQueryListAsync", "InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryAsync", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync",
+            "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync", "FirstOrDefaultAsync",
+            nameof(IRepository<BaseEntity>.FirstAsync),
+            nameof(IRepository<BaseEntity>.MaxAsync),
+            nameof(IRepository<BaseEntity>.MinAsync),
+                nameof(IRepository<BaseEntity>.SumAsync),
+                nameof(IRepository<BaseEntity>.AverageAsync),
+                nameof(IRepository<BaseEntity>.CountAsync)
+        };
+
         public object Build(Type interfaceType, params object[] constructor)
         {
             throw new NotImplementedException();
             var cacheKey = interfaceType.FullName;
             Type resultType;
-          
+
             TargetTypeCache.TryGetValue(cacheKey, out resultType);
             //var resultType= TargetTypeCache.GetOrAdd(cacheKey, it => BuildTargetType(interfaceType, constructor));
             var result = Activator.CreateInstance(resultType, args: constructor);
@@ -46,7 +55,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public void InitInterface(Type interfaceType,Type customBaseRepositoryType,Type repositoryServiceType)
+        public void InitInterface(Type interfaceType, Type customBaseRepositoryType, Type repositoryServiceType)
         {
             var cacheKey = GetCacheKey(interfaceType, customBaseRepositoryType, repositoryServiceType);
             var resultType = BuildTargetType(interfaceType, customBaseRepositoryType, repositoryServiceType);
@@ -96,8 +105,8 @@ namespace SummerBoot.Repository
             TypeBuilder typeBuilder = modBuilder.DefineType(typeName, newTypeAttribute, parentType, interfaceTypes);
 
             var allInterfaces = targetType.GetInterfaces();
-            
-            List<MethodInfo> targetMethods = new List<MethodInfo>(){ };
+
+            List<MethodInfo> targetMethods = new List<MethodInfo>() { };
             targetMethods.AddRange(targetType.GetMethods());
 
             var isRepository = false;
@@ -107,7 +116,7 @@ namespace SummerBoot.Repository
                 if (iInterface.IsGenericType)
                 {
                     isRepository = typeof(IBaseRepository<>).IsAssignableFrom(iInterface.GetGenericTypeDefinition());
-                    
+
                     if (isRepository)
                     {
                         targetMethods.AddRange(iInterface.GetMethods());
@@ -116,12 +125,13 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         targetMethods.AddRange(typeof(IQueryable).GetMethods());
-                        targetMethods.AddRange(typeof(ExpressionParser.Parser.IRepository<>).MakeGenericType(genericType).GetMethods());
+                        targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
+                        targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());
                         break;
                     }
                 }
-                
+
             }
 
             FieldBuilder baseRepositoryField = null;
@@ -197,11 +207,11 @@ namespace SummerBoot.Repository
 
                     var underType = returnType.IsGenericType ? returnType.GetGenericArguments().First() : returnType;
                     var isInterface = underType.IsInterface;
-                    if (isInterface&& returnType.IsGenericType) throw new Exception("return type no support interface");
+                    if (isInterface && returnType.IsGenericType) throw new Exception("return type no support interface");
                     //通过emit生成方法体
 
                     var methodAttributes = MethodAttributes.Public | MethodAttributes.Virtual;
-                    
+
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(targetMethod.Name, methodAttributes, targetMethod.ReturnType, parameterType);
                     //如果是泛型方法，还需要添加泛型参数
                     if (targetMethod.IsGenericMethod)
@@ -221,8 +231,9 @@ namespace SummerBoot.Repository
                         {
                             ilGen.Emit(OpCodes.Ldarg, i + 1);
                         }
+
                         var selectSolidMethods = baseRepositoryType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
-                            CompareTwoMethod(it,targetMethod)).ToList();
+                            CompareTwoMethod(it, targetMethod)).ToList();
 
                         //it.ReturnType?.Name == targetMethod.ReturnType?.Name &&
 
@@ -248,17 +259,17 @@ namespace SummerBoot.Repository
                         MethodInfo executeMethod = null;
 
                         var selectAttribute = targetMethod.GetCustomAttribute<SelectAttribute>();
-                        if (selectAttribute != null && !hasReturnValue) throw new Exception(interfaceMethodName+":The method marked by selectAttribute must have a return value");
+                        if (selectAttribute != null && !hasReturnValue) throw new Exception(interfaceMethodName + ":The method marked by selectAttribute must have a return value");
                         var deleteAttribute = targetMethod.GetCustomAttribute<DeleteAttribute>();
                         var updateAttribute = targetMethod.GetCustomAttribute<UpdateAttribute>();
-                        if ((deleteAttribute != null || updateAttribute != null) && (!isInt && !isVoid && !isTask&&!isTaskInt)) throw new Exception(interfaceMethodName+":The method marked by updateAttribute or deleteAttribute must return int or task<int> or void or task");
+                        if ((deleteAttribute != null || updateAttribute != null) && (!isInt && !isVoid && !isTask && !isTaskInt)) throw new Exception(interfaceMethodName + ":The method marked by updateAttribute or deleteAttribute must return int or task<int> or void or task");
                         //只能有一个注解
                         var attributeNumber = 0;
                         if (selectAttribute != null) attributeNumber++;
-                        if(deleteAttribute!=null) attributeNumber++;
+                        if (deleteAttribute != null) attributeNumber++;
                         if (updateAttribute != null) attributeNumber++;
-                        if (attributeNumber ==0) throw new Exception(interfaceMethodName+ ":need selectAttribute or updateAttribute or deleteAttribute");
-                        if (attributeNumber>1) throw new Exception(interfaceMethodName+":selectAttribute or updateAttribute or deleteAttribute There can only be one");
+                        if (attributeNumber == 0) throw new Exception(interfaceMethodName + ":need selectAttribute or updateAttribute or deleteAttribute");
+                        if (attributeNumber > 1) throw new Exception(interfaceMethodName + ":selectAttribute or updateAttribute or deleteAttribute There can only be one");
                         //返回类型不同，则处理方法也不同
                         //返回类型不同，则处理方法也不同
                         //如果没有返回值，即为task或者void类型
@@ -363,7 +374,7 @@ namespace SummerBoot.Repository
         /// <returns></returns>
         private bool CompareTwoMethod(MethodInfo first, MethodInfo second)
         {
-            if (first.Name.Contains("GetEnumerator"))
+            if (first.Name.Contains("MaxAsync") && second.Name.Contains("MaxAsync"))
             {
                 var c = 123;
             }
@@ -381,7 +392,7 @@ namespace SummerBoot.Repository
                 return false;
             }
             //判断是否为泛型
-            if (first.IsGenericMethod && !second.IsGenericMethod || (!first.IsGenericMethod&&second.IsGenericMethod))
+            if (first.IsGenericMethod && !second.IsGenericMethod || (!first.IsGenericMethod && second.IsGenericMethod))
             {
                 return false;
             }
@@ -402,8 +413,8 @@ namespace SummerBoot.Repository
 
                 for (int i = 0; i < firstGenericArgumentsList.Count; i++)
                 {
-                    var firstGenericArgument=firstGenericArgumentsList[i];
-                    var secondGenericArgument=secondGenericArgumentsList[i];
+                    var firstGenericArgument = firstGenericArgumentsList[i];
+                    var secondGenericArgument = secondGenericArgumentsList[i];
                     if (firstGenericArgument.Name != secondGenericArgument.Name)
                     {
                         return false;
@@ -411,7 +422,7 @@ namespace SummerBoot.Repository
                 }
             }
 
-            if(!CompareTwoParameterList(first.GetParameters(),second.GetParameters()))
+            if (!CompareTwoParameterList(first.GetParameters(), second.GetParameters()))
             {
                 return false;
             }
@@ -426,19 +437,56 @@ namespace SummerBoot.Repository
                 return true;
             }
 
-            if (first == null && second != null || (first != null && second == null)||(first.Length!=second.Length))
+            if (first == null && second != null || (first != null && second == null) || (first.Length != second.Length))
             {
                 return false;
             }
-
+            //firstItem.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0] == secondItem.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0]
             for (int i = 0; i < first.Length; i++)
             {
                 var firstItem = first[i];
                 var secondItem = second[i];
-                if (firstItem.ParameterType != secondItem.ParameterType|| (firstItem.Name != secondItem.Name))
+                if ((firstItem.Name != secondItem.Name) || !CompareTwoParameterType(firstItem.ParameterType, secondItem.ParameterType))
                 {
                     return false;
                 }
+            }
+
+            return true;
+        }
+
+        private bool CompareTwoParameterType(Type first, Type second)
+        {
+            if (first.IsGenericType ^ second.IsGenericType)
+            {
+                return false;
+            }
+
+            if (first.Name != second.Name)
+            {
+                return false;
+            }
+
+            if (first.IsGenericType && second.IsGenericType)
+            {
+                if (first.GetGenericArguments().Length != second.GetGenericArguments().Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < first.GetGenericArguments().Length; i++)
+                {
+                    var firstItem = first.GetGenericArguments()[i];
+                    var secondItem = first.GetGenericArguments()[i];
+                    if (!CompareTwoParameterType(firstItem, secondItem))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                return first == second;
             }
 
             return true;

@@ -92,8 +92,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(1,1)" : "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
             var columnDataType = fieldInfo.ColumnDataType;
-            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY " : "";
-            var defaultString = fieldInfo.ColumnType.IsNumberType() && !fieldInfo.IsNullable && isAlter && !fieldInfo.IsKey ? " DEFAULT 0 " : "";
+            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY" : "";
+            var defaultString = fieldInfo.ColumnType.IsNumberType() && !fieldInfo.IsNullable && isAlter && !fieldInfo.IsKey ? "DEFAULT 0" : "";
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "nvarchar")
             {
@@ -114,7 +114,28 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             }
 
             var columnName = BoxColumnName(fieldInfo.ColumnName);
-            var result = $"{columnName} {columnDataType} {defaultString} {identityString} {primaryKeyString} {nullableString}".MergeSpace();
+
+            var result = $"{columnName} {columnDataType}";
+            if (defaultString.HasText())
+            {
+                result += $" {defaultString}";
+            }
+            
+            if (identityString.HasText())
+            {
+                result += $" {identityString}";
+            }
+
+            if (primaryKeyString.HasText())
+            {
+                result += $" {primaryKeyString}";
+            }
+          
+            if (nullableString.HasText())
+            {
+                result += $" {nullableString}";
+            }
+            //var result = $"{columnName} {columnDataType} {defaultString} {identityString} {primaryKeyString} {nullableString}".MergeSpace();
             return result;
         }
 

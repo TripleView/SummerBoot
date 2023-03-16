@@ -137,9 +137,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName);
                     return result;
-               
+
                 case nameof(Queryable.Where):
-                
+
                     methodCallStack.Push(nameof(Queryable.Where));
                     //MethodName = method.Name;
                     var result2 = this.VisitWhereCall(node);
@@ -185,14 +185,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName7 = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName7);
                     return result7;
-                case   nameof(Queryable.Max):
-                case   nameof(Queryable.Min):
+                case nameof(Queryable.Max):
+                case nameof(Queryable.Min):
+                case nameof(Queryable.Sum):
+                case nameof(Queryable.Average):
+                    //针对group by里的count单独处理
+                    if (LastMethodName == nameof(Queryable.GroupBy))
+                    {
+                        break;
+                    }
                     methodCallStack.Push(methodName);
-                    var result8 = this.VisitMaxMinCall(node);
+                    var result8 = this.VisitMaxMinSumAvgCall(node);
                     var lastMethodCallName8 = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName8);
                     return result8;
-                
+
             }
 
             //针对groupBy进行单独处理
@@ -503,7 +510,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if (MethodName == nameof(Queryable.Where)||MethodName==nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -531,7 +538,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         ValueType = rightColumnExpression.ValueType
                     };
                 }
-               
+
                 else if (leftExpression is ColumnExpression leftColumnExpression2 && leftColumnExpression2.Type == typeof(bool) && rightExpression is WhereExpression rightWhereExpression2)
                 {
                     //如果是column类型的bool值，默认为true
@@ -618,7 +625,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 else if (methodName == nameof(Queryable.Distinct))
                 {
                     result.ColumnsPrefix = "DISTINCT";
-                }else if (methodName == nameof(Queryable.Count))
+                }
+                else if (methodName == nameof(Queryable.Count))
                 {
                     result.Columns.Clear();
                     result.Columns.Add(new ColumnExpression(null, "", null, 0, "", "Count"));
@@ -630,7 +638,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
                 if (where != null)
                 {
-                    result.Where=where;
+                    result.Where = where;
                 }
 
                 return result;
@@ -669,9 +677,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
-        public virtual Expression VisitMaxMinCall(MethodCallExpression maxMinCall)
+        public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression maxMinCall)
         {
             var methodName = maxMinCall.Method.Name;
+            
             var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
             ColumnExpression column = null;
             if (maxMinCall.Arguments.Count == 2)
@@ -679,24 +688,36 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var lambda = (LambdaExpression)this.StripQuotes(maxMinCall.Arguments[1]);
                 column = this.Visit(lambda.Body) as ColumnExpression;
             }
+            else
+            {
+                throw new NotSupportedException(methodName);
+            }
+
+            column.FunctionName = methodName;
+            if (methodName == nameof(Queryable.Average))
+            {
+                column.FunctionName = "AVG";
+            }
 
             if (sourceExpression is TableExpression table)
             {
                 var result = new SelectExpression(null, "", table.Columns, table);
 
                 result.Columns.Clear();
-                column.FunctionName = methodName;
+               
                 result.Columns.Add(column);
 
                 return result;
             }
             else if (sourceExpression is SelectExpression selectExpression)
             {
+                selectExpression.Columns.Clear();
+                selectExpression.Columns.Add(column);
                 return selectExpression;
             }
             else
             {
-                throw new NotSupportedException(nameof(maxMinCall));
+                throw new NotSupportedException(methodName);
             }
         }
 
@@ -996,7 +1017,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
 
             var operatorString = nodeTypeMappings[unaryExpression.NodeType];
-            
+
 
             var operand = unaryExpression.Operand;
             var middleResult = this.Visit(operand);
@@ -1051,7 +1072,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 new ColumnExpression(oldColumn.Type,
                     oldColumn.TableAlias,
                     oldColumn.MemberInfo,
-                    oldColumn.Index,oldColumn.ValueType)).ToList();
+                    oldColumn.Index, oldColumn.ValueType)).ToList();
 
             ////将生成的新列赋值给缓存
             _lastColumns = newColumns.ToDictionary(it => it.ColumnName);

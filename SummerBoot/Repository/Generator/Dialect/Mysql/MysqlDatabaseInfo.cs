@@ -90,7 +90,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         {
             var identityString = fieldInfo.IsAutoCreate && fieldInfo.IsKey ? "AUTO_INCREMENT" : "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
-            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY " : "";
+            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY" : "";
             var columnDataType = fieldInfo.ColumnDataType;
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "varchar")
@@ -113,7 +113,20 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
             var columnName = fieldInfo.ColumnName;
             columnName = BoxColumnName(columnName);
-            var result = $"{columnName} {columnDataType} {nullableString} {primaryKeyString}{identityString}";
+            var result = $"{columnName} {columnDataType}";
+            if (nullableString.HasText())
+            {
+                result += $" {nullableString}";
+            }
+            if (primaryKeyString.HasText())
+            {
+                result += $" {primaryKeyString}";
+            }
+            if (identityString.HasText())
+            {
+                result += $" {identityString}";
+            }
+            //var result = $"{columnName} {columnDataType} {nullableString} {primaryKeyString}{identityString}";
             return result;
         }
 

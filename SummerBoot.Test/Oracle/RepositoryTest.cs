@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Oracle.ManagedDataAccess.Client;
 using SummerBoot.Core;
 using SummerBoot.Repository;
-using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Test.Oracle.Db;
 using SummerBoot.Test.Oracle.Models;
@@ -1277,6 +1276,31 @@ namespace SummerBoot.Test.Oracle
             var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //lambda page
+            var page3 =await customerRepository.Where(it => it.Age > 5).ToPageAsync(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge =await customerRepository.MaxAsync(it => it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = await customerRepository.MinAsync(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = await customerRepository.OrderBy(it => it.Age).FirstAsync();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 =await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 =await customerRepository.OrderBy(it => it.Age).FirstAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+
+            var totalCount = await customerRepository.CountAsync(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = await customerRepository.Where(it => it.Age >= 98).SumAsync(it => it.Age);
+            Assert.Equal(99 + 98, sumResult);
+            var avgResult = await customerRepository.Where(it => it.Age >= 98).AverageAsync(it => (double)it.Age);
+            Assert.Equal((99 + 98) / (double)2, avgResult);
+
             //????bindWhere????????
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
@@ -1434,6 +1458,30 @@ namespace SummerBoot.Test.Oracle
             var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //lambda page
+            var page3 = customerRepository.Where(it => it.Age > 5).ToPage(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge = customerRepository.Max(it=>it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = customerRepository.Min(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = customerRepository.OrderBy(it => it.Age).FirstOrDefault();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = customerRepository.OrderBy(it => it.Age).First();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 = customerRepository.OrderBy(it => it.Age).FirstOrDefault(it=>it.Age>5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 = customerRepository.OrderBy(it => it.Age).First(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+           
+            var totalCount = customerRepository.Count(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = customerRepository.Where(it=>it.Age>=98).Sum(it => it.Age);
+            Assert.Equal(99+98, sumResult);
+            var avgResult = customerRepository.Where(it => it.Age >= 98).Average(it => it.Age);
+            Assert.Equal((99 + 98)/(double)2, avgResult);
 
             //????bindWhere????????
             var nameEmpty = WhereBuilder.Empty<string>();

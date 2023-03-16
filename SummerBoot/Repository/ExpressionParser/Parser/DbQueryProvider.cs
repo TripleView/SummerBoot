@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser.Dialect;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
-    public class DbQueryProvider : IQueryProvider
+    public class DbQueryProvider : IAsyncQueryProvider
     {
         public QueryFormatter queryFormatter;
 
@@ -77,6 +79,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var param = queryFormatter.GetDbQueryDetail();
 
             return linkRepository.InternalQuery<TResult>(param);
+        }
+
+        public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+        {
+            var dbExpressionVisitor = new DbExpressionVisitor();
+            var middleResult = dbExpressionVisitor.Visit(expression);
+            //将我们自己的expression转换成sql
+            queryFormatter.Format(middleResult);
+            var param = queryFormatter.GetDbQueryDetail();
+
+            return linkRepository.InternalQueryAsync<TResult>(param);
         }
     }
 }

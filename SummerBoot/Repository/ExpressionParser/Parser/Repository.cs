@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using SummerBoot.Repository.ExpressionParser.Base;
 
@@ -16,7 +17,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
         }
-        
+
         public Repository()
         {
 
@@ -50,6 +51,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
         public virtual TResult InternalQuery<TResult>(DbQueryResult param)
+        {
+            return default;
+        }
+
+        public virtual Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param)
         {
             return default;
         }
@@ -112,7 +118,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-               return dbQueryProvider.queryFormatter.Insert(insertEntity);;
+                return dbQueryProvider.queryFormatter.Insert(insertEntity); ;
             }
 
             return null;
@@ -146,7 +152,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-               return dbQueryProvider.queryFormatter.Delete(deleteEntity);
+                return dbQueryProvider.queryFormatter.Delete(deleteEntity);
             }
             return null;
         }
@@ -159,12 +165,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             return null;
         }
-        
+
         public DbQueryResult InternalGet(dynamic id)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-               return dbQueryProvider.queryFormatter.Get<T>(id);
+                return dbQueryProvider.queryFormatter.Get<T>(id);
             }
             return null;
         }
@@ -173,7 +179,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-              return dbQueryProvider.queryFormatter.GetAll<T>();
+                return dbQueryProvider.queryFormatter.GetAll<T>();
             }
             return null;
         }
@@ -187,8 +193,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-               var dbQueryResult=  dbQueryProvider.queryFormatter.ExecuteUpdate(Expression,this.SelectItems);
-               return dbQueryProvider.linkRepository.InternalExecute(dbQueryResult);
+                var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
+                return dbQueryProvider.linkRepository.InternalExecute(dbQueryResult);
             }
 
             return 0;
@@ -227,7 +233,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
-                var result =await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
+                var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
                 return result;
             }
             return default;
@@ -257,14 +263,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
-        
+
         public async Task<Page<T>> ToPageAsync(IPageable pageable)
         {
             CheckPageable(pageable);
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-               var result=await this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPageAsync();
-               return result;
+                var result = await this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPageAsync();
+                return result;
             }
             return default;
         }
@@ -275,6 +281,165 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
                 var result = await dbQueryProvider.linkRepository.InternalQueryListAsync<T>(dbParam);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<T> FirstOrDefaultAsync()
+        {
+
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = await dbQueryProvider.ExecuteAsync<T>(Expression);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<T> FirstAsync()
+        {
+
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = await dbQueryProvider.ExecuteAsync<T>(Expression);
+                if (result == null)
+                {
+                    throw new Exception("can not find any element");
+                }
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<TResult> MaxAsync<TResult>(
+            Expression<Func<T, TResult>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = await InternalExecuteWithSelectorAsync(nameof(Queryable.Max), selector);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<TResult> MinAsync<TResult>(
+            Expression<Func<T, TResult>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = await InternalExecuteWithSelectorAsync(nameof(Queryable.Min), selector);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<TResult> SumAsync<TResult>(
+            Expression<Func<T, TResult>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = await InternalSumAvgExecuteWithSelectorAsync(nameof(Queryable.Sum), selector);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<TResult> AverageAsync<TResult>(
+            Expression<Func<T, TResult>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var result = await InternalSumAvgExecuteWithSelectorAsync(nameof(Queryable.Average), selector);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<int> CountAsync(
+            Expression<Func<T, bool>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.Count), true, 1, 2);
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
+
+                var newSelector = Expression.Quote(selector);
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression, newSelector });
+
+                var result = await dbQueryProvider.ExecuteAsync<int>(callExpression);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<T> FirstOrDefaultAsync(
+            Expression<Func<T, bool>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.FirstOrDefault), true, 1, 2, typeof(bool));
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
+
+                var newSelector = Expression.Quote(selector);
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression, newSelector });
+
+                var result = await dbQueryProvider.ExecuteAsync<T>(callExpression);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<T> FirstAsync(
+            Expression<Func<T, bool>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.First), true, 1, 2,typeof(bool));
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
+
+                var newSelector = Expression.Quote(selector);
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression, newSelector });
+
+                var result = await dbQueryProvider.ExecuteAsync<T>(callExpression);
+                if (result == null)
+                {
+                    throw new Exception("can not find any element");
+                }
+                return result;
+            }
+            return default;
+        }
+
+        private async Task<TResult> InternalExecuteWithSelectorAsync<TResult>(
+            string methodName, Expression<Func<T, TResult>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(methodName);
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T), typeof(TResult) });
+
+                var newSelector = Expression.Quote(selector);
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression, newSelector });
+
+                var result = await dbQueryProvider.ExecuteAsync<TResult>(callExpression);
+                return result;
+            }
+            return default;
+        }
+        private async Task<TResult> InternalSumAvgExecuteWithSelectorAsync<TResult>(
+            string methodName, Expression<Func<T, TResult>> selector)
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+
+                var methodInfo = QueryableMethodsExtension.GetSumAvgWithSelector(methodName, typeof(TResult));
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
+
+                var newSelector = Expression.Quote(selector);
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression, newSelector });
+
+                var result = await dbQueryProvider.ExecuteAsync<TResult>(callExpression);
                 return result;
             }
             return default;

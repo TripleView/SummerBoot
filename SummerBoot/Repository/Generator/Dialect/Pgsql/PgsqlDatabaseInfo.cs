@@ -116,7 +116,16 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             }
 
             var columnName = BoxColumnName(fieldInfo.ColumnName);
-            var result = $"{columnName} {columnDataType} {nullableString} {identityString}";
+            var result = $"{columnName} {columnDataType}";
+            if (nullableString.HasText())
+            {
+                result += $" {nullableString}";
+            }
+            if (identityString.HasText())
+            {
+                result += $" {identityString}";
+            }
+            //var result = $"{columnName} {columnDataType} {nullableString} {identityString}";
             return result;
         }
 

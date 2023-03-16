@@ -64,9 +64,9 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
         /// <returns></returns>
         private  string GetCreateFieldSqlByFieldInfo(DatabaseFieldInfoDto fieldInfo)
         {
-            var identityString = fieldInfo.IsAutoCreate ? " AUTOINCREMENT" : "";
+            var identityString = fieldInfo.IsAutoCreate ? "AUTOINCREMENT": "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
-            var pk = fieldInfo.IsKey ? " PRIMARY KEY" : "";
+            var pk = fieldInfo.IsKey ? "PRIMARY KEY" : "";
             var columnDataType = fieldInfo.ColumnDataType;
 
             if (fieldInfo.SpecifiedColumnDataType.HasText())
@@ -75,7 +75,20 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             }
 
             var columnName = BoxColumnName(fieldInfo.ColumnName);
-            var result = $"{columnName} {columnDataType} {nullableString}{pk}{identityString}";
+            var result = $"{columnName} {columnDataType}";
+            if (nullableString.HasText())
+            {
+                result += $" {nullableString}";
+            }
+            if (pk.HasText())
+            {
+                result += $" {pk}";
+            }
+            if (identityString.HasText())
+            {
+                result += $" {identityString}";
+            }
+            //var result = $"{columnName} {columnDataType} {nullableString}{pk}{identityString}";
             return result;
         }
 
