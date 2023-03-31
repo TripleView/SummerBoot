@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Generator;
+using System.Configuration;
 using System.Data.SqlClient;
 
 namespace WebApiExample
@@ -15,11 +16,15 @@ namespace WebApiExample
             // Add services to the container.
 
             builder.Services.AddControllers();
+            builder.WebHost.UseUrls("http://*:5000");
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddSummerBoot();
-            
+            builder.Services.AddSummerBootFeign(it =>
+            {
+                it.AddNacos(builder.Configuration);
+            });
             var mysqlDbConnectionString = builder.Configuration.GetValue<string>("mysqlDbConnectionString");
             var sqlServerDbConnectionString= builder.Configuration.GetValue<string>("sqlServerDbConnectionString");
 
@@ -68,7 +73,7 @@ namespace WebApiExample
                     });
             });
             builder.Services.AddSummerBootCache();
-            //builder.Host.UseNacosConfiguration();
+            builder.Host.UseNacosConfiguration();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

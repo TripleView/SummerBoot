@@ -157,7 +157,7 @@ namespace SummerBoot.Repository.Core
         {
             if (sql.IsNullOrWhiteSpace())
             {
-                throw new ArgumentNullException("sql cannot be empty");
+                throw new ArgumentNullException("sql can not be empty");
             }
 
             var effectiveType = typeof(T);
@@ -754,7 +754,6 @@ namespace SummerBoot.Repository.Core
                 var variableName = match.Groups[1].Value;
                 if (match.Groups[2].Success)
                 {
-                    // looks like an optimize hint; expand it
                     var suffix = match.Groups[2].Value;
 
                     var sb = new StringBuilder().Append(variableName).Append(1).Append(suffix);
