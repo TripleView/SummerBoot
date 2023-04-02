@@ -59,6 +59,25 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return param;
         }
 
+        public DbQueryResult GetDbPageQueryResultByExpression(Expression expression)
+        {
+            //这一步将expression转化成我们自己的expression
+            var dbExpressionVisitor = new DbExpressionVisitor();
+            var middleResult = dbExpressionVisitor.Visit(expression);
+            if (middleResult is SelectExpression selectExpression)
+            {
+                if (!selectExpression.HasPagination)
+                {
+                    selectExpression.Skip = 0;
+                    selectExpression.Take = int.MaxValue;
+                }
+            }
+            //将我们自己的expression转换成sql
+            queryFormatter.Format(middleResult);
+            var param = queryFormatter.GetDbQueryDetail();
+            return param;
+        }
+
         public DbQueryResult GetDbQueryDetail()
         {
             return queryFormatter.GetDbQueryDetail();

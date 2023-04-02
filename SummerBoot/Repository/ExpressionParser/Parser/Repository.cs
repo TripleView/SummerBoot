@@ -220,7 +220,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var dbParam = dbQueryProvider.GetDbPageQueryResultByExpression(Expression);
                 var result = dbQueryProvider.linkRepository.InternalQueryPage<T>(dbParam);
                 return result;
             }
@@ -232,7 +232,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var dbParam = dbQueryProvider.GetDbPageQueryResultByExpression(Expression);
                 var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
                 return result;
             }

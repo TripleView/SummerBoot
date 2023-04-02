@@ -149,8 +149,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 var result = this.VisitWhere(whereExpression);
             }
+            else if (expression is TableExpression tableExpression)
+            {
+                
+                var result = this.VisitTable(tableExpression);
+            }
             else
             {
+                
                 throw new NotSupportedException(nameof(expression));
             }
 
@@ -437,7 +443,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 this.VisitColumn(whereConditionExpression.ColumnExpression);
                 _sb.Append(" ");
-                _sb.Append(whereConditionExpression.Operator);
+                if (whereConditionExpression.Value is null)
+                {
+                    _sb.Append("is");
+                }
+                else
+                {
+                    _sb.Append(whereConditionExpression.Operator);
+                }
+                
                 _sb.Append(" ");
                 _sb.Append(BoxParameter(whereConditionExpression.Value, whereConditionExpression.ValueType));
             }
