@@ -1336,6 +1336,11 @@ namespace SummerBoot.Test.Oracle
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
 
+            await customerRepository.InsertAsync(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers = await customerRepository.Where(it => it.Name == null).ToListAsync();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = await customerRepository.Where(it => it.Name != null).ToListAsync();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestRepository()
@@ -1516,6 +1521,11 @@ namespace SummerBoot.Test.Oracle
             customerRepository.Delete(it => it.Age > 5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
+            customerRepository.Insert(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers = customerRepository.Where(it => it.Name == null).ToList();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = customerRepository.Where(it => it.Name != null).ToList();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestLinq()

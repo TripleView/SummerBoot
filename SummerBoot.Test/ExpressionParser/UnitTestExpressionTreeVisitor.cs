@@ -200,10 +200,8 @@ namespace ExpressionParser.Test
             var dogRepository = new DogRepository();
             var r1 = dogRepository.Where(it => it.Name == null).ToList();
             var r1MiddleResult = dogRepository.GetDbQueryDetail();
-            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Name] is @y0 )", r1MiddleResult.Sql);
-            Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
-            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
-            Assert.Equal(null, r1MiddleResult.SqlParameters[0].Value);
+            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Name] IS NULL )", r1MiddleResult.Sql);
+
         }
         [Fact]
         public void TestIsNotNull()
@@ -211,10 +209,7 @@ namespace ExpressionParser.Test
             var dogRepository = new DogRepository();
             var r1 = dogRepository.Where(it => it.Name != null).ToList();
             var r1MiddleResult = dogRepository.GetDbQueryDetail();
-            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Name] is not @y0 )", r1MiddleResult.Sql);
-            Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
-            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
-            Assert.Equal(null, r1MiddleResult.SqlParameters[0].Value);
+            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Name] IS NOT NULL )", r1MiddleResult.Sql);
         }
 
         [Fact]

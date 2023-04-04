@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -240,6 +241,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 ParameterType = valueType,
                 Value = finalValue
             };
+            
             this.sqlParameters.Add(sqlParameter);
             parameterIndex++;
 
@@ -447,20 +449,19 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     if (whereConditionExpression.Operator == "=")
                     {
-                        _sb.Append("is");
+                        _sb.Append("IS NULL");
                     }else if (whereConditionExpression.Operator == "<>")
                     {
-                        _sb.Append("is not");
+                        _sb.Append("IS NOT NULL");
                     }
 
                 }
                 else
                 {
                     _sb.Append(whereConditionExpression.Operator);
+                    _sb.Append(" ");
+                    _sb.Append(BoxParameter(whereConditionExpression.Value, whereConditionExpression.ValueType));
                 }
-                
-                _sb.Append(" ");
-                _sb.Append(BoxParameter(whereConditionExpression.Value, whereConditionExpression.ValueType));
             }
             else if (whereExpression is FunctionWhereConditionExpression functionWhereConditionExpression)
             {
