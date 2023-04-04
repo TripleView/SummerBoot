@@ -445,7 +445,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 _sb.Append(" ");
                 if (whereConditionExpression.Value is null)
                 {
-                    _sb.Append("is");
+                    if (whereConditionExpression.Operator == "=")
+                    {
+                        _sb.Append("is");
+                    }else if (whereConditionExpression.Operator == "<>")
+                    {
+                        _sb.Append("is not");
+                    }
+
                 }
                 else
                 {
