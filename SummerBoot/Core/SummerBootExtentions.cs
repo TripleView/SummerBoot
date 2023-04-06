@@ -778,6 +778,11 @@ namespace SummerBoot.Core
                 }
             }
 
+            if (feignOption.GlobalInterceptorType != null)
+            {
+                services.AddTransient(feignOption.GlobalInterceptorType);
+            }
+
             var feignProxyBuilder = new FeignProxyBuilder();
             var feignTypes = new List<Type>();
             var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList(); ;

@@ -177,4 +177,11 @@ namespace SummerBoot.Test.Feign
         [GetMapping("${configurationTest:path}")]
         Task<Test> TestQuery([Query] Test tt);
     }
+
+    [FeignClient(Url = "http://localhost:5001/home")]
+    public interface ITestGlobalInterceptorFeign
+    {
+        [PostMapping("/testInterceptor")]
+        Task<Test> TestInterceptor([Body(BodySerializationKind.Form)] Test tt);
+    }
 }

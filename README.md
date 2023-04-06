@@ -2,8 +2,11 @@
 
 # 感谢jetbrain提供的ide许可证
 <a href="https://jb.gg/OpenSourceSupport"> <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png?_ga=2.140768178.1037783001.1644161957-503565267.1643800664&_gl=1*1rs8z57*_ga*NTAzNTY1MjY3LjE2NDM4MDA2NjQ.*_ga_V0XZL7QHEB*MTY0NDE2MTk1Ny4zLjEuMTY0NDE2NTE2Mi4w" width = "200" height = "200" alt="" align=center /></a>
+# SummerBoot(中文名：夏日启动)
+为了让大家更好的了解summerBoot的使用，我创建了一个示例项目-[
+SummerBootAdmin](https://github.com/TripleView/SummerBootAdmin)，一个基于前后端分离的通用后端管理框架，大家可以查看该项目的代码以便更好的使用summerBoot。
 
-# SummerBoot的核心理念
+# 核心理念
 > 将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是结果，SummerBoot,致力于打造一个人性化框架，让.net开发变得更简单更优雅。
 
 # 框架说明
@@ -22,7 +25,8 @@ net core 3.1,net 6
 
 # 文档目录
 - [感谢jetbrain提供的ide许可证](#感谢jetbrain提供的ide许可证)
-- [SummerBoot的核心理念](#summerboot的核心理念)
+- [SummerBoot(中文名：夏日启动)](#summerboot中文名夏日启动)
+- [核心理念](#核心理念)
 - [框架说明](#框架说明)
 - [加入QQ群反馈建议](#加入qq群反馈建议)
 - [Getting Started](#getting-started)
@@ -35,7 +39,7 @@ net core 3.1,net 6
 	- [3.定义接口](#3定义接口)
 	- [4.增删改查操作，均支持异步同步](#4增删改查操作均支持异步同步)
 		- [4.1 查](#41-查)
-			- [4.1.1 IQueryable链式语法查询。](#411-iqueryable链式语法查询)
+			- [4.1.1 Lambda链式语法查询。](#411-lambda链式语法查询)
 			- [4.1.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete](#412-直接在接口里定义方法并且在方法上加上注解如selectupdatedelete)
 				- [4.1.2.1 注解里的sql支持从配置里读取](#4121-注解里的sql支持从配置里读取)
 			- [4.1.3 select注解这种方式拼接where查询条件](#413-select注解这种方式拼接where查询条件)
@@ -48,7 +52,7 @@ net core 3.1,net 6
 			- [4.3.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如](#432-同时还支持基于lambda表达式的删除返回受影响的行数例如)
 		- [4.4 改](#44-改)
 			- [4.4.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。](#441-接口自带了update方法可以更新单个实体或者实体列表联合主键的话数据库实体类对应的多字段都添加key注解即可)
-			- [4.4.2 同时还支持基于IQueryable链式语法的更新方式，返回受影响的行数，例如](#442-同时还支持基于iqueryable链式语法的更新方式返回受影响的行数例如)
+			- [4.4.2 同时还支持基于Lambda链式语法的更新方式，返回受影响的行数，例如](#442-同时还支持基于lambda链式语法的更新方式返回受影响的行数例如)
 		- [4.5.事务支持](#45事务支持)
 		- [4.6 如果有些特殊情况需要自己手写实现类怎么办?](#46-如果有些特殊情况需要自己手写实现类怎么办)
 			- [4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#461-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
@@ -96,66 +100,66 @@ net core 3.1,net 6
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
 # SummerBoot中使用repository进行数据库操作
-summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，在项目中支持多数据库多链接，通过模板模式，支持了常见的4种数据库类型（sqlserver，mysql，oracle，sqlite）的增删改查操作,如果有其他数据库需求，可以参考以上4个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为本人认为多表查询直接写sql更容易理解。
+summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，在项目中支持多数据库多链接，通过模板模式，支持了常见的5种数据库类型（sqlserver，mysql，oracle，sqlite,pgsql）的增删改查操作,如果有其他数据库需求，可以参考以上5个的源码，给本项目贡献代码。orm不支持多表的lambda查询，因为本人认为多表查询直接写sql更容易理解。
 
 ## 准备工作
-需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core
+需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core,pgsql的Npgsql
 
 ## 1.首先在startup.cs类中注册服务
-repository支持多数据库多链接，在repository中称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库，第二个是sqlserver数据库，通过AddDatabaseUnit方法添加单元，参数为相应的dbConnection类和工作单元接口，框架默认提供了9个工作单元接口IUnitOfWork1~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里绑定插入前回调和更新前回调,添加自定义类型映射,添加自定义字段映射处理程序等
+repository支持多数据库多链接，在repository中我们称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库，第二个是sqlserver数据库，通过AddDatabaseUnit方法添加数据库单元，参数为相应的dbConnection类和工作单元接口(工作单元接口用于事务)，框架默认提供了9个工作单元接口IUnitOfWork1~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解(该注解需要继承于AutoRepositoryAttribute，框架默认提供了AutoRepository1Attribute~AutoRepository9Attribute)，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里绑定插入前回调和更新前回调,添加自定义类型映射,添加自定义字段映射处理程序等
 
 ````csharp
 services.AddSummerBoot();
 
 services.AddSummerBootRepository(it =>
-            {
-                //添加第一个mysql的链接
-                it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
-                    x =>
-                    {
-                        //绑定单个仓储
-                        //x.BindRepository<IMysqlCustomerRepository,Customer>();
-                        //通过自定义注解批量绑定仓储
-                        x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
-                        
-                        //绑定数据库生成接口
-                        x.BindDbGeneratorType<IDbGenerator1>();
-                        //绑定插入前回调
-                        x.BeforeInsert += entity =>
-                        {
-                            if (entity is BaseEntity baseEntity)
-                            {
-                                baseEntity.CreateOn = DateTime.Now;
-                            }
-                        };
-                        //绑定更新前回调
-                        x.BeforeUpdate += entity =>
-                        {
-                            if (entity is BaseEntity baseEntity)
-                            {
-                                baseEntity.LastUpdateOn = DateTime.Now;
-                            }
-                        };
-                        //添加自定义类型映射
-                        //x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
-                        //添加自定义字段映射处理程序
-                        //x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+{
+		//添加第一个mysql类型的数据库单元
+		it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
+				x =>
+				{
+						//绑定单个仓储
+						//x.BindRepository<IMysqlCustomerRepository,Customer>();
+						//通过自定义注解批量绑定仓储
+						x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+						
+						//绑定数据库生成接口
+						x.BindDbGeneratorType<IDbGenerator1>();
+						//绑定插入前回调
+						x.BeforeInsert += entity =>
+						{
+								if (entity is BaseEntity baseEntity)
+								{
+										baseEntity.CreateOn = DateTime.Now;
+								}
+						};
+						//绑定更新前回调
+						x.BeforeUpdate += entity =>
+						{
+								if (entity is BaseEntity baseEntity)
+								{
+										baseEntity.LastUpdateOn = DateTime.Now;
+								}
+						};
+						//添加自定义类型映射
+						//x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
+						//添加自定义字段映射处理程序
+						//x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
 
-                    });
+				});
 
-                //添加第二个sqlserver的链接
-                it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
-                    x =>
-                    {
-                        x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
-                        x.BindDbGeneratorType<IDbGenerator2>();
-                    });
-            });
+		//添加第二个sqlserver类型的数据库单元
+		it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
+			x =>
+			{
+					x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
+					x.BindDbGeneratorType<IDbGenerator2>();
+			});
+});
 
 ````
 
 ## 3.定义接口
-接口继承于IBaseRepository，为了便于批量注册仓储，可以在接口上添加AutoRepository1注解，框架自带了AutoRepository1~AutoRepository9注解，当然，也可以自定义注解，只需要继承于AutoRepositoryAttribute即可
+接口需要继承于IBaseRepository。
 ````csharp
 [AutoRepository1]
 public interface ICustomerRepository : IBaseRepository<Customer>
@@ -166,7 +170,7 @@ public interface ICustomerRepository : IBaseRepository<Customer>
 ## 4.增删改查操作，均支持异步同步
 ### 4.1 查
 通过DI注入自定义仓储接口以后，就可以开始查了，支持正常查询与分页查询，查询有2种方式。
-#### 4.1.1 IQueryable链式语法查询。
+#### 4.1.1 Lambda链式语法查询。
 ````csharp
 //常规查询
 var customers= customerRepository.Where(it => it.Age > 5).OrderBy(it => it.Id).Take(10).ToList();
@@ -337,7 +341,7 @@ customerRepository.Update(customer);
 
 customerRepository.Update(customerList);
 ````
-#### 4.4.2 同时还支持基于IQueryable链式语法的更新方式，返回受影响的行数，例如
+#### 4.4.2 同时还支持基于Lambda链式语法的更新方式，返回受影响的行数，例如
 ````csharp
 var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 .SetValue(it=>it.Age,5)
@@ -429,7 +433,7 @@ public class CustomCustomerRepository : CustomBaseRepository<Customer>, ICustomC
 ## 2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表
 ### 2.1 根据实体类自动生成/修改数据库表
 #### 2.1.1 定义一个数据库实体类
-其中注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,列名Column,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
+实体类注解大部分来自于系统命名空间System.ComponentModel.DataAnnotations 和 System.ComponentModel.DataAnnotations.Schema，比如表名Table,列名Column,主键Key,主键自增DatabaseGenerated(DatabaseGeneratedOption.Identity)，列名Column，不映射该字段NotMapped等,同时自定义了一部分注解，比如更新时忽略该列IgnoreWhenUpdateAttribute(主要用在创建时间这种在update的时候不需要更新的字段),
 同时SummerBoot自带了一个基础实体类BaseEntity（oracle 为OracleBaseEntity），实体类里包括自增的id，创建人，创建时间，更新人，更新时间以及软删除标记，推荐实体类直接继承BaseEntity
 
 ```` csharp
@@ -609,7 +613,6 @@ namespace Test.Model
 
 ````
 
-
 # SummerBoot中使用feign进行http调用
 >feign底层基于httpClient。
 
@@ -755,7 +758,13 @@ await TestFeign.TestAsync();
 >>> get to http://localhost:5001/home/testGet,没有header
 
 ````
-
+也可以添加全局拦截器,在注册AddSummerBootFeign的时候，调用方法如下：
+````csharp
+services.AddSummerBootFeign(it =>
+{
+	it.SetGlobalInterceptor(typeof(GlobalInterceptor));
+});
+````
 ## 5.定义方法
 每个方法都应该添加注解代表发起请求的类型和要访问的url，有4个内置注解， GetMapping，PostMapping，PutMapping，DeleteMapping，同时方法的返回值必须是Task<>类型
 ````csharp
@@ -1035,9 +1044,13 @@ await testFeign.Test();
     //命名空间id，如832e754e-e845-47db-8acc-46ae3819b638或者public
     "namespaceId": "dfd8de72-e5ec-4595-91d4-49382f500edf",
 
-    //--------如果只是访问nacos中的微服务，则仅配置lbStrategy即可。------
-    //客户端负载均衡算法，一个服务下有多个实例，lbStrategy用来挑选服务下的实例，默认为Random(随机)，也可以选择WeightRandom(根据服务权重加权后再随机)
-    "lbStrategy": "Random",
+    //--------如果只是访问nacos中的微服务，则仅配置lbStrategy即可,defaultNacosGroupName和defaultNacosNamespaceId选填------
+       //客户端负载均衡算法，一个服务下有多个实例，lbStrategy用来挑选服务下的实例，默认为Random(随机)，也可以选择WeightRandom(根据服务权重加权后再随机)
+       "lbStrategy": "Random",
+       //defaultNacosGroupName，选填，为FeignClient注解中NacosGroupName的默认值，为空则默认为DEFAULT_GROUP
+       "defaultNacosGroupName": "",
+       //defaultNacosNamespaceId，选填，为FeignClient注解中NacosNamespaceId的默认值，为空则默认为public
+       "defaultNacosNamespaceId": "",
 
     //--------如果需要使用nacos配置中心，则ConfigurationOption必填------
     "configurationOption": {
@@ -1097,7 +1110,7 @@ services.AddSummerBootFeign(it =>
 ````
 
 #### 6.3.2 定义调用微服务的接口
-设置微服务的名称ServiceName，分组名称NacosGroupName(不填则默认DEFAULT_GROUP)，命名空间NacosNamespaceId(不填则默认public),以及MicroServiceMode设为true即可。url不用配置，剩下的就和正常的feign接口一样。
+设置微服务的名称ServiceName，分组名称NacosGroupName(可以在配置文件nacos:defaultNacosGroupName里填写全局默认组名，不填则默认DEFAULT_GROUP)，命名空间NacosNamespaceId(可以在配置文件nacos:defaultNacosNamespaceId里填写全局默认命名空间，不填则默认public),以及MicroServiceMode设为true即可。url不用配置，剩下的就和正常的feign接口一样。
 
 ````csharp
 [FeignClient( ServiceName = "test", MicroServiceMode = true,NacosGroupName = "DEFAULT_GROUP", NacosNamespaceId = "dfd8de72-e5ec-4595-91d4-49382f500edf")]
