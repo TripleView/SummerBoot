@@ -153,7 +153,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         public override string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var schemaTableName = GetSchemaTableName(schema, tableName);
-            var sql = $"ALTER TABLE {schemaTableName} MODIFY {GetCreateFieldSqlByFieldInfo(fieldInfo, true)} COMMENT '{fieldInfo.Description}'";
+            var sql = $"ALTER TABLE {schemaTableName} MODIFY {GetCreateFieldSqlByFieldInfo(fieldInfo, false)} COMMENT '{fieldInfo.Description}'";
             return sql;
         }
 
