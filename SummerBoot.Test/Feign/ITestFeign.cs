@@ -68,7 +68,7 @@ namespace SummerBoot.Test.Feign
         Task TestCookieContainer2();
 
         [IgnoreInterceptor]
-        [GetMapping("http://localhost:5001/home2/TestCookieContainer3",UsePathAsUrl = true)]
+        [GetMapping("/TestCookieContainer3")]
         Task TestCookieContainer3();
 
 
@@ -176,5 +176,12 @@ namespace SummerBoot.Test.Feign
     {
         [GetMapping("${configurationTest:path}")]
         Task<Test> TestQuery([Query] Test tt);
+    }
+
+    [FeignClient(Url = "http://localhost:5001/home")]
+    public interface ITestGlobalInterceptorFeign
+    {
+        [PostMapping("/testInterceptor")]
+        Task<Test> TestInterceptor([Body(BodySerializationKind.Form)] Test tt);
     }
 }

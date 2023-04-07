@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Data;
-using Dapper;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.TypeHandler.Dialect.Sqlite
 {
-    public class SqliteTimeSpanTypeHandler : SqlMapper.TypeHandler<TimeSpan>
+    public class SqliteTimeSpanTypeHandler : TypeHandler<TimeSpan>
     {
         public override void SetValue(IDbDataParameter parameter, TimeSpan value)
         {

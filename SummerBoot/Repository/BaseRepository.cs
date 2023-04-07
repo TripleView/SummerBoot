@@ -16,7 +16,6 @@ namespace SummerBoot.Repository
 {
     public class BaseRepository<T> : ExpressionParser.Parser.Repository<T>, IBaseRepository<T> where T : class
     {
-
         public BaseRepository(IUnitOfWork uow, IDbFactory dbFactory, RepositoryOption repositoryOption)
         {
             this.uow = uow;
@@ -403,7 +402,7 @@ namespace SummerBoot.Repository
         }
 
 
-        public T Get(dynamic id)
+        public T Get(object id)
         {
             DbQueryResult internalResult = InternalGet(id);
             OpenDb();
@@ -482,7 +481,7 @@ namespace SummerBoot.Repository
                     && SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyDelegate3", out var cacheFunc3)
                     && SbUtil.CacheDictionary.TryGetValue("sqlBulkCopyOptionsType", out var sqlBulkCopyOptionsType))
                 {
-                   
+
                     object sqlBulkCopy;
                     if (dbTransaction == null)
                     {
@@ -506,7 +505,7 @@ namespace SummerBoot.Repository
                             addMethod.Invoke(columnMappings, parameters: new object[2] { mapping.PropertyInfo.Name, mapping.ColumnName });
                         }
                     }
-                   
+
                     var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
                     if (SbUtil.CacheDelegateDictionary.TryGetValue("sqlBulkCopyWriteMethodDelegate",
                             out var sqlBulkCopyWriteMethodAsyncDelegate))
@@ -532,7 +531,7 @@ namespace SummerBoot.Repository
 
                     mysqlBulkCopy.SetPropertyValue("DestinationTableName", internalResult.Sql);
                     var columnMappings = mysqlBulkCopy.GetPropertyValue("ColumnMappings");
-                    
+
                     if (SbUtil.CacheDelegateDictionary.TryGetValue("addColumnMappingMethodInfoDelegate",
                             out var cacheAddColumnMappingMethodInfo))
                     {
@@ -764,7 +763,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task<T> GetAsync(dynamic id)
+        public async Task<T> GetAsync(object id)
         {
             DbQueryResult internalResult = InternalGet(id);
             OpenDb();
@@ -883,7 +882,7 @@ namespace SummerBoot.Repository
                     }
 
                     var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
-                    
+
                     if (SbUtil.CacheDelegateDictionary.TryGetValue("sqlBulkCopyWriteMethodAsyncDelegate",
                             out var sqlBulkCopyWriteMethodAsyncDelegate))
                     {
@@ -953,4 +952,7 @@ namespace SummerBoot.Repository
             CloseDb();
         }
     }
+
+
+    
 }

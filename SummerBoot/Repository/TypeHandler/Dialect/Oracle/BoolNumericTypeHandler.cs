@@ -1,15 +1,16 @@
 ﻿using System.Data;
-using Dapper;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.TypeHandler.Dialect.Oracle
 {
     /// <summary>
     /// oracle bool类型和number类型的转换器
     /// </summary>
-    public class BoolNumericTypeHandler : SqlMapper.TypeHandler<bool>
+    public class BoolNumericTypeHandler : TypeHandler<bool>
     {
         public override bool Parse(object value)
         {
+            
             if ( value is bool boolValue)
             {
                 return boolValue;

@@ -2,7 +2,7 @@
 {
     public class SqliteQueryFormatter : QueryFormatter
     {
-        public SqliteQueryFormatter():base(":", "`","`")
+        public SqliteQueryFormatter(DatabaseUnit databaseUnit):base(":", "`","`",databaseUnit)
         {
             
         }
@@ -38,11 +38,11 @@
             var hasTake = select.Take.HasValue;
             if (hasTake)
             {
-                _sb.Append(BoxParameter(select.Take.Value));
+                _sb.Append(BoxParameter(select.Take.Value, typeof(int)));
             }
             else
             {
-                _sb.Append(BoxParameter(int.MaxValue));
+                _sb.Append(BoxParameter(int.MaxValue, typeof(int)));
             }
             
             _sb.Append(" offset ");
@@ -50,11 +50,11 @@
             var hasSkip = select.Skip.HasValue;
             if (hasSkip)
             {
-                _sb.Append(BoxParameter(select.Skip.Value));
+                _sb.Append(BoxParameter(select.Skip.Value, typeof(int)));
             }
             else
             {
-                _sb.Append(BoxParameter(0));
+                _sb.Append(BoxParameter(0, typeof(int)));
             }
         }
     }

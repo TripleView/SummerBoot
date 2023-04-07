@@ -88,8 +88,6 @@ namespace SummerBoot.Feign
             //处理请求头逻辑
             ProcessHeaders(method, requestTemplate, interfaceType);
 
-
-
             var path = "";
 
             var mappingCount = 0;
@@ -151,16 +149,26 @@ namespace SummerBoot.Feign
             requestTemplate.Url = urlTemp;
 
             ProcessCookie(requestTemplate);
-            //如果存在拦截器，则进行拦截
+            //是否忽略拦截器
             var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
-
-            if (feignClientAttribute.InterceptorType != null && ignoreInterceptorAttribute == null)
+            if (ignoreInterceptorAttribute == null)
             {
-                //获得请求拦截器
-                var requestInterceptor = (IRequestInterceptor)serviceProvider.GetService(feignClientAttribute.InterceptorType);
-                await requestInterceptor.ApplyAsync(requestTemplate);
+                var hasMethodInterceptor = false;
+                if (feignClientAttribute.InterceptorType != null)
+                {
+                    hasMethodInterceptor = true;
+                    //获得请求拦截器
+                    var requestInterceptor = (IRequestInterceptor)serviceProvider.GetService(feignClientAttribute.InterceptorType);
+                    await requestInterceptor.ApplyAsync(requestTemplate);
+                }
+                //如果方法上没有拦截器，则使用全局拦截器
+                if (!hasMethodInterceptor && feignOption.GlobalInterceptorType != null)
+                {
+                    //获得请求拦截器
+                    var requestInterceptor = (IRequestInterceptor)serviceProvider.GetService(feignOption.GlobalInterceptorType);
+                    await requestInterceptor.ApplyAsync(requestTemplate);
+                }
             }
-
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
             //直接返回文件流
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
@@ -208,11 +216,31 @@ namespace SummerBoot.Feign
                 {
                     throw new ArgumentNullException("feignClientAttribute's ServiceName can not be null");
                 }
+                //先从注解上读取
                 var namespaceId = feignClientAttribute.NacosNamespaceId;
-                namespaceId = GetValueByConfiguration(namespaceId).GetValueOrDefault("public");
+                
+                if (namespaceId.IsNullOrWhiteSpace())
+                {
+                    //从配置文件中读取
+                    namespaceId = configuration.GetSection("nacos:defaultNacosNamespaceId")?.Value;
+                }
+                if (namespaceId.IsNullOrWhiteSpace())
+                {
+                    //获得默认值
+                    namespaceId = "public";
+                }
+                namespaceId = GetValueByConfiguration(namespaceId);
 
                 var groupName = feignClientAttribute.NacosGroupName;
-                groupName = GetValueByConfiguration(groupName).GetValueOrDefault("DEFAULT_GROUP");
+                if (groupName.IsNullOrWhiteSpace())
+                {
+                    groupName = configuration.GetSection("nacos:defaultNacosGroupName")?.Value;
+                }
+                if (groupName.IsNullOrWhiteSpace())
+                {
+                    groupName = "DEFAULT_GROUP";
+                }
+                groupName = GetValueByConfiguration(groupName);
 
                 if (serviceName.HasText())
                 {

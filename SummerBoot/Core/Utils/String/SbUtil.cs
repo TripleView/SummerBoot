@@ -11,6 +11,19 @@ namespace SummerBoot.Core
     public static partial class SbUtil
     {
         /// <summary>
+        /// 连续多个空格转为一个
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string MergeSpace(this string str)
+        {
+            if (!string.IsNullOrEmpty(str))
+            {
+                str = new System.Text.RegularExpressions.Regex("[\\s]+").Replace(str, " ");
+            }
+            return str;
+        }
+        /// <summary>
         /// 判断字符串是否为空
         /// </summary>
         /// <param name="str"></param>

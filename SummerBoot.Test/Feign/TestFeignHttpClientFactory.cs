@@ -227,7 +227,7 @@ namespace SummerBoot.Test.Feign
                 })
                 .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "def=2") }, new StringContent("ok"));
 
-            mockHttp.When("http://localhost:5001/home2/TestCookieContainer3").With(it =>
+            mockHttp.When("http://localhost:5001/home/TestCookieContainer3").With(it =>
                 {
                     if (it.Method == HttpMethod.Get)
                     {
@@ -236,7 +236,7 @@ namespace SummerBoot.Test.Feign
 
                     return false;
                 })
-                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "abc=1;Path=/home2;Domain=localhost") }, new StringContent("ok"));
+                .Respond(new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Set-Cookie", "abc=2;Domain=localhost") }, new StringContent("ok"));
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();
 

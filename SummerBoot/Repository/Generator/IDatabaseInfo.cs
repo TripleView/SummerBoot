@@ -57,12 +57,7 @@ namespace SummerBoot.Repository.Generator
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
         string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
-        /// <summary>
-        /// 装饰表名或者列名
-        /// </summary>
-        /// <param name="tableNameOrColumnName"></param>
-        /// <returns></returns>
-        string BoxTableNameOrColumnName(string tableNameOrColumnName);
+       
         /// <summary>
         /// 获取命名空间加表名
         /// </summary>
@@ -70,6 +65,8 @@ namespace SummerBoot.Repository.Generator
         /// <param name="tableName"></param>
         /// <returns></returns>
         string GetSchemaTableName(string schema, string tableName);
+
+
         /// <summary>
         /// 获取默认用户
         /// </summary>

@@ -10,9 +10,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using Oracle.ManagedDataAccess.Client;
+using SummerBoot.Core;
 using Xunit;
 
 namespace ExpressionParser.Test
@@ -103,7 +107,7 @@ namespace ExpressionParser.Test
 
     public class DogRepository : Repository<Dog>
     {
-        public DogRepository() : base(DatabaseType.SqlServer)
+        public DogRepository() : base(new DatabaseUnit(typeof(UnitOfWork),typeof(SqlConnection),""))
         {
 
         }
@@ -112,7 +116,7 @@ namespace ExpressionParser.Test
 
     public class EmployeeRepository : Repository<Employee>
     {
-        public EmployeeRepository() : base(DatabaseType.SqlServer)
+        public EmployeeRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), ""))
         {
 
         }
@@ -120,7 +124,7 @@ namespace ExpressionParser.Test
 
     public class HrRepository : Repository<Hr>
     {
-        public HrRepository() : base(DatabaseType.SqlServer)
+        public HrRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), ""))
         {
 
         }
@@ -128,7 +132,7 @@ namespace ExpressionParser.Test
 
     public class PersonRepository : Repository<Person>, IPersonRepository
     {
-        public PersonRepository() : base(DatabaseType.SqlServer)
+        public PersonRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), ""))
         {
 
         }
@@ -140,7 +144,7 @@ namespace ExpressionParser.Test
 
     public class MysqlPersonRepository : Repository<Person>, IPersonRepository
     {
-        public MysqlPersonRepository() : base(DatabaseType.Mysql)
+        public MysqlPersonRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(MySqlConnection), ""))
         {
 
         }
@@ -155,11 +159,7 @@ namespace ExpressionParser.Test
     }
     public class OraclePersonRepository : Repository<OraclePerson>, IOraclePersonRepository
     {
-        public OraclePersonRepository() : base(DatabaseType.Oracle)
-        {
-
-        }
-        public void ExecuteDelete()
+        public OraclePersonRepository(DatabaseUnit databaseUnit) : base(databaseUnit)
         {
 
         }
@@ -193,6 +193,25 @@ namespace ExpressionParser.Test
             Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
             Assert.Equal(1, r1MiddleResult.SqlParameters[0].Value);
         }
+
+        [Fact]
+        public void TestIsNull()
+        {
+            var dogRepository = new DogRepository();
+            var r1 = dogRepository.Where(it => it.Name == null).ToList();
+            var r1MiddleResult = dogRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Name] IS NULL )", r1MiddleResult.Sql);
+
+        }
+        [Fact]
+        public void TestIsNotNull()
+        {
+            var dogRepository = new DogRepository();
+            var r1 = dogRepository.Where(it => it.Name != null).ToList();
+            var r1MiddleResult = dogRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Name] IS NOT NULL )", r1MiddleResult.Sql);
+        }
+
         [Fact]
         public void TestNullable2()
         {
@@ -231,9 +250,9 @@ namespace ExpressionParser.Test
         public void TestSelect3()
         {
             var personRepository = new PersonRepository();
-            var r3 = personRepository.Select(it => new { it.Name, Address = "����" }).ToList();
+            var r3 = personRepository.Select(it => new { it.Name, Address = "福建省" }).ToList();
             var r3MiddleResult = personRepository.GetDbQueryDetail();
-            Assert.Equal("SELECT [p0].[Name], '����' As [Address] FROM [Person] [p0]", r3MiddleResult.Sql);
+            Assert.Equal("SELECT [p0].[Name], '福建省' As [Address] FROM [Person] [p0]", r3MiddleResult.Sql);
             Assert.Empty(r3MiddleResult.SqlParameters);
         }
 
@@ -1066,7 +1085,7 @@ namespace ExpressionParser.Test
         [Fact]
         public void TestOracleFirstOrDefault()
         {
-            var personRepository = new OraclePersonRepository();
+            var personRepository = new OraclePersonRepository(new DatabaseUnit(typeof(UnitOfWork),typeof(OracleConnection),""));
 
             var r1 = personRepository.FirstOrDefault();
 
@@ -1135,7 +1154,7 @@ namespace ExpressionParser.Test
         [Fact]
         public void OracleTestSkipAndTake()
         {
-            var personRepository = new OraclePersonRepository();
+            var personRepository = new OraclePersonRepository(new DatabaseUnit(typeof(UnitOfWork), typeof(OracleConnection), ""));
             var r1 = personRepository.Skip(1).Take(1).ToList();
 
             var r1MiddleResult = personRepository.GetDbQueryDetail();
@@ -1388,7 +1407,7 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = hrRepository.GetDbQueryDetail();
 
-            Assert.Equal("insert into [Hr2] ([hrEmployeeNo],[Name],[Age],[HaveChildren],[CreateOn]) values (@EmployeNo,@Name,@Age,@HaveChildren,@CreateOn)", r1MiddleResult.Sql);
+            Assert.Equal("insert into [Hr2] ([hrEmployeeNo],[Name],[Age],[HaveChildren],[CreateOn]) values (@hrEmployeeNo,@Name,@Age,@HaveChildren,@CreateOn)", r1MiddleResult.Sql);
 
             hrRepository.InternalUpdate(persion);
 

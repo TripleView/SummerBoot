@@ -10,7 +10,7 @@ namespace SummerBoot.Test.Sqlite.Models
 
         protected bool Equals(GuidModel other)
         {
-            return Id.Equals(other.Id) && Name == other.Name;
+            return Id.Equals(other.Id) && Name == other.Name && Address == other.Address;
         }
 
         public override bool Equals(object obj)
@@ -23,10 +23,12 @@ namespace SummerBoot.Test.Sqlite.Models
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Id, Name);
+            return HashCode.Combine(Id, Name, Address);
         }
 
         public string Name { get; set; }
+
+        public string Address { get; set; }
 
     }
 }

@@ -137,9 +137,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName);
                     return result;
-               
+
                 case nameof(Queryable.Where):
-                
+
                     methodCallStack.Push(nameof(Queryable.Where));
                     //MethodName = method.Name;
                     var result2 = this.VisitWhereCall(node);
@@ -185,6 +185,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName7 = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName7);
                     return result7;
+                case nameof(Queryable.Max):
+                case nameof(Queryable.Min):
+                case nameof(Queryable.Sum):
+                case nameof(Queryable.Average):
+                    //针对group by里的count单独处理
+                    if (LastMethodName == nameof(Queryable.GroupBy))
+                    {
+                        break;
+                    }
+                    methodCallStack.Push(methodName);
+                    var result8 = this.VisitMaxMinSumAvgCall(node);
+                    var lastMethodCallName8 = methodCallStack.Pop();
+                    lastMethodCalls.Add(lastMethodCallName8);
+                    return result8;
+
             }
 
             //针对groupBy进行单独处理
@@ -412,7 +427,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                                 {
                                     var newValue = new List<object>(tempResult);
 
-                                    var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", newValue);
+                                    var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", newValue)
+                                    {
+                                        ValueType = method.DeclaringType
+                                    };
                                     conditionExpressions.Add(whereConditionExpression2);
                                     tempResult.Clear();
                                 }
@@ -425,7 +443,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         }
                         else
                         {
-                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", values);
+                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", values)
+                            {
+                                ValueType = method.DeclaringType
+                            };
                             return whereConditionExpression2;
                         }
 
@@ -489,7 +510,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if (MethodName == nameof(Queryable.Where)||MethodName==nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -504,33 +525,42 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 if (leftExpression is ColumnExpression leftColumnExpression && rightExpression is ConstantExpression rightConstantExpression)
                 {
                     return new WhereConditionExpression(leftColumnExpression, @operator,
-                        rightConstantExpression.Value);
+                        rightConstantExpression.Value)
+                    {
+                        ValueType = leftColumnExpression.ValueType
+                    };
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression && leftExpression is ConstantExpression leftConstantExpression)
                 {
                     return new WhereConditionExpression(rightColumnExpression, @operator,
-                        leftConstantExpression.Value);
+                        leftConstantExpression.Value)
+                    {
+                        ValueType = rightColumnExpression.ValueType
+                    };
                 }
-               
+
                 else if (leftExpression is ColumnExpression leftColumnExpression2 && leftColumnExpression2.Type == typeof(bool) && rightExpression is WhereExpression rightWhereExpression2)
                 {
                     //如果是column类型的bool值，默认为true
-                    var left = new WhereConditionExpression(leftColumnExpression2, "=", 1);
+                    var left = new WhereConditionExpression(leftColumnExpression2, "=", 1)
+                    {
+                        ValueType = leftColumnExpression2.ValueType
+                    };
                     result.Left = left;
                     result.Right = rightWhereExpression2;
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression2 && rightExpression.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression2)
                 {
                     //如果是column类型的bool值，默认为true
-                    var right = new WhereConditionExpression(rightColumnExpression2, "=", 1);
+                    var right = new WhereConditionExpression(rightColumnExpression2, "=", 1) { ValueType = rightColumnExpression2.ValueType };
                     result.Left = leftWhereExpression2;
                     result.Right = right;
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression3 && rightExpression.Type == typeof(bool) && leftExpression is ColumnExpression leftColumnExpression3 && leftColumnExpression3.Type == typeof(bool))
                 {
                     //如果是column类型的bool值，默认为true
-                    var right = new WhereConditionExpression(rightColumnExpression3, "=", 1);
-                    var left = new WhereConditionExpression(leftColumnExpression3, "=", 1);
+                    var right = new WhereConditionExpression(rightColumnExpression3, "=", 1) { ValueType = rightColumnExpression3.ValueType };
+                    var left = new WhereConditionExpression(leftColumnExpression3, "=", 1) { ValueType = leftColumnExpression3.ValueType };
                     result.Left = left;
                     result.Right = right;
                 }
@@ -545,7 +575,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 else if (leftExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(bool) && rightExpression is WhereExpression whereExpression)
                 {
                     var value = (bool)constantExpression.Value;
-                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value)
+                    {
+                        ValueType = typeof(bool)
+                    };
                     result.Left = whereTrueFalseValueCondition;
                     result.Right = whereExpression;
                 }
@@ -553,7 +586,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 else if (rightExpression is ConstantExpression rightConstantExpression3 && rightConstantExpression3.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression3)
                 {
                     var value = (bool)rightConstantExpression3.Value;
-                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value)
+                    {
+                        ValueType = typeof(bool)
+                    };
                     result.Left = leftWhereExpression3;
                     result.Right = whereTrueFalseValueCondition;
                 }
@@ -589,7 +625,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 else if (methodName == nameof(Queryable.Distinct))
                 {
                     result.ColumnsPrefix = "DISTINCT";
-                }else if (methodName == nameof(Queryable.Count))
+                }
+                else if (methodName == nameof(Queryable.Count))
                 {
                     result.Columns.Clear();
                     result.Columns.Add(new ColumnExpression(null, "", null, 0, "", "Count"));
@@ -601,7 +638,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
                 if (where != null)
                 {
-                    result.Where=where;
+                    result.Where = where;
                 }
 
                 return result;
@@ -639,6 +676,51 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 throw new NotSupportedException(nameof(firstOrDefaultCall));
             }
         }
+
+        public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression maxMinCall)
+        {
+            var methodName = maxMinCall.Method.Name;
+            
+            var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
+            ColumnExpression column = null;
+            if (maxMinCall.Arguments.Count == 2)
+            {
+                var lambda = (LambdaExpression)this.StripQuotes(maxMinCall.Arguments[1]);
+                column = this.Visit(lambda.Body) as ColumnExpression;
+            }
+            else
+            {
+                throw new NotSupportedException(methodName);
+            }
+
+            column.FunctionName = methodName;
+            if (methodName == nameof(Queryable.Average))
+            {
+                column.FunctionName = "AVG";
+            }
+
+            if (sourceExpression is TableExpression table)
+            {
+                var result = new SelectExpression(null, "", table.Columns, table);
+
+                result.Columns.Clear();
+               
+                result.Columns.Add(column);
+
+                return result;
+            }
+            else if (sourceExpression is SelectExpression selectExpression)
+            {
+                selectExpression.Columns.Clear();
+                selectExpression.Columns.Add(column);
+                return selectExpression;
+            }
+            else
+            {
+                throw new NotSupportedException(methodName);
+            }
+        }
+
 
         protected SelectExpression NestSelectExpression(SelectExpression selectExpression)
         {
@@ -935,13 +1017,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
 
             var operatorString = nodeTypeMappings[unaryExpression.NodeType];
-            
+
 
             var operand = unaryExpression.Operand;
             var middleResult = this.Visit(operand);
             if (middleResult is ColumnExpression columnExpression && columnExpression.Type == typeof(bool))
             {
                 var whereConditionExpression = new WhereConditionExpression(columnExpression, "=", 1);
+                whereConditionExpression.ValueType = typeof(int);
                 var result = new FunctionWhereConditionExpression(operatorString, whereConditionExpression);
                 return result;
             }
@@ -989,7 +1072,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 new ColumnExpression(oldColumn.Type,
                     oldColumn.TableAlias,
                     oldColumn.MemberInfo,
-                    oldColumn.Index)).ToList();
+                    oldColumn.Index, oldColumn.ValueType)).ToList();
 
             ////将生成的新列赋值给缓存
             _lastColumns = newColumns.ToDictionary(it => it.ColumnName);

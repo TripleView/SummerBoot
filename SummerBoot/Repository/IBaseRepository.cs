@@ -8,7 +8,7 @@ namespace SummerBoot.Repository
     public interface IBaseRepository<T> : ExpressionParser.Parser.IRepository<T> where T : class
     {
         #region sync
-        T Get(dynamic id);
+        T Get(object id);
 
         List<T> GetAll();
         int Update(T t);
@@ -25,7 +25,7 @@ namespace SummerBoot.Repository
         #endregion sync
 
         #region async
-        Task<T> GetAsync(dynamic id);
+        Task<T> GetAsync(object id);
         Task<List<T>> GetAllAsync();
         Task<int> UpdateAsync(T t);
         Task UpdateAsync(List<T> list);

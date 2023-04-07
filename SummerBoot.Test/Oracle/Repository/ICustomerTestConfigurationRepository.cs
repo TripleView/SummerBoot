@@ -6,7 +6,7 @@ using SummerBoot.Test.Oracle.Models;
 
 namespace SummerBoot.Test.Oracle.Repository
 {
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer>
     {
         //异步

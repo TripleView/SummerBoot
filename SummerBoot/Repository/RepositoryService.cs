@@ -12,6 +12,10 @@ namespace SummerBoot.Repository
 {
     public class RepositoryService : RepositoryAspectSupport
     {
+        public RepositoryService(IUnitOfWork uow, IDbFactory dbFactory):base(uow, dbFactory)
+        {
+        }
+
         public async Task ExecuteNoReturnAsync(List<object> originArgs, MethodInfo method, IServiceProvider serviceProvider)
         {
             var args = new List<object>();
@@ -103,8 +107,7 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
-
+            
             return base.PageBaseExecute<T>(method, args.ToArray(), serviceProvider);
         }
 

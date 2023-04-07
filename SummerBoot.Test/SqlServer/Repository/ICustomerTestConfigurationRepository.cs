@@ -6,7 +6,7 @@ using SummerBoot.Test.SqlServer.Models;
 
 namespace SummerBoot.Test.SqlServer.Repository
 {
-    [AutoRepository]
+    [SqlServerAutoRepositoryAttribute]
     public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer>
     {
         //异步

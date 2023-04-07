@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Data;
-using Dapper;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.TypeHandler.Dialect.Sqlite
 {
-    public class SqliteGuidTypeHandler : SqlMapper.TypeHandler<Guid>
+    public class SqliteGuidTypeHandler : TypeHandler<Guid>
     {
         public override void SetValue(IDbDataParameter parameter, Guid value)
         {

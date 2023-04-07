@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Oracle.ManagedDataAccess.Client;
 using SummerBoot.Core;
 using SummerBoot.Repository;
-using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Test.Oracle.Db;
 using SummerBoot.Test.Oracle.Models;
@@ -16,7 +15,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using SummerBoot.Repository.TypeHandler;
 using SummerBoot.Test.Model;
 using Xunit;
 using Xunit.Priority;
@@ -30,6 +31,40 @@ namespace SummerBoot.Test.Oracle
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试插入实体和更新实体前的自定义函数
+        /// </summary>
+        [Fact, Priority(113)]
+        public async Task TestBeforeInsertAndUpdateEvent()
+        {
+            InitOracleDatabase();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            Assert.Equal("abc", guidModel.Address);
+            guidModel.Name = "ccd";
+            await guidModelRepository.UpdateAsync(guidModel);
+            Assert.Equal("ppp", guidModel.Address);
+
+            id = Guid.NewGuid();
+            var guidModel2 = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            guidModelRepository.Insert(guidModel2);
+            Assert.Equal("abc", guidModel2.Address);
+            guidModel2.Name = "ccd";
+            guidModelRepository.UpdateAsync(guidModel2);
+            Assert.Equal("ppp", guidModel2.Address);
+        }
+
+        /// <summary>
         /// 测试id类型为guid的model的增删改查
         /// </summary>
         [Fact, Priority(214)]
@@ -37,7 +72,7 @@ namespace SummerBoot.Test.Oracle
         {
             InitOracleDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -72,7 +107,7 @@ namespace SummerBoot.Test.Oracle
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
      
             var nullableTableList = new List<NullableTable>();
 
@@ -146,7 +181,7 @@ namespace SummerBoot.Test.Oracle
             var total = 2000;
             InitOracleDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
             sw.Start();
@@ -338,7 +373,7 @@ namespace SummerBoot.Test.Oracle
             var total = 2000;
             InitOracleDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+            var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
             sw.Start();
@@ -582,7 +617,7 @@ namespace SummerBoot.Test.Oracle
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
             var sb = new StringBuilder();
 
@@ -663,7 +698,7 @@ namespace SummerBoot.Test.Oracle
         {
             InitOracleDatabase();
 
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -745,7 +780,7 @@ namespace SummerBoot.Test.Oracle
         public void TestTypeHandler()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var testTypeHandlerTableRepository = serviceProvider.GetService<ITestTypeHandlerTableRepository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(TestTypeHandlerTable) });
             foreach (var generateDatabaseSqlResult in sqls)
@@ -793,7 +828,7 @@ namespace SummerBoot.Test.Oracle
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "CUSTOMER", "NULLABLETABLE", "NOTNULLABLETABLE" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -945,7 +980,7 @@ namespace SummerBoot.Test.Oracle
         public void TestGenerateDatabaseTableByCsharpClass()
         {
             InitOracleDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
@@ -972,7 +1007,7 @@ namespace SummerBoot.Test.Oracle
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
-
+            
             Assert.Equal(4, result[0].Descriptions.Count);
             Assert.Equal("COMMENT ON TABLE TEST.\"NULLABLETABLE2\" IS 'NullableTable2'", result[0].Descriptions[0]);
             Assert.Equal("COMMENT ON COLUMN TEST.\"NULLABLETABLE2\".\"INT2\" IS 'Int2'", result[0].Descriptions[1]);
@@ -1022,6 +1057,10 @@ namespace SummerBoot.Test.Oracle
             Assert.Equal(exceptStr
                 , result[0].Body);
 
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
         }
 
         private void InitOracleDatabase()
@@ -1030,6 +1069,7 @@ namespace SummerBoot.Test.Oracle
             using (var database = new OracleDb())    //????
             {
                 database.Database.EnsureDeleted();
+                //Thread.Sleep(2000);
                 database.Database.EnsureCreated();
                 database.Database.ExecuteSqlRaw(
                     "COMMENT ON TABLE NULLABLETABLE IS 'NullableTable'");
@@ -1093,8 +1133,26 @@ namespace SummerBoot.Test.Oracle
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(OracleConnection);
-                it.ConnectionString = connectionString;
+                it.AddDatabaseUnit<OracleConnection, IUnitOfWork1>(connectionString,
+                    x =>
+                    {
+                        x.BindRepositorysWithAttribute<OracleAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                        x.BeforeInsert += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "abc";
+                            }
+                        });
+                        x.BeforeUpdate += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "ppp";
+                            }
+                        });
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -1103,7 +1161,7 @@ namespace SummerBoot.Test.Oracle
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1218,6 +1276,31 @@ namespace SummerBoot.Test.Oracle
             var page2 = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPageAsync();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //lambda page
+            var page3 =await customerRepository.Where(it => it.Age > 5).ToPageAsync(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge =await customerRepository.MaxAsync(it => it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = await customerRepository.MinAsync(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = await customerRepository.OrderBy(it => it.Age).FirstAsync();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 =await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 =await customerRepository.OrderBy(it => it.Age).FirstAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+
+            var totalCount = await customerRepository.CountAsync(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = await customerRepository.Where(it => it.Age >= 98).SumAsync(it => it.Age);
+            Assert.Equal(99 + 98, sumResult);
+            var avgResult = await customerRepository.Where(it => it.Age >= 98).AverageAsync(it => (double)it.Age);
+            Assert.Equal((99 + 98) / (double)2, avgResult);
+
             //????bindWhere????????
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
@@ -1253,17 +1336,25 @@ namespace SummerBoot.Test.Oracle
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
 
+            await customerRepository.InsertAsync(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers = await customerRepository.Where(it => it.Name == null).ToListAsync();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = await customerRepository.Where(it => it.Name != null).ToListAsync();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+           
+            
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
+       
 
             customerRepository.Where(it => it.Name == "testCustomer")
                 .SetValue(it => it.Age, 5)
@@ -1372,6 +1463,30 @@ namespace SummerBoot.Test.Oracle
             var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //lambda page
+            var page3 = customerRepository.Where(it => it.Age > 5).ToPage(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge = customerRepository.Max(it=>it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = customerRepository.Min(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = customerRepository.OrderBy(it => it.Age).FirstOrDefault();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = customerRepository.OrderBy(it => it.Age).First();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 = customerRepository.OrderBy(it => it.Age).FirstOrDefault(it=>it.Age>5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 = customerRepository.OrderBy(it => it.Age).First(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+           
+            var totalCount = customerRepository.Count(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = customerRepository.Where(it=>it.Age>=98).Sum(it => it.Age);
+            Assert.Equal(99+98, sumResult);
+            var avgResult = customerRepository.Where(it => it.Age >= 98).Average(it => it.Age);
+            Assert.Equal((99 + 98)/(double)2, avgResult);
 
             //????bindWhere????????
             var nameEmpty = WhereBuilder.Empty<string>();
@@ -1406,6 +1521,11 @@ namespace SummerBoot.Test.Oracle
             customerRepository.Delete(it => it.Age > 5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
+            customerRepository.Insert(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers = customerRepository.Where(it => it.Name == null).ToList();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = customerRepository.Where(it => it.Name != null).ToList();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestLinq()

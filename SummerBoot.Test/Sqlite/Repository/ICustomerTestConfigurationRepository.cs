@@ -6,7 +6,7 @@ using SummerBoot.Test.Sqlite.Models;
 
 namespace SummerBoot.Test.Sqlite.Repository
 {
-    [AutoRepository]
+    [SqliteAutoRepositoryAttribute]
     public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer>
     {
         //异步

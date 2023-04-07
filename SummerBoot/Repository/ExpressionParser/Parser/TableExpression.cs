@@ -69,7 +69,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     foreach (var propertyInfo in properties)
                     {
                         _columns.Add(new ColumnExpression(propertyInfo.PropertyType,
-                             "", propertyInfo, i++));
+                             "", propertyInfo, i++)
+                        {
+                            ValueType = propertyInfo.PropertyType
+                        });
                     }
                     
                 }

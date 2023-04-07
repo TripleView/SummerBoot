@@ -1,23 +1,23 @@
-﻿using SummerBoot.Repository.Generator.Dto;
+﻿using SummerBoot.Core;
+using SummerBoot.Repository.Generator.Dto;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using Dapper;
-using SummerBoot.Core;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 {
-    public class SqlServerDatabaseInfo : IDatabaseInfo
+    public class SqlServerDatabaseInfo :AbstractDatabaseInfo, IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
 
-        public SqlServerDatabaseInfo(IDbFactory dbFactory)
+        public SqlServerDatabaseInfo(IDbFactory dbFactory):base("[", "]", dbFactory.DatabaseUnit)
         {
             this.dbFactory = dbFactory;
+     
         }
 
-        public GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
+        public override GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
         {
             var tableName = tableInfo.Name;
             var fieldInfos = tableInfo.FieldInfos;
@@ -31,14 +31,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var databaseDescriptions = new List<string>();
             if (tableInfo.Description.HasText())
             {
-                var tableDescriptionSql = CreateTableDescription(tableInfo.Schema,tableName, tableInfo.Description);
+                var tableDescriptionSql = CreateTableDescription(tableInfo.Schema, tableName, tableInfo.Description);
                 databaseDescriptions.Add(tableDescriptionSql);
             }
 
             for (int i = 0; i < fieldInfos.Count; i++)
             {
                 var fieldInfo = fieldInfos[i];
-                
+
                 //行末尾是否有逗号
                 var lastComma = "";
                 if (i != fieldInfos.Count - 1)
@@ -47,10 +47,10 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 }
                 else
                 {
-                    lastComma = hasKeyField? ",":"";
+                    lastComma = hasKeyField ? "," : "";
                 }
-                
-                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo,false)}{lastComma}");
+
+                body.AppendLine($"    {GetCreateFieldSqlByFieldInfo(fieldInfo, false)}{lastComma}");
                 if (fieldInfo.IsKey)
                 {
                     keyField = fieldInfo.ColumnName;
@@ -59,7 +59,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 //添加行注释
                 if (fieldInfo.Description.HasText())
                 {
-                    var tableFieldDescription= CreateTableFieldDescription(tableInfo.Schema,tableName, fieldInfo);
+                    var tableFieldDescription = CreateTableFieldDescription(tableInfo.Schema, tableName, fieldInfo);
                     databaseDescriptions.Add(tableFieldDescription);
                 }
             }
@@ -92,7 +92,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var identityString = fieldInfo.IsAutoCreate ? "IDENTITY(1,1)" : "";
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
             var columnDataType = fieldInfo.ColumnDataType;
-            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY " : "";
+            var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY" : "";
+            var defaultString = fieldInfo.ColumnType.IsNumberType() && !fieldInfo.IsNullable && isAlter && !fieldInfo.IsKey ? "DEFAULT 0" : "";
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "nvarchar")
             {
@@ -112,12 +113,33 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                 columnDataType = fieldInfo.SpecifiedColumnDataType;
             }
 
-            var columnName = BoxTableNameOrColumnName(fieldInfo.ColumnName);
-            var result = $"{columnName} {columnDataType} {identityString} {primaryKeyString}{nullableString}";
+            var columnName = BoxColumnName(fieldInfo.ColumnName);
+
+            var result = $"{columnName} {columnDataType}";
+            if (defaultString.HasText())
+            {
+                result += $" {defaultString}";
+            }
+            
+            if (identityString.HasText())
+            {
+                result += $" {identityString}";
+            }
+
+            if (primaryKeyString.HasText())
+            {
+                result += $" {primaryKeyString}";
+            }
+          
+            if (nullableString.HasText())
+            {
+                result += $" {nullableString}";
+            }
+            //var result = $"{columnName} {columnDataType} {defaultString} {identityString} {primaryKeyString} {nullableString}".MergeSpace();
             return result;
         }
 
-        public string CreateTableDescription(string schema,string tableName, string description)
+        public override string CreateTableDescription(string schema, string tableName, string description)
         {
             schema = GetDefaultSchema(schema);
             var sql =
@@ -125,7 +147,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
-        public string UpdateTableDescription(string schema,string tableName, string description)
+        public override string UpdateTableDescription(string schema, string tableName, string description)
         {
             schema = GetDefaultSchema(schema);
             var sql =
@@ -133,14 +155,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
-        public string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreateTableField(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             var schemaTableName = GetSchemaTableName(schema, tableName);
-            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo,true)}";
-          return sql;
+            var sql = $"ALTER TABLE {schemaTableName} ADD {GetCreateFieldSqlByFieldInfo(fieldInfo, true)}";
+            return sql;
         }
 
-        public string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             schema = GetDefaultSchema(schema);
             var sql =
@@ -148,7 +170,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
-        public DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
+        public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             schema = GetDefaultSchema(schema);
             var dbConnection = dbFactory.GetDbConnection();
@@ -169,15 +191,15 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                left join sys.extended_properties ETP on ETP.major_id = c.id and ETP.minor_id = c.colid and ETP.name ='MS_Description' 
                left join syscomments CM on c.cdefault=CM.id
                where c.id = (select t.object_id  from sys.tables t join sys.schemas s on t.schema_id=s.schema_id where s.name =@schemaName and t.name =@tableName) ";
-            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(sql, new { tableName, schemaName=schema }).ToList();
+            var fieldInfos = dbConnection.Query<DatabaseFieldInfoDto>(databaseUnit, sql, new { tableName, schemaName = schema }).ToList();
 
             var tableDescriptionSql = @"select etp.value from SYS.OBJECTS c
                     left join sys.extended_properties ETP on ETP.major_id = c.object_id   
                     where c.object_id =(select t.object_id  from sys.tables t join sys.schemas s on t.schema_id=s.schema_id where s.name =@schemaName and t.name =@tableName) and minor_id =0";
 
-            var tableDescription = dbConnection.QueryFirstOrDefault<string>(tableDescriptionSql, new { tableName, schemaName = schema });
+            var tableDescription = dbConnection.QueryFirstOrDefault<string>(databaseUnit, tableDescriptionSql, new { tableName, schemaName = schema });
 
-            var result=new DatabaseTableInfoDto()
+            var result = new DatabaseTableInfoDto()
             {
                 Name = tableName,
                 Description = tableDescription,
@@ -187,14 +209,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return result;
         }
 
-        public string GetSchemaTableName(string schema, string tableName)
+        public override string GetSchemaTableName(string schema, string tableName)
         {
-            tableName = BoxTableNameOrColumnName(tableName);
+            tableName = BoxTableName(tableName);
             tableName = schema.HasText() ? schema + "." + tableName : tableName;
             return tableName;
         }
 
-        public string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        public override string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
             //var schemaTableName = GetSchemaTableName(schema, tableName);
             //var sql =
@@ -204,19 +226,15 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return "";
         }
 
-        public string BoxTableNameOrColumnName(string tableNameOrColumnName)
-        {
-            return "[" + tableNameOrColumnName + "]";
-        }
 
-        public string GetDefaultSchema(string schema)
+        public override string GetDefaultSchema(string schema)
         {
             if (schema.HasText())
             {
                 return schema;
             }
             var dbConnection = dbFactory.GetDbConnection();
-            var result = dbConnection.QueryFirstOrDefault<string>("select SCHEMA_name()");
+            var result = dbConnection.QueryFirstOrDefault<string>(databaseUnit, "select SCHEMA_name()");
             return result;
         }
     }

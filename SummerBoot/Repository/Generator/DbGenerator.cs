@@ -6,9 +6,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Dapper;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Repository.Core;
 using SummerBoot.Repository.Generator.Dto;
 
 namespace SummerBoot.Repository.Generator
@@ -18,11 +18,13 @@ namespace SummerBoot.Repository.Generator
         private readonly IDatabaseFieldMapping databaseFieldMapping;
         private readonly IDbFactory dbFactory;
         private readonly IDatabaseInfo databaseInfo;
+        private readonly DatabaseUnit databaseUnit;
 
         public DbGenerator(IDatabaseFieldMapping databaseFieldMapping, IDbFactory dbFactory, IDatabaseInfo databaseInfo)
         {
             this.databaseFieldMapping = databaseFieldMapping;
             this.dbFactory = dbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
             this.databaseInfo = databaseInfo;
         }
 
@@ -31,23 +33,23 @@ namespace SummerBoot.Repository.Generator
             var dbConnection = dbFactory.GetDbConnection();
             if (generateDatabaseSqlResult.Body.HasText())
             {
-                dbConnection.Execute(generateDatabaseSqlResult.Body);
+                dbConnection.Execute(databaseUnit, generateDatabaseSqlResult.Body);
             }
 
             foreach (var fieldModifySql in generateDatabaseSqlResult.FieldModifySqls)
             {
-                dbConnection.Execute(fieldModifySql);
+                dbConnection.Execute(databaseUnit, fieldModifySql);
             }
 
             foreach (var description in generateDatabaseSqlResult.Descriptions)
             {
-                dbConnection.Execute(description);
+                dbConnection.Execute(databaseUnit, description);
             }
 
             dbConnection.Close();
         }
 
-        public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace)
+        public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace, string namesapce = "")
         {
             //c#中可空的基本类型
             var csharpCanBeNullableType = new List<string>()
@@ -68,7 +70,7 @@ namespace SummerBoot.Repository.Generator
             var result = new List<string>();
             foreach (var tableName in tableNames)
             {
-                var tableInfo = databaseInfo.GetTableInfoByName("",tableName);
+                var tableInfo = databaseInfo.GetTableInfoByName(namesapce, tableName);
                 var columnInfos = tableInfo.FieldInfos;
                 var sb = new StringBuilder();
                 sb.AppendLine("using System;");
@@ -83,7 +85,9 @@ namespace SummerBoot.Repository.Generator
                     sb.AppendLine("   /// </summary>");
                 }
                 sb.AppendLine($"   [Table(\"{tableName}\")]");
-                sb.AppendLine($"   public class {tableName}");
+                var cshapClassName = tableName.Length > 0 && char.IsLower(tableName[0]) ? char.ToUpper(tableName[0]) + tableName.Substring(1) : tableName;
+
+                sb.AppendLine($"   public class {cshapClassName}");
                 sb.AppendLine("   {");
                 foreach (var columnInfo in columnInfos)
                 {
@@ -193,7 +197,7 @@ namespace SummerBoot.Repository.Generator
                         isNullable = false;
                     }
                     //如果是枚举类型，统一转为int
-                    if (propertyInfo.PropertyType.IsEnum||(propertyInfo.PropertyType.IsNullable()&& propertyInfo.PropertyType.GetUnderlyingType().IsEnum))
+                    if (propertyInfo.PropertyType.IsEnum || (propertyInfo.PropertyType.IsNullable() && propertyInfo.PropertyType.GetUnderlyingType().IsEnum))
                     {
                         fieldTypeName = typeof(int);
                     }
@@ -206,6 +210,10 @@ namespace SummerBoot.Repository.Generator
 
                     var dbFieldTypeName = databaseFieldMapping.ConvertCsharpTypeToDatabaseType(new List<string>() { fieldTypeName.Name }).FirstOrDefault();
 
+                    if (columnAttribute != null && columnAttribute.TypeName.HasText())
+                    {
+                        dbFieldTypeName = columnAttribute.TypeName;
+                    }
                     if (dbFieldTypeName.IsNullOrWhiteSpace())
                     {
                         throw new Exception($"can not convert {propertyInfo.PropertyType.Name} to database type");
@@ -214,7 +222,10 @@ namespace SummerBoot.Repository.Generator
                     //decimal精度问题
                     var precision = decimalPrecisionAttribute?.Precision ?? 18;
                     var scale = decimalPrecisionAttribute?.Scale ?? 2;
-
+                    if (databaseUnit.ColumnNameMapping != null)
+                    {
+                        fieldName = databaseUnit.ColumnNameMapping(fieldName);
+                    }
                     var fieldInfo = new DatabaseFieldInfoDto()
                     {
                         ColumnName = fieldName,
@@ -233,8 +244,12 @@ namespace SummerBoot.Repository.Generator
                     fieldInfos.Add(fieldInfo);
                 }
 
-                //判断数据库中是否已经有这张表，如果有，则比较两张表的结构
 
+                if (databaseUnit.TableNameMapping != null)
+                {
+                    tableName = databaseUnit.TableNameMapping(tableName);
+                }
+                //判断数据库中是否已经有这张表，如果有，则比较两张表的结构
                 var dbTableInfo = databaseInfo.GetTableInfoByName(schema, tableName);
                 //如果存在这张表
                 if (dbTableInfo.FieldInfos.Any())
@@ -252,7 +267,7 @@ namespace SummerBoot.Repository.Generator
                         {
                             item.Descriptions.Add(newTableDescriptionSql);
                         }
-                        
+
                     }
                     foreach (var fieldInfo in fieldInfos)
                     {
@@ -278,6 +293,19 @@ namespace SummerBoot.Repository.Generator
                                 if (createPrimaryKeySql.HasText())
                                 {
                                     item.FieldModifySqls.Add(createPrimaryKeySql);
+                                }
+                            }
+                        }
+
+                        else
+                        {
+                            //没有注释，补充注释
+                            if (dbFieldInfo.Description.HasText()&& fieldInfo.Description.HasText()&& dbFieldInfo.Description != fieldInfo.Description)
+                            {
+                                var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo);
+                                if (createFieldDescriptionSql.HasText())
+                                {
+                                    item.Descriptions.Add(createFieldDescriptionSql);
                                 }
                             }
                         }

@@ -6,7 +6,7 @@ namespace SummerBoot.Test.SqlServer.Repository
     /// <summary>
     /// 测试表名字段名映射的仓储
     /// </summary>
-    [AutoRepository]
+    [SqlServerAutoRepositoryAttribute]
     public interface ITableColumnMapRepository : IBaseRepository<TableColumnMapTable>
     {
         

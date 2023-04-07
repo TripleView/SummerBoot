@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Test.Oracle.Repository
 {
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface ICustomerRepository :IBaseRepository<Customer>
     {
         //异步

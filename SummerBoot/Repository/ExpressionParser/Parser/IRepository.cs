@@ -1,23 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
-    public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery
+    public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery,IAsyncQueryable<T>
     {
         List<SelectItem<T>> SelectItems { set; get; }
         int ExecuteUpdate();
-        Task<int> ExecuteUpdateAsync();
+     
         /// <summary>
         /// 生成经过分页的结果
         /// </summary>
         /// <returns></returns>
         Page<T> ToPage();
+       
         /// <summary>
         /// 生成经过分页的结果
         /// </summary>
         /// <returns></returns>
-        Task<Page<T>> ToPageAsync();
+        Page<T> ToPage(IPageable pageable);
+
+
     }
 }

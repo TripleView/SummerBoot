@@ -7,6 +7,8 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
+using SummerBoot.Core.Utils.Reflection;
 using SummerBoot.Repository;
 
 namespace SummerBoot.Core
@@ -130,6 +132,17 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
+        /// 判断是否为原生值类型
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsPrimitiveValueType(this Type type)
+        {
+            return type.IsValueType && type.IsPrimitive;
+        }
+
+
+        /// <summary>
         /// 根据类名获得Type实例
         /// </summary>
         /// <param name="typeName"></param>
@@ -177,6 +190,12 @@ namespace SummerBoot.Core
             return (TResult)result;
         }
 
+        public static TResult GetPropertyValueByEmit<T, TResult>(this T model, string propertyName)
+        {
+            var result = GetPropertyValueByEmit(model, propertyName);
+            return (TResult)result;
+        }
+
         public static ConcurrentDictionary<string, object> CacheDictionary = new ConcurrentDictionary<string, object>();
         public static ConcurrentDictionary<string, Delegate> CacheDelegateDictionary = new ConcurrentDictionary<string, Delegate>();
         /// <summary>
@@ -196,7 +215,7 @@ namespace SummerBoot.Core
                 throw new ArgumentNullException($"could not find property with name {propertyName}");
             }
 
-            var key = "get:" + type.FullName + property.Name;
+            var key = "GetPropertyValue:" + type.FullName + property.Name;
             if (CacheDictionary.TryGetValue(key, out var func))
             {
                 return ((Delegate)func).DynamicInvoke(model);
@@ -208,6 +227,49 @@ namespace SummerBoot.Core
             var lambda = Expression.Lambda(convertExpression, modelExpression).Compile();
             var result = lambda.DynamicInvoke(model);
             CacheDictionary.TryAdd(key, lambda);
+            return result;
+        }
+
+        public static object GetPropertyValueByEmit<T>(this T model, string propertyName)
+        {
+            var type = model.GetType();
+            var property = type.GetProperty(propertyName);
+            
+            if (property == null)
+            {
+                throw new ArgumentNullException($"could not find property with name {propertyName}");
+            }
+
+            var key = "GetPropertyValue2:" + type.FullName + property.Name;
+            if (CacheDictionary.TryGetValue(key, out var func))
+            {
+                return ((Delegate)func).DynamicInvoke(model);
+            }
+
+            var dynamicMethod = new DynamicMethod("GetPropertyValueByEmit" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[] { typeof(T) });
+
+            var il = dynamicMethod.GetILGenerator();
+
+            if (type.IsValueType)
+            {
+                il.Emit(OpCodes.Ldarga_S, 0);
+                il.Emit(OpCodes.Callvirt, property.GetGetMethod());
+                il.Emit(OpCodes.Box, property.PropertyType);
+            }
+            else
+            {
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Castclass, type);
+                il.Emit(OpCodes.Callvirt, property.GetGetMethod());
+                il.Emit(OpCodes.Box, property.PropertyType);
+            }
+
+            il.Emit(OpCodes.Ret);
+
+            var lambda = dynamicMethod.CreateDelegate(typeof(Func<T, object>));
+            CacheDictionary.TryAdd(key, lambda);
+            var result = lambda.DynamicInvoke(model);
             return result;
         }
 
@@ -273,7 +335,7 @@ namespace SummerBoot.Core
             return convertExpression;
         }
 
-        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null,bool useColumnAttribute=false) where T : class
+        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null, bool useColumnAttribute = false) where T : class
         {
             var table = new DataTable("template");
             if (propertyInfos == null || propertyInfos.Count == 0)
@@ -282,7 +344,7 @@ namespace SummerBoot.Core
             }
             foreach (var propertyInfo in propertyInfos)
             {
-                var columnName=useColumnAttribute?(propertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name?? propertyInfo.Name) : propertyInfo.Name;
+                var columnName = useColumnAttribute ? (propertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? propertyInfo.Name) : propertyInfo.Name;
                 table.Columns.Add(columnName, ChangeType(propertyInfo.PropertyType));
             }
 
@@ -334,11 +396,11 @@ namespace SummerBoot.Core
         /// 替换dataTable里的列类型
         /// </summary>
         /// <param name="dt"></param>
-        public  static void ReplaceDataTableColumnType<OldType,NewType>(DataTable dt,Func<OldType, NewType> replaceFunc)
+        public static void ReplaceDataTableColumnType<OldType, NewType>(DataTable dt, Func<OldType, NewType> replaceFunc)
         {
             var needUpdateColumnIndexList = new List<int>();
             var needUpdateColumnNameList = new List<string>();
-            
+
             for (int i = 0; i < dt.Columns.Count; i++)
             {
                 var column = dt.Columns[i];
@@ -346,7 +408,7 @@ namespace SummerBoot.Core
                 {
                     needUpdateColumnIndexList.Add(i);
                     needUpdateColumnNameList.Add(column.ColumnName);
-                  
+
                 }
             }
 
@@ -361,7 +423,7 @@ namespace SummerBoot.Core
                 var oldColumnName = needUpdateColumnNameList[i];
                 var newColumnName = Guid.NewGuid().ToString("N");
                 nameMapping.Add(newColumnName, oldColumnName);
-              
+
                 dt.Columns.Add(newColumnName, typeof(byte[])).SetOrdinal(needUpdateColumnIndexList[i]);
                 for (int j = 0; j < dt.Rows.Count; j++)
                 {
@@ -370,7 +432,7 @@ namespace SummerBoot.Core
                 }
                 dt.Columns.Remove(oldColumnName);
             }
-            
+
             for (int i = 0; i < dt.Columns.Count; i++)
             {
                 var columnName = dt.Columns[i].ColumnName;
@@ -380,6 +442,134 @@ namespace SummerBoot.Core
                 }
             }
 
+        }
+
+
+        private static readonly Dictionary<Type, bool> NumberTypeDic = new Dictionary<Type, bool>()
+        {
+            { typeof(bool), true },
+            { typeof(byte), true },
+            { typeof(sbyte), true },
+            { typeof(short), true },
+            { typeof(ushort), true },
+            { typeof(int), true },
+            { typeof(uint), true },
+            { typeof(long), true },
+            { typeof(ulong), true },
+            { typeof(float), true },
+            { typeof(double), true },
+            { typeof(decimal), true },
+        };
+        public static bool IsNumberType(this Type type)
+        {
+            return type.IsValueType && NumberTypeDic.ContainsKey(type);
+        }
+
+        /// <summary>
+        /// 缓存Type中提取出来的可写属性信息
+        /// </summary>
+        private static ConcurrentDictionary<Type, List<MemberInfoCache>> settingMemberInfoCaches =
+            new ConcurrentDictionary<Type, List<MemberInfoCache>>();
+        /// <summary>
+        /// 获取类型里的属性列表，仅支持属性
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static List<MemberInfoCache> GetMemberInfoCachesForSetting(this Type type)
+        {
+            if (settingMemberInfoCaches.TryGetValue(type, out var result))
+            {
+                return result;
+            }
+
+            lock (settingMemberInfoCaches)
+            {
+                if (settingMemberInfoCaches.TryGetValue(type, out result))
+                {
+                    return result;
+                }
+
+                result = new List<MemberInfoCache>();
+
+                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                    .ToList();
+
+                for (var i = 0; i < propertyInfos.Count; i++)
+                {
+                    var propertyInfo = propertyInfos[i];
+
+                    if (propertyInfo.GetIndexParameters().Length > 0)
+                    {
+                        continue;
+                    }
+
+                    var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
+                    var memberCacheInfo = new MemberInfoCache()
+                    {
+                        Name = columnAttribute?.Name ?? propertyInfo.Name,
+                        PropertyInfo = propertyInfo,
+                        PropertyName = propertyInfo.Name
+                    };
+                    result.Add(memberCacheInfo);
+                }
+
+                settingMemberInfoCaches.TryAdd(type, result);
+                return result;
+
+            }
+        }
+
+        /// <summary>
+        /// 缓存Type中提取出来的可读属性信息
+        /// </summary>
+        private static ConcurrentDictionary<Type, List<MemberInfoCache>> gettingMemberInfoCaches =
+            new ConcurrentDictionary<Type, List<MemberInfoCache>>();
+        /// <summary>
+        /// 获取类型里的属性列表，仅支持属性
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static List<MemberInfoCache> GetMemberInfoCachesForGetting(this Type type)
+        {
+            if (gettingMemberInfoCaches.TryGetValue(type, out var result))
+            {
+                return result;
+            }
+
+            lock (gettingMemberInfoCaches)
+            {
+                if (gettingMemberInfoCaches.TryGetValue(type, out result))
+                {
+                    return result;
+                }
+
+                result = new List<MemberInfoCache>();
+
+                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanRead && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                    .ToList();
+
+                for (var i = 0; i < propertyInfos.Count; i++)
+                {
+                    var propertyInfo = propertyInfos[i];
+
+                    if (propertyInfo.GetIndexParameters().Length > 0)
+                    {
+                        continue;
+                    }
+                    var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
+                    var memberCacheInfo = new MemberInfoCache()
+                    {
+                        Name = columnAttribute?.Name ?? propertyInfo.Name,
+                        PropertyInfo = propertyInfo,
+                        PropertyName = propertyInfo.Name
+                    };
+                    result.Add(memberCacheInfo);
+                }
+
+                gettingMemberInfoCaches.TryAdd(type, result);
+                return result;
+
+            }
         }
     }
 }

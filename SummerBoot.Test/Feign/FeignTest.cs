@@ -68,6 +68,43 @@ namespace SummerBoot.Test.Feign
         }
 
         /// <summary>
+        /// 测试全局拦截器
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestGlobalInterceptor()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services.AddSummerBoot();
+            services.AddSummerBootFeign(it =>
+            {
+                //it.SetGlobalInterceptor(typeof(GlobalInterceptor));
+            });
+            var serviceProvider = services.BuildServiceProvider();
+            var testFeign = serviceProvider.GetRequiredService<ITestGlobalInterceptorFeign>();
+            await Assert.ThrowsAsync<HttpRequestException>((async () =>
+             {
+                 var result = await testFeign.TestInterceptor(new Test() { Name = "sb", Age = 3 });
+             }));
+
+            var services2 = new ServiceCollection();
+            services2.AddSingleton<IHttpClientFactory, TestFeignHttpClientFactory>();
+
+            services2.AddSummerBoot();
+            services2.AddSummerBootFeign(it =>
+            {
+                it.SetGlobalInterceptor(typeof(GlobalInterceptor));
+            });
+            var serviceProvider2 = services2.BuildServiceProvider();
+            var testFeign2 = serviceProvider2.GetRequiredService<ITestGlobalInterceptorFeign>();
+            var result = await testFeign2.TestInterceptor(new Test() { Name = "sb", Age = 3 });
+            Assert.Equal("sb", result.Name);
+            Assert.Equal(3, result.Age);
+        }
+
+        /// <summary>
         /// 测试feign nacos配置中心
         /// </summary>
         /// <returns></returns>
@@ -80,7 +117,7 @@ namespace SummerBoot.Test.Feign
 
             var xx = conf["a:c"];
             var c = conf["a"];
-            Assert.Equal("333", c);
+            Assert.Equal("public", c);
             //while (true)
             //{
             //    var c = conf["a"];

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using SummerBoot.Repository;
-using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Test.Sqlite.Db;
 using SummerBoot.Test.Sqlite.Models;
@@ -36,7 +35,39 @@ namespace SummerBoot.Test.Sqlite
     {
         private IServiceProvider serviceProvider;
 
+        /// <summary>
+        /// 测试插入实体和更新实体前的自定义函数
+        /// </summary>
+        [Fact, Priority(113)]
+        public async Task TestBeforeInsertAndUpdateEvent()
+        {
+            InitSqliteDatabase("Data Source=./TestBeforeInsertAndUpdateEvent.db");
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            Assert.Equal("abc", guidModel.Address);
+            guidModel.Name = "ccd";
+            await guidModelRepository.UpdateAsync(guidModel);
+            Assert.Equal("ppp", guidModel.Address);
 
+            id = Guid.NewGuid();
+            var guidModel2 = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            guidModelRepository.Insert(guidModel2);
+            Assert.Equal("abc", guidModel2.Address);
+            guidModel2.Name = "ccd";
+            guidModelRepository.UpdateAsync(guidModel2);
+            Assert.Equal("ppp", guidModel2.Address);
+        }
         /// <summary>
         /// 测试id类型为guid的model的增删改查
         /// </summary>
@@ -45,7 +76,7 @@ namespace SummerBoot.Test.Sqlite
         {
             InitSqliteDatabase("Data Source=./TestModelUseGuidAsId.db");
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -132,7 +163,7 @@ namespace SummerBoot.Test.Sqlite
         public void TestCreateTableFromEntityAndCrud()
         {
             InitSqliteDatabase("Data Source=./TestCreateTableFromEntityAndCrud.db");
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -225,7 +256,7 @@ namespace SummerBoot.Test.Sqlite
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitSqliteDatabase("Data Source=./TestGenerateCsharpClassByDatabaseInfo.db");
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -359,26 +390,26 @@ namespace SummerBoot.Test.Sqlite
         {
 
             InitSqliteDatabase("Data Source=./TestGenerateDatabaseTableByCsharpClass.db");
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
-            sb.AppendLine("CREATE TABLE \"NullableTable2\" (");
-            sb.AppendLine("    \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,");
-            sb.AppendLine("    \"Int2\" INTEGER NULL,");
-            sb.AppendLine("    \"Long2\" INTEGER NULL,");
-            sb.AppendLine("    \"Float2\" REAL NULL,");
-            sb.AppendLine("    \"Double2\" REAL NULL,");
-            sb.AppendLine("    \"Decimal2\" TEXT NULL,");
-            sb.AppendLine("    \"Decimal3\" TEXT NULL,");
-            sb.AppendLine("    \"Guid2\" TEXT NULL,");
-            sb.AppendLine("    \"Short2\" INTEGER NULL,");
-            sb.AppendLine("    \"DateTime2\" TEXT NULL,");
-            sb.AppendLine("    \"Bool2\" INTEGER NULL,");
-            sb.AppendLine("    \"TimeSpan2\" TEXT NULL,");
-            sb.AppendLine("    \"Byte2\" INTEGER NULL,");
-            sb.AppendLine("    \"String2\" TEXT NULL,");
-            sb.AppendLine("    \"String3\" TEXT NULL");
+            sb.AppendLine("CREATE TABLE `NullableTable2` (");
+            sb.AppendLine("    `Id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,");
+            sb.AppendLine("    `Int2` INTEGER NULL,");
+            sb.AppendLine("    `Long2` INTEGER NULL,");
+            sb.AppendLine("    `Float2` REAL NULL,");
+            sb.AppendLine("    `Double2` REAL NULL,");
+            sb.AppendLine("    `Decimal2` TEXT NULL,");
+            sb.AppendLine("    `Decimal3` TEXT NULL,");
+            sb.AppendLine("    `Guid2` TEXT NULL,");
+            sb.AppendLine("    `Short2` INTEGER NULL,");
+            sb.AppendLine("    `DateTime2` TEXT NULL,");
+            sb.AppendLine("    `Bool2` INTEGER NULL,");
+            sb.AppendLine("    `TimeSpan2` TEXT NULL,");
+            sb.AppendLine("    `Byte2` INTEGER NULL,");
+            sb.AppendLine("    `String2` TEXT NULL,");
+            sb.AppendLine("    `String3` TEXT NULL");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
@@ -388,22 +419,22 @@ namespace SummerBoot.Test.Sqlite
 
             //dbGenerator.ExecuteGenerateSql(result[0]);
             sb.Clear();
-            sb.AppendLine("CREATE TABLE \"NotNullableTable2\" (");
-            sb.AppendLine("    \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,");
-            sb.AppendLine("    \"Int2\" INTEGER NOT NULL,");
-            sb.AppendLine("    \"Long2\" INTEGER NOT NULL,");
-            sb.AppendLine("    \"Float2\" REAL NOT NULL,");
-            sb.AppendLine("    \"Double2\" REAL NOT NULL,");
-            sb.AppendLine("    \"Decimal2\" TEXT NOT NULL,");
-            sb.AppendLine("    \"Decimal3\" TEXT NOT NULL,");
-            sb.AppendLine("    \"Guid2\" TEXT NOT NULL,");
-            sb.AppendLine("    \"Short2\" INTEGER NOT NULL,");
-            sb.AppendLine("    \"DateTime2\" TEXT NOT NULL,");
-            sb.AppendLine("    \"Bool2\" INTEGER NOT NULL,");
-            sb.AppendLine("    \"TimeSpan2\" TEXT NOT NULL,");
-            sb.AppendLine("    \"Byte2\" INTEGER NOT NULL,");
-            sb.AppendLine("    \"String2\" TEXT NOT NULL,");
-            sb.AppendLine("    \"String3\" TEXT NOT NULL");
+            sb.AppendLine("CREATE TABLE `NotNullableTable2` (");
+            sb.AppendLine("    `Id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,");
+            sb.AppendLine("    `Int2` INTEGER NOT NULL,");
+            sb.AppendLine("    `Long2` INTEGER NOT NULL,");
+            sb.AppendLine("    `Float2` REAL NOT NULL,");
+            sb.AppendLine("    `Double2` REAL NOT NULL,");
+            sb.AppendLine("    `Decimal2` TEXT NOT NULL,");
+            sb.AppendLine("    `Decimal3` TEXT NOT NULL,");
+            sb.AppendLine("    `Guid2` TEXT NOT NULL,");
+            sb.AppendLine("    `Short2` INTEGER NOT NULL,");
+            sb.AppendLine("    `DateTime2` TEXT NOT NULL,");
+            sb.AppendLine("    `Bool2` INTEGER NOT NULL,");
+            sb.AppendLine("    `TimeSpan2` TEXT NOT NULL,");
+            sb.AppendLine("    `Byte2` INTEGER NOT NULL,");
+            sb.AppendLine("    `String2` TEXT NOT NULL,");
+            sb.AppendLine("    `String3` TEXT NOT NULL");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
@@ -414,14 +445,14 @@ namespace SummerBoot.Test.Sqlite
             Assert.Equal(1, result.Count());
             Assert.Equal(0, result[0].Descriptions.Count);
             Assert.Equal(1, result[0].FieldModifySqls.Count);
-            Assert.Equal("ALTER TABLE NullableTable ADD \"int3\" INTEGER NULL", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE NullableTable ADD `int3` INTEGER NULL", result[0].FieldModifySqls[0]);
 
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
             Assert.Equal(1, result.Count());
             sb.Clear();
-            sb.AppendLine("CREATE TABLE \"SpecifiedMapTestTable\" (");
-            sb.AppendLine("    \"NormalTxt\" TEXT NULL,");
-            sb.AppendLine("    \"SpecifiedTxt\" real NULL");
+            sb.AppendLine("CREATE TABLE `SpecifiedMapTestTable` (");
+            sb.AppendLine("    `NormalTxt` TEXT NULL,");
+            sb.AppendLine("    `SpecifiedTxt` real NULL");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
@@ -461,8 +492,26 @@ namespace SummerBoot.Test.Sqlite
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(SQLiteConnection);
-                it.ConnectionString = databaseString;
+                it.AddDatabaseUnit<SQLiteConnection, IUnitOfWork1>(databaseString,
+                    x =>
+                    {
+                        x.BindRepositorysWithAttribute<SqliteAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                        x.BeforeInsert += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "abc";
+                            }
+                        });
+                        x.BeforeUpdate += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "ppp";
+                            }
+                        });
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -483,7 +532,7 @@ namespace SummerBoot.Test.Sqlite
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -599,6 +648,31 @@ namespace SummerBoot.Test.Sqlite
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
 
+            //lambda page
+            var page3 = await customerRepository.Where(it => it.Age > 5).ToPageAsync(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge = await customerRepository.MaxAsync(it => it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = await customerRepository.MinAsync(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = await customerRepository.OrderBy(it => it.Age).FirstAsync();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 = await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 = await customerRepository.OrderBy(it => it.Age).FirstAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+
+            var totalCount = await customerRepository.CountAsync(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = await customerRepository.Where(it => it.Age >= 98).SumAsync(it => it.Age);
+            Assert.Equal(99 + 98, sumResult);
+            var avgResult = await customerRepository.Where(it => it.Age >= 98).AverageAsync(it => (double)it.Age);
+            Assert.Equal((99 + 98) / (double)2, avgResult);
+
             //测试bindWhere构造条件
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
@@ -632,11 +706,16 @@ namespace SummerBoot.Test.Sqlite
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
+            await customerRepository.InsertAsync(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers = await customerRepository.Where(it => it.Name == null).ToListAsync();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = await customerRepository.Where(it => it.Name != null).ToListAsync();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -751,6 +830,30 @@ namespace SummerBoot.Test.Sqlite
             var page2 = customerRepository.Where(it => it.Age > 5).Skip(0).Take(10).ToPage();
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
+            //lambda page
+            var page3 = customerRepository.Where(it => it.Age > 5).ToPage(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge = customerRepository.Max(it => it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = customerRepository.Min(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = customerRepository.OrderBy(it => it.Age).FirstOrDefault();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = customerRepository.OrderBy(it => it.Age).First();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 = customerRepository.OrderBy(it => it.Age).FirstOrDefault(it => it.Age > 5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 = customerRepository.OrderBy(it => it.Age).First(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+
+            var totalCount = customerRepository.Count(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = customerRepository.Where(it => it.Age >= 98).Sum(it => it.Age);
+            Assert.Equal(99 + 98, sumResult);
+            var avgResult = customerRepository.Where(it => it.Age >= 98).Average(it => it.Age);
+            Assert.Equal((99 + 98) / (double)2, avgResult);
 
             //测试bindWhere构造条件
             var nameEmpty = WhereBuilder.Empty<string>();
@@ -792,12 +895,16 @@ namespace SummerBoot.Test.Sqlite
             customerRepository.Delete(it=>it.Age>5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
-
+            customerRepository.Insert(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers = customerRepository.Where(it => it.Name == null).ToList();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = customerRepository.Where(it => it.Name != null).ToList();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestLinq()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -815,7 +922,7 @@ namespace SummerBoot.Test.Sqlite
 
         public void TestBaseQuery()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();

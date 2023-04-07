@@ -12,6 +12,11 @@ namespace SummerBoot.Repository
             PageNumber = pageNumber;
             PageSize = pageSize;
         }
+
+        public Pageable()
+        {
+            
+        }
         /// <summary>
         /// 当前页
         /// </summary>

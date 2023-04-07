@@ -19,7 +19,6 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
-using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using Xunit;
 using Xunit.Priority;
@@ -33,6 +32,40 @@ namespace SummerBoot.Test.SqlServer
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试插入实体和更新实体前的自定义函数
+        /// </summary>
+        [Fact, Priority(113)]
+        public async Task TestBeforeInsertAndUpdateEvent()
+        {
+            InitDatabase();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+            var id = Guid.NewGuid();
+            var guidModel = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            await guidModelRepository.InsertAsync(guidModel);
+            Assert.Equal("abc", guidModel.Address);
+            guidModel.Name = "ccd";
+            await guidModelRepository.UpdateAsync(guidModel);
+            Assert.Equal("ppp", guidModel.Address);
+
+            id = Guid.NewGuid();
+            var guidModel2 = new GuidModel()
+            {
+                Id = id,
+                Name = "sb"
+            };
+            guidModelRepository.Insert(guidModel2);
+            Assert.Equal("abc", guidModel2.Address);
+            guidModel2.Name = "ccd";
+            guidModelRepository.UpdateAsync(guidModel2);
+            Assert.Equal("ppp", guidModel2.Address);
+        }
+
+        /// <summary>
         /// 测试id类型为guid的model的增删改查
         /// </summary>
         [Fact, Priority(413)]
@@ -40,7 +73,8 @@ namespace SummerBoot.Test.SqlServer
         {
             InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+          
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -78,7 +112,7 @@ namespace SummerBoot.Test.SqlServer
             var now2 = now;
             var total = 2000;
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
 
@@ -333,7 +367,7 @@ namespace SummerBoot.Test.SqlServer
             var total = 2000;
             InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-            var dbFactory = serviceProvider.GetService<IDbFactory>();
+       
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
 
@@ -553,17 +587,17 @@ namespace SummerBoot.Test.SqlServer
         public void TestTableSchemaAndAddPrimaryKey()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
             var sb = new StringBuilder();
 
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema) });
             sb.Clear();
             sb.AppendLine("CREATE TABLE test1.[CustomerWithSchema] (");
-            sb.AppendLine("    [Name] nvarchar(max)  NULL,");
-            sb.AppendLine("    [Age] int  NOT NULL,");
-            sb.AppendLine("    [CustomerNo] nvarchar(max)  NULL,");
-            sb.AppendLine("    [TotalConsumptionAmount] decimal(18,2)  NOT NULL");
+            sb.AppendLine("    [Name] nvarchar(max) NULL,");
+            sb.AppendLine("    [Age] int NOT NULL,");
+            sb.AppendLine("    [CustomerNo] nvarchar(max) NULL,");
+            sb.AppendLine("    [TotalConsumptionAmount] decimal(18,2) NOT NULL");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
             Assert.Equal(exceptStr
@@ -574,11 +608,11 @@ namespace SummerBoot.Test.SqlServer
             }
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(CustomerWithSchema2) });
             Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Id] int IDENTITY(1,1) PRIMARY KEY NOT NULL", result[0].FieldModifySqls[0]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateOn] datetime2  NULL", result[0].FieldModifySqls[1]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateBy] nvarchar(max)  NULL", result[0].FieldModifySqls[2]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateOn] datetime2  NULL", result[0].FieldModifySqls[3]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateBy] nvarchar(max)  NULL", result[0].FieldModifySqls[4]);
-            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Active] int  NULL", result[0].FieldModifySqls[5]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateOn] datetime2 NULL", result[0].FieldModifySqls[1]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [LastUpdateBy] nvarchar(max) NULL", result[0].FieldModifySqls[2]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateOn] datetime2 NULL", result[0].FieldModifySqls[3]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [CreateBy] nvarchar(max) NULL", result[0].FieldModifySqls[4]);
+            Assert.Equal("ALTER TABLE test1.[CustomerWithSchema] ADD [Active] int NULL", result[0].FieldModifySqls[5]);
             foreach (var generateDatabaseSqlResult in result)
             {
                 dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
@@ -626,7 +660,7 @@ namespace SummerBoot.Test.SqlServer
         public void TestCreateTableFromEntityAndCrud()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2) });
             foreach (var sql in sqls)
@@ -719,7 +753,7 @@ namespace SummerBoot.Test.SqlServer
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "Customer", "NullableTable", "NotNullableTable" }, "abc");
             Assert.Equal(3, result.Count);
 
@@ -875,28 +909,28 @@ namespace SummerBoot.Test.SqlServer
         {
 
             InitDatabase();
-            var dbGenerator = serviceProvider.GetService<IDbGenerator>();
+            var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
             var sb = new StringBuilder();
             sb.AppendLine("CREATE TABLE dbo.[NullableTable2] (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
-            sb.AppendLine("    [Int2] int  NULL,");
-            sb.AppendLine("    [Long2] bigint  NULL,");
-            sb.AppendLine("    [Float2] real  NULL,");
-            sb.AppendLine("    [Double2] float  NULL,");
-            sb.AppendLine("    [Decimal2] decimal(18,2)  NULL,");
-            sb.AppendLine("    [Decimal3] decimal(20,4)  NULL,");
-            sb.AppendLine("    [Guid2] uniqueidentifier  NULL,");
-            sb.AppendLine("    [Short2] smallint  NULL,");
-            sb.AppendLine("    [DateTime2] datetime2  NULL,");
-            sb.AppendLine("    [Bool2] bit  NULL,");
-            sb.AppendLine("    [TimeSpan2] time  NULL,");
-            sb.AppendLine("    [Byte2] tinyint  NULL,");
-            sb.AppendLine("    [String2] nvarchar(100)  NULL,");
-            sb.AppendLine("    [String3] nvarchar(max)  NULL,");
-            sb.AppendLine("    [Enum2] int  NULL,");
-            sb.AppendLine("    [TestInt3] int  NULL,");
+            sb.AppendLine("    [Int2] int NULL,");
+            sb.AppendLine("    [Long2] bigint NULL,");
+            sb.AppendLine("    [Float2] real NULL,");
+            sb.AppendLine("    [Double2] float NULL,");
+            sb.AppendLine("    [Decimal2] decimal(18,2) NULL,");
+            sb.AppendLine("    [Decimal3] decimal(20,4) NULL,");
+            sb.AppendLine("    [Guid2] uniqueidentifier NULL,");
+            sb.AppendLine("    [Short2] smallint NULL,");
+            sb.AppendLine("    [DateTime2] datetime2 NULL,");
+            sb.AppendLine("    [Bool2] bit NULL,");
+            sb.AppendLine("    [TimeSpan2] time NULL,");
+            sb.AppendLine("    [Byte2] tinyint NULL,");
+            sb.AppendLine("    [String2] nvarchar(100) NULL,");
+            sb.AppendLine("    [String3] nvarchar(max) NULL,");
+            sb.AppendLine("    [Enum2] int NULL,");
+            sb.AppendLine("    [TestInt3] int NULL,");
             sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();
@@ -913,20 +947,20 @@ namespace SummerBoot.Test.SqlServer
             sb.Clear();
             sb.AppendLine("CREATE TABLE dbo.[NotNullableTable2] (");
             sb.AppendLine("    [Id] int IDENTITY(1,1) NOT NULL,");
-            sb.AppendLine("    [Int2] int  NOT NULL,");
-            sb.AppendLine("    [Long2] bigint  NOT NULL,");
-            sb.AppendLine("    [Float2] real  NOT NULL,");
-            sb.AppendLine("    [Double2] float  NOT NULL,");
-            sb.AppendLine("    [Decimal2] decimal(18,2)  NOT NULL,");
-            sb.AppendLine("    [Decimal3] decimal(20,4)  NOT NULL,");
-            sb.AppendLine("    [Guid2] uniqueidentifier  NOT NULL,");
-            sb.AppendLine("    [Short2] smallint  NOT NULL,");
-            sb.AppendLine("    [DateTime2] datetime2  NOT NULL,");
-            sb.AppendLine("    [Bool2] bit  NOT NULL,");
-            sb.AppendLine("    [TimeSpan2] time  NOT NULL,");
-            sb.AppendLine("    [Byte2] tinyint  NOT NULL,");
-            sb.AppendLine("    [String2] nvarchar(100)  NOT NULL,");
-            sb.AppendLine("    [String3] nvarchar(max)  NOT NULL,");
+            sb.AppendLine("    [Int2] int NOT NULL,");
+            sb.AppendLine("    [Long2] bigint NOT NULL,");
+            sb.AppendLine("    [Float2] real NOT NULL,");
+            sb.AppendLine("    [Double2] float NOT NULL,");
+            sb.AppendLine("    [Decimal2] decimal(18,2) NOT NULL,");
+            sb.AppendLine("    [Decimal3] decimal(20,4) NOT NULL,");
+            sb.AppendLine("    [Guid2] uniqueidentifier NOT NULL,");
+            sb.AppendLine("    [Short2] smallint NOT NULL,");
+            sb.AppendLine("    [DateTime2] datetime2 NOT NULL,");
+            sb.AppendLine("    [Bool2] bit NOT NULL,");
+            sb.AppendLine("    [TimeSpan2] time NOT NULL,");
+            sb.AppendLine("    [Byte2] tinyint NOT NULL,");
+            sb.AppendLine("    [String2] nvarchar(100) NOT NULL,");
+            sb.AppendLine("    [String3] nvarchar(max) NOT NULL,");
             sb.AppendLine("    CONSTRAINT PK_NotNullableTable2 PRIMARY KEY (Id)");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
@@ -939,18 +973,23 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(1, result[0].Descriptions.Count);
             Assert.Equal("EXEC sp_addextendedproperty 'MS_Description', N'test add column', 'schema', N'dbo', 'table', N'NullableTable', 'column', N'int3'", result[0].Descriptions[0]);
             Assert.Equal(1, result[0].FieldModifySqls.Count);
-            Assert.Equal("ALTER TABLE dbo.[NullableTable] ADD [int3] int  NULL", result[0].FieldModifySqls[0]);
+            Assert.Equal("ALTER TABLE dbo.[NullableTable] ADD [int3] int NULL", result[0].FieldModifySqls[0]);
 
             result = dbGenerator.GenerateSql(new List<Type>() { typeof(SpecifiedMapTestTable) });
             Assert.Equal(1, result.Count());
             sb.Clear();
             sb.AppendLine("CREATE TABLE dbo.[SpecifiedMapTestTable] (");
-            sb.AppendLine("    [NormalTxt] nvarchar(max)  NULL,");
-            sb.AppendLine("    [SpecifiedTxt] text  NULL");
+            sb.AppendLine("    [NormalTxt] nvarchar(max) NULL,");
+            sb.AppendLine("    [SpecifiedTxt] text NULL");
             sb.AppendLine(")");
             exceptStr = sb.ToString();
             Assert.Equal(exceptStr
                 , result[0].Body);
+
+            foreach (var generateDatabaseSqlResult in result)
+            {
+                dbGenerator.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
         }
 
 
@@ -1025,8 +1064,26 @@ namespace SummerBoot.Test.SqlServer
 
             services.AddSummerBootRepository(it =>
             {
-                it.DbConnectionType = typeof(SqlConnection);
-                it.ConnectionString = connectionString;
+                it.AddDatabaseUnit<SqlConnection, IUnitOfWork1>(connectionString,
+                    x =>
+                    {
+                        x.BindRepositorysWithAttribute<SqlServerAutoRepositoryAttribute>();
+                        x.BindDbGeneratorType<IDbGenerator1>();
+                        x.BeforeInsert += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "abc";
+                            }
+                        });
+                        x.BeforeUpdate += new RepositoryEvent(entity =>
+                        {
+                            if (entity is GuidModel guidModel)
+                            {
+                                guidModel.Address = "ppp";
+                            }
+                        });
+                    });
             });
 
             serviceProvider = services.BuildServiceProvider();
@@ -1035,7 +1092,7 @@ namespace SummerBoot.Test.SqlServer
 
         public async Task TestRepositoryAsync()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1155,6 +1212,31 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
 
+            //lambda page
+            var page3 = await customerRepository.Where(it => it.Age > 5).ToPageAsync(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge = await customerRepository.MaxAsync(it => it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = await customerRepository.MinAsync(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = await customerRepository.OrderBy(it => it.Age).FirstAsync();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 = await customerRepository.OrderBy(it => it.Age).FirstOrDefaultAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 = await customerRepository.OrderBy(it => it.Age).FirstAsync(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+
+            var totalCount = await customerRepository.CountAsync(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = await customerRepository.Where(it => it.Age >= 98).SumAsync(it => it.Age);
+            Assert.Equal(99 + 98, sumResult);
+            var avgResult = await customerRepository.Where(it => it.Age >= 98).AverageAsync(it => it.Age);
+            Assert.Equal((99 + 98) / 2, avgResult);
+
             //测试bindWhere构造条件
             var nameEmpty = WhereBuilder.Empty<string>();
             var ageEmpty = WhereBuilder.Empty<int>();
@@ -1190,6 +1272,11 @@ namespace SummerBoot.Test.SqlServer
             await customerRepository.DeleteAsync(it => it.Age > 5);
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
+            await customerRepository.InsertAsync(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers =await customerRepository.Where(it => it.Name == null).ToListAsync();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers =await customerRepository.Where(it => it.Name != null).ToListAsync();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         private void test(Expression<Func<Customer, object>> exp, object value)
@@ -1199,12 +1286,12 @@ namespace SummerBoot.Test.SqlServer
 
         public void TestRepository()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
-            var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
+            //var customCustomerRepository = serviceProvider.GetService<ICustomCustomerRepository>();
 
             //Test insert,update,get,delete 
             var customer = new Customer() { Name = "testCustomer" };
@@ -1318,6 +1405,31 @@ namespace SummerBoot.Test.SqlServer
             Assert.Equal(94, page2.TotalPages);
             Assert.Equal(10, page2.Data.Count);
 
+            //lambda page
+            var page3 = customerRepository.Where(it => it.Age > 5).ToPage(pageable);
+            Assert.Equal(94, page3.TotalPages);
+            Assert.Equal(10, page3.Data.Count);
+
+            var maxAge = customerRepository.Max(it => it.Age);
+            Assert.Equal(99, maxAge);
+            var minAge = customerRepository.Min(it => it.Age);
+            Assert.Equal(0, minAge);
+            var firstItem = customerRepository.OrderBy(it => it.Age).FirstOrDefault();
+            Assert.Equal(0, firstItem.Age);
+            var firstItem2 = customerRepository.OrderBy(it => it.Age).First();
+            Assert.Equal(0, firstItem2.Age);
+            var firstItem3 = customerRepository.OrderBy(it => it.Age).FirstOrDefault(it => it.Age > 5);
+            Assert.Equal(6, firstItem3.Age);
+            var firstItem4 = customerRepository.OrderBy(it => it.Age).First(it => it.Age > 5);
+            Assert.Equal(6, firstItem4.Age);
+
+            var totalCount = customerRepository.Count(it => it.Age > 5);
+            Assert.Equal(94, totalCount);
+            var sumResult = customerRepository.Where(it => it.Age >= 98).Sum(it => it.Age);
+            Assert.Equal(99 + 98, sumResult);
+            var avgResult = customerRepository.Where(it => it.Age >= 98).Average(it => it.Age);
+            Assert.Equal((99 + 98) / 2, avgResult);
+
             //测试bindWhere构造条件
             var nameEmpty = WhereBuilder.Empty<string>();//
             var ageEmpty = WhereBuilder.Empty<int>();
@@ -1358,12 +1470,16 @@ namespace SummerBoot.Test.SqlServer
             customerRepository.Delete(it => it.Age > 5);
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
-
+            customerRepository.Insert(new Customer() { Age = 200, Name = null });
+            var emptyNameCustomers= customerRepository.Where(it => it.Name == null).ToList();
+            Assert.Equal(1, emptyNameCustomers.Count);
+            var notNullNameCustomers = customerRepository.Where(it => it.Name != null).ToList();
+            Assert.Equal(8, notNullNameCustomers.Count);
         }
 
         public void TestLinq()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
@@ -1381,7 +1497,7 @@ namespace SummerBoot.Test.SqlServer
 
         public void TestBaseQuery()
         {
-            var uow = serviceProvider.GetService<IUnitOfWork>();
+            var uow = serviceProvider.GetService<IUnitOfWork1>();
             var orderQueryRepository = serviceProvider.GetService<IOrderQueryRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();

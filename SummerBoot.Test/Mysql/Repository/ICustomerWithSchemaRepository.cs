@@ -4,13 +4,13 @@ using SummerBoot.Test.Mysql.Models;
 
 namespace SummerBoot.Test.Mysql.Repository
 {
-    [AutoRepository]
+    [MysqlAutoRepositoryAttribute]
     public interface ICustomerWithSchemaRepository : IBaseRepository<CustomerWithSchema>
     {
         
     }
 
-    [AutoRepository]
+    [MysqlAutoRepositoryAttribute]
     public interface ICustomerWithSchema2Repository : IBaseRepository<CustomerWithSchema2>
     {
         [Select("select * from test.CustomerWithSchema order by age")]

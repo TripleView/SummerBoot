@@ -3,19 +3,19 @@ using SummerBoot.Test.Oracle.Models;
 
 namespace SummerBoot.Test.Oracle.Repository
 {
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface INullableTable2Repository: IBaseRepository<NullableTable2>
     {
         
     }
 
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface INullableTableRepository : IBaseRepository<NullableTable>
     {
 
     }
 
-    [AutoRepository]
+    [OracleAutoRepository]
     public interface INotNullableTableRepository : IBaseRepository<NotNullableTable>
     {
 

@@ -22,10 +22,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.MemberInfo = memberInfo;
         }
 
-        public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index, object value, string functionName) : this(type, tableAlias, memberInfo, index)
+        public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index,Type valueType) : base((ExpressionType)DbExpressionType.Column, type)
         {
-            this.Value = value;
-            this.FunctionName = functionName;
+            TableAlias = tableAlias;
+            Index = index;
+            this.MemberInfo = memberInfo;
+            this.ValueType=valueType;
         }
 
         public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index, object value) : this(type, tableAlias, memberInfo, index)
@@ -33,10 +35,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.Value = value;
         }
 
-        public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index, string columnAlias) : this(type, tableAlias, memberInfo, index)
-        {
-            this.ColumnAlias = columnAlias;
-        }
+      
 
         public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index, string columnAlias, string functionName) : this(type, tableAlias, memberInfo, index)
         {
@@ -44,13 +43,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.FunctionName = functionName;
         }
 
-        public ColumnExpression(Type type, string tableAlias, MemberInfo memberInfo, int index, string columnAlias, string functionName,object value) : this(type, tableAlias, memberInfo, index, columnAlias, functionName)
-        {
-            this.ColumnAlias = columnAlias;
-            this.FunctionName = functionName;
-            this.Value = value;
-        }
-
+        
         /// <summary>
         /// 方法元信息
         /// </summary>
@@ -64,6 +57,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 固定值
         /// </summary>
         public object Value { get; set; }
+        /// <summary>
+        /// 值的类型
+        /// </summary>
+        public Type ValueType { get; set; }
         /// <summary>
         /// 判断是否为主键
         /// </summary>
