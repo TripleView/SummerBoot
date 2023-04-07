@@ -2,7 +2,7 @@
 
 namespace WebApplication1.Feign;
 //dfd8de72-e5ec-4595-91d4-49382f500edf
-[FeignClient(ServiceName = "test", MicroServiceMode = true, NacosGroupName = "DEFAULT_GROUP", NacosNamespaceId = "dfd8de72-e5ec-4595-91d4-49382f500edf")]
+[FeignClient(ServiceName = "test", MicroServiceMode = true)]
 public interface IFeignService
 {
     [GetMapping("/home/index")]

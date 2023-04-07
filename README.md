@@ -4,10 +4,10 @@
 <a href="https://jb.gg/OpenSourceSupport"> <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png?_ga=2.140768178.1037783001.1644161957-503565267.1643800664&_gl=1*1rs8z57*_ga*NTAzNTY1MjY3LjE2NDM4MDA2NjQ.*_ga_V0XZL7QHEB*MTY0NDE2MTk1Ny4zLjEuMTY0NDE2NTE2Mi4w" width = "200" height = "200" alt="" align=center /></a>
 # SummerBoot(中文名：夏日启动)
 为了让大家更好的了解summerBoot的使用，我创建了一个示例项目-[
-SummerBootAdmin](https://github.com/TripleView/SummerBootAdmin)，一个基于前后端分离的通用后端管理框架，大家可以查看该项目的代码以便更好的使用summerBoot。
+SummerBootAdmin](https://github.com/TripleView/SummerBootAdmin)，一个基于前后端分离的通用后端管理框架，大家可以查看该项目的代码以便更好的了解如何使用summerBoot。
 
 # 核心理念
-将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”。在更高层面写代码，更关心的是结果，SummerBoot,致力于打造一个人性化框架，让大家早点下班去做自己喜欢的事。
+将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。
 
 # 框架说明
 这是一个注解 + 接口的方式实现各种调用的全声明式框架，包括但不限于数据库，http，缓存等，框架会通过Reflection Emit技术，自动生成接口的实现类。
@@ -35,41 +35,37 @@ net core 3.1,net 6
 - [文档目录](#文档目录)
 - [SummerBoot中使用repository进行数据库操作](#summerboot中使用repository进行数据库操作)
 	- [准备工作](#准备工作)
-	- [1.首先在startup.cs类中注册服务](#1首先在startupcs类中注册服务)
-	- [3.定义接口](#3定义接口)
-	- [4.增删改查操作，均支持异步同步](#4增删改查操作均支持异步同步)
-		- [4.1 查](#41-查)
-			- [4.1.1 Lambda链式语法查询。](#411-lambda链式语法查询)
-			- [4.1.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete](#412-直接在接口里定义方法并且在方法上加上注解如selectupdatedelete)
-				- [4.1.2.1 注解里的sql支持从配置里读取](#4121-注解里的sql支持从配置里读取)
-			- [4.1.3 select注解这种方式拼接where查询条件](#413-select注解这种方式拼接where查询条件)
-			- [4.1.4 IBaseRepository接口自带的查方法](#414-ibaserepository接口自带的查方法)
-		- [4.2 增](#42-增)
-			- [4.2.1 接口自带了Insert方法，可以插入单个实体，或者实体列表](#421-接口自带了insert方法可以插入单个实体或者实体列表)
-			- [4.2.2 快速批量插入，接口自带了FastBatchInsert方法，可以快速插入实体列表。](#422-快速批量插入接口自带了fastbatchinsert方法可以快速插入实体列表)
-		- [4.3 删](#43-删)
-			- [4.3.1 接口自带了Delete方法，可以删除单个实体，或者实体列表](#431-接口自带了delete方法可以删除单个实体或者实体列表)
-			- [4.3.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如](#432-同时还支持基于lambda表达式的删除返回受影响的行数例如)
-		- [4.4 改](#44-改)
-			- [4.4.1 接口自带了Update方法，可以更新单个实体，或者实体列表,联合主键的话，数据库实体类对应的多字段都添加key注解即可。](#441-接口自带了update方法可以更新单个实体或者实体列表联合主键的话数据库实体类对应的多字段都添加key注解即可)
-			- [4.4.2 同时还支持基于Lambda链式语法的更新方式，返回受影响的行数，例如](#442-同时还支持基于lambda链式语法的更新方式返回受影响的行数例如)
-		- [4.5.事务支持](#45事务支持)
-		- [4.6 如果有些特殊情况需要自己手写实现类怎么办?](#46-如果有些特殊情况需要自己手写实现类怎么办)
-			- [4.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#461-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
-			- [4.6.2 添加一个实现类，继承于CustomBaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#462-添加一个实现类继承于custombaserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
-	- [2.根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表](#2根据数据库表自动生成实体类或根据实体类自动生成修改数据库表)
-		- [2.1 根据实体类自动生成/修改数据库表](#21-根据实体类自动生成修改数据库表)
-			- [2.1.1 定义一个数据库实体类](#211-定义一个数据库实体类)
-			- [2.1.1 表的命名空间](#211-表的命名空间)
-			- [2.1.2 注入IDbGenerator接口，调用GenerateSql方法生成建表或者修改表结构的sql](#212-注入idbgenerator接口调用generatesql方法生成建表或者修改表结构的sql)
-				- [2.1.2.1 如果数据库中不存在该表名的表](#2121-如果数据库中不存在该表名的表)
-				- [2.1.2.2 如果数据库中已存在该表名的表](#2122-如果数据库中已存在该表名的表)
-				- [2.1.2.3 可以选择执行这些sql](#2123-可以选择执行这些sql)
-			- [2.1.2 自定义实体类字段到数据库字段的类型映射或名称映射](#212-自定义实体类字段到数据库字段的类型映射或名称映射)
-		- [2.2 根据数据库表自动生成实体类](#22-根据数据库表自动生成实体类)
-			- [2.2.1 注入IDbGenerator接口，调用GenerateCsharpClass方法生成c#类的文本](#221-注入idbgenerator接口调用generatecsharpclass方法生成c类的文本)
+	- [1.注册服务](#1注册服务)
+	- [2.定义一个数据库实体类](#2定义一个数据库实体类)
+	- [3.写一个控制器，通过实体类自动生成数据库表](#3写一个控制器通过实体类自动生成数据库表)
+	- [4.定义仓储接口](#4定义仓储接口)
+	- [5.增删改查，均支持异步同步](#5增删改查均支持异步同步)
+		- [5.1 增](#51-增)
+			- [5.1.1 接口自带了Insert方法，可以插入单个实体，或者实体列表](#511-接口自带了insert方法可以插入单个实体或者实体列表)
+			- [5.1.2 快速批量插入，仓储接口自带了FastBatchInsert方法，可以快速插入实体列表。](#512-快速批量插入仓储接口自带了fastbatchinsert方法可以快速插入实体列表)
+		- [5.2 删](#52-删)
+			- [5.2.1 接口自带了Delete方法，可以删除单个实体，或者实体列表](#521-接口自带了delete方法可以删除单个实体或者实体列表)
+			- [5.2.2 同时还支持基于lambda表达式的删除，返回受影响的行数，例如](#522-同时还支持基于lambda表达式的删除返回受影响的行数例如)
+		- [5.3 改](#53-改)
+			- [5.3.1 接口自带了Update方法，可以更新单个实体，或者实体列表](#531-接口自带了update方法可以更新单个实体或者实体列表)
+			- [5.3.2 同时还支持基于Lambda链式语法的更新方式](#532-同时还支持基于lambda链式语法的更新方式)
+		- [5.4 查](#54-查)
+			- [5.4.1 Lambda链式语法查询，如：](#541-lambda链式语法查询如)
+			- [5.4.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete](#542-直接在接口里定义方法并且在方法上加上注解如selectupdatedelete)
+			- [5.4.3 注解里的sql支持从配置里读取](#543-注解里的sql支持从配置里读取)
+			- [5.4.4 select注解这种方式拼接where查询条件](#544-select注解这种方式拼接where查询条件)
+		- [5.5 事务支持](#55-事务支持)
+		- [5.6 特殊情况下自定义实现类](#56-特殊情况下自定义实现类)
+			- [5.6.1 定义一个接口继承于IBaseRepository，并且在接口中定义自己的方法](#561-定义一个接口继承于ibaserepository并且在接口中定义自己的方法)
+			- [5.6.2 添加一个实现类，继承于CustomBaseRepository类和自定义的ICustomCustomerRepository接口，实现类添加AutoRegister注解。](#562-添加一个实现类继承于custombaserepository类和自定义的icustomcustomerrepository接口实现类添加autoregister注解)
+			- [5.6.3 使用例子](#563-使用例子)
+	- [6 根据数据库表自动生成实体类，或根据实体类自动生成数据库表的ddl语句](#6-根据数据库表自动生成实体类或根据实体类自动生成数据库表的ddl语句)
+		- [6.1 表的命名空间](#61-表的命名空间)
+		- [6.2 根据实体类自动生成数据库表的ddl语句](#62-根据实体类自动生成数据库表的ddl语句)
+		- [6.2.2 自定义实体类字段到数据库字段的类型映射或名称映射](#622-自定义实体类字段到数据库字段的类型映射或名称映射)
+		- [6.3 根据数据库表自动生成实体类](#63-根据数据库表自动生成实体类)
 - [SummerBoot中使用feign进行http调用](#summerboot中使用feign进行http调用)
-	- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务)
+	- [1.注册服务](#1注册服务-1)
 	- [2.定义接口](#2定义接口)
 	- [3.设置请求头(header)](#3设置请求头header)
 	- [4.自定义拦截器](#4自定义拦截器)
@@ -94,7 +90,7 @@ net core 3.1,net 6
 			- [6.3.2 定义调用微服务的接口](#632-定义调用微服务的接口)
 	- [7. 在上下文中使用cookie](#7-在上下文中使用cookie)
 - [SummerBoot中使用cache进行缓存操作](#summerboot中使用cache进行缓存操作)
-	- [1.在startup.cs类中注册服务](#1在startupcs类中注册服务-1)
+	- [1.注册服务](#1注册服务-2)
 	- [2.ICache接口](#2icache接口)
 	- [3.注入接口后即可使用](#3注入接口后即可使用)
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
@@ -105,58 +101,75 @@ summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repo
 ## 准备工作
 需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core,pgsql的Npgsql
 
-## 1.首先在startup.cs类中注册服务
-repository支持多数据库多链接，在repository中我们称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库类型，第二个是sqlserver数据库类型，通过AddDatabaseUnit方法添加数据库单元，参数为相应数据库的dbConnection类和工作单元接口(工作单元接口用于事务)，框架默认提供了9个工作单元接口IUnitOfWork1~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解(该注解需要继承于AutoRepositoryAttribute，框架默认提供了AutoRepository1Attribute~AutoRepository9Attribute)，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里绑定插入前回调和更新前回调,添加自定义类型映射,添加自定义字段映射处理程序等
+## 1.注册服务
+repository支持多数据库多链接，在repository中我们称一个链接为一个数据库单元，下面的例子中就演示了一个项目中添加2个数据库单元，第一个是mysql数据库类型，第二个是sqlserver数据库类型，通过AddDatabaseUnit方法添加数据库单元，参数为相应数据库的dbConnection类和工作单元接口(工作单元接口用于事务)，框架默认提供了9个工作单元接口IUnitOfWork1\~IUnitOfWork9，当然也可以自定义工作单元接口，只需要该接口继承于IUnitOfWork即可。因为存在多个数据库单元，那么仓储就需要绑定到对应的数据库单元上，可以通过BindRepository绑定单个仓储，也可以通过在仓储上添加自定义注解(该注解需要继承于AutoRepositoryAttribute，框架默认提供了AutoRepository1Attribute~AutoRepository9Attribute)，然后使用BindRepositorysWithAttribute方法批量绑定仓储，同时可以在单元里添加插入前回调和更新前回调(比如可以用于添加创建时间和更新时间),添加自定义类型映射,添加自定义字段映射处理程序,添加表名映射，添加字段名映射(表名映射和字段名映射可用于数据库字段与实体类字段有差异的情况，比如oracle数据库，表名字段名全大写，但实体类是帕斯卡命名)等
 
 ````csharp
-            builder.Services.AddSummerBoot();
+builder.Services.AddSummerBoot();
 
-            builder.Services.AddSummerBootRepository(it =>
-            {
-                var mysqlDbConnectionString = builder.Configuration.GetValue<string>("mysqlDbConnectionString");
-                //添加第一个mysql类型的数据库单元
-                it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
-                    x =>
-                    {
-                        //绑定单个仓储
-                        //x.BindRepository<IMysqlCustomerRepository,Customer>();
-                        //通过自定义注解批量绑定仓储
-                        x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+builder.Services.AddSummerBootRepository(it =>
+{
+		var mysqlDbConnectionString = builder.Configuration.GetValue<string>("mysqlDbConnectionString");
+		//添加第一个mysql类型的数据库单元
+		it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(mysqlDbConnectionString,
+				x =>
+				{
+						//添加字段名映射
+						//x.ColumnNameMapping = (columnName) =>
+						//{
+						//    return columnName.ToUpper();
+						//};
 
-                        //绑定数据库生成接口
-                        x.BindDbGeneratorType<IDbGenerator1>();
-                        //绑定插入前回调
-                        x.BeforeInsert += entity =>
-                        {
-                            if (entity is BaseEntity baseEntity)
-                            {
-                                baseEntity.CreateOn = DateTime.Now;
-                            }
-                        };
-                        //绑定更新前回调
-                        x.BeforeUpdate += entity =>
-                        {
-                            if (entity is BaseEntity baseEntity)
-                            {
-                                baseEntity.LastUpdateOn = DateTime.Now;
-                            }
-                        };
-                        //添加自定义类型映射
-                        //x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
-                        //添加自定义字段映射处理程序
-                        //x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+						//添加表名映射
+						//x.TableNameMapping = (tableName) =>
+						//{
+						//    return tableName.ToUpper();
+						//};
 
-                    });
+						//绑定单个仓储
+						//x.BindRepository<IMysqlCustomerRepository,Customer>();
 
-                //添加第二个sqlserver类型的数据库单元
-                var sqlServerDbConnectionString = builder.Configuration.GetValue<string>("sqlServerDbConnectionString");
-                it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
-                    x =>
-                    {
-                        x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
-                        x.BindDbGeneratorType<IDbGenerator2>();
-                    });
-            });
+						//通过自定义注解批量绑定仓储
+						x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+
+						//绑定数据库生成接口
+						x.BindDbGeneratorType<IDbGenerator1>();
+
+						//绑定插入前回调
+						x.BeforeInsert += entity =>
+						{
+								if (entity is BaseEntity baseEntity)
+								{
+										baseEntity.CreateOn = DateTime.Now;
+								}
+						};
+
+						//绑定更新前回调
+						x.BeforeUpdate += entity =>
+						{
+								if (entity is BaseEntity baseEntity)
+								{
+										baseEntity.LastUpdateOn = DateTime.Now;
+								}
+						};
+						
+						//添加自定义类型映射
+						//x.SetParameterTypeMap(typeof(DateTime), DbType.DateTime2);
+
+						//添加自定义字段映射处理程序
+						//x.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
+
+				});
+
+		//添加第二个sqlserver类型的数据库单元
+		var sqlServerDbConnectionString = builder.Configuration.GetValue<string>("sqlServerDbConnectionString");
+		it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
+				x =>
+				{
+						x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
+						x.BindDbGeneratorType<IDbGenerator2>();
+				});
+});
 ````
 
 ## 2.定义一个数据库实体类
@@ -297,7 +310,7 @@ public class CustomerController : Controller
 }
 ````
 #### 5.1.2 快速批量插入，仓储接口自带了FastBatchInsert方法，可以快速插入实体列表。
-框架不会自动为实体的ID这个字段赋值，同时数据库为mysql的情况下，有一些特殊，首先驱动库必须有MySqlConnector，这个库可以和mysql.data共存，并不会冲突，所以无需担心，且数据库连接字符串后面必须加";AllowLoadLocalInfile=true"，同时在mysql数据库上执行"set global local_infile=1"开启批量上传。sqlite不支持批量快速插入。
+快速批量插入的情况下，框架不会自动为实体的ID这个字段赋值，同时数据库为mysql的情况下，有一些特殊，首先驱动库必须有MySqlConnector，这个库可以和mysql.data共存，并不会冲突，所以无需担心，且数据库连接字符串后面必须加";AllowLoadLocalInfile=true"，同时在mysql数据库上执行"set global local_infile=1"开启批量上传。sqlite不支持批量快速插入。
 ````csharp
 var customer2 = new Customer() { Name = "testCustomer2" };
 var customer3 = new Customer() { Name = "testCustomer3" };
@@ -317,7 +330,7 @@ customerRepository.Delete(customerList);
 ````
 ### 5.3 改
 #### 5.3.1 接口自带了Update方法，可以更新单个实体，或者实体列表
-根据key主键更新，联合主键的话，多字段都添加key注解即可。
+根据key主键进行更新，联合主键的话，多字段都添加key注解即可。
 ````csharp
 customerRepository.Update(customer);
 
@@ -471,7 +484,7 @@ Assert.Single(bindResult5.Data);
 var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, nameEmpty, ageEmpty);
 ````
 
-## 5.5 事务支持
+### 5.5 事务支持
 利用工作单元接口IUnitOfWork来实现数据库事务，在注入自定义仓储接口的同时，也注入数据库单元对应的IUnitOfWork接口，在这里就是IUnitOfWork1，用法如下
 
 ````csharp
@@ -625,7 +638,7 @@ public class CustomerController : Controller
     }
 }
 ````
-## 6 根据数据库表自动生成实体类，或根据实体类自动生成/修改数据库表
+## 6 根据数据库表自动生成实体类，或根据实体类自动生成数据库表的ddl语句
 
 ### 6.1 表的命名空间
 sqlserver里命名空间即schemas,oracle里命名空间即模式，sqlite和mysql里命名空间即数据库，
@@ -638,7 +651,7 @@ public class CustomerWithSchema
 	public int Age { set; get; } 
 }
 ````
-### 6.2 根据实体类自动生成/修改数据库表
+### 6.2 根据实体类自动生成数据库表的ddl语句
 用法请参考前面3的示例，这里以mysql为例，生成的sql如下:
 ````sql
 CREATE TABLE testSummerboot.`Customer` (
@@ -708,7 +721,7 @@ CREATE TABLE testSummerboot.`Customer` (
 
 
 ### 6.3 根据数据库表自动生成实体类
-注入数据库单元对应IDbGenerator接口，这里为IDbGenerator1接口，调用GenerateCsharpClass方法生成c#类的文本，参数为数据库表名的集合和生成的实体类的命名空间，调用代码如下，调用GenerateClass接口即可
+注入数据库单元对应IDbGenerator接口，这里为IDbGenerator1接口，调用GenerateCsharpClass方法生成c#类的文本，参数为数据库表名的集合和生成的实体类的命名空间，代码如下
 ```` csharp
 [ApiController]
 [Route("[controller]/[action]")]
@@ -740,7 +753,7 @@ public class GenerateTableController : Controller
     }
 }
 ````
-生成的c#实体类如下,新建一个类文件并把文本黏贴进去即可
+调用GenerateClass接口，生成的c#实体类如下,新建一个类文件并把文本黏贴进去即可
 ```` csharp
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -813,7 +826,7 @@ namespace Test.Model
 # SummerBoot中使用feign进行http调用
 >feign底层基于httpClient。
 
-## 1.在startup.cs类中注册服务
+## 1.注册服务
 ````csharp
 services.AddSummerBoot();
 services.AddSummerBootFeign();
@@ -1360,7 +1373,7 @@ await testFeign.TestCookieContainer3();
 feignUnitOfWork.StopCookie();
 ````
 # SummerBoot中使用cache进行缓存操作
-## 1.在startup.cs类中注册服务
+## 1.注册服务
 缓存分为内存缓存和redis缓存，内存缓存注册方式如下：
 ````csharp
  services.AddSummerBoot();
