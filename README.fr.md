@@ -1,4 +1,4 @@
-# ÉtéBoot[Chinois](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
+[Documents en anglais](https://github.com/TripleView/SummerBoot/blob/master/README.md)\|[Document chinois](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
 
 [![ GitHub license ](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/dotnetcore/CAP/master/LICENSE.txt)
 
@@ -12,7 +12,7 @@ Afin de permettre à chacun de mieux comprendre l'utilisation de summerBoot , j'
 
 # Idée centrale
 
-Combinez les concepts avancés de SpringBoot avec la simplicité et l'élégance de C#, la programmation déclarative, concentrez-vous sur "ce qu'il faut faire" plutôt que "comment le faire", et écrivez du code à un niveau supérieur. SummerBoot s'engage à créer un -cadre humanisé d'utilisation et facile à entretenir, afin que chacun puisse quitter le travail plus tôt pour faire ce qu'il aime.
+Combinez les concepts avancés de SpringBoot avec la simplicité et l'élégance de C#, la programmation déclarative, concentrez-vous sur "ce qu'il faut faire" plutôt que sur "comment le faire", et écrivez du code à un niveau supérieur. SummerBoot s'engage à créer un -cadre humanisé d'utilisation et facile à entretenir, afin que chacun puisse quitter le travail plus tôt pour faire ce qu'il aime.
 
 # Description du cadre
 
@@ -36,7 +36,6 @@ net core 3.1, net 6
 
 # répertoire de documents
 
--   [SummerBoot Chinois](#summerboot中文)
 -   [Merci pour la licence ide fournie par jetbrain](#thanks-for-the-ide-license-provided-by-jetbrain)
 -   [SummerBoot (nom chinois : Summer Boot)](#summerboot-中文名夏日启动)
 -   [Idée centrale](#core-idea)
@@ -88,7 +87,7 @@ net core 3.1, net 6
                 -   [5.2.1.1 L'annotation Query est utilisée avec l'annotation Embedded, et la classe d'annotation Embedded peut être ajoutée en tant que paramètre dans son ensemble](#5211-the-query-annotation-is-used-with-the-embedded-annotation-and-the-embedded-annotation-class-can-be-added-as-a-parameter-as-a-whole)
             -   [5.2.2 Les paramètres ajoutent des annotations Body (BodySerializationKind.Form)](#522-parameters-add-body-bodyserializationkindform-annotations)
             -   [5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)](#523-parameters-add-body-bodyserializationkindjson-annotations)
-            -   [5.2.4 Use the special class HeaderCollection as a method parameter to add request headers in batches](#524-use-the-special-class-headercollection-as-a-method-parameter-to-add-request-headers-in-batches)
+            -   [5.2.4 Utiliser la classe spéciale HeaderCollection comme paramètre de méthode pour ajouter des en-têtes de requête par lots](#524-use-the-special-class-headercollection-as-a-method-parameter-to-add-request-headers-in-batches)
             -   [5.2.5 Utilisez la classe spéciale BasicAuthorization comme paramètre de méthode pour ajouter l'en-tête de demande d'autorisation pour l'authentification de base](#525-use-the-special-class-basicauthorization-as-a-method-parameter-to-add-the-authorization-request-header-for-basic-authentication)
             -   [5.2.6 Utilisez la classe spéciale MultipartItem comme paramètre de méthode et marquez l'annotation Multipart sur la méthode pour télécharger la pièce jointe](#526-use-the-special-class-multipartitem-as-a-method-parameter-and-mark-the-multipart-annotation-on-the-method-to-upload-the-attachment)
             -   [5.2.7 Utilisez la classe Stream comme type de retour de la méthode pour recevoir des données en continu, telles que le téléchargement de fichiers.](#527-use-the-class-stream-as-the-return-type-of-the-method-to-receive-streaming-data-such-as-downloading-files)
@@ -338,7 +337,7 @@ public class CustomerController : Controller
 }
 ```
 
-#### 5.1.2 Insertion rapide des lots, l'interface de stockage est livrée avec la méthode FastBatchInsert, qui peut insérer rapidement la liste des entités.
+#### 5.1.2 Fast batch insertion, the storage interface comes with the FastBatchInsert method, which can quickly insert the entity list.
 
 Dans le cas d'une insertion rapide par lots, le framework n'attribuera pas automatiquement de valeur au champ ID de l'entité. En même temps, si la base de données est mysql , il existe des circonstances particulières. Tout d'abord, la bibliothèque de pilotes doit avoir MySqlConnector . Cette bibliothèque peut coexister avec mysql.data et ne sera pas en conflit, il n'y a donc pas lieu de s'inquiéter, et la chaîne de connexion à la base de données doit être suivie de "; AllowLoadLocalInfile =true", et en même temps exécuter "set global local_infile =1" sur la base de données mysql pour activer le téléchargement par lots. SQLite ne prend pas en charge l'insertion rapide par lots.
 
@@ -946,7 +945,7 @@ public interface ITestFeignWithConfiguration
 }
 ```
 
-Parfois, nous voulons uniquement utiliser le chemin dans la méthode comme une URL complète pour lancer une requête http, nous pouvons alors définir l'interface comme suit, définir UsePathAsUrl sur true (la valeur par défaut est false)
+Sometimes we only want to use the path in the method as a complete url to initiate an http request, then we can define the interface as follows, set UsePathAsUrl to true (the default is false)
 
 ```csharp
 [FeignClient(Url = "http://localhost:5001/home")]
@@ -1198,7 +1197,7 @@ S'il n'y a pas d'annotation intégrée, la demande devient
 
 #### 5.2.2 Les paramètres ajoutent des annotations Body (BodySerializationKind.Form)
 
-Cela équivaut à simuler la soumission du formulaire en html. La valeur du paramètre sera codée en URL et ajoutée à la charge utile (corps) sous la forme clé1=valeur1&clé2=valeur2.
+Cela équivaut à simuler la soumission du formulaire en html. La valeur du paramètre sera encodée en URL et ajoutée à la charge utile (corps) sous la forme clé1=valeur1&clé2=valeur2.
 
 ```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
@@ -1511,7 +1510,7 @@ feignUnitOfWork.StopCookie();
 
 # SummerBoot utilise le cache pour les opérations de cache
 
-## 1.Registration service
+## 1.Service d'enregistrement
 
 Le cache est divisé en cache mémoire et cache redis. La méthode d'enregistrement du cache mémoire est la suivante :
 
@@ -1646,7 +1645,7 @@ private void ValidateData(EnvConfigDto dto)
 }
 ```
 
-Si une erreur est signalée dans le code métier, la valeur de retour est la suivante :
+Si une erreur est signalée dans le code métier, la valeur de retour est la suivante :
 
 ```csharp
 {
@@ -1675,7 +1674,7 @@ public class EnvConfigDto : BaseEntity
 }
 ```
 
-If the parameter verification fails, the return value is as follows:
+Si la vérification des paramètres échoue, la valeur de retour est la suivante :
 
 ```csharp
 {
@@ -1685,8 +1684,8 @@ If the parameter verification fails, the return value is as follows:
 }
 ```
 
-5.QueryCondition , la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation depuis le front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. Généralement, les attributs du dto sont passés du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou opération, sinon retour à l'expression d'origine),
-Dans le même temps, les attributs de dto peuvent également être de type nullable, c'est-à-dire de type nullable, tel que int? test représente si l'utilisateur remplit une certaine condition de filtre, si hasValue est ajouté à la condition de requête, donc deux méthodes sont spécialement extraites, AndIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée ), OrIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée) l'utilisation est la suivante :
+5.QueryCondition , la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation depuis le front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. Généralement, les attributs du dto sont passés du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou operation, sinon retour à l'expression d'origine),
+Dans le même temps, les attributs de dto peuvent également être de type nullable, c'est-à-dire de type nullable, comme int? test représente si l'utilisateur remplit une certaine condition de filtre, si hasValue est ajouté à la condition de requête, donc deux méthodes sont spécialement extraites, AndIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée ), OrIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée) l'utilisation est la suivante :
 
 ```csharp
 // dto
