@@ -1,4 +1,6 @@
-# SummerBoot　　　　　　　　　　　　　　　　　　　　[中文](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
+[English Document](https://github.com/TripleView/SummerBoot/blob/master/README.md) | [中文文档](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
+
+
 [![ GitHub license ](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/dotnetcore/CAP/master/LICENSE.txt)
 
 # Thanks for the ide license provided by jetbrain
@@ -25,7 +27,6 @@ SummerBoot in your project .
 net core 3.1, net 6
 
 # document directory
-- [SummerBoot　　　　　　　　　　　　　　　　　　　　中文](#summerboot中文)
 - [Thanks for the ide license provided by jetbrain](#thanks-for-the-ide-license-provided-by-jetbrain)
 - [SummerBoot (中文名：夏日启动)](#summerboot-中文名夏日启动)
 - [Core idea](#core-idea)

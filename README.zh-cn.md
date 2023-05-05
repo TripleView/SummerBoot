@@ -1,4 +1,5 @@
-# SummerBoot　　　　　　　　　　　　　　　　　　　　[English](https://github.com/TripleView/SummerBoot/blob/master/README.md)
+[English Document](https://github.com/TripleView/SummerBoot/blob/master/README.md) | [中文文档](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
+
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/dotnetcore/CAP/master/LICENSE.txt)
 
 # 感谢jetbrain提供的ide许可证
@@ -25,7 +26,6 @@ SummerBootAdmin](https://github.com/TripleView/SummerBootAdmin)，一个基于�
 net core 3.1,net 6
 
 # 文档目录
-- [SummerBoot　　　　　　　　　　　　　　　　　　　　English](#summerbootenglish)
 - [感谢jetbrain提供的ide许可证](#感谢jetbrain提供的ide许可证)
 - [SummerBoot(中文名：夏日启动)](#summerboot中文名夏日启动)
 - [核心理念](#核心理念)
