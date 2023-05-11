@@ -157,6 +157,11 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
+        public override string UpdateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            return CreateTableFieldDescription(schema, tableName, fieldInfo);
+        }
+
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();

@@ -42,6 +42,15 @@ namespace SummerBoot.Repository.Generator
         /// <param name="description">注释</param>
         /// <returns></returns>
         string CreateTableFieldDescription(string schema,string tableName, DatabaseFieldInfoDto fieldInfo);
+
+        /// <summary>
+        /// 更新字段注释
+        /// </summary>
+        /// <param name="tableName">表名</param>
+        /// <param name="columnName">字段名</param>
+        /// <param name="description">注释</param>
+        /// <returns></returns>
+        string UpdateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo);
         /// <summary>
         /// 创建字段
         /// </summary>

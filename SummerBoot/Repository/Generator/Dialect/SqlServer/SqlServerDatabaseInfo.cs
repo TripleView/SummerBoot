@@ -170,6 +170,14 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             return sql;
         }
 
+        public override string UpdateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            schema = GetDefaultSchema(schema);
+            var sql =
+                $"EXEC sp_updateextendedproperty 'MS_Description', N'{fieldInfo.Description}', 'schema', N'{schema}', 'table', N'{tableName}', 'column', N'{fieldInfo.ColumnName}'";
+            return sql;
+        }
+
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             schema = GetDefaultSchema(schema);

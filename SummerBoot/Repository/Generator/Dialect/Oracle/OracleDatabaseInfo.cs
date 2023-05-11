@@ -200,6 +200,11 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
             return sql;
         }
 
+        public override string UpdateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            return CreateTableFieldDescription(schema, tableName, fieldInfo);
+        }
+
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             schema = GetDefaultSchema(schema);

@@ -54,6 +54,9 @@ namespace SummerBoot.Repository.Generator
         public abstract string CreateTableFieldDescription(string schema, string tableName,
             DatabaseFieldInfoDto fieldInfo);
 
+        public abstract string UpdateTableFieldDescription(string schema, string tableName,
+            DatabaseFieldInfoDto fieldInfo);
+
         public abstract string GetDefaultSchema(string schema);
 
         public abstract string GetSchemaTableName(string schema, string tableName);

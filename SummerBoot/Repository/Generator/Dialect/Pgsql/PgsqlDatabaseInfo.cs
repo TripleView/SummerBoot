@@ -156,7 +156,10 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var sql = $"COMMENT ON COLUMN {schemaTableName}.\"{fieldInfo.ColumnName}\" IS '{fieldInfo.Description}'";
             return sql;
         }
-
+        public override string UpdateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            return CreateTableFieldDescription(schema, tableName, fieldInfo);
+        }
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();

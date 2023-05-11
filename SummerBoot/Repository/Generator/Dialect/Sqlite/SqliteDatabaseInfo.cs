@@ -113,6 +113,11 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             return "";
         }
 
+        public override string UpdateTableFieldDescription(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
+        {
+            return "";
+        }
+
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             var dbConnection = dbFactory.GetDbConnection();
