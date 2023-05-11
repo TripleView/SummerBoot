@@ -1,112 +1,123 @@
-[English Document](https://github.com/TripleView/SummerBoot/blob/master/README.md) | [中文文档](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
-
+[Documents en anglais](https://github.com/TripleView/SummerBoot/blob/master/README.md)\|[Document chinois](https://github.com/TripleView/SummerBoot/blob/master/README.zh-cn.md)
 
 [![ GitHub license ](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/dotnetcore/CAP/master/LICENSE.txt)
 
-# Thanks for the ide license provided by jetbrain
+# Merci pour la licence ide fournie par jetbrain
+
 <a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png?_ga=2.140768178.1037783001.1644161957-503565267.1643800664&_gl=1*1rs8z57*_ga*NTAzNTY1MjY3LjE2NDM4MDA2NjQ.*_ga_V0XZL7QHEB*MTY0NDE2MTk1Ny4zLjEuMTY0NDE2NTE2Mi4w" width = "200" height = "200" alt="" align=center /></a>
-# SummerBoot (中文名：夏日启动)
-In order to let everyone better understand the use of summerBoot , I created a sample project-[
-SummerBootAdmin ](https://github.com/TripleView/SummerBootAdmin), a general back-end management framework based on the separation of front-end and back-end, you can check the code of this project to better understand how to use summerBoot .
 
-# Core idea
-Combine the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming, focus on"what to do"rather than"how to do it", and write code at a higher level.SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.
+# SummerBoot (nom chinois : Summer Boot)
 
-# Framework description
-This is a fully declarative framework that implements various calls in the form of annotations + interfaces, including but not limited to database, http, cache, etc.The framework will automatically generate interface implementation classes through Reflection Emit technology.
+Afin de permettre à chacun de mieux comprendre l'utilisation de summerBoot , j'ai créé un exemple de projet-[SummerBootAdmin](https://github.com/TripleView/SummerBootAdmin), un cadre général de gestion du back-end basé sur la séparation du front-end et du back-end, vous pouvez consulter le code de ce projet pour mieux comprendre comment utiliser summerBoot .
 
-# Join the QQ group for feedback and suggestions
-Group number : 799648362
+# Idée centrale
 
-# Getting Started
+Combinez les concepts avancés de SpringBoot avec la simplicité et l'élégance de C#, la programmation déclarative, concentrez-vous sur "ce qu'il faut faire" plutôt que sur "comment le faire", et écrivez du code à un niveau supérieur. SummerBoot s'engage à créer un -cadre humanisé d'utilisation et facile à entretenir, afin que chacun puisse quitter le travail plus tôt pour faire ce qu'il aime.
+
+# Description du cadre
+
+Il s'agit d'un framework entièrement déclaratif qui implémente divers appels sous la forme d'annotations + interfaces, y compris, mais sans s'y limiter, la base de données, http, le cache, etc. Le framework générera automatiquement des classes d'implémentation d'interface via la technologie Reflection Emit.
+
+# Rejoignez le groupe QQ pour des commentaires et des suggestions
+
+Numéro de groupe : 799648362
+
+# Commencer
+
 ## Nuget
-SummerBoot in your project .
- 
- ```PM> Install-Package SummerBoot ```
-# support frame
+
+SummerBoot dans votre projet .
+
+`PM> Install-Package SummerBoot `
+
+# cadre de support
+
 net core 3.1, net 6
 
-# document directory
-- [Thanks for the ide license provided by jetbrain](#thanks-for-the-ide-license-provided-by-jetbrain)
-- [SummerBoot (中文名：夏日启动)](#summerboot-中文名夏日启动)
-- [Core idea](#core-idea)
-- [Framework description](#framework-description)
-- [Join the QQ group for feedback and suggestions](#join-the-qq-group-for-feedback-and-suggestions)
-- [Getting Started](#getting-started)
-  - [Nuget](#nuget)
-- [support frame](#support-frame)
-- [document directory](#document-directory)
-- [SummerBoot uses repository for database operations](#summerboot-uses-repository-for-database-operations)
-  - [Preparation](#preparation)
-  - [1.Registration service](#1registration-service)
-  - [2.Define a database entity class](#2define-a-database-entity-class)
-  - [3.Write a controller to automatically generate database tables through entity classes](#3write-a-controller-to-automatically-generate-database-tables-through-entity-classes)
-  - [4.Define storage interface](#4define-storage-interface)
-  - [5.Add, delete, modify and Query, all support asynchronous synchronization](#5add-delete-modify-and-query-all-support-asynchronous-synchronization)
-    - [5.1 Added](#51-added)
-      - [5.1.1 The interface has its own Insert method, which can insert a single entity or a list of entities](#511-the-interface-has-its-own-insert-method-which-can-insert-a-single-entity-or-a-list-of-entities)
-      - [5.1.2 Fast batch insertion, the storage interface comes with the FastBatchInsert method, which can quickly insert the entity list.](#512-fast-batch-insertion-the-storage-interface-comes-with-the-fastbatchinsert-method-which-can-quickly-insert-the-entity-list)
-    - [5.2 delete](#52-delete)
-      - [5.2.1 The interface comes with a Delete method, which can delete a single entity or a list of entities](#521-the-interface-comes-with-a-delete-method-which-can-delete-a-single-entity-or-a-list-of-entities)
-      - [5.2.2 Also supports deletion based on lambda expressions, returning the number of affected rows, for example](#522-also-supports-deletion-based-on-lambda-expressions-returning-the-number-of-affected-rows-for-example)
-    - [5.3 update](#53-update)
-      - [5.3.1 The interface comes with an Update method, which can update a single entity or a list of entities](#531-the-interface-comes-with-an-update-method-which-can-update-a-single-entity-or-a-list-of-entities)
-      - [5.3.2 It also supports the update method based on Lambda chain syntax](#532-it-also-supports-the-update-method-based-on-lambda-chain-syntax)
-    - [5.4 Query](#54-query)
-      - [5.4.1 Lambda chain syntax query, such as:](#541-lambda-chain-syntax-query-such-as)
-      - [5.4.2 Define methods directly in the interface, and add annotations to the methods, such as Select, Update, Delete](#542-define-methods-directly-in-the-interface-and-add-annotations-to-the-methods-such-as-select-update-delete)
-      - [5.4.4 Select annotations are spliced in this way where query conditions](#544-select-annotations-are-spliced-in-this-way-where-query-conditions)
-    - [5.5 Transaction Support](#55-transaction-support)
-    - [5.6 Custom implementation classes in special cases](#56-custom-implementation-classes-in-special-cases)
-      - [5.6.1 Define an interface inherited from IBaseRepository , and define your own methods in the interface](#561-define-an-interface-inherited-from-ibaserepository--and-define-your-own-methods-in-the-interface)
-      - [5.6.2 Add an implementation class, inherited from the CustomBaseRepository class and the custom ICustomCustomerRepository interface, and add the AutoRegister annotation to the implementation class.](#562-add-an-implementation-class-inherited-from-the-custombaserepository-class-and-the-custom-icustomcustomerrepository-interface-and-add-the-autoregister-annotation-to-the-implementation-class)
-      - [5.6.3 Example of use](#563-example-of-use)
-  - [6 Automatically generate entity classes based on database tables, or automatically generate ddl statements for database tables based on entity classes](#6-automatically-generate-entity-classes-based-on-database-tables-or-automatically-generate-ddl-statements-for-database-tables-based-on-entity-classes)
-    - [6.1 Table Namespace](#61-table-namespace)
-    - [6.2 Automatically generate the ddl statement of the database table according to the entity class](#62-automatically-generate-the-ddl-statement-of-the-database-table-according-to-the-entity-class)
-    - [6.2.2 Type mapping or name mapping from custom entity class fields to database fields](#622-type-mapping-or-name-mapping-from-custom-entity-class-fields-to-database-fields)
-    - [6.3 Automatically generate entity classes based on database tables](#63-automatically-generate-entity-classes-based-on-database-tables)
-- [SummerBoot uses feign to make http calls](#summerboot-uses-feign-to-make-http-calls)
-  - [1.Registration service](#1registration-service-1)
-  - [2.Define the interface](#2define-the-interface)
-  - [3.Set the request header (header)](#3set-the-request-header-header)
-  - [4.Custom Interceptor](#4custom-interceptor)
-  - [5.Define the method](#5define-the-method)
-    - [5.1 Common parameters in the method](#51-common-parameters-in-the-method)
-    - [5.2 Special parameters in the method](#52-special-parameters-in-the-method)
-      - [5.2.1 Parameters add Query annotations](#521-parameters-add-query-annotations)
-        - [5.2.1.1 The Query annotation is used with the Embedded annotation, and the Embedded annotation class can be added as a parameter as a whole](#5211-the-query-annotation-is-used-with-the-embedded-annotation-and-the-embedded-annotation-class-can-be-added-as-a-parameter-as-a-whole)
-      - [5.2.2 Parameters add Body (BodySerializationKind.Form) annotations](#522-parameters-add-body-bodyserializationkindform-annotations)
-      - [5.2.3 Parameters add Body (BodySerializationKind.Json) annotations](#523-parameters-add-body-bodyserializationkindjson-annotations)
-      - [5.2.4 Use the special class HeaderCollection as a method parameter to add request headers in batches](#524-use-the-special-class-headercollection-as-a-method-parameter-to-add-request-headers-in-batches)
-      - [5.2.5 Use the special class BasicAuthorization as a method parameter to add the Authorization request header for basic authentication](#525-use-the-special-class-basicauthorization-as-a-method-parameter-to-add-the-authorization-request-header-for-basic-authentication)
-      - [5.2.6 Use the special class MultipartItem as a method parameter, and mark the Multipart annotation on the method to upload the attachment](#526-use-the-special-class-multipartitem-as-a-method-parameter-and-mark-the-multipart-annotation-on-the-method-to-upload-the-attachment)
-      - [5.2.7 Use the class Stream as the return type of the method to receive streaming data, such as downloading files.](#527-use-the-class-stream-as-the-return-type-of-the-method-to-receive-streaming-data-such-as-downloading-files)
-      - [5.2.8 Use the class HttpResponseMessage as the return type of the method to get the most original response message.](#528-use-the-class-httpresponsemessage-as-the-return-type-of-the-method-to-get-the-most-original-response-message)
-      - [5.2.9 Use the class Task as the return type of the method, that is, no return value is required.](#529-use-the-class-task-as-the-return-type-of-the-method-that-is-no-return-value-is-required)
-  - [6.Microservice - access to nacos](#6microservice---access-to-nacos)
-    - [6.1 Add nacos configuration in the configuration file](#61-add-nacos-configuration-in-the-configuration-file)
-    - [6.2 Access nacos configuration center](#62-access-nacos-configuration-center)
-    - [6.3 Access nacos service center](#63-access-nacos-service-center)
-      - [6.3.1 Add configuration in StartUp.cs](#631-add-configuration-in-startupcs)
-      - [6.3.2 Define the interface for calling microservices](#632-define-the-interface-for-calling-microservices)
-  - [7.Using cookies in context](#7using-cookies-in-context)
-- [SummerBoot uses cache for cache operations](#summerboot-uses-cache-for-cache-operations)
-  - [1.Registration service](#1registration-service-2)
-  - [2.ICache interface](#2icache-interface)
-  - [3.After injecting the interface, it can be used](#3after-injecting-the-interface-it-can-be-used)
+# répertoire de documents
 
+-   [Merci pour la licence ide fournie par jetbrain](#thanks-for-the-ide-license-provided-by-jetbrain)
+-   [SummerBoot (nom chinois : Summer Boot)](#summerboot-中文名夏日启动)
+-   [Idée centrale](#core-idea)
+-   [Description du cadre](#framework-description)
+-   [Rejoignez le groupe QQ pour des commentaires et des suggestions](#join-the-qq-group-for-feedback-and-suggestions)
+-   [Commencer](#getting-started)
+    -   [Nuget](#nuget)
+-   [cadre de support](#support-frame)
+-   [répertoire de documents](#document-directory)
+-   [SummerBoot utilise un référentiel pour les opérations de base de données](#summerboot-uses-repository-for-database-operations)
+    -   [Préparation](#preparation)
+    -   [1.Service d'enregistrement](#1registration-service)
+    -   [2.Définir une classe d'entité de base de données](#2define-a-database-entity-class)
+    -   [3. Écrivez un contrôleur pour générer automatiquement des tables de base de données via des classes d'entités](#3write-a-controller-to-automatically-generate-database-tables-through-entity-classes)
+    -   [4.Définir l'interface de stockage](#4define-storage-interface)
+    -   [5.Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone](#5add-delete-modify-and-query-all-support-asynchronous-synchronization)
+        -   [5.1 Ajouté](#51-added)
+            -   [5.1.1 L'interface a sa propre méthode Insert, qui peut insérer une seule entité ou une liste d'entités](#511-the-interface-has-its-own-insert-method-which-can-insert-a-single-entity-or-a-list-of-entities)
+            -   [5.1.2 Insertion rapide des lots, l'interface de stockage est livrée avec la méthode FastBatchInsert, qui peut insérer rapidement la liste des entités.](#512-fast-batch-insertion-the-storage-interface-comes-with-the-fastbatchinsert-method-which-can-quickly-insert-the-entity-list)
+        -   [5.2 supprimer](#52-delete)
+            -   [5.2.1 L'interface est livrée avec une méthode Delete, qui peut supprimer une seule entité ou une liste d'entités](#521-the-interface-comes-with-a-delete-method-which-can-delete-a-single-entity-or-a-list-of-entities)
+            -   [5.2.2 Prend également en charge la suppression basée sur des expressions lambda, renvoyant le nombre de lignes affectées, par exemple](#522-also-supports-deletion-based-on-lambda-expressions-returning-the-number-of-affected-rows-for-example)
+        -   [mise à jour 5.3](#53-update)
+            -   [5.3.1 L'interface est livrée avec une méthode Update, qui peut mettre à jour une seule entité ou une liste d'entités](#531-the-interface-comes-with-an-update-method-which-can-update-a-single-entity-or-a-list-of-entities)
+            -   [5.3.2 Il prend également en charge la méthode de mise à jour basée sur la syntaxe de la chaîne Lambda](#532-it-also-supports-the-update-method-based-on-lambda-chain-syntax)
+        -   [5.4 Requête](#54-query)
+            -   [5.4.1 Requête de syntaxe de chaîne Lambda, telle que :](#541-lambda-chain-syntax-query-such-as)
+            -   [5.4.2 Définir des méthodes directement dans l'interface et ajouter des annotations aux méthodes, telles que Sélectionner, Mettre à jour, Supprimer](#542-define-methods-directly-in-the-interface-and-add-annotations-to-the-methods-such-as-select-update-delete)
+            -   [5.4.4 Les annotations de sélection sont fusionnées de cette manière là où les conditions de requête](#544-select-annotations-are-spliced-in-this-way-where-query-conditions)
+        -   [5.5 Prise en charge des transactions](#55-transaction-support)
+        -   [5.6 Classes d'implémentation personnalisées dans des cas particuliers](#56-custom-implementation-classes-in-special-cases)
+            -   [5.6.1 Définir une interface héritée de IBaseRepository et définir vos propres méthodes dans l'interface](#561-define-an-interface-inherited-from-ibaserepository--and-define-your-own-methods-in-the-interface)
+            -   [5.6.2 Ajoutez une classe d'implémentation, héritée de la classe CustomBaseRepository et de l'interface personnalisée ICustomCustomerRepository, et ajoutez l'annotation AutoRegister à la classe d'implémentation.](#562-add-an-implementation-class-inherited-from-the-custombaserepository-class-and-the-custom-icustomcustomerrepository-interface-and-add-the-autoregister-annotation-to-the-implementation-class)
+            -   [5.6.3 Exemple d'utilisation](#563-example-of-use)
+    -   [6 Générez automatiquement des classes d'entités basées sur des tables de base de données ou générez automatiquement des instructions ddl pour des tables de base de données basées sur des classes d'entités](#6-automatically-generate-entity-classes-based-on-database-tables-or-automatically-generate-ddl-statements-for-database-tables-based-on-entity-classes)
+        -   [6.1 Espace de noms de table](#61-table-namespace)
+        -   [6.2 Générer automatiquement l'instruction ddl de la table de la base de données en fonction de la classe d'entité](#62-automatically-generate-the-ddl-statement-of-the-database-table-according-to-the-entity-class)
+        -   [6.2.2 Mappage de type ou mappage de nom des champs de classe d'entité personnalisée aux champs de base de données](#622-type-mapping-or-name-mapping-from-custom-entity-class-fields-to-database-fields)
+        -   [6.3 Générer automatiquement des classes d'entités basées sur des tables de base de données](#63-automatically-generate-entity-classes-based-on-database-tables)
+-   [SummerBoot utilise feinte pour passer des appels http](#summerboot-uses-feign-to-make-http-calls)
+    -   [1.Service d'enregistrement](#1registration-service-1)
+    -   [2.Définir l'interface](#2define-the-interface)
+    -   [3.Définissez l'en-tête de la demande (en-tête)](#3set-the-request-header-header)
+    -   [4. Intercepteur personnalisé](#4custom-interceptor)
+    -   [5.Définir la méthode](#5define-the-method)
+        -   [5.1 Paramètres communs à la méthode](#51-common-parameters-in-the-method)
+        -   [5.2 Paramètres spéciaux dans la méthode](#52-special-parameters-in-the-method)
+            -   [5.2.1 Les paramètres ajoutent des annotations de requête](#521-parameters-add-query-annotations)
+                -   [5.2.1.1 L'annotation Query est utilisée avec l'annotation Embedded, et la classe d'annotation Embedded peut être ajoutée en tant que paramètre dans son ensemble](#5211-the-query-annotation-is-used-with-the-embedded-annotation-and-the-embedded-annotation-class-can-be-added-as-a-parameter-as-a-whole)
+            -   [5.2.2 Les paramètres ajoutent des annotations Body (BodySerializationKind.Form)](#522-parameters-add-body-bodyserializationkindform-annotations)
+            -   [5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)](#523-parameters-add-body-bodyserializationkindjson-annotations)
+            -   [5.2.4 Utiliser la classe spéciale HeaderCollection comme paramètre de méthode pour ajouter des en-têtes de requête par lots](#524-use-the-special-class-headercollection-as-a-method-parameter-to-add-request-headers-in-batches)
+            -   [5.2.5 Utilisez la classe spéciale BasicAuthorization comme paramètre de méthode pour ajouter l'en-tête de demande d'autorisation pour l'authentification de base](#525-use-the-special-class-basicauthorization-as-a-method-parameter-to-add-the-authorization-request-header-for-basic-authentication)
+            -   [5.2.6 Utilisez la classe spéciale MultipartItem comme paramètre de méthode et marquez l'annotation Multipart sur la méthode pour télécharger la pièce jointe](#526-use-the-special-class-multipartitem-as-a-method-parameter-and-mark-the-multipart-annotation-on-the-method-to-upload-the-attachment)
+            -   [5.2.7 Utilisez la classe Stream comme type de retour de la méthode pour recevoir des données en continu, telles que le téléchargement de fichiers.](#527-use-the-class-stream-as-the-return-type-of-the-method-to-receive-streaming-data-such-as-downloading-files)
+            -   [5.2.8 Utilisez la classe HttpResponseMessage comme type de retour de la méthode pour obtenir le message de réponse le plus original.](#528-use-the-class-httpresponsemessage-as-the-return-type-of-the-method-to-get-the-most-original-response-message)
+            -   [5.2.9 Utilisez la classe Task comme type de retour de la méthode, c'est-à-dire qu'aucune valeur de retour n'est requise.](#529-use-the-class-task-as-the-return-type-of-the-method-that-is-no-return-value-is-required)
+    -   [6.Microservice - accès aux nacos](#6microservice---access-to-nacos)
+        -   [6.1 Ajouter la configuration nacos dans le fichier de configuration](#61-add-nacos-configuration-in-the-configuration-file)
+        -   [6.2 Accéder au centre de configuration nacos](#62-access-nacos-configuration-center)
+        -   [6.3 Accéder au centre de service nacos](#63-access-nacos-service-center)
+            -   [6.3.1 Ajouter une configuration dans StartUp.cs](#631-add-configuration-in-startupcs)
+            -   [6.3.2 Définir l'interface d'appel des microservices](#632-define-the-interface-for-calling-microservices)
+    -   [7.Utilisation des cookies en contexte](#7using-cookies-in-context)
+-   [SummerBoot utilise le cache pour les opérations de cache](#summerboot-uses-cache-for-cache-operations)
+    -   [1.Service d'enregistrement](#1registration-service-2)
+    -   [2. Interface ICache](#2icache-interface)
+    -   [3.Après avoir injecté l'interface, elle peut être utilisée](#3after-injecting-the-interface-it-can-be-used)
 
-# SummerBoot uses repository for database operations
-summerBoot has developed its own ORM module based on the work unit and warehousing mode, that is, repository, which supports multiple databases and multiple links, including addition, deletion , modification and query operations of five common database types (sqlserver, mysql, oracle, sqlite, pgsql) , if there are other For database requirements, you can refer to the above 5 source codes and contribute codes to this project.orm does not support lambda queries for multi-table joint query, because I think it is easier to use and maintain multi-table queries directly in SQL .
+# SummerBoot utilise un référentiel pour les opérations de base de données
 
-## Preparation
-You need to install the corresponding database dependency package through nuget , such as Microsoft.Data.SqlClient of SqlServer , Mysql.data of mysql , Oracle.ManagedDataAccess.Core of oracle, Npgsql of pgsql
+summerBoot a développé son propre module ORM basé sur l'unité de travail et le mode d'entreposage, c'est-à-dire le référentiel, qui prend en charge plusieurs bases de données et plusieurs liens, y compris les opérations d'ajout, de suppression, de modification et d'interrogation de cinq types de bases de données courants (sqlserver, mysql, oracle, sqlite, pgsql) , s'il existe d'autres exigences de base de données, vous pouvez vous référer aux 5 codes sources ci-dessus et contribuer aux codes de ce projet. orm ne prend pas en charge les requêtes lambda pour les requêtes conjointes multi-tables, car je pense que c'est plus facile à utiliser et gérer les requêtes multi-tables directement en SQL.
 
-## 1.Registration service
-The repository supports multiple databases and multiple links.In the repository, we call a link a database unit.The following example demonstrates adding two database units to a project.The first is the mysql database type, and the second is the sqlserver database type ., add a database unit through the AddDatabaseUnit method, the parameters are the dbConnection class of the corresponding database and the work unit interface (the work unit interface is used for transactions), the framework provides 9 work unit interfaces IUnitOfWork1\~IUnitOfWork9 by default, of course, you can also customize the work unit interface , you only need to inherit the interface from IUnitOfWork .Because there are multiple database units, the warehouse needs to be bound to the corresponding database unit.You can bind a single warehouse through BindRepository , or add a custom annotation on the warehouse (this annotation needs to be inherited from AutoRepositoryAttribute , which is provided by the framework by default.AutoRepository1Attribute~AutoRepository9Attribute), and then use the BindRepositorysWithAttribute method to bind warehouses in batches.At the same time, you can add pre-insert callbacks and pre-update callbacks in the unit (for example, it can be used to add creation time and update time), add custom type mappings, and add custom field mappings Handler, add table name mapping, add field name mapping (table name mapping and field name mapping can be used in situations where database fields and entity class fields are different, such as oracle database, table name field names are all uppercase, but entity classes are Pascal named), etc.
+## Préparation
 
-````csharp
+Vous devez installer le package de dépendance de base de données correspondant via nuget , tel que Microsoft.Data.SqlClient de SqlServer , Mysql.data de mysql , Oracle.ManagedDataAccess.Core d'oracle, Npgsql de pgsql
+
+## 1.Service d'enregistrement
+
+Le référentiel prend en charge plusieurs bases de données et plusieurs liens. Dans le référentiel, nous appelons un lien une unité de base de données. L'exemple suivant illustre l'ajout de deux unités de base de données à un projet. La première est le type de base de données mysql et la seconde est le type de base de données sqlserver . , ajoutez une unité de base de données via la méthode AddDatabaseUnit, les paramètres sont la classe dbConnection de la base de données correspondante et l'interface d'unité de travail (l'interface d'unité de travail est utilisée pour les transactions), le framework fournit 9 interfaces d'unité de travail IUnitOfWork1~IUnitOfWork9 par défaut, bien sûr, vous pouvez également personnaliser l'interface de l'unité de travail, il vous suffit d'hériter de l'interface de IUnitOfWork. Parce qu'il existe plusieurs unités de base de données, l'entrepôt doit être lié à l'unité de base de données correspondante. Vous pouvez lier un seul entrepôt via BindRepository , ou ajoutez une annotation personnalisée sur l'entrepôt (cette annotation doit être héritée de AutoRepositoryAttribute , qui est fourni par le framework par défaut.AutoRepository1Attribute~AutoRepository9Attribute), puis utilisez la méthode BindRepositorysWithAttribute pour lier les entrepôts par lots. En même temps, vous pouvez ajouter des rappels de pré-insertion et des rappels de pré-mise à jour dans l'unité (par exemple, il peut être utilisé pour ajouter l'heure de création et l'heure de mise à jour), ajouter des mappages de types personnalisés et ajouter des mappages de champs personnalisés Gestionnaire, ajouter le nom de la table mappage, ajouter le mappage de nom de champ (le mappage de nom de table et le mappage de nom de champ peuvent être utilisés dans des situations où les champs de base de données et les champs de classe d'entité sont différents, comme la base de données oracle, les noms de champ de nom de table sont tous en majuscules, mais les classes d'entité sont nommées Pascal), etc.
+
+```csharp
 builder.Services.AddSummerBoot();
 
 builder.Services.AddSummerBootRepository(it =>
@@ -172,12 +183,13 @@ builder.Services.AddSummerBootRepository(it =>
 						x.BindDbGeneratorType<IDbGenerator2>();
 				});
 });
-````
+```
 
+## 2.Définir une classe d'entité de base de données
 
-## 2.Define a database entity class
-Most of the entity class annotations come from the system namespace System.ComponentModel.DataAnnotations and System.ComponentModel.DataAnnotations.Schema , such as table name Table, column name Column, primary key Key, primary key self-incrementing DatabaseGenerated (DatabaseGeneratedOption.Identity), column name Column, This field NotMapped is not mapped, and Description is used to generate annotations when entity classes generate database tables.At the same time, some annotations are customized, such as ignoring the column IgnoreWhenUpdateAttribute when updating (mainly used for fields that do not need to be updated during update) , let's define a Customer entity class
-```` csharp
+La plupart des annotations de classe d'entité proviennent de l'espace de noms système System.ComponentModel.DataAnnotations et System.ComponentModel.DataAnnotations.Schema , comme le nom de la table Table, le nom de la colonne Column, la clé primaire Key, la clé primaire auto-incrémentée DatabaseGenerated (DatabaseGeneratedOption.Identity) , nom de colonne Colonne, Ce champ NotMapped n'est pas mappé et Description est utilisé pour générer des annotations lorsque les classes d'entités génèrent des tables de base de données. En même temps, certaines annotations sont personnalisées, telles que l'ignorance de la colonne IgnoreWhenUpdateAttribute lors de la mise à jour (principalement utilisée pour les champs qui n'ont pas besoin d'être mis à jour lors de la mise à jour), définissons une classe d'entité Customer
+
+```csharp
 [Description("Member")]
 public class Customer
 {
@@ -221,11 +233,11 @@ public class Customer
     [Description("total consumption amount")]
     public decimal TotalConsumptionAmount { set; get; }
 }
-````
+```
 
-SummerBoot comes with a basic entity class BaseEntity (oracle is OracleBaseEntity).The entity class includes five fields: self-increasing id, creator, creation time, updater, update time, and whether it is valid.It is recommended that the entity class directly inherit BaseEntity , then The above Customer can be abbreviated as:
+SummerBoot est livré avec une classe d'entité de base BaseEntity (oracle est OracleBaseEntity). La classe d'entité comprend cinq champs : identifiant à augmentation automatique, créateur, heure de création, mise à jour, heure de mise à jour et validité. Il est recommandé que la classe d'entité directement inherit BaseEntity , alors le client ci-dessus peut être abrégé comme suit :
 
-```` csharp
+```csharp
 [Description("Member")]
 public class Customer : BaseEntity
 {
@@ -240,9 +252,11 @@ public class Customer : BaseEntity
     [Description("total consumption amount")]
     public decimal TotalConsumptionAmount { set; get; }
 }
-````
-## 3.Write a controller to automatically generate database tables through entity classes
-```` csharp
+```
+
+## 3. Écrivez un contrôleur pour générer automatiquement des tables de base de données via des classes d'entités
+
+```csharp
 [ApiController]
 [Route("[controller]/[action]")]
 public class GenerateTableController : Controller
@@ -265,28 +279,37 @@ public class GenerateTableController : Controller
         return Content("ok");
     }
 }
-````
-Access the index interface, and the framework will automatically generate a Customer table with annotations.
+```
 
-## 4.Define storage interface
-The storage interface needs to be inherited from the IBaseRepository interface, and the interface is annotated with AutoRepository1 for automatic registration.
-```` csharp
+Accédez à l'interface d'index et le framework générera automatiquement une table Customer avec des annotations.
+
+## 4.Définir l'interface de stockage
+
+L'interface de stockage doit être héritée de l'interface IBaseRepository, et l'interface est annotée avec AutoRepository1 pour l'enregistrement automatique.
+
+```csharp
 [AutoRepository1]
 public interface ICustomerRepository : IBaseRepository<Customer>
 {
 }
-````
+```
 
-## 5.Add, delete, modify and Query, all support asynchronous synchronization
-### 5.1 Added
-#### 5.1.1 The interface has its own Insert method, which can insert a single entity or a list of entities
-If the primary key name of the entity class is Id, and there is a Key annotation, and it is self-increasing, as follows:
-```` csharp
+## 5.Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone
+
+### 5.1 Ajouté
+
+#### 5.1.1 L'interface a sa propre méthode Insert, qui peut insérer une seule entité ou une liste d'entités
+
+Si le nom de la clé primaire de la classe d'entité est Id, et qu'il y a une annotation Key, et qu'elle augmente automatiquement, comme suit :
+
+```csharp
 [Key, DatabaseGenerated (DatabaseGeneratedOption.Identity)]
 public int Id { set ; get; }
-````
-Then after insertion, the framework will automatically assign a value to the ID field of the entity, which is an auto-incremented ID value.
-```` csharp
+```
+
+Ensuite, après l'insertion, le framework attribuera automatiquement une valeur au champ ID de l'entité, qui est une valeur d'ID auto-incrémentée.
+
+```csharp
 [ApiController]
 [Route("[controller]/[action]")]
 public class CustomerController : Controller
@@ -312,47 +335,65 @@ public class CustomerController : Controller
         return Content("ok");
     }
 }
-````
+```
+
 #### 5.1.2 Fast batch insertion, the storage interface comes with the FastBatchInsert method, which can quickly insert the entity list.
-In the case of fast batch insertion, the framework will not automatically assign a value to the ID field of the entity.At the same time, if the database is mysql , there are some special circumstances.First, the driver library must have MySqlConnector .This library can coexist with mysql.data and will not Conflicts, so there is no need to worry, and the database connection string must be followed by"; AllowLoadLocalInfile =true", and at the same time execute"set global local_infile =1"on the mysql database to enable batch upload.SQLite does not support batch fast insert.
-```` csharp
+
+Dans le cas d'une insertion rapide par lots, le framework n'attribuera pas automatiquement de valeur au champ ID de l'entité. En même temps, si la base de données est mysql , il existe des circonstances particulières. Tout d'abord, la bibliothèque de pilotes doit avoir MySqlConnector . Cette bibliothèque peut coexister avec mysql.data et ne sera pas en conflit, il n'y a donc pas lieu de s'inquiéter, et la chaîne de connexion à la base de données doit être suivie de "; AllowLoadLocalInfile =true", et en même temps exécuter "set global local_infile =1" sur la base de données mysql pour activer le téléchargement par lots. SQLite ne prend pas en charge l'insertion rapide par lots.
+
+```csharp
 var customer2 = new Customer() { Name = "testCustomer2" };
 var customer3 = new Customer() { Name = "testCustomer3" };
 var customerList = new List<Customer>() { customer2, customer3 };
 customerRepository.FastBatchInsert(customerList);
-````
-### 5.2 delete
-#### 5.2.1 The interface comes with a Delete method, which can delete a single entity or a list of entities
-```` csharp
+```
+
+### 5.2 supprimer
+
+#### 5.2.1 L'interface est livrée avec une méthode Delete, qui peut supprimer une seule entité ou une liste d'entités
+
+```csharp
 customerRepository.Delete(customer);
 
 customerRepository.Delete(customerList);
-````
-#### 5.2.2 Also supports deletion based on lambda expressions, returning the number of affected rows, for example
-```` csharp
+```
+
+#### 5.2.2 Prend également en charge la suppression basée sur des expressions lambda, renvoyant le nombre de lignes affectées, par exemple
+
+```csharp
 var deleteCount = customerRepository.Delete(it => it.Age > 5);
-````
-### 5.3 update
-#### 5.3.1 The interface comes with an Update method, which can update a single entity or a list of entities
-Update according to the key primary key.If the primary key is combined, key annotations can be added to multiple fields.
-```` csharp
+```
+
+### mise à jour 5.3
+
+#### 5.3.1 L'interface est livrée avec une méthode Update, qui peut mettre à jour une seule entité ou une liste d'entités
+
+Mettre à jour en fonction de la clé primaire. Si la clé primaire est combinée, des annotations de clé peuvent être ajoutées à plusieurs champs.
+
+```csharp
 customerRepository.Update(customer);
 
 customerRepository.Update(customerList);
-````
-#### 5.3.2 It also supports the update method based on Lambda chain syntax
-The generated update sql contains only the set fields and returns the number of affected rows, for example
-```` csharp
+```
+
+#### 5.3.2 Il prend également en charge la méthode de mise à jour basée sur la syntaxe de la chaîne Lambda
+
+Le sql de mise à jour généré ne contient que les champs définis et renvoie le nombre de lignes affectées, par exemple
+
+```csharp
 var updateCount = customerRepository.Where(it => it.Name == "testCustomer")
     .SetValue(it => it.Age, 5)
     .SetValue(it => it.TotalConsumptionAmount, 100)
     .ExecuteUpdate();
-````
+```
 
-### 5.4 Query
-It supports normal query and paged query, and there are two ways to query.
-#### 5.4.1 Lambda chain syntax query, such as:
-```` csharp
+### 5.4 Requête
+
+Il prend en charge les requêtes normales et les requêtes paginées, et il existe deux façons d'interroger.
+
+#### 5.4.1 Requête de syntaxe de chaîne Lambda, telle que :
+
+```csharp
 //regular query
 var allCustomers = await customerRepository.GetAllAsync();
 
@@ -371,11 +412,13 @@ var pageResult = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(1
 
 var pageable = new Pageable(1, 10);
 var pageResult2 = await customerRepository.ToPageAsync(pageable);
-````
+```
 
-#### 5.4.2 Define methods directly in the interface, and add annotations to the methods, such as Select, Update, Delete
-Then write sql statements in Select, Update, Delete , such as
-```` csharp
+#### 5.4.2 Définir des méthodes directement dans l'interface et ajouter des annotations aux méthodes, telles que Sélectionner, Mettre à jour, Supprimer
+
+Ensuite, écrivez des instructions sql dans Select, Update, Delete , telles que
+
+```csharp
 [AutoRepository1]
 public interface ICustomerRepository : IBaseRepository<Customer>
 {
@@ -396,25 +439,29 @@ public interface ICustomerRepository : IBaseRepository<Customer>
     Page<Customer> GetCustomerByPage(IPageable pageable, int age);
 
 }
-````
+```
+
 Instructions:
 
-```` csharp
+```csharp
 var result = await customerRepository.QueryAllBuyProductByNameAsync("testCustomer");
 
 //page
 var pageable = new Pageable(1, 10);
 var page = customerRepository.GetCustomerByPage(pageable, 5);
-````
-> Note: 5.4.2 Pagination support in the query, the return value of the method is wrapped by the Page class, and the method parameter must include the paging parameter IPageable , and the sql statement must also have order by, for example:
-```` csharp
-[Select("select * from customer where age>@age order by id")]
-Page<Customer> GetCustomerByPage(IPageable pageable, int age);
-````
+```
 
-The sql in the annotation supports reading from the configuration
-The configured json is as follows:
-```` json
+> Remarque : 5.4.2 Prise en charge de la pagination dans la requête, la valeur de retour de la méthode est enveloppée par la classe Page et le paramètre method doit inclure le paramètre de pagination IPageable , et l'instruction sql doit également avoir order by, par exemple :
+>
+> ```csharp
+> [Select("select * from customer where age>@age order by id")]
+> Page<Customer> GetCustomerByPage(IPageable pageable, int age);
+> ```
+
+Le sql dans l'annotation prend en charge la lecture à partir de la configuration
+Le json configuré est le suivant :
+
+```json
 {
     "mysqlSql": {
         "QueryListSql":"select * from customer",
@@ -423,9 +470,11 @@ The configured json is as follows:
         "DeleteByNameSql":"delete from customer where name=@name"
     }
 }
-````
-The configuration items are wrapped by ${}, and the interface is as follows:
-```` csharp
+```
+
+Les éléments de configuration sont enveloppés par ${} et l'interface est la suivante :
+
+```csharp
 [AutoRepository]
 public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer>
 {
@@ -455,11 +504,13 @@ public interface ICustomerTestConfigurationRepository : IBaseRepository<Customer
     [Delete("${ mysqlSql:DeleteByNameSql }")]
     int DeleteByName(string name);
 }
-````
+```
 
-#### 5.4.4 Select annotations are spliced in this way where query conditions
-Wrap a single query condition with {{}}, and only one variable can be included in a condition.At the same time, when defining a method, the parameter is defined as WhereItem \<T\> , and T is a generic parameter, indicating the real parameter type.In this way , summerboot will automatically process the query conditions.The processing rules are as follows.If the active of whereItem is true, the condition is activated, and the query conditions wrapped in {{ }} in the sql statement will expand and participate in the query.If active is false, the sql The query condition wrapped in {{ }} in the statement is automatically replaced with an empty string and does not participate in the query.In order to make whereItem more useful, the WhereBuilder method is provided.The usage example is as follows:
-```` csharp
+#### 5.4.4 Les annotations de sélection sont fusionnées de cette manière là où les conditions de requête
+
+Enveloppez une seule condition de requête avec {{}}, et une seule variable peut être incluse dans une condition. En même temps, lors de la définition d'une méthode, le paramètre est défini comme WhereItem \\&lt;T>, et T est un paramètre générique, indiquant le type de paramètre réel. De cette manière, summerboot traitera automatiquement les conditions de la requête. Les règles de traitement sont les suivantes. Si l'actif de whereItem est vrai, la condition est activée et les conditions de la requête enveloppé dans {{ }} dans l'instruction sql se développera et participera à la requête. Si active est fausse, le sql La condition de requête enveloppée dans {{ }} dans l'instruction est automatiquement remplacée par une chaîne vide et ne participe pas à query.Afin de rendre whereItem plus utile, la méthode WhereBuilder est fournie.L'exemple d'utilisation est le suivant :
+
+```csharp
 //definition
 [AutoRepository]
 public interface ICustomerRepository : IBaseRepository<Customer>
@@ -486,12 +537,13 @@ Assert.Equal(102, bindResult2.Count);
 var bindResult5 = customerRepository.GetCustomerByPageByCondition(pageable, nameWhereItem, ageEmpty);
 Assert.Single(bindResult5.Data);
 var bindResult6 = customerRepository.GetCustomerByPageByCondition(pageable, nameEmpty, ageEmpty);
-````
+```
 
-### 5.5 Transaction Support
-Use the work unit interface IUnitOfWork to implement database transactions.While injecting the custom storage interface, it also injects the IUnitOfWork interface corresponding to the database unit.Here it is IUnitOfWork1.The usage is as follows
+### 5.5 Prise en charge des transactions
 
-```` csharp
+Utilisez l'interface d'unité de travail IUnitOfWork pour implémenter les transactions de base de données. Lors de l'injection de l'interface de stockage personnalisée, elle injecte également l'interface IUnitOfWork correspondant à l'unité de base de données. Ici, il s'agit de IUnitOfWork1. L'utilisation est la suivante
+
+```csharp
 [ApiController]
 [Route("[controller]/[action]")]
 public class CustomerController : Controller
@@ -533,66 +585,72 @@ public class CustomerController : Controller
         return Content("ok");
     }
 }
-````
+```
 
-### 5.6 Custom implementation classes in special cases
-#### 5.6.1 Define an interface inherited from IBaseRepository , and define your own methods in the interface
-> Note that there is no need to add AutoRepository annotations to this interface at this time
-```` csharp
-public interface ICustomCustomerRepository : IBaseRepository<Customer>
-{
-    Task<List<Customer>> GetCustomersAsync(string name);
+### 5.6 Classes d'implémentation personnalisées dans des cas particuliers
+
+#### 5.6.1 Définir une interface héritée de IBaseRepository et définir vos propres méthodes dans l'interface
+
+> Notez qu'il n'est pas nécessaire d'ajouter des annotations AutoRepository à cette interface pour le moment
+>
+> ```csharp
+> public interface ICustomCustomerRepository : IBaseRepository<Customer>
+> {
+>     Task<List<Customer>> GetCustomersAsync(string name);
+> ```
 
     Task<Customer> GetCustomerAsync(string name);
 
     Task<int> UpdateCustomerNameAsync(string oldName, string newName);
 
     Task<int> CustomQueryAsync();
+
 }
-````
-#### 5.6.2 Add an implementation class, inherited from the CustomBaseRepository class and the custom ICustomCustomerRepository interface, and add the AutoRegister annotation to the implementation class.
-the AutoRegister annotation are the type of the custom interface ICustomCustomerRepository and the declaration cycle ServiceLifetime of the service (the cycle defaults to the scope level).The purpose of adding the AutoRegister annotation is to allow the framework to automatically register the custom interface and the corresponding custom class in the IOC container.It can be directly injected and used.CustomBaseRepository comes with Execute, QueryFirstOrDefault and QueryList and other methods.If you want to contact the lower-level dbConnection for query, refer to the CustomQueryAsync method below.First, OpenDb () opens the database connection, and then query.The query must contain On the database unit information this.databaseUnit and transaction:dbTransaction these two parameters, CloseDb () closes the database connection after the query is completed;
 
-```` csharp
-[AutoRegister(typeof(ICustomCustomerRepository))]
-public class CustomCustomerRepository : CustomBaseRepository<Customer>, ICustomCustomerRepository
-{
-    public CustomCustomerRepository(IUnitOfWork1 uow) : base(uow, uow.DbFactory)
+    #### 5.6.2 Add an implementation class, inherited from the CustomBaseRepository class and the custom ICustomCustomerRepository interface, and add the AutoRegister annotation to the implementation class.
+    the AutoRegister annotation are the type of the custom interface ICustomCustomerRepository and the declaration cycle ServiceLifetime of the service (the cycle defaults to the scope level).The purpose of adding the AutoRegister annotation is to allow the framework to automatically register the custom interface and the corresponding custom class in the IOC container.It can be directly injected and used.CustomBaseRepository comes with Execute, QueryFirstOrDefault and QueryList and other methods.If you want to contact the lower-level dbConnection for query, refer to the CustomQueryAsync method below.First, OpenDb () opens the database connection, and then query.The query must contain On the database unit information this.databaseUnit and transaction:dbTransaction these two parameters, CloseDb () closes the database connection after the query is completed;
+
+    ```` csharp
+    [AutoRegister(typeof(ICustomCustomerRepository))]
+    public class CustomCustomerRepository : CustomBaseRepository<Customer>, ICustomCustomerRepository
     {
+        public CustomCustomerRepository(IUnitOfWork1 uow) : base(uow, uow.DbFactory)
+        {
+        }
+
+        public async Task<Customer> GetCustomerAsync(string name)
+        {
+            var result =
+                await this.QueryFirstOrDefaultAsync<Customer>("select * from customer where name=@name", new { name });
+            return result;
+        }
+
+        public async Task<List<Customer>> GetCustomersAsync(string name)
+        {
+            var result = await this.QueryListAsync<Customer>("select * from customer where name=@name", new { name });
+
+            return result;
+        }
+
+        public async Task<int> UpdateCustomerNameAsync(string oldName, string newName)
+        {
+            var result = await this.ExecuteAsync("update customer set name=@newName where name=@oldName", new { newName, oldName });
+            return result;
+        }
+
+        public async Task<int> CustomQueryAsync() _
+        {
+            this.OpenDb();
+            var grid = await this.dbConnection.QueryMultipleAsync(this.databaseUnit, "select id from customer", transaction: dbTransaction);
+            var ids = grid.Read<int>().ToList();
+            this.CloseDb();
+            return ids[0];
+        }
     }
 
-    public async Task<Customer> GetCustomerAsync(string name)
-    {
-        var result =
-            await this.QueryFirstOrDefaultAsync<Customer>("select * from customer where name=@name", new { name });
-        return result;
-    }
+#### 5.6.3 Exemple d'utilisation
 
-    public async Task<List<Customer>> GetCustomersAsync(string name)
-    {
-        var result = await this.QueryListAsync<Customer>("select * from customer where name=@name", new { name });
-
-        return result;
-    }
-
-    public async Task<int> UpdateCustomerNameAsync(string oldName, string newName)
-    {
-        var result = await this.ExecuteAsync("update customer set name=@newName where name=@oldName", new { newName, oldName });
-        return result;
-    }
-
-    public async Task<int> CustomQueryAsync() _
-    {
-        this.OpenDb();
-        var grid = await this.dbConnection.QueryMultipleAsync(this.databaseUnit, "select id from customer", transaction: dbTransaction);
-        var ids = grid.Read<int>().ToList();
-        this.CloseDb();
-        return ids[0];
-    }
-}
-````
-#### 5.6.3 Example of use
-```` csharp
+```csharp
 [ApiController]
 [Route("[controller]/[action]")]
 public class CustomerController : Controller
@@ -641,23 +699,29 @@ public class CustomerController : Controller
         return Content("ok");
     }
 }
-````
-## 6 Automatically generate entity classes based on database tables, or automatically generate ddl statements for database tables based on entity classes
+```
 
-### 6.1 Table Namespace
-Namespaces in sqlserver are schemas, namespaces in oracle are schemas, and namespaces in sqlite and mysql are databases.
-If you want to define tables under different namespaces, just add [Table("CustomerWithSchema", Schema ="test")] annotation.
-```` csharp
+## 6 Générez automatiquement des classes d'entités basées sur des tables de base de données ou générez automatiquement des instructions ddl pour des tables de base de données basées sur des classes d'entités
+
+### 6.1 Espace de noms de table
+
+Les espaces de noms dans sqlserver sont des schémas, les espaces de noms dans oracle sont des schémas et les espaces de noms dans sqlite et mysql sont des bases de données.
+Si vous souhaitez définir des tables sous différents espaces de noms, ajoutez simplement[Table("ClientAvecSchéma", Schéma="test")]annotation.
+
+```csharp
 [Table("CustomerWithSchema", Schema = "test")]
 public class CustomerWithSchema
 {
     public string Name { set; get; }
     public int Age { set; get; }
 }
-````
-### 6.2 Automatically generate the ddl statement of the database table according to the entity class
-For usage, please refer to the previous 3 examples.Here, mysql is taken as an example.The generated sql is as follows:
-```` sql
+```
+
+### 6.2 Générer automatiquement l'instruction ddl de la table de la base de données en fonction de la classe d'entité
+
+Pour l'utilisation, veuillez vous référer aux 3 exemples précédents. Ici, mysql est pris comme exemple. Le sql généré est le suivant :
+
+```sql
 CREATE TABLE testSummerboot.`Customer` (
     `Name` text NULL,
     `Age` int NOT NULL,
@@ -683,12 +747,15 @@ ALTER TABLE testSummerboot.`Customer` MODIFY `LastUpdateBy` text NULL COMMENT 'l
 ALTER TABLE testSummerboot.`Customer` MODIFY `CreateOn` datetime NULL COMMENT 'Creation time'
 ALTER TABLE testSummerboot.`Customer` MODIFY `CreateBy` text NULL COMMENT 'Created by'
 ALTER TABLE testSummerboot.`Customer` MODIFY `Active` int NULL COMMENT 'Valid or not'
-````
-The generated sql is sql for adding new fields or sql for updating comments .In order to avoid data loss, there will be no sql for deleting fields.It is more convenient for daily use to divide the operation of generating sql and executing sql into two parts.You can quickly get the sql to be executed and check it.After confirming that there is no problem, you can save it and leave it to the dba for review when the application is officially released
+```
 
-### 6.2.2 Type mapping or name mapping from custom entity class fields to database fields
-The column annotation is uniformly used here, such as [Column("Age",TypeName ="float")]
-```` csharp
+Le sql généré est sql pour ajouter de nouveaux champs ou sql pour mettre à jour les commentaires. Afin d'éviter la perte de données, il n'y aura pas de sql pour supprimer des champs. Il est plus pratique pour une utilisation quotidienne de diviser l'opération de génération de sql et d'exécution de sql en deux pièces.Vous pouvez rapidement exécuter le sql et le vérifier.Après avoir confirmé qu'il n'y a pas de problème, vous pouvez l'enregistrer et le laisser au dba pour examen lorsque l'application est officiellement publiée
+
+### 6.2.2 Mappage de type ou mappage de nom des champs de classe d'entité personnalisée aux champs de base de données
+
+L'annotation de colonne est uniformément utilisée ici, telle que[Column("Âge",TypeName="float")]
+
+```csharp
 [Description("Member")]
 public class Customer : BaseEntity
 {
@@ -704,9 +771,11 @@ public class Customer : BaseEntity
     [Description("total consumption amount")]
     public decimal TotalConsumptionAmount { set; get; }
 }
-````
-The generated sql is as follows
-````sql
+```
+
+Le sql généré est le suivant
+
+```sql
 CREATE TABLE testSummerboot.`Customer` (
     `Name` text NULL,
     `Age` float NOT NULL,
@@ -721,11 +790,13 @@ CREATE TABLE testSummerboot.`Customer` (
     PRIMARY KEY (`Id`)
 )
 
-````
+```
 
-### 6.3 Automatically generate entity classes based on database tables
-Inject the database unit corresponding to the IDbGenerator interface, here is the IDbGenerator1 interface, call the GenerateCsharpClass method to generate the text of the c# class, the parameters are the collection of database table names and the namespace of the generated entity class, the code is as follows
-```` csharp
+### 6.3 Générer automatiquement des classes d'entités basées sur des tables de base de données
+
+Injectez l'unité de base de données correspondant à l'interface IDbGenerator, voici l'interface IDbGenerator1, appelez la méthode GenerateCsharpClass pour générer le texte de la classe c#, les paramètres sont la collection de noms de table de base de données et l'espace de noms de la classe d'entité générée, le code est comme suit
+
+```csharp
 [ApiController]
 [Route("[controller]/[action]")]
 public class GenerateTableController : Controller
@@ -755,9 +826,11 @@ public class GenerateTableController : Controller
         return Content("ok");
     }
 }
-````
-Call the GenerateClass interface, the generated c# entity class is as follows , just create a new class file and paste the text into it
-```` csharp
+```
+
+Appelez l'interface GenerateClass, la classe d'entité c# générée est la suivante, créez simplement un nouveau fichier de classe et collez-y le texte
+
+```csharp
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -824,59 +897,70 @@ namespace Test.Model
     }
 }
 
-````
+```
 
-# SummerBoot uses feign to make http calls
-> The bottom layer of feign is based on httpClient .
+# SummerBoot utilise feinte pour passer des appels http
 
-## 1.Registration service
-```` csharp
+> La couche inférieure de feign est basée sur httpClient .
+
+## 1.Service d'enregistrement
+
+```csharp
 services.AddSummerBoot();
 services.AddSummerBootFeign();
-````
-## 2.Define the interface
-Define an interface, and add FeignClient annotation to the interface.In the FeignClient annotation, you can customize the public part of the http interface url - url (the url requested by the entire interface is composed of the url in FeignClient plus the path in the method), whether to ignore the remote interface https certificate verification - IsIgnoreHttpsCertificateValidate , interface timeout - Timeout (unit s), custom interceptor - InterceptorType .
+```
 
-```` csharp
+## 2.Définir l'interface
+
+Définissez une interface et ajoutez l'annotation FeignClient à l'interface. Dans l'annotation FeignClient, vous pouvez personnaliser la partie publique de l'url de l'interface http - url (l'url demandée par l'ensemble de l'interface est composée de l'url dans FeignClient plus le chemin dans le méthode), s'il faut ignorer la vérification du certificat https de l'interface distante - IsIgnoreHttpsCertificateValidate , délai d'expiration de l'interface - Timeout (unité s), intercepteur personnalisé - InterceptorType .
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
     [GetMapping("/query")]
     Task<Test> TestQuery([Query] Test tt);
 }
-````
-At the same time, the url and path can be obtained by reading the configuration, and the configuration items are wrapped by ${}.The json of the configuration is as follows:
-```` json
+```
+
+Dans le même temps, l'url et le chemin peuvent être obtenus en lisant la configuration, et les éléments de configuration sont enveloppés par ${}. Le json de la configuration est le suivant :
+
+```json
 {
     "configurationTest": {
         "url":"http://localhost:5001/home",
         "path":"/query"
     }
 }
-````
-The interface is as follows:
-```` csharp
+```
+
+L'interface est la suivante :
+
+```csharp
 [FeignClient(Url = "${ configurationTest:url }")]
 public interface ITestFeignWithConfiguration
 {
     [GetMapping("${ configurationTest:path }")]
     Task<Test> TestQuery([Query] Test tt);
 }
-````
+```
+
 Sometimes we only want to use the path in the method as a complete url to initiate an http request, then we can define the interface as follows, set UsePathAsUrl to true (the default is false)
-```` csharp
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home")]
 public interface ITestFeign
 {
     [PostMapping("http://localhost:5001/home/ json", UsePathAsUrl = true)]
     Task TestUsePathAsUrl([Body(BodySerializationKind.Json)] Test tt);
 }
-````
-   
+```
 
-## 3.Set the request header (header)
-You can choose to add Headers annotation on the interface, which means that all http requests under this interface will carry the request header in the annotation.The parameter of Headers is a variable-length string type parameter.At the same time, Headers can also be added to the method, which means that when the method is called, the request header will be added.The Headers parameter on the interface can be superimposed with the Headers parameter on the method.At the same time Variables can be used in headers, and the placeholders for variables are {{}}, such as
-```` csharp
+## 3.Définissez l'en-tête de la demande (en-tête)
+
+Vous pouvez choisir d'ajouter une annotation Headers sur l'interface, ce qui signifie que toutes les requêtes http sous cette interface porteront l'en-tête de requête dans l'annotation. Le paramètre Headers est un paramètre de type chaîne de longueur variable. En même temps, Headers peut également être ajouté à la méthode, ce qui signifie que lorsque la méthode est appelée, l'en-tête de la requête sera ajouté. Le paramètre Headers de l'interface peut être superposé avec le paramètre Headers de la méthode. En même temps, des variables peuvent être utilisées dans les en-têtes, et les espaces réservés pour les variables sont {{}}, tels que
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 [Headers("a:a", "b:b")]
 public interface ITestFeign
@@ -902,11 +986,13 @@ await TestFeign.TestWithHeadersAsync()
 
 await TestFeign.TestHeaderAsync("abc");
     >>> post, http: //localhost:5001/home/abc, and the request header is"a:abc"
-````
+```
 
-## 4.Custom Interceptor
-Custom interceptors are effective for all methods under the interface.The application scenario of the interceptor is mainly to do some operations before the request.For example, before requesting a third-party business interface, you need to log in to the third-party system first, then you can use it in the interceptor First request the third-party login interface, after obtaining the credentials, put them in the header, the interceptor needs to implement the IRequestInterceptor interface, the example is as follows
-```` csharp
+## 4. Intercepteur personnalisé
+
+Les intercepteurs personnalisés sont efficaces pour toutes les méthodes sous l'interface. Le scénario d'application de l'intercepteur consiste principalement à effectuer certaines opérations avant la demande. Par exemple, avant de demander une interface commerciale tierce, vous devez vous connecter au système tiers. d'abord, vous pouvez ensuite l'utiliser dans l'intercepteur Demandez d'abord l'interface de connexion tierce, après avoir obtenu les informations d'identification, mettez-les dans l'en-tête, l'intercepteur doit implémenter l'interface IRequestInterceptor, l'exemple est le suivant
+
+```csharp
 //loginFeign client for login
 [FeignClient(Url = "http://localhost:5001/login", IsIgnoreHttpsCertificateValidate = true, Timeout = 100)]
 public interface ILoginFeign
@@ -955,9 +1041,11 @@ public interface ITestFeign
 await TestFeign.TestAsync();
 >>> get to http: //localhost:5001/home/testGet, header is"Authorization:Bearer abc"
 
-````
-IgnoreInterceptor to the method , then the request initiated by this method will ignore the interceptor, such as
-```` csharp
+```
+
+IgnoreInterceptor à la méthode , la requête initiée par cette méthode ignorera l'intercepteur, tel que
+
+```csharp
 //testFegn client that accesses the business interface , and define the interceptor on the client as loginInterceptor
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(LoginInterceptor), Timeout = 100)]
 public interface ITestFeign
@@ -970,17 +1058,22 @@ public interface ITestFeign
 await TestFeign.TestAsync ();
 >>> get to http: //localhost:5001/home/testGet, no header
 
-````
-You can also add a global interceptor.When registering AddSummerBootFeign , the calling method is as follows:
-```` csharp
+```
+
+Vous pouvez également ajouter un intercepteur global. Lors de l'enregistrement de AddSummerBootFeign , la méthode d'appel est la suivante :
+
+```csharp
 services.AddSummerBootFeign(it =>
 {
     it.SetGlobalInterceptor(typeof(GlobalInterceptor));
 });
-````
-## 5.Define the method
-Each method should add annotations to represent the type of request and the url to be accessed .There are 4 built-in annotations, GetMapping , PostMapping , PutMapping , DeleteMapping , and the return value of the method must be Task<> type
-```` csharp
+```
+
+## 5.Définir la méthode
+
+Chaque méthode doit ajouter des annotations pour représenter le type de requête et l'url à laquelle accéder. Il y a 4 annotations intégrées, GetMapping , PostMapping , PutMapping , DeleteMapping , et la valeur de retour de la méthode doit être de type Task&lt;>
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -996,11 +1089,13 @@ public interface ITestFeign
     [DeleteMapping("/ testDelete")]
     Task<Test> TestDeleteAsync();
 }
-````
+```
 
-### 5.1 Common parameters in the method
-If the parameter has no special annotation, or is not a special class, it will be used as a dynamic parameter to participate in the replacement of variables in the url and header (if the parameter is a class, read the attribute value of the class), and the variables in the url and header use placeholder { {}}, if the variable name is inconsistent with the parameter name, you can use the AliasAs annotation (which can be used on parameters or class attributes) to specify an alias, such as
-```` csharp
+### 5.1 Paramètres communs à la méthode
+
+Si le paramètre n'a pas d'annotation spéciale, ou n'est pas une classe spéciale, il sera utilisé comme paramètre dynamique pour participer au remplacement des variables dans l'url et le header (si le paramètre est une classe, lire la valeur de l'attribut de la classe ), et les variables dans l'url et l'en-tête utilisent l'espace réservé { {}}, si le nom de la variable est incohérent avec le nom du paramètre, vous pouvez utiliser l'annotation AliasAs (qui peut être utilisée sur les paramètres ou les attributs de classe) pour spécifier un alias, tel que
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1028,12 +1123,15 @@ await TestFeign.TestAliasAsAsync ("abc");
 
 await TestFeign.TestHeaderAsync ("abc");
 >>> post, http: //localhost:5001/home/abc, and the request header is"a:abc"
-````
+```
 
-### 5.2 Special parameters in the method
-#### 5.2.1 Parameters add Query annotations
-After the query annotation is added to the parameter, the parameter value will be added to the url in the form of key1=value1&key2=value2 .
-```` csharp
+### 5.2 Paramètres spéciaux dans la méthode
+
+#### 5.2.1 Les paramètres ajoutent des annotations de requête
+
+Une fois l'annotation de requête ajoutée au paramètre, la valeur du paramètre sera ajoutée à l'URL sous la forme key1=value1&key2=value2 .
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1049,9 +1147,11 @@ await TestFeign.TestQuery ("abc");
 
 await TestFeign.TestQueryWithClass (new Test() { Name ="abc", Age = 3 });
 >>> get, http: //localhost:5001/home/TestQueryWithClass?Name=abc&Age=3
-````
-##### 5.2.1.1 The Query annotation is used with the Embedded annotation, and the Embedded annotation class can be added as a parameter as a whole
-```` csharp
+```
+
+##### 5.2.1.1 L'annotation Query est utilisée avec l'annotation Embedded, et la classe d'annotation Embedded peut être ajoutée en tant que paramètre dans son ensemble
+
+```csharp
 public class EmbeddedTest2
 {
     public int Age { get; set; }
@@ -1087,15 +1187,19 @@ await testFeign.TestEmbedded(new EmbeddedTest3()
 
 >>> get, http: //localhost:5001/home/testEmbedded?Name=sb&Test=%7B%22Age%22%3A%223%22%7D
 
-````
-If there is no Embedded annotation, the request becomes
-```` csharp
->>> get, http: //localhost:5001/home/testEmbedded?Name=sb&Age=3
-````
+```
 
-#### 5.2.2 Parameters add Body (BodySerializationKind.Form) annotations
-It is equivalent to simulating the form submission in html.The parameter value will be URL-encoded and added to the payload (body) in the form of key1=value1&key2=value2.
-```` csharp
+S'il n'y a pas d'annotation intégrée, la demande devient
+
+```csharp
+>>> get, http: //localhost:5001/home/testEmbedded?Name=sb&Age=3
+```
+
+#### 5.2.2 Les paramètres ajoutent des annotations Body (BodySerializationKind.Form)
+
+Cela équivaut à simuler la soumission du formulaire en html. La valeur du paramètre sera encodée en URL et ajoutée à la charge utile (corps) sous la forme clé1=valeur1&clé2=valeur2.
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1105,11 +1209,13 @@ public interface ITestFeign
 
 await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
 >>> post, http: //localhost:5001/home/form, and the value in the body is Name= abc&Age =3
-````
+```
 
-#### 5.2.3 Parameters add Body (BodySerializationKind.Json) annotations
-That is, submit it in the form of application/ json , and the parameter value will be serialized by json and added to the payload (body).Similarly, if the field in the class has an alias, you can also use the AliasAs annotation.
-```` csharp
+#### 5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)
+
+Autrement dit, soumettez-le sous la forme application/ json , et la valeur du paramètre sera sérialisée par json et ajoutée à la charge utile (corps). De même, si le champ de la classe a un alias, vous pouvez également utiliser l'annotation AliasAs .
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1119,10 +1225,11 @@ public interface ITestFeign
 
 await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 });
 >>> post, http: //localhost:5001/home/json, and the value in the body is {"Name":"abc","Age":3}
-````
+```
 
-#### 5.2.4 Use the special class HeaderCollection as a method parameter to add request headers in batches
-```` csharp
+#### 5.2.4 Utiliser la classe spéciale HeaderCollection comme paramètre de méthode pour ajouter des en-têtes de requête par lots
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1136,10 +1243,11 @@ var headerCollection = new HeaderCollection()
 
 await TestFeign.TestJson(new Test() { Name = "abc", Age = 3 }, headerCollection);
 >>> post, http: //localhost:5001/home/json, and the value in the body is {"Name":"abc","Age":3}, and the header is"a:a"and"b: b"
-````
+```
 
-#### 5.2.5 Use the special class BasicAuthorization as a method parameter to add the Authorization request header for basic authentication
-```` csharp
+#### 5.2.5 Utilisez la classe spéciale BasicAuthorization comme paramètre de méthode pour ajouter l'en-tête de demande d'autorisation pour l'authentification de base
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1152,10 +1260,11 @@ var password = "123";
 
 await TestFeign.TestBasicAuthorization(new BasicAuthorization(username, password));
 >>> get, http: //localhost:5001/home/testBasicAuthorization, header is"Authorization: Basic YWJjOjEyMw =="
-````
+```
 
-#### 5.2.6 Use the special class MultipartItem as a method parameter, and mark the Multipart annotation on the method to upload the attachment
-```` csharp
+#### 5.2.6 Utilisez la classe spéciale MultipartItem comme paramètre de méthode et marquez l'annotation Multipart sur la méthode pour télécharger la pièce jointe
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1201,10 +1310,11 @@ var result = await testFeign.MultipartTest(new Test() { Name = "sb", Age = 3 }, 
 var result = await testFeign.MultipartTest(new Test() { Name = "sb", Age = 3 }, new MultipartItem(new FileInfo(basePath), name, fileName));
  
 >>> post, http: //localhost:5001/home/multipart, and the value in the body is Name= abc&Age =3, and it has attachments
-````
+```
 
-#### 5.2.7 Use the class Stream as the return type of the method to receive streaming data, such as downloading files.
-```` csharp
+#### 5.2.7 Utilisez la classe Stream comme type de retour de la méthode pour recevoir des données en continu, telles que le téléchargement de fichiers.
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1217,10 +1327,11 @@ using var newfile = new FileInfo("D:\\123.txt").OpenWrite();
 streamResult.CopyTo(newfile);
 
 >>> get, http: //localhost:5001/home/downLoadWithStream, the return value is streaming data, and then it can be saved as a file.
-````
+```
 
-#### 5.2.8 Use the class HttpResponseMessage as the return type of the method to get the most original response message.
-```` csharp
+#### 5.2.8 Utilisez la classe HttpResponseMessage comme type de retour de la méthode pour obtenir le message de réponse le plus original.
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1231,10 +1342,11 @@ public interface ITestFeign
 var rawResult = await testFeign.Test();
 
 >>> get, http: //localhost:5001/home/Test, the return value is the original return data of httpclient .
-````
+```
 
-#### 5.2.9 Use the class Task as the return type of the method, that is, no return value is required.
-```` csharp
+#### 5.2.9 Utilisez la classe Task comme type de retour de la méthode, c'est-à-dire qu'aucune valeur de retour n'est requise.
+
+```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
 public interface ITestFeign
 {
@@ -1245,11 +1357,15 @@ public interface ITestFeign
 await testFeign.Test();
 
 >>> get, http: //localhost:5001/home/Test, ignore the return value
-````
-## 6.Microservice - access to nacos
-### 6.1 Add nacos configuration in the configuration file
-in appsettings.json / appsettings.Development.json configuration file
-```` json
+```
+
+## 6.Microservice - accès aux nacos
+
+### 6.1 Ajouter la configuration nacos dans le fichier de configuration
+
+dans le fichier de configuration appsettings.json / appsettings.Development.json
+
+```json
 "nacos": {
     //--------Using nacos , serviceAddress and namespaceId are required------
     // nacos service address, such as http://172.16.189.242:8848
@@ -1290,12 +1406,15 @@ in appsettings.json / appsettings.Development.json configuration file
    "port": 5000
 
 }
-````
-### 6.2 Access nacos configuration center
-Accessing the nacos configuration center is very simple, just add a line .UseNacosConfiguration () in Program.cs , currently supports json format, xml format and yaml format.
+```
 
-net core3.1 example is as follows
-```` csharp
+### 6.2 Accéder au centre de configuration nacos
+
+L'accès au centre de configuration nacos est très simple, il suffit d'ajouter une ligne .UseNacosConfiguration () dans Program.cs , prend actuellement en charge le format json, le format xml et le format yaml.
+
+net core 3.1 exemple est le suivant
+
+```csharp
 public static IHostBuilder CreateHostBuilder(string[] args) =>
     Host.CreateDefaultBuilder(args)
         .UseNacosConfiguration()
@@ -1303,54 +1422,66 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
         {
             webBuilder.UseStartup<Startup>().UseUrls("http://*:5001");
         });
-````
-The net6 example is as follows
-```` csharp
+```
+
+L'exemple net6 est le suivant
+
+```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseNacosConfiguration();
-````
-### 6.3 Access nacos service center
-#### 6.3.1 Add configuration in StartUp.cs
-If the current application is registered as a microservice instance, then this step is over, and feign will automatically register the application as a microservice instance according to the configuration in the configuration file.If this application wants to call the microservice interface, please see 6.3.2
+```
 
-```` csharp
+### 6.3 Accéder au centre de service nacos
+
+#### 6.3.1 Ajouter une configuration dans StartUp.cs
+
+Si l'application actuelle est enregistrée en tant qu'instance de microservice, cette étape est terminée et feign enregistrera automatiquement l'application en tant qu'instance de microservice en fonction de la configuration dans le fichier de configuration. Si cette application souhaite appeler l'interface de microservice, veuillez consulter 6.3 .2
+
+```csharp
 services.AddSummerBoot();
 services.AddSummerBootFeign(it =>
 {
     it.AddNacos(Configuration);
 });
-````
+```
 
-#### 6.3.2 Define the interface for calling microservices
-Set the name of the microservice ServiceName , the group name NacosGroupName (you can fill in the global default group name in the configuration file nacos:defaultNacosGroupName , if you don’t fill it in, it defaults to DEFAULT_GROUP), the namespace NacosNamespaceId (you can fill in the global default namespace in the configuration file nacos:defaultNacosNamespaceId , If not filled, it defaults to public), and MicroServiceMode is set to true.The url does not need to be configured, and the rest is the same as the normal feign interface.
+#### 6.3.2 Définir l'interface d'appel des microservices
 
-```` csharp
+Définissez le nom du microservice ServiceName , le nom de groupe NacosGroupName (vous pouvez remplir le nom de groupe global par défaut dans le fichier de configuration nacos:defaultNacosGroupName , si vous ne le remplissez pas, il est par défaut à DEFAULT_GROUP), l'espace de noms NacosNamespaceId (vous peut remplir l'espace de noms global par défaut dans le fichier de configuration nacos:defaultNacosNamespaceId , s'il n'est pas rempli, il est par défaut public), et MicroServiceMode est défini sur true. L'url n'a pas besoin d'être configuré, et le reste est identique à la normale fausse interface.
+
+```csharp
 [FeignClient(ServiceName = "test", MicroServiceMode = true, NacosGroupName = "DEFAULT_GROUP", NacosNamespaceId = "dfd8de72-e5ec-4595-91d4-49382f500edf")]
 public interface IFeignService
 {
     [GetMapping("/home/index")]
     Task<string> TestGet();
 }
-````
-At the same time , ServiceName , NacosGroupName , and NacosNamespaceId also support reading from configuration files, such as
-```` json
+```
+
+Dans le même temps, ServiceName , NacosGroupName et NacosNamespaceId prennent également en charge la lecture à partir de fichiers de configuration, tels que
+
+```json
 {
     "ServiceName":"test",
     "NacosGroupName":"DEFAULT_GROUP",
     "NacosNamespaceId":"dfd8de72-e5ec-4595-91d4-49382f500edf"
 }
-````
-```` csharp
+```
+
+```csharp
 [FeignClient(ServiceName = "${ ServiceName }", MicroServiceMode = true, NacosGroupName = "${ NacosGroupName }", NacosNamespaceId = "${ NacosNamespaceId }")]
 public interface IFeignService
 {
     [GetMapping("/home/index")]
     Task<string> TestGet();
 }
-````
-## 7.Using cookies in context
-In the unit of work mode in feign, cookies can be set in the context, so that the interface will automatically bring cookies when the interface initiates an http request in the context.To use the unit of work mode, you need to inject the IFeignUnitOfWork interface, and then operate as follows :
-```` csharp
+```
+
+## 7.Utilisation des cookies en contexte
+
+Dans le mode unité de travail en feigne, les cookies peuvent être définis dans le contexte, de sorte que l'interface apportera automatiquement des cookies lorsque l'interface initie une requête http dans le contexte. Pour utiliser le mode unité de travail, vous devez injecter le IFeignUnitOfWork interface, puis procédez comme suit :
+
+```csharp
 var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
 //Open the context
 feignUnitOfWork.BeginCookie();
@@ -1360,9 +1491,11 @@ await testFeign.TestCookieContainer2();
 //end context
 feignUnitOfWork.StopCookie();
 
-````
-At the same time, if the interface returns the cookie setting information, the work unit will also save the cookie, and when the interface in the context scope initiates http access, it will automatically bring the cookie information.A typical scenario is that we first After the first interface is logged in, the interface will return the cookie to us.When we visit the subsequent interface, we must bring the cookie returned to us by the first interface.:
-```` csharp
+```
+
+Dans le même temps, si l'interface renvoie les informations de configuration du cookie, l'unité de travail enregistre également le cookie, et lorsque l'interface dans la portée du contexte initie l'accès http, elle apporte automatiquement les informations du cookie.Un scénario typique est que nous d'abord Une fois la première interface connectée, l'interface nous renverra le cookie.Lorsque nous visitons l'interface suivante, nous devons apporter le cookie qui nous est renvoyé par la première interface. :
+
+```csharp
 var feignUnitOfWork = serviceProvider.GetRequiredService<IFeignUnitOfWork>();
 //Open the context
 feignUnitOfWork.BeginCookie();
@@ -1373,25 +1506,34 @@ await testFeign.LoginAsync("sb", "123");
 await testFeign.TestCookieContainer3();
 //end context
 feignUnitOfWork.StopCookie();
-````
-# SummerBoot uses cache for cache operations
-## 1.Registration service
-The cache is divided into memory cache and redis cache.The memory cache registration method is as follows:
-```` csharp
+```
+
+# SummerBoot utilise le cache pour les opérations de cache
+
+## 1.Service d'enregistrement
+
+Le cache est divisé en cache mémoire et cache redis. La méthode d'enregistrement du cache mémoire est la suivante :
+
+```csharp
 services.AddSummerBoot();
 services.AddSummerBootCache(it => it.UseMemory());
-````
-The redis cache registration method is as follows, connectionString is the redis connection string:
-```` csharp
+```
+
+La méthode d'enregistrement du cache Redis est la suivante, connectionString est la chaîne de connexion Redis :
+
+```csharp
 services.AddSummerBoot();
 services.AddSummerBootCache(it =>
 {
     it.UseRedis(connectionString);
 });
-````
-## 2.ICache interface
-The ICache interface mainly has the following methods and the corresponding asynchronous methods
-```` csharp
+```
+
+## 2. Interface ICache
+
+L'interface ICache a principalement les méthodes suivantes et les méthodes asynchrones correspondantes
+
+```csharp
 ///<summary>
 /// Absolute time cache, the cache value becomes invalid after a fixed time
 ///</summary>
@@ -1423,9 +1565,11 @@ CacheEntity<T> GetValue<T>(string key);
 ///<param name ="key"></param>
 ///<returns></returns>
 bool Remove(string key);
-````
-## 3.After injecting the interface, it can be used
-```` csharp
+```
+
+## 3.Après avoir injecté l'interface, elle peut être utilisée
+
+```csharp
 var cache = serviceProvider.GetRequiredService<ICache>();
     / / Set a fixed time cache
 cache.SetValueWithAbsolute("test", "test", TimeSpan.FromSeconds(3));
@@ -1436,18 +1580,18 @@ cache.SetValueWithSliding("test", "test", TimeSpan.FromSeconds(3));
 var value = cache.GetValue<string>("test");
 // remove cache
 cache.Remove("test");
-````
+```
 
-Human-friendly design in #SummerBoot
-function that comes with net core mvc .What if we want to configure the ip and port of the web application in appsettings.json ? Write directly in appsettings.json
-````
-{
-"urls":"http://localhost:7002;http://localhost:7012"
-}
-````
+Conception conviviale dans #SummerBoot
+fonction fournie avec net core mvc. Et si nous voulions configurer l'adresse IP et le port de l'application Web dans appsettings.json ? Écrivez directement dans appsettings.json
 
- 2.The AutoRegister annotation is used to let the framework automatically register the interface and the implementation class of the interface into the IOC container, and mark it on the implementation class.The parameters of the annotation are the type of the custom interface corresponding to this class and the service life cycle ServiceLifetime (the cycle defaults to scope level), the usage is as follows:
-```` csharp
+    {
+    "urls":"http://localhost:7002;http://localhost:7012"
+    }
+
+2\. L'annotation AutoRegister est utilisée pour permettre au framework d'enregistrer automatiquement l'interface et la classe d'implémentation de l'interface dans le conteneur IOC, et de la marquer sur la classe d'implémentation. Les paramètres de l'annotation sont le type de l'interface personnalisée correspondant à cette classe et le cycle de vie du service ServiceLifetime (le cycle par défaut est au niveau de la portée), l'utilisation est la suivante :
+
+```csharp
 public interface ITest
 {
 
@@ -1458,18 +1602,22 @@ public class Test : ITest
 {
 
 }
-````
- 3.ApiResult interface return value packaging class, including code, msg and data, 3 fields, so that the return value of the entire system is unified and orderly, which is conducive to the unified interception and unified operation of the front end.The way to use it is as follows:
-```` csharp
+```
+
+3\. Classe d'emballage de valeur de retour d'interface ApiResult, y compris code, msg et données, 3 champs, de sorte que la valeur de retour de l'ensemble du système soit unifiée et ordonnée, ce qui est propice à l'interception unifiée et au fonctionnement unifié du front-end. pour l'utiliser est la suivante :
+
+```csharp
 [HttpPost("CreateServerConfigAsync")]
 public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
 {
     var result = await serverConfigService.CreateServerConfigAsync(dto);
     return ApiResult<bool>.Ok(result);
 }
-````
- 4.Some enhanced operations for net core mvc , including the global error interceptor, and the processing after the interface parameter verification fails, cooperate with ApiResult , so that when the system reports an error, it can also return uniformly.The usage is as follows.First, register this in startUp Service, note that it should be placed after mvc registration:
-```` csharp
+```
+
+4\. Certaines opérations améliorées pour net core mvc, y compris l'intercepteur d'erreur global et le traitement après l'échec de la vérification des paramètres d'interface, coopèrent avec ApiResult, de sorte que lorsque le système signale une erreur, il peut également revenir de manière uniforme. L'utilisation est la suivante .Tout d'abord, enregistrez-le dans le service de démarrage, notez qu'il doit être placé après l'enregistrement mvc :
+
+```csharp
 services.AddControllersWithViews();
 services.AddSummerBootMvcExtension(it =>
 {
@@ -1478,10 +1626,12 @@ services.AddSummerBootMvcExtension(it =>
     //Whether to enable parameter verification processing
     it.UseValidateParameterHandle = true;
 });
-````
-4.1 The effect of using the global error interceptor
-We can throw an error directly in the business code, and the global error interceptor will catch the error, and then return it to the front end in a unified format.The business code is as follows:
-```` csharp
+```
+
+4.1 L'effet de l'utilisation de l'intercepteur d'erreur global
+Nous pouvons lancer une erreur directement dans le code métier, et l'intercepteur d'erreurs global captera l'erreur, puis la renverra au frontal dans un format unifié. Le code métier est le suivant :
+
+```csharp
 private void ValidateData(EnvConfigDto dto)
 {
     if (dto == null)
@@ -1493,18 +1643,22 @@ private void ValidateData(EnvConfigDto dto)
         throw new ArgumentNullException("There is no server configured in the environment");
     }
 }
-````
-If an error is reported in the business code, the return value is as follows:
-```` csharp
+```
+
+Si une erreur est signalée dans le code métier, la valeur de retour est la suivante :
+
+```csharp
 {
  "code": 40000 ,
  "msg":"Value cannot be null.(Parameter 'There is no server configured in the environment')",
  "data": null
 }
-````
-4.2 The effect of processing after the interface parameter verification fails
-add verification annotations in the parameter dto of the interface , the code is as follows
-```` csharp
+```
+
+4.2 L'effet du traitement après l'échec de la vérification des paramètres d'interface
+ajouter des annotations de vérification dans le paramètre dto de l'interface, le code est le suivant
+
+```csharp
 public class EnvConfigDto : BaseEntity
 {
     ///<summary>
@@ -1518,19 +1672,22 @@ public class EnvConfigDto : BaseEntity
     [NotMapped]
     public List<int> ServerConfigs _ { get ; set ; }
 }
-````
-If the parameter verification fails, the return value is as follows:
-```` csharp
+```
+
+Si la vérification des paramètres échoue, la valeur de retour est la suivante :
+
+```csharp
 {
  "code": 40000 ,
  "msg":"Environment name cannot be empty",
  "data": null
 }
-````
+```
 
-5.QueryCondition , the combination of lambda query conditions, solves the pain point of filtering and querying from the front-end .In addition to the basic And and Or methods , a more humanized method is added.Generally, the attributes in the dto passed from the front-end have string types.If they have values, they are added to the query condition, so two methods are specially extracted, including AndIfStringIsNotEmpty (if the string is not empty, the and operation is performed, otherwise the original expression is returned), OrIfStringIsNotEmpty (if the string is not empty, then Perform or operation, otherwise return to the original expression),
-At the same time , the attributes in dto may also be of nullable type, that is, nullable type, such as int? test represents whether the user fills in a certain filter condition, if hasValue is added to the query condition, so two methods are specially extracted, AndIfNullableHasValue (If the nullable value is not empty, the AND operation is performed, otherwise the original expression is returned), OrIfNullableHasValue (if the nullable value is not empty, the AND operation is performed, otherwise the original expression is returned) usage is as follows:
-```` csharp
+5.QueryCondition , la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation depuis le front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. Généralement, les attributs du dto sont passés du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou operation, sinon retour à l'expression d'origine),
+Dans le même temps, les attributs de dto peuvent également être de type nullable, c'est-à-dire de type nullable, comme int? test représente si l'utilisateur remplit une certaine condition de filtre, si hasValue est ajouté à la condition de requête, donc deux méthodes sont spécialement extraites, AndIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée ), OrIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée) l'utilisation est la suivante :
+
+```csharp
 // dto
 public class ServerConfigPageDto : IPageable
 {
@@ -1558,6 +1715,4 @@ var queryCondition = QueryCondition.True<ServerConfig>()
 
 var queryResult = await serverConfigRepository.Where(queryCondition)
     .Skip((dto.PageNumber - 1) * dto.PageSize).Take(dto.PageSize).ToPageAsync();
-````
-
-
+```
