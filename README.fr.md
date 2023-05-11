@@ -51,7 +51,7 @@ net core 3.1, net 6
     -   [2.Définir une classe d'entité de base de données](#2define-a-database-entity-class)
     -   [3. Écrivez un contrôleur pour générer automatiquement des tables de base de données via des classes d'entités](#3write-a-controller-to-automatically-generate-database-tables-through-entity-classes)
     -   [4.Définir l'interface de stockage](#4define-storage-interface)
-    -   [5.Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone](#5add-delete-modify-and-query-all-support-asynchronous-synchronization)
+    -   [5. Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone](#5add-delete-modify-and-query-all-support-asynchronous-synchronization)
         -   [5.1 Ajouté](#51-added)
             -   [5.1.1 L'interface a sa propre méthode Insert, qui peut insérer une seule entité ou une liste d'entités](#511-the-interface-has-its-own-insert-method-which-can-insert-a-single-entity-or-a-list-of-entities)
             -   [5.1.2 Insertion rapide des lots, l'interface de stockage est livrée avec la méthode FastBatchInsert, qui peut insérer rapidement la liste des entités.](#512-fast-batch-insertion-the-storage-interface-comes-with-the-fastbatchinsert-method-which-can-quickly-insert-the-entity-list)
@@ -86,7 +86,7 @@ net core 3.1, net 6
             -   [5.2.1 Les paramètres ajoutent des annotations de requête](#521-parameters-add-query-annotations)
                 -   [5.2.1.1 L'annotation Query est utilisée avec l'annotation Embedded, et la classe d'annotation Embedded peut être ajoutée en tant que paramètre dans son ensemble](#5211-the-query-annotation-is-used-with-the-embedded-annotation-and-the-embedded-annotation-class-can-be-added-as-a-parameter-as-a-whole)
             -   [5.2.2 Les paramètres ajoutent des annotations Body (BodySerializationKind.Form)](#522-parameters-add-body-bodyserializationkindform-annotations)
-            -   [5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)](#523-parameters-add-body-bodyserializationkindjson-annotations)
+            -   [5.2.3 Les paramètres ajoutent des annotations Body (BodySerializationKind.Json)](#523-parameters-add-body-bodyserializationkindjson-annotations)
             -   [5.2.4 Utiliser la classe spéciale HeaderCollection comme paramètre de méthode pour ajouter des en-têtes de requête par lots](#524-use-the-special-class-headercollection-as-a-method-parameter-to-add-request-headers-in-batches)
             -   [5.2.5 Utilisez la classe spéciale BasicAuthorization comme paramètre de méthode pour ajouter l'en-tête de demande d'autorisation pour l'authentification de base](#525-use-the-special-class-basicauthorization-as-a-method-parameter-to-add-the-authorization-request-header-for-basic-authentication)
             -   [5.2.6 Utilisez la classe spéciale MultipartItem comme paramètre de méthode et marquez l'annotation Multipart sur la méthode pour télécharger la pièce jointe](#526-use-the-special-class-multipartitem-as-a-method-parameter-and-mark-the-multipart-annotation-on-the-method-to-upload-the-attachment)
@@ -294,7 +294,7 @@ public interface ICustomerRepository : IBaseRepository<Customer>
 }
 ```
 
-## 5.Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone
+## 5. Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone
 
 ### 5.1 Ajouté
 
@@ -337,7 +337,7 @@ public class CustomerController : Controller
 }
 ```
 
-#### 5.1.2 Fast batch insertion, the storage interface comes with the FastBatchInsert method, which can quickly insert the entity list.
+#### 5.1.2 Insertion rapide des lots, l'interface de stockage est livrée avec la méthode FastBatchInsert, qui peut insérer rapidement la liste des entités.
 
 Dans le cas d'une insertion rapide par lots, le framework n'attribuera pas automatiquement de valeur au champ ID de l'entité. En même temps, si la base de données est mysql , il existe des circonstances particulières. Tout d'abord, la bibliothèque de pilotes doit avoir MySqlConnector . Cette bibliothèque peut coexister avec mysql.data et ne sera pas en conflit, il n'y a donc pas lieu de s'inquiéter, et la chaîne de connexion à la base de données doit être suivie de "; AllowLoadLocalInfile =true", et en même temps exécuter "set global local_infile =1" sur la base de données mysql pour activer le téléchargement par lots. SQLite ne prend pas en charge l'insertion rapide par lots.
 
@@ -945,7 +945,7 @@ public interface ITestFeignWithConfiguration
 }
 ```
 
-Sometimes we only want to use the path in the method as a complete url to initiate an http request, then we can define the interface as follows, set UsePathAsUrl to true (the default is false)
+Parfois, nous voulons uniquement utiliser le chemin dans la méthode comme une URL complète pour lancer une requête http, nous pouvons alors définir l'interface comme suit, définir UsePathAsUrl sur true (la valeur par défaut est false)
 
 ```csharp
 [FeignClient(Url = "http://localhost:5001/home")]
@@ -1211,7 +1211,7 @@ await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
 >>> post, http: //localhost:5001/home/form, and the value in the body is Name= abc&Age =3
 ```
 
-#### 5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)
+#### 5.2.3 Les paramètres ajoutent des annotations Body (BodySerializationKind.Json)
 
 Autrement dit, soumettez-le sous la forme application/ json , et la valeur du paramètre sera sérialisée par json et ajoutée à la charge utile (corps). De même, si le champ de la classe a un alias, vous pouvez également utiliser l'annotation AliasAs .
 
