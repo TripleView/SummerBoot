@@ -37,13 +37,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            cache.SetValueWithAbsolute("test", "test", TimeSpan.FromSeconds(3));
+            cache.SetValueWithAbsolute("TestSetValueWithAbsolute", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = cache.GetValue<string>("test");
+            var value = cache.GetValue<string>("TestSetValueWithAbsolute");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(1000);
-            value = cache.GetValue<string>("test");
+            value = cache.GetValue<string>("TestSetValueWithAbsolute");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -53,13 +53,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            cache.SetValueWithSliding("test", "test", TimeSpan.FromSeconds(3));
+            cache.SetValueWithSliding("TestSetValueWithSliding", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = cache.GetValue<string>("test");
+            var value = cache.GetValue<string>("TestSetValueWithSliding");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(3000);
-            value = cache.GetValue<string>("test");
+            value = cache.GetValue<string>("TestSetValueWithSliding");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -69,13 +69,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            cache.SetValueWithAbsolute("test", "test", TimeSpan.FromSeconds(3));
+            cache.SetValueWithAbsolute("TestRemove", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = cache.GetValue<string>("test");
+            var value = cache.GetValue<string>("TestRemove");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
-            cache.Remove("test");
-            value = cache.GetValue<string>("test");
+            cache.Remove("TestRemove");
+            value = cache.GetValue<string>("TestRemove");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -96,13 +96,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            cache.SetValueWithAbsolute("test", "test", TimeSpan.FromSeconds(3));
+            cache.SetValueWithAbsolute("TestSetValueWithAbsoluteAsync", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = await cache.GetValueAsync<string>("test");
+            var value = await cache.GetValueAsync<string>("TestSetValueWithAbsoluteAsync");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(1000);
-            value = await cache.GetValueAsync<string>("test");
+            value = await cache.GetValueAsync<string>("TestSetValueWithAbsoluteAsync");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -112,13 +112,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            await cache.SetValueWithSlidingAsync("test", "test", TimeSpan.FromSeconds(3));
+            await cache.SetValueWithSlidingAsync("TestSetValueWithSlidingAsync", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = await cache.GetValueAsync<string>("test");
+            var value = await cache.GetValueAsync<string>("TestSetValueWithSlidingAsync");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
-            await Task.Delay(3000);
-            value = await cache.GetValueAsync<string>("test");
+            await Task.Delay(4000);
+            value = await cache.GetValueAsync<string>("TestSetValueWithSlidingAsync");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -128,13 +128,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            await cache.SetValueWithAbsoluteAsync("test", "test", TimeSpan.FromSeconds(3));
+            await cache.SetValueWithAbsoluteAsync("TestRemoveAsync", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = await cache.GetValueAsync<string>("test");
+            var value = await cache.GetValueAsync<string>("TestRemoveAsync");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
-            cache.Remove("test");
-            value = await cache.GetValueAsync<string>("test");
+            cache.Remove("TestRemoveAsync");
+            value = await cache.GetValueAsync<string>("TestRemoveAsync");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -171,13 +171,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            cache.SetValueWithAbsolute("test", "test", TimeSpan.FromSeconds(3));
+            cache.SetValueWithAbsolute("TestRedisSetValueWithAbsolute", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = cache.GetValue<string>("test");
+            var value = cache.GetValue<string>("TestRedisSetValueWithAbsolute");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(1000);
-            value = cache.GetValue<string>("test");
+            value = cache.GetValue<string>("TestRedisSetValueWithAbsolute");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -187,13 +187,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            cache.SetValueWithSliding("test", "test", TimeSpan.FromSeconds(3));
+            cache.SetValueWithSliding("TestRedisSetValueWithSliding", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = cache.GetValue<string>("test");
+            var value = cache.GetValue<string>("TestRedisSetValueWithSliding");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(3000);
-            value = cache.GetValue<string>("test");
+            value = cache.GetValue<string>("TestRedisSetValueWithSliding");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -231,13 +231,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            await cache.SetValueWithAbsoluteAsync("test", "test", TimeSpan.FromSeconds(3));
+            await cache.SetValueWithAbsoluteAsync("TestRedisSetValueWithAbsoluteAsync", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = await cache.GetValueAsync<string>("test");
+            var value = await cache.GetValueAsync<string>("TestRedisSetValueWithAbsoluteAsync");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(1000);
-            value = await cache.GetValueAsync<string>("test");
+            value = await cache.GetValueAsync<string>("TestRedisSetValueWithAbsoluteAsync");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }
@@ -247,13 +247,13 @@ namespace SummerBoot.Test.Cache
         {
             var serviceProvider = InitMemoryCacheServiceProvider();
             var cache = serviceProvider.GetRequiredService<ICache>();
-            await cache.SetValueWithSlidingAsync("test", "test", TimeSpan.FromSeconds(3));
+            await cache.SetValueWithSlidingAsync("TestRedisSetValueWithSlidingAsync", "test", TimeSpan.FromSeconds(3));
             await Task.Delay(2000);
-            var value = await cache.GetValueAsync<string>("test");
+            var value = await cache.GetValueAsync<string>("TestRedisSetValueWithSlidingAsync");
             Assert.True(value.HasValue);
             Assert.Equal("test", value.Data);
             await Task.Delay(3000);
-            value = await cache.GetValueAsync<string>("test");
+            value = await cache.GetValueAsync<string>("TestRedisSetValueWithSlidingAsync");
             Assert.False(value.HasValue);
             Assert.Null(value.Data);
         }

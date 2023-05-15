@@ -669,7 +669,8 @@ namespace SummerBoot.Repository.Core
                         SetUpSingleParameter(dbCommand, tempParamInfo.Name, tempParamInfo, databaseUnit);
                     }
 
-                    sql = GetInListSql(sql, paramInfo.Name, count);
+                    sql = GetInListSql(sql, paramInfo.Name, count,databaseUnit);
+
                 }
                 //参数为单个类型
                 else
@@ -746,32 +747,52 @@ namespace SummerBoot.Repository.Core
             dbCommand.Parameters.Add(parameter);
         }
 
-        private static string GetInListSql(string sql, string parameterName, int count)
+        private static string GetInListSql(string sql, string parameterName, int count,DatabaseUnit databaseUnit)
         {
             var pattern = ("([?@:]" + Regex.Escape(parameterName) + @")(?!\w)(\s+(?i)unknown(?-i))?");
             var result = Regex.Replace(sql, pattern, match =>
             {
                 var variableName = match.Groups[1].Value;
-                if (match.Groups[2].Success)
+                if (count == 0)
                 {
-                    var suffix = match.Groups[2].Value;
-
-                    var sb = new StringBuilder().Append(variableName).Append(1).Append(suffix);
-                    for (int i = 2; i <= count; i++)
+                    var result = "";
+                    if (databaseUnit.IsOracle)
                     {
-                        sb.Append(',').Append(variableName).Append(i).Append(suffix);
+                        result = "(SELECT null FROM dual WHERE 1 = 0)";
                     }
-                    return sb.ToString();
+                    else
+                    {
+                        result= "(SELECT null WHERE 1 = 0)";
+                    }
+                    
+                    return result;
                 }
                 else
                 {
-                    var sb = new StringBuilder().Append('(').Append(variableName).Append(1);
-                    for (int i = 2; i <= count; i++)
+                   
+                    if (match.Groups[2].Success)
                     {
-                        sb.Append(',').Append(variableName).Append(i);
+                        var suffix = match.Groups[2].Value;
+
+                        var sb = new StringBuilder().Append(variableName).Append(1).Append(suffix);
+                        for (int i = 2; i <= count; i++)
+                        {
+                            sb.Append(',').Append(variableName).Append(i).Append(suffix);
+                        }
+                        return sb.ToString();
                     }
-                    return sb.Append(')').ToString();
+                    else
+                    {
+                        var sb = new StringBuilder().Append('(').Append(variableName).Append(1);
+                        for (int i = 2; i <= count; i++)
+                        {
+                            sb.Append(',').Append(variableName).Append(i);
+                        }
+                        return sb.Append(')').ToString();
+                    }
                 }
+
+               
             }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
             return result;

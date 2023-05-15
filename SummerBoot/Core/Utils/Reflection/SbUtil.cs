@@ -55,7 +55,7 @@ namespace SummerBoot.Core
         /// <returns></returns>
         public static bool IsEnumerable(this Type type)
         {
-            return type.GetInterfaces().Any(it => it == typeof(IEnumerable));
+            return type.GetInterfaces().Any(it => it == typeof(IEnumerable))|| type == typeof(Enumerable);
         }
 
         /// <summary>
