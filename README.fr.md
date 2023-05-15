@@ -51,7 +51,7 @@ net core 3.1, net 6
     -   [2.Définir une classe d'entité de base de données](#2define-a-database-entity-class)
     -   [3. Écrivez un contrôleur pour générer automatiquement des tables de base de données via des classes d'entités](#3write-a-controller-to-automatically-generate-database-tables-through-entity-classes)
     -   [4.Définir l'interface de stockage](#4define-storage-interface)
-    -   [5. Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone](#5add-delete-modify-and-query-all-support-asynchronous-synchronization)
+    -   [5.Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone](#5add-delete-modify-and-query-all-support-asynchronous-synchronization)
         -   [5.1 Ajouté](#51-added)
             -   [5.1.1 L'interface a sa propre méthode Insert, qui peut insérer une seule entité ou une liste d'entités](#511-the-interface-has-its-own-insert-method-which-can-insert-a-single-entity-or-a-list-of-entities)
             -   [5.1.2 Insertion rapide des lots, l'interface de stockage est livrée avec la méthode FastBatchInsert, qui peut insérer rapidement la liste des entités.](#512-fast-batch-insertion-the-storage-interface-comes-with-the-fastbatchinsert-method-which-can-quickly-insert-the-entity-list)
@@ -294,7 +294,7 @@ public interface ICustomerRepository : IBaseRepository<Customer>
 }
 ```
 
-## 5. Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone
+## 5.Ajouter, supprimer, modifier et interroger, tous prennent en charge la synchronisation asynchrone
 
 ### 5.1 Ajouté
 
@@ -1447,7 +1447,7 @@ services.AddSummerBootFeign(it =>
 
 #### 6.3.2 Définir l'interface d'appel des microservices
 
-Définissez le nom du microservice ServiceName , le nom de groupe NacosGroupName (vous pouvez remplir le nom de groupe global par défaut dans le fichier de configuration nacos:defaultNacosGroupName , si vous ne le remplissez pas, il est par défaut à DEFAULT_GROUP), l'espace de noms NacosNamespaceId (vous peut remplir l'espace de noms global par défaut dans le fichier de configuration nacos:defaultNacosNamespaceId , s'il n'est pas rempli, il est par défaut public), et MicroServiceMode est défini sur true. L'url n'a pas besoin d'être configuré, et le reste est identique à la normale fausse interface.
+Définissez le nom du microservice ServiceName , le nom de groupe NacosGroupName (vous pouvez remplir le nom de groupe global par défaut dans le fichier de configuration nacos:defaultNacosGroupName , si vous ne le remplissez pas, il est par défaut à DEFAULT_GROUP), l'espace de noms NacosNamespaceId (vous peut remplir l'espace de noms global par défaut dans le fichier de configuration nacos:defaultNacosNamespaceId , s'il n'est pas rempli, il est par défaut public), et MicroServiceMode est défini sur true. L'url n'a pas besoin d'être configuré, et le reste est identique à la normale interface simulée.
 
 ```csharp
 [FeignClient(ServiceName = "test", MicroServiceMode = true, NacosGroupName = "DEFAULT_GROUP", NacosNamespaceId = "dfd8de72-e5ec-4595-91d4-49382f500edf")]
@@ -1684,8 +1684,8 @@ Si la vérification des paramètres échoue, la valeur de retour est la suivante
 }
 ```
 
-5.QueryCondition , la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation depuis le front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. Généralement, les attributs du dto sont passés du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou operation, sinon retour à l'expression d'origine),
-Dans le même temps, les attributs de dto peuvent également être de type nullable, c'est-à-dire de type nullable, comme int? test représente si l'utilisateur remplit une certaine condition de filtre, si hasValue est ajouté à la condition de requête, donc deux méthodes sont spécialement extraites, AndIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée ), OrIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée) l'utilisation est la suivante :
+5.QueryCondition, la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation à partir du front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou opération, sinon retour à l'expression d'origine),
+Dans le même temps, les attributs de dto peuvent également être de type nullable, c'est-à-dire de type nullable, tel que int? test représente si l'utilisateur remplit une certaine condition de filtre, si hasValue est ajouté à la condition de requête, donc deux méthodes sont spécialement extraites, AndIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée ), OrIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée) l'utilisation est la suivante :
 
 ```csharp
 // dto
