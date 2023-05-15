@@ -302,7 +302,7 @@ namespace SummerBoot.Repository.Generator
                             //没有注释，补充注释
                             if (dbFieldInfo.Description.HasText()&& fieldInfo.Description.HasText()&& dbFieldInfo.Description != fieldInfo.Description)
                             {
-                                var createFieldDescriptionSql = databaseInfo.CreateTableFieldDescription(schema, tableName, fieldInfo);
+                                var createFieldDescriptionSql = databaseInfo.UpdateTableFieldDescription(schema, tableName, fieldInfo);
                                 if (createFieldDescriptionSql.HasText())
                                 {
                                     item.Descriptions.Add(createFieldDescriptionSql);
