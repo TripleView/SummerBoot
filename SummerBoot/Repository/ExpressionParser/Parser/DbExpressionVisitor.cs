@@ -335,9 +335,37 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         return columnExpression;
 
                     }
+                    else if (objectExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(string))
+                    {
+                        if (constantExpression.Value is null)
+                        {
+                            return constantExpression;
+                        }
+                        if (node.Method == trimMethod)
+                        {
+                            return Expression.Constant(constantExpression.Value.ToString().Trim());
+                        }
+                        else if (node.Method == trimLeftMethod)
+                        {
+                            return Expression.Constant(constantExpression.Value.ToString().TrimStart());
+                        }
+                        else if (node.Method == trimRightMethod)
+                        {
+                            return Expression.Constant(constantExpression.Value.ToString().TrimEnd());
+                        }
+                        else if (node.Method == toUpperMethod)
+                        {
+                            return Expression.Constant(constantExpression.Value.ToString().ToUpper());
+                        }
+                        else if (node.Method == toLowerMethod)
+                        {
+                            return Expression.Constant(constantExpression.Value.ToString().ToLower());
+                        }
+                        return constantExpression;
+                    }
                     else
                     {
-                        throw new NotSupportedException(methodName);
+                        throw new NotSupportedException($"not support method name:{methodName}");
                     }
 
                 }
@@ -680,7 +708,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression maxMinCall)
         {
             var methodName = maxMinCall.Method.Name;
-            
+
             var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
             ColumnExpression column = null;
             if (maxMinCall.Arguments.Count == 2)
@@ -704,7 +732,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var result = new SelectExpression(null, "", table.Columns, table);
 
                 result.Columns.Clear();
-               
+
                 result.Columns.Add(column);
 
                 return result;

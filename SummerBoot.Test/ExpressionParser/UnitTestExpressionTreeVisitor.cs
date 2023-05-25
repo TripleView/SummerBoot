@@ -1451,6 +1451,42 @@ namespace ExpressionParser.Test
             Assert.Equal("select [Id],[Name],[Age],[HaveChildren] from [Employee]", r1MiddleResult.Sql);
 
         }
+
+        [Fact]
+        public void TestTrimOrUpperOrLowerProperty()
+        {
+            var employeeRepository = new EmployeeRepository();
+            var newEmployee = new Employee()
+            {
+                Name = "Hzp"
+            };
+          
+            var d= employeeRepository.FirstOrDefault(it => it.Name == newEmployee.Name.Trim());
+            var r1MiddleResult = employeeRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT TOP(1) [p0].[Id], [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Employee] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal("Hzp", r1MiddleResult.SqlParameters[0].Value);
+             d = employeeRepository.FirstOrDefault(it => it.Name == newEmployee.Name.TrimStart());
+             r1MiddleResult = employeeRepository.GetDbQueryDetail();
+             Assert.Equal("SELECT TOP(1) [p1].[Id], [p1].[Name], [p1].[Age], [p1].[HaveChildren] FROM [Employee] [p1] WHERE  ([p1].[Name] = @y1 )", r1MiddleResult.Sql);
+             Assert.Equal("@y1", r1MiddleResult.SqlParameters[0].ParameterName);
+             Assert.Equal("Hzp", r1MiddleResult.SqlParameters[0].Value);
+             d = employeeRepository.FirstOrDefault(it => it.Name == newEmployee.Name.TrimEnd());
+             r1MiddleResult = employeeRepository.GetDbQueryDetail();
+             Assert.Equal("SELECT TOP(1) [p2].[Id], [p2].[Name], [p2].[Age], [p2].[HaveChildren] FROM [Employee] [p2] WHERE  ([p2].[Name] = @y2 )", r1MiddleResult.Sql);
+             Assert.Equal("@y2", r1MiddleResult.SqlParameters[0].ParameterName);
+             Assert.Equal("Hzp", r1MiddleResult.SqlParameters[0].Value);
+             d = employeeRepository.FirstOrDefault(it => it.Name == newEmployee.Name.ToLower());
+             r1MiddleResult = employeeRepository.GetDbQueryDetail();
+             Assert.Equal("SELECT TOP(1) [p3].[Id], [p3].[Name], [p3].[Age], [p3].[HaveChildren] FROM [Employee] [p3] WHERE  ([p3].[Name] = @y3 )", r1MiddleResult.Sql);
+             Assert.Equal("@y3", r1MiddleResult.SqlParameters[0].ParameterName);
+             Assert.Equal("hzp", r1MiddleResult.SqlParameters[0].Value);
+             d = employeeRepository.FirstOrDefault(it => it.Name == newEmployee.Name.ToUpper());
+             r1MiddleResult = employeeRepository.GetDbQueryDetail();
+             Assert.Equal("SELECT TOP(1) [p4].[Id], [p4].[Name], [p4].[Age], [p4].[HaveChildren] FROM [Employee] [p4] WHERE  ([p4].[Name] = @y4 )", r1MiddleResult.Sql);
+             Assert.Equal("@y4", r1MiddleResult.SqlParameters[0].ParameterName);
+             Assert.Equal("HZP", r1MiddleResult.SqlParameters[0].Value);
+        }
     }
 
     public class MySqlDbContext : DbContext
