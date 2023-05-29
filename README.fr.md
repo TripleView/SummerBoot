@@ -12,7 +12,7 @@ Afin de permettre à chacun de mieux comprendre l'utilisation de summerBoot , j'
 
 # Idée centrale
 
-Combinez les concepts avancés de SpringBoot avec la simplicité et l'élégance de C#, la programmation déclarative, concentrez-vous sur "ce qu'il faut faire" plutôt que sur "comment le faire", et écrivez du code à un niveau supérieur. SummerBoot s'engage à créer un -cadre humanisé d'utilisation et facile à entretenir, afin que chacun puisse quitter le travail plus tôt pour faire ce qu'il aime.
+Combinez les concepts avancés de SpringBoot avec la simplicité et l'élégance de C#, la programmation déclarative, concentrez-vous sur "ce qu'il faut faire" plutôt que "comment le faire", et écrivez du code à un niveau supérieur. SummerBoot s'engage à créer un -cadre humanisé d'utilisation et facile à entretenir, afin que chacun puisse quitter le travail plus tôt pour faire ce qu'il aime.
 
 # Description du cadre
 
@@ -86,7 +86,7 @@ net core 3.1, net 6
             -   [5.2.1 Les paramètres ajoutent des annotations de requête](#521-parameters-add-query-annotations)
                 -   [5.2.1.1 L'annotation Query est utilisée avec l'annotation Embedded, et la classe d'annotation Embedded peut être ajoutée en tant que paramètre dans son ensemble](#5211-the-query-annotation-is-used-with-the-embedded-annotation-and-the-embedded-annotation-class-can-be-added-as-a-parameter-as-a-whole)
             -   [5.2.2 Les paramètres ajoutent des annotations Body (BodySerializationKind.Form)](#522-parameters-add-body-bodyserializationkindform-annotations)
-            -   [5.2.3 Les paramètres ajoutent des annotations Body (BodySerializationKind.Json)](#523-parameters-add-body-bodyserializationkindjson-annotations)
+            -   [5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)](#523-parameters-add-body-bodyserializationkindjson-annotations)
             -   [5.2.4 Utiliser la classe spéciale HeaderCollection comme paramètre de méthode pour ajouter des en-têtes de requête par lots](#524-use-the-special-class-headercollection-as-a-method-parameter-to-add-request-headers-in-batches)
             -   [5.2.5 Utilisez la classe spéciale BasicAuthorization comme paramètre de méthode pour ajouter l'en-tête de demande d'autorisation pour l'authentification de base](#525-use-the-special-class-basicauthorization-as-a-method-parameter-to-add-the-authorization-request-header-for-basic-authentication)
             -   [5.2.6 Utilisez la classe spéciale MultipartItem comme paramètre de méthode et marquez l'annotation Multipart sur la méthode pour télécharger la pièce jointe](#526-use-the-special-class-multipartitem-as-a-method-parameter-and-mark-the-multipart-annotation-on-the-method-to-upload-the-attachment)
@@ -107,7 +107,7 @@ net core 3.1, net 6
 
 # SummerBoot utilise un référentiel pour les opérations de base de données
 
-summerBoot a développé son propre module ORM basé sur l'unité de travail et le mode d'entreposage, c'est-à-dire le référentiel, qui prend en charge plusieurs bases de données et plusieurs liens, y compris les opérations d'ajout, de suppression, de modification et d'interrogation de cinq types de bases de données courants (sqlserver, mysql, oracle, sqlite, pgsql) , s'il existe d'autres exigences de base de données, vous pouvez vous référer aux 5 codes sources ci-dessus et contribuer aux codes de ce projet.orm ne prend pas en charge les requêtes lambda pour les requêtes conjointes multi-tables, car je pense qu'il est plus facile à utiliser et gérer les requêtes multi-tables directement en SQL.
+summerBoot a développé son propre module ORM basé sur l'unité de travail et le mode d'entreposage, c'est-à-dire le référentiel, qui prend en charge plusieurs bases de données et plusieurs liens, y compris les opérations d'ajout, de suppression, de modification et d'interrogation de cinq types de bases de données courants (sqlserver, mysql, oracle, sqlite, pgsql) , s'il existe d'autres exigences de base de données, vous pouvez vous référer aux 5 codes sources ci-dessus et contribuer aux codes de ce projet. orm ne prend pas en charge les requêtes lambda pour les requêtes conjointes multi-tables, car je pense qu'il est plus facile à utiliser et maintenir les requêtes multi-tables directement en SQL.
 
 ## Préparation
 
@@ -587,7 +587,7 @@ public class CustomerController : Controller
 }
 ```
 
-### 5.6 Classes d'implémentation personnalisées dans des cas particuliers
+### 5.6 Custom implementation classes in special cases
 
 #### 5.6.1 Définir une interface héritée de IBaseRepository et définir vos propres méthodes dans l'interface
 
@@ -1093,7 +1093,7 @@ public interface ITestFeign
 
 ### 5.1 Paramètres communs à la méthode
 
-Si le paramètre n'a pas d'annotation spéciale, ou n'est pas une classe spéciale, il sera utilisé comme paramètre dynamique pour participer au remplacement des variables dans l'url et le header (si le paramètre est une classe, lire la valeur de l'attribut de la classe ), et les variables dans l'url et l'en-tête utilisent l'espace réservé { {}}, si le nom de la variable est incohérent avec le nom du paramètre, vous pouvez utiliser l'annotation AliasAs (qui peut être utilisée sur les paramètres ou les attributs de classe) pour spécifier un alias, tel que
+Si le paramètre n'a pas d'annotation spéciale, ou n'est pas une classe spéciale, il sera utilisé comme paramètre dynamique pour participer au remplacement des variables dans l'url et l'en-tête (si le paramètre est une classe, lire la valeur de l'attribut de la classe ), et les variables dans l'url et l'en-tête utilisent l'espace réservé { {}}, si le nom de la variable est incohérent avec le nom du paramètre, vous pouvez utiliser l'annotation AliasAs (qui peut être utilisée sur les paramètres ou les attributs de classe) pour spécifier un alias, tel que
 
 ```csharp
 [FeignClient(Url = "http://localhost:5001/home", IsIgnoreHttpsCertificateValidate = true, InterceptorType = typeof(MyRequestInterceptor), Timeout = 100)]
@@ -1211,7 +1211,7 @@ await TestFeign.TestForm(new Test() { Name = "abc", Age = 3 });
 >>> post, http: //localhost:5001/home/form, and the value in the body is Name= abc&Age =3
 ```
 
-#### 5.2.3 Les paramètres ajoutent des annotations Body (BodySerializationKind.Json)
+#### 5.2.3 Les paramètres ajoutent des annotations de corps (BodySerializationKind.Json)
 
 Autrement dit, soumettez-le sous la forme application/ json , et la valeur du paramètre sera sérialisée par json et ajoutée à la charge utile (corps). De même, si le champ de la classe a un alias, vous pouvez également utiliser l'annotation AliasAs .
 
@@ -1447,7 +1447,7 @@ services.AddSummerBootFeign(it =>
 
 #### 6.3.2 Définir l'interface d'appel des microservices
 
-Définissez le nom du microservice ServiceName , le nom de groupe NacosGroupName (vous pouvez remplir le nom de groupe global par défaut dans le fichier de configuration nacos:defaultNacosGroupName , si vous ne le remplissez pas, il est par défaut à DEFAULT_GROUP), l'espace de noms NacosNamespaceId (vous peut remplir l'espace de noms global par défaut dans le fichier de configuration nacos:defaultNacosNamespaceId , s'il n'est pas rempli, il est par défaut public), et MicroServiceMode est défini sur true. L'url n'a pas besoin d'être configuré, et le reste est identique à la normale interface simulée.
+Définissez le nom du microservice ServiceName , le nom de groupe NacosGroupName (vous pouvez remplir le nom de groupe global par défaut dans le fichier de configuration nacos:defaultNacosGroupName , si vous ne le remplissez pas, il est par défaut à DEFAULT_GROUP), l'espace de noms NacosNamespaceId (vous peut remplir l'espace de noms global par défaut dans le fichier de configuration nacos:defaultNacosNamespaceId , s'il n'est pas rempli, il est par défaut public), et MicroServiceMode est défini sur true. L'url n'a pas besoin d'être configuré, et le reste est identique à la normale fausse interface.
 
 ```csharp
 [FeignClient(ServiceName = "test", MicroServiceMode = true, NacosGroupName = "DEFAULT_GROUP", NacosNamespaceId = "dfd8de72-e5ec-4595-91d4-49382f500edf")]
@@ -1615,7 +1615,7 @@ public async Task<ApiResult<bool>> CreateServerConfigAsync(ServerConfigDto dto)
 }
 ```
 
-4\. Certaines opérations améliorées pour net core mvc, y compris l'intercepteur d'erreur global et le traitement après l'échec de la vérification des paramètres d'interface, coopèrent avec ApiResult, de sorte que lorsque le système signale une erreur, il peut également revenir de manière uniforme. L'utilisation est la suivante .Tout d'abord, enregistrez ceci dans le service de démarrage, notez qu'il doit être placé après l'enregistrement mvc :
+4\. Certaines opérations améliorées pour net core mvc, y compris l'intercepteur d'erreur global et le traitement après l'échec de la vérification des paramètres d'interface, coopèrent avec ApiResult, de sorte que lorsque le système signale une erreur, il peut également revenir de manière uniforme. L'utilisation est la suivante .Tout d'abord, enregistrez-le dans le service de démarrage, notez qu'il doit être placé après l'enregistrement mvc :
 
 ```csharp
 services.AddControllersWithViews();
@@ -1645,7 +1645,7 @@ private void ValidateData(EnvConfigDto dto)
 }
 ```
 
-Si une erreur est signalée dans le code métier, la valeur de retour est la suivante :
+Si une erreur est signalée dans le code métier, la valeur de retour est la suivante :
 
 ```csharp
 {
@@ -1684,7 +1684,7 @@ Si la vérification des paramètres échoue, la valeur de retour est la suivante
 }
 ```
 
-5.QueryCondition , la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation depuis le front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. Généralement, les attributs du dto sont passés du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou opération, sinon retour à l'expression d'origine),
+5.QueryCondition, la combinaison des conditions de requête lambda, résout le problème du filtrage et de l'interrogation à partir du front-end. En plus des méthodes de base And et Or, une méthode plus humanisée est ajoutée. du front-end ont des types de chaîne. S'ils ont des valeurs, ils sont ajoutés à la condition de requête, donc deux méthodes sont spécialement extraites, y compris AndIfStringIsNotEmpty (si la chaîne n'est pas vide, l'opération et est effectuée, sinon l'expression d'origine est renvoyé), OrIfStringIsNotEmpty (si la chaîne n'est pas vide, alors Perform ou opération, sinon retour à l'expression d'origine),
 Dans le même temps, les attributs de dto peuvent également être de type nullable, c'est-à-dire de type nullable, tel que int? test représente si l'utilisateur remplit une certaine condition de filtre, si hasValue est ajouté à la condition de requête, donc deux méthodes sont spécialement extraites, AndIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée ), OrIfNullableHasValue (si la valeur nullable n'est pas vide, l'opération AND est effectuée, sinon l'expression d'origine est renvoyée) l'utilisation est la suivante :
 
 ```csharp
