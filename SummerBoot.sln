@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Test", "SummerBo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApiExample", "WebApiExample\WebApiExample.csproj", "{46EA7B07-2111-4721-97D1-24E75E361074}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{E361F52B-0B06-40F9-9548-C2FD3D45B7E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{E361F52B-0B06-40F9-9548-C2FD3D45B7E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.Performance.Test", "SummerBoot.Performance.Test\SummerBoot.Performance.Test.csproj", "{08C67473-E370-45B8-AB11-C3D46E7619B2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{E361F52B-0B06-40F9-9548-C2FD3D45B7E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E361F52B-0B06-40F9-9548-C2FD3D45B7E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E361F52B-0B06-40F9-9548-C2FD3D45B7E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

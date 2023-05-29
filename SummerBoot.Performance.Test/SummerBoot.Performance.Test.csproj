@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SummerBoot\SummerBoot.csproj" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
+    <!--<PackageReference Include="FreeSql.Provider.MySql" Version="3.2.695" />-->
+    <PackageReference Include="FreeSql.Provider.MySqlConnector" Version="3.2.695" />
+    <PackageReference Include="MySqlConnector" Version="2.1.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
