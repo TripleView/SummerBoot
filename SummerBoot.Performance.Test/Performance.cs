@@ -16,6 +16,9 @@ public class Performance
 {
     private int total = 20000;
     private IFreeSql fsql;
+    static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
+    private IServiceProvider serviceProvider;
+
     private void InitFreeSql()
     {
         var build = new ConfigurationBuilder();
@@ -31,11 +34,11 @@ public class Performance
             .UseAutoSyncStructure(true)
             .Build(); //be sure to define as singleton mode
 
-       
+
     }
 
     [Benchmark()]
-    public async Task TestFreeSql()
+    public async Task TestFreeSqlBatchInsert()
     {
         InitFreeSql();
         var nullableTableList = new List<NullableTableForFreeSql>();
@@ -67,20 +70,70 @@ public class Performance
 
         var sw = new Stopwatch();
         sw.Start();
-       //var d= fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteAffrows();
-       fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteMySqlBulkCopy();
+        //var d= fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteAffrows();
+        fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteMySqlBulkCopy();
         sw.Stop();
-        Console.WriteLine("freeSql:"+sw.ElapsedMilliseconds);
+        Console.WriteLine("TestFreeSqlBatchInsert:" + sw.ElapsedMilliseconds);
     }
 
     [Benchmark()]
-    public async Task TestSummerboot()
+    public async Task TestFreeSqlSelect()
     {
-        InitService();
+        InitFreeSql();
+        var sw = new Stopwatch();
+        sw.Start();
+        //var d= fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteAffrows();
+        var result = await fsql.Select<NullableTableForFreeSql>().ToListAsync();
+        sw.Stop();
+        Console.WriteLine("TestFreeSqlSelect:" + sw.ElapsedMilliseconds);
+    }
+
+    [Benchmark()]
+    public async Task TestFreeSqlDelete()
+    {
+        InitFreeSql();
+        var sw = new Stopwatch();
+        sw.Start();
+        //var d= fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteAffrows();
+        var result = await fsql.Delete<NullableTableForFreeSql>().Where(a => true).ExecuteAffrowsAsync();
+        sw.Stop();
+        Console.WriteLine("TestFreeSqlDelete:" + sw.ElapsedMilliseconds);
+    }
+
+    [Benchmark()]
+    public async Task TestSummerBootDelete()
+    {
+        InitSummerboot();
+        var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+        var sw = new Stopwatch();
+        sw.Start();
+        //var d= fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteAffrows();
+        var result = await nullableTableRepository.DeleteAsync(it => true);
+        sw.Stop();
+        Console.WriteLine("TestSummerBootDelete:" + sw.ElapsedMilliseconds);
+    }
+
+    [Benchmark()]
+    public async Task TestSummerBootSelect()
+    {
+        InitSummerboot();
+        var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+        var sw = new Stopwatch();
+        sw.Start();
+        //var d= fsql.Insert<NullableTableForFreeSql>().AppendData(nullableTableList).ExecuteAffrows();
+        var result = await nullableTableRepository.GetAllAsync();
+        sw.Stop();
+        Console.WriteLine("TestSummerBootSelect:" + sw.ElapsedMilliseconds);
+    }
+
+    [Benchmark()]
+    public async Task TestSummerbootBatchInsert()
+    {
+        InitSummerboot();
         var uow = serviceProvider.GetService<IUnitOfWork1>();
         var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
         var dbGenerate = serviceProvider.GetService<IDbGenerator1>();
-        var sqlResult= dbGenerate.GenerateSql(new List<Type>() { typeof(NullableTable) });
+        var sqlResult = dbGenerate.GenerateSql(new List<Type>() { typeof(NullableTable) });
         foreach (var generateDatabaseSqlResult in sqlResult)
         {
             dbGenerate.ExecuteGenerateSql(generateDatabaseSqlResult);
@@ -116,11 +169,10 @@ public class Performance
         await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
         //await nullableTableRepository.InsertAsync(nullableTableList);
         sw.Stop();
-        Console.WriteLine("summerboot:" + sw.ElapsedMilliseconds);
+        Console.WriteLine("TestSummerbootBatchInsert:" + sw.ElapsedMilliseconds);
     }
-    static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
-    private IServiceProvider serviceProvider;
-    private void InitService()
+
+    private void InitSummerboot()
     {
         var build = new ConfigurationBuilder();
         build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
@@ -145,11 +197,11 @@ public class Performance
                     x.BindDbGeneratorType<IDbGenerator1>();
                     x.BeforeInsert += new RepositoryEvent(entity =>
                     {
-                     
+
                     });
                     x.BeforeUpdate += new RepositoryEvent(entity =>
                     {
-                    
+
                     });
                 });
         });
