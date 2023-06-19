@@ -19,8 +19,8 @@ namespace SummerBoot.Feign.Nacos
             this.GroupName = this.GroupName.GetValueOrDefault("DEFAULT_GROUP");
             this.Protocol = this.Protocol.GetValueOrDefault("http");
             this.Port = this.Port.GetValueOrDefault(80);
-            this.ConfigurationOption = this.ConfigurationOption ?? new NacosConfigurationOption()
-            { DataID = "", GroupName = "DEFAULT_GROUP" };
+            this.ConfigurationOption = this.ConfigurationOption ?? new List<NacosConfigurationOption>()
+            { new NacosConfigurationOption(){DataID = "", GroupName = "DEFAULT_GROUP",NamespaceId = "public"} };
             return this;
         }
         /// <summary>
@@ -89,11 +89,15 @@ namespace SummerBoot.Feign.Nacos
         /// <summary>
         /// nacos配置中心的设置值
         /// </summary>
-        public NacosConfigurationOption ConfigurationOption { get; set; }
+        public List<NacosConfigurationOption> ConfigurationOption { get; set; }
     }
 
     public class NacosConfigurationOption
     {
+        /// <summary>
+        /// 命名空间id
+        /// </summary>
+        public string NamespaceId { get; set; }
         /// <summary>
         /// nacos配置的Data ID
         /// </summary>

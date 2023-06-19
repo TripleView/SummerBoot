@@ -50,6 +50,17 @@ namespace SummerBoot.Core
             return false;
         }
 
-
+        public static bool AddRange<T1, T2>(this IDictionary<T1, T2> dictionary, IDictionary<T1, T2> otherDictionary)
+        {
+            foreach (var pair in otherDictionary)
+            {
+                if (!dictionary.ContainsKey(pair.Key))
+                {
+                    dictionary[pair.Key] = pair.Value;
+                }
+            }
+            
+            return true;
+        }
     }
 }

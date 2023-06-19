@@ -11,10 +11,17 @@ namespace WebApiExample.Controllers
     [Route("[controller]")]
     public class HomeController : ControllerBase
     {
+        private readonly IConfiguration configuration;
+
+        public HomeController(IConfiguration configuration)
+        {
+            this.configuration = configuration;
+        }
+
         [HttpGet("Index")]
         public string Index()
         {
-            return "ok";
+            return configuration.GetSection("a").Value+"-"+ configuration.GetSection("b").Value;
         }
     }
 }
