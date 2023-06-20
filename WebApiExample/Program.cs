@@ -13,7 +13,6 @@ namespace WebApiExample
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Host.UseNacosConfiguration();
             // Add services to the container.
 
             builder.Services.AddControllers();

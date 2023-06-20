@@ -1265,14 +1265,24 @@ in appsettings.json / appsettings.Development.json configuration file
        // defaultNacosNamespaceId , optional, is the default value of NacosNamespaceId in the FeignClient annotation , if it is empty, it defaults to public
       "defaultNacosNamespaceId":"",
 
-    //--------If you need to use the nacos configuration center, ConfigurationOption is required------
-   "configurationOption": {
+    //--------If you need to use the nacos configuration center, ConfigurationOption is required，Allows listening to multiple configurations------
+    "configurationOption": [
+      {
+        //Configuration namespaceId
+        "namespaceId": "f3dfa56a-a72c-4035-9612-1f9a8ca6f1d2",
         //Configuration grouping
-        "groupName":"DEFAULT_GROUP",
-      //configured dataId ,
-     "dataId":"prd"
-},
-
+        "groupName": "DEFAULT_GROUP",
+         //configured dataId ,
+        "dataId": "def"
+      },
+      {
+        "namespaceId": "public",
+        //配置的分组
+        "groupName": "DEFAULT_GROUP",
+        //配置的dataId,
+        "dataId": "abc"
+      }
+    ],
     //-------If you want to register this application as a service instance, all parameters need to be configured --------------
 
     //Do you want to register the application as a service instance

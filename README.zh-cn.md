@@ -1264,13 +1264,23 @@ await testFeign.Test();
        //defaultNacosNamespaceId，选填，为FeignClient注解中NacosNamespaceId的默认值，为空则默认为public
        "defaultNacosNamespaceId": "",
 
-    //--------如果需要使用nacos配置中心，则ConfigurationOption必填------
-    "configurationOption": {
-      //配置的分组
-      "groupName": "DEFAULT_GROUP",
-      //配置的dataId,
-      "dataId": "prd"
-    },
+     //--------如果需要使用nacos配置中心，则ConfigurationOption必填,允许监听多个配置------
+    "configurationOption": [
+      {
+        "namespaceId": "f3dfa56a-a72c-4035-9612-1f9a8ca6f1d2",
+        //配置的分组
+        "groupName": "DEFAULT_GROUP",
+        //配置的dataId,
+        "dataId": "def"
+      },
+      {
+        "namespaceId": "public",
+        //配置的分组
+        "groupName": "DEFAULT_GROUP",
+        //配置的dataId,
+        "dataId": "abc"
+      }
+    ],
 
 
     //-------如果是要将本应用注册为服务实例，则全部参数均需配置--------------

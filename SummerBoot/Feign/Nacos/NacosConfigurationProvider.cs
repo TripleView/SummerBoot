@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SummerBoot.Core.Configuration.Parser;
+using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Feign.Nacos
 {
@@ -21,7 +22,7 @@ namespace SummerBoot.Feign.Nacos
         private IConfiguration configuration;
         private NacosOption nacosOption;
 
-        private SemaphoreSlim semaphoreSlim ;
+        private SemaphoreSlim semaphoreSlim;
         //private string lastContent;
 
         public NacosConfigurationProvider(IConfiguration configuration)
@@ -36,16 +37,20 @@ namespace SummerBoot.Feign.Nacos
             serviceProvider = serviceCollection.BuildServiceProvider().CreateScope().ServiceProvider;
             nacosOption = configuration.GetSection("nacos").Get<NacosOption>();
             lastContentDic = new Dictionary<string, string>();
-            if (nacosOption == null || nacosOption.ConfigurationOption == null || nacosOption.ConfigurationOption.Count==0)
+            if (nacosOption == null || nacosOption.ConfigurationOption == null || nacosOption.ConfigurationOption.Count == 0)
             {
                 throw new ArgumentException("nacos ConfigurationOption can not be null");
             }
 
             semaphoreSlim = new SemaphoreSlim(1);
+            lastDic = new Dictionary<string, IDictionary<string, string>>();
 
             foreach (var nacosConfigurationOption in nacosOption.ConfigurationOption)
             {
-                var key = nacosConfigurationOption.NamespaceId + "-" + nacosConfigurationOption.DataID + "-" +
+                var namespaceId = nacosConfigurationOption.NamespaceId == "public"
+                    ? ""
+                    : nacosConfigurationOption.NamespaceId;
+                var key = namespaceId + "-" + nacosConfigurationOption.DataID + "-" +
                           nacosConfigurationOption.GroupName;
                 lastContentDic[key] = "";
 
@@ -68,28 +73,33 @@ namespace SummerBoot.Feign.Nacos
 
         public override void Load()
         {
-            Console.Write("进来了");
-            //GetConfigInternal(new CancellationToken()).GetAwaiter().GetResult();
             timer = new Timer(GetConfig, new CancellationToken(), 0, -1);
         }
 
         private async void GetConfig(object state)
         {
-            
+
             try
             {
-                await semaphoreSlim.WaitAsync(TimeSpan.FromMinutes(300));
+                await semaphoreSlim.WaitAsync();
                 await GetConfigInternal(state);
             }
             finally
             {
                 semaphoreSlim.Release();
-                //timer?.Change(0, -1);
+                timer?.Change(0, -1);
             }
-          
+
         }
 
+        /// <summary>
+        /// 存每一个配置的最后值
+        /// </summary>
         private Dictionary<string, string> lastContentDic;
+        /// <summary>
+        /// 存每一个配置的字典的合集
+        /// </summary>
+        private Dictionary<string, IDictionary<string, string>> lastDic;
 
         private async Task GetConfigInternal(object state)
         {
@@ -103,72 +113,114 @@ namespace SummerBoot.Feign.Nacos
             try
             {
                 var allDic = new Dictionary<string, string>();
+                var sb = new StringBuilder();
                 foreach (var nacosConfigurationOption in nacosOption.ConfigurationOption)
                 {
-                    var key = nacosConfigurationOption.NamespaceId + "-" + nacosConfigurationOption.DataID + "-" +
+                    var namespaceId = nacosConfigurationOption.NamespaceId == "public"
+                        ? ""
+                        : nacosConfigurationOption.NamespaceId;
+
+                    var key = namespaceId + "-" + nacosConfigurationOption.DataID + "-" +
                               nacosConfigurationOption.GroupName;
                     var lastContent = lastContentDic[key];
                     var lastContentMd5 = lastContent.IsNullOrWhiteSpace() ? string.Empty : lastContent.ToMd5();
-                    var sb = new StringBuilder();
+
                     sb.Append(nacosConfigurationOption.DataID)
                         .Append(NacosUtil.WORD_SEPARATOR)
                         .Append(nacosConfigurationOption.GroupName)
                         .Append(NacosUtil.WORD_SEPARATOR)
                         .Append(lastContentMd5)
                         .Append(NacosUtil.WORD_SEPARATOR)
-                        .Append(nacosConfigurationOption.NamespaceId)
+                        .Append(namespaceId)
                         .Append(NacosUtil.LINE_SEPARATOR);
-                    
-                    var param = sb.ToString();
-                    var configListenerResult = await nacosService.ConfigListener(param);
+                }
+                var param = sb.ToString();
 
-                    if (nacosConfigurationOption.NamespaceId == "public" || (nacosConfigurationOption.NamespaceId != "public" && configListenerResult.HasText()))
+                var configListenerResult = await nacosService.ConfigListener(param);
+                if (configListenerResult.HasText())
+                {
+                    var changeInfos = configListenerResult.Split("%01").Where(it => it.Contains("%02")).ToList();
+                    if (changeInfos.Any())
                     {
-                        var httpResponseMessage = await nacosService.GetConfigs(new GetConfigsDto()
+                        foreach (var changeInfo in changeInfos)
                         {
-                            DataId = nacosConfigurationOption.DataID,
-                            Group = nacosConfigurationOption.GroupName,
-                            NameSpaceId = nacosConfigurationOption.NamespaceId
-                        });
+                            var dataId = "";
+                            var groupName = "";
+                            var namespaceId = "";
 
-                        httpResponseMessage.EnsureSuccessStatusCode();
+                            var nameSpaceDataIdGroupArr = changeInfo.Split("%02").ToList();
+                            if (nameSpaceDataIdGroupArr.Count >= 2)
+                            {
+                                dataId = nameSpaceDataIdGroupArr[0];
+                                groupName = nameSpaceDataIdGroupArr[1];
+                            }
+                            if (nameSpaceDataIdGroupArr.Count == 3)
+                            {
+                                namespaceId = nameSpaceDataIdGroupArr[2];
+                            }
 
-                        var result = await httpResponseMessage.Content.ReadAsStringAsync();
-                        lastContentDic[key] = result;
+                            var key = namespaceId + "-" + dataId + "-" +
+                                      groupName;
 
-                        var hasConfigType = httpResponseMessage.Headers.TryGetValues(NacosUtil.CONFIG_TYPE, out var listValues);
-                        //根据返回的配置类型解析数据
-                        //配置类型
-                        var configType = "text";
-                        var configTypeValues = listValues?.ToList() ?? new List<string>();
-                        if (hasConfigType && configTypeValues.Count > 0)
-                        {
-                            configType = configTypeValues[0];
+                            var httpResponseMessage = await nacosService.GetConfigs(new GetConfigsDto()
+                            {
+                                DataId = dataId,
+                                Group = groupName,
+                                NameSpaceId = namespaceId
+                            });
+
+                            httpResponseMessage.EnsureSuccessStatusCode();
+
+                            var result = await httpResponseMessage.Content.ReadAsStringAsync();
+                            lastContentDic[key] = result;
+
+                            var hasConfigType = httpResponseMessage.Headers.TryGetValues(NacosUtil.CONFIG_TYPE, out var listValues);
+                            //根据返回的配置类型解析数据
+                            //配置类型
+                            var configType = "text";
+                            var configTypeValues = listValues?.ToList() ?? new List<string>();
+                            if (hasConfigType && configTypeValues.Count > 0)
+                            {
+                                configType = configTypeValues[0];
+                            }
+
+                            switch (configType)
+                            {
+                                case "json":
+                                    var jsonParseResult = JsonParser.Parse(result);
+                                    lastDic[key] = jsonParseResult;
+
+                                    break;
+                                case "xml":
+                                    var xmlParseResult = XmlParser.Parse(result);
+                                    lastDic[key] = xmlParseResult;
+                                    break;
+                                case "yaml":
+                                    var yamlParseResult = YamlParser.Parse(result);
+                                    lastDic[key] = yamlParseResult;
+                                    break;
+                            }
                         }
 
-                        switch (configType)
+                        foreach (var nacosConfigurationOption in nacosOption.ConfigurationOption)
                         {
-                            case "json":
-                                var jsonParseResult = JsonParser.Parse(result);
+                            var namespaceId = nacosConfigurationOption.NamespaceId == "public"
+                                ? ""
+                                : nacosConfigurationOption.NamespaceId;
 
-                                allDic.AddRange(jsonParseResult);
-                                break;
-                            case "xml":
-                                var xmlParseResult = XmlParser.Parse(result);
-                                allDic.AddRange(xmlParseResult);
-                                break;
-                            case "yaml":
-                                var yamlParseResult = YamlParser.Parse(result);
-                                allDic.AddRange(yamlParseResult);
-                                break;
+                            var key = namespaceId + "-" + nacosConfigurationOption.DataID + "-" +
+                                      nacosConfigurationOption.GroupName;
+                            if (lastDic.ContainsKey(key))
+                            {
+                                allDic.AddRange(lastDic[key]);
+                            }
                         }
 
-                       
+                        Data = allDic;
+                        base.OnReload();
                     }
                 }
 
-                Data = allDic;
-                base.OnReload();
                 //logger.LogInformation($"{DateTime.Now},nacos Send Instance HeartBeat,result,{result.ClientBeatInterval}");
             }
             catch (Exception e)
@@ -177,7 +229,7 @@ namespace SummerBoot.Feign.Nacos
             }
             finally
             {
-               
+
             }
         }
 

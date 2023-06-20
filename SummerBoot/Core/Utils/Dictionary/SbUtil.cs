@@ -54,10 +54,7 @@ namespace SummerBoot.Core
         {
             foreach (var pair in otherDictionary)
             {
-                if (!dictionary.ContainsKey(pair.Key))
-                {
-                    dictionary[pair.Key] = pair.Value;
-                }
+                dictionary[pair.Key] = pair.Value;
             }
             
             return true;
