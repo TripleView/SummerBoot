@@ -62,6 +62,10 @@ namespace SummerBoot.Feign.Nacos
                 {
                     throw new ArgumentException("ConfigurationOption.NamespaceId can not be empty");
                 }
+                if (nacosConfigurationOption.GroupName.IsNullOrWhiteSpace())
+                {
+                    throw new ArgumentException("ConfigurationOption.GroupName can not be empty");
+                }
             }
 
             if (nacosOption.NamespaceId.IsNullOrWhiteSpace())
