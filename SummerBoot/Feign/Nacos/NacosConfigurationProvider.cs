@@ -77,6 +77,7 @@ namespace SummerBoot.Feign.Nacos
 
         public override void Load()
         {
+            GetConfigInternal(new CancellationToken()).GetAwaiter().GetResult();
             timer = new Timer(GetConfig, new CancellationToken(), 0, -1);
         }
 
