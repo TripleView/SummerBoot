@@ -80,5 +80,18 @@ namespace SummerBoot.Core
         {
             return (long)(DateTime.UtcNow - Jan1st1970).TotalSeconds;
         }
+
+        public static DateTime UnixTimeStampToUtcDateTime(this double unixTimeStamp)
+        {
+            var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            dateTime = dateTime.AddSeconds(unixTimeStamp);
+            return dateTime;
+        }
+        public static double UtcDateTimeToUnixTimeStamp(this DateTime utcDateTime)
+        {
+            var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            var result = (utcDateTime - dateTime).TotalSeconds;
+            return result;
+        }
     }
 }
