@@ -201,6 +201,18 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
+        /// 字节数组转为md5字节数组
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static byte[] BytesToMd5Bytes(this byte[] inputBytes)
+        {
+            MD5 md5 = MD5.Create();
+            byte[] hash = md5.ComputeHash(inputBytes);
+            return hash;
+        }
+
+        /// <summary>
         /// 先使用Sha256再使用base64
         /// </summary>
         /// <param name="bytes"></param>
@@ -345,6 +357,43 @@ namespace SummerBoot.Core
                 newLength == 0 ? string.Empty :
                 newLength == value.Length ? value :
                 value.Substring(startIndex, newLength);
+        }
+
+        /// <summary>
+        /// 十六进制转byte array
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static byte[] HexToBytes(this string str)
+        {
+            str = str.Replace(" ", "");//移除空格
+            byte[] comBuffer = new byte[str.Length / 2];
+            for (int i = 0; i < str.Length; i += 2)
+            {
+                comBuffer[i / 2] = (byte)Convert.ToByte(str.Substring(i, 2), 16);
+            }
+
+            return comBuffer;
+        }
+
+        /// <summary>
+        /// 字节数组转为16进制字符串，再转为int类型
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static int ByteArrayToHexStringThenToInt(this byte[] bytes)
+        {
+            var middle= string.Join(string.Empty, Array.ConvertAll(bytes, b => b.ToString("X2")));
+            var result = Convert.ToInt32(middle, 16);
+            return result;
+        }
+
+        public static int IntToHexStringThenByteArray(this int intValue)
+        {
+            //var middle = string.Join(string.Empty, Array.ConvertAll(bytes, b => b.ToString("X2")));
+            //var result = Convert.ToInt32(middle, 16);
+            //return result;
+            return 0;
         }
     }
 

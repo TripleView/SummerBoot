@@ -141,7 +141,7 @@ namespace SummerBoot.Feign
             path = GetValueByConfiguration(path);
 
             //如果仅使用path作为url，就不需要添加feignClient上的url前缀
-            var urlTemp = usePathAsUrl ? path : requestPath + path;
+            var urlTemp = usePathAsUrl ? path : CombineUrl(requestPath,path);
             urlTemp = ReplaceVariable(urlTemp);
             urlTemp = AddUrlParameter(urlTemp);
             urlTemp = GetUrl(urlTemp);
@@ -195,6 +195,13 @@ namespace SummerBoot.Feign
 
             responseTemplate.Body.Seek(0, SeekOrigin.Begin);
             throw new Exception($@"response Decoder error,content is {responseTemplate.Body.ConvertToString()}", ex);
+        }
+
+        public string CombineUrl(string uri1, string uri2)
+        {
+            uri1 = uri1.TrimEnd('/').TrimEnd('/');
+            uri2 = uri2.TrimStart('/').TrimStart('/');
+            return string.Format("{0}/{1}", uri1, uri2);
         }
 
         /// <summary>
