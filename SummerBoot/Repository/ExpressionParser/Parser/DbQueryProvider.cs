@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser.Dialect;
+using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -35,17 +37,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     this.queryFormatter = new PgsqlQueryFormatter(databaseUnit);
                     break;
             }
-            
+
         }
         public IQueryable CreateQuery(Expression expression)
         {
             throw new NotImplementedException();
         }
 
-        
+
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
-            return new Repository<TElement>(expression,this);
+            return new Repository<TElement>(expression, this);
         }
 
         public DbQueryResult GetDbQueryResultByExpression(Expression expression)
@@ -53,6 +55,32 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
             var middleResult = dbExpressionVisitor.Visit(expression);
+            //var cc=dbExpressionVisitor.Visit(joinItems.)
+            //将我们自己的expression转换成sql
+            queryFormatter.Format(middleResult);
+            var param = queryFormatter.GetDbQueryDetail();
+            return param;
+        }
+
+
+        public DbQueryResult GetJoinQueryResultByExpression<T>(IRepository<T> repository)
+        {
+            var expression = repository.Expression;
+            //这一步将expression转化成我们自己的expression
+            var dbExpressionVisitor = new DbExpressionVisitor();
+            var middleResult = dbExpressionVisitor.Visit(expression);
+            foreach (var joinItem in repository.JoinItems)
+            {
+                var joinOnExpression = new JoinOnExpression(joinItem.Condition as Expression);
+                var visitor = new DbExpressionVisitor();
+                var joinResult = visitor.Visit(joinOnExpression) ;
+                if (joinResult is JoinExpression joinExpression)
+                {
+
+                }
+            }
+           
+            //var cc=dbExpressionVisitor.Visit(joinItems.)
             //将我们自己的expression转换成sql
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();

@@ -7,6 +7,7 @@
         Column,
         Table,
         Join,
+        JoinOn,
         Where,
         WhereCondition,
         WhereTrueCondition,

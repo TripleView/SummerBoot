@@ -6,15 +6,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     /// <summary>
     /// Join 表达式
     /// </summary>
-    public class JoinExpression : QueryExpression
+    public class JoinExpression : DbBaseExpression
     {
-        public JoinExpression(Type type, QueryExpression left, QueryExpression right, Expression leftKey, Expression rightKey)
+        public JoinExpression(Type type, TableExpression leftTable, TableExpression rightTable, ColumnExpression leftColumn, string onOperator, ColumnExpression rightColumn)
             : base((ExpressionType)DbExpressionType.Join, type)
         {
-            Left = left;
-            Right = right;
-            LeftKey = leftKey;
-            RightKey = rightKey;
+            this.LeftTable = leftTable;
+            this.RightTable = rightTable;
+            this.LeftColumn = leftColumn;
+            this.RightColumn = rightColumn;
+            this.OnOperator = onOperator;
         }
 
         #region 属性
@@ -22,32 +23,25 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <summary>
         /// 左表
         /// </summary>
-        public QueryExpression Left { get; set; }
+        public TableExpression LeftTable { get; set; }
 
         /// <summary>
         /// 右表
         /// </summary>
-        public QueryExpression Right { get; set; }
+        public TableExpression RightTable { get; set; }
 
         /// <summary>
         /// 左表匹配键
         /// </summary>
-        public Expression LeftKey { get; set; }
+        public ColumnExpression LeftColumn { get; set; }
 
+        public string OnOperator { get; set; }
         /// <summary>
         /// 右表匹配键
         /// </summary>
-        public Expression RightKey { get; set; }
+        public ColumnExpression RightColumn { get; set; }
 
-        /// <summary>
-        /// 左别名
-        /// </summary>
-        public string LeftAlias { get { return Left.Alias; } }
-
-        /// <summary>
-        /// 右别名
-        /// </summary>
-        public string RightAlias { get { return Right.Alias; } }
+   
 
         #endregion
     }

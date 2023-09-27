@@ -31,7 +31,11 @@ namespace SummerBoot.Repository
             nameof(IRepository<BaseEntity>.MinAsync),
                 nameof(IRepository<BaseEntity>.SumAsync),
                 nameof(IRepository<BaseEntity>.AverageAsync),
-                nameof(IRepository<BaseEntity>.CountAsync)
+                nameof(IRepository<BaseEntity>.CountAsync),
+               "set_JoinItems",
+               "get_JoinItems",
+               "set_MultiQuerySelectItems",
+               "get_MultiQuerySelectItems",
         };
 
         public object Build(Type interfaceType, params object[] constructor)
@@ -125,6 +129,7 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         targetMethods.AddRange(typeof(IQueryable).GetMethods());
+                        var c = typeof(IRepository<>).MakeGenericType(genericType).GetMethods();
                         targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
                         targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());

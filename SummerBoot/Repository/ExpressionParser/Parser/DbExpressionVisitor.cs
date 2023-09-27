@@ -74,6 +74,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 case DbExpressionType.Join:
                 case DbExpressionType.Query:
                     return this.VisitQuery((QueryExpression)exp);
+                case DbExpressionType.JoinOn:
+                    return this.VisitJoinOn((JoinOnExpression)exp);
                 case DbExpressionType.Table:
                     return this.VisitTable((TableExpression)exp);
                 case DbExpressionType.Column:
@@ -82,7 +84,19 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             return base.Visit(exp);
         }
-
+        public virtual Expression VisitJoinOn(JoinOnExpression joinOnExpression)
+        {
+            methodCallStack.Push(nameof(RepositoryMethod.JoinOn));
+            if (joinOnExpression.OnExpression is LambdaExpression lambdaExpression)
+            {
+                return Visit(lambdaExpression.Body);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+           
+        }
         public virtual Expression VisitQuery(QueryExpression queryExpression)
         {
             return queryExpression;
@@ -538,7 +552,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if ( MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -627,6 +641,33 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 return result;
 
+            }
+            else if (MethodName == nameof(RepositoryMethod.JoinOn))
+            {
+                var @operator = nodeTypeMappings[binaryExpression.NodeType];
+                if (string.IsNullOrWhiteSpace(@operator))
+                {
+                    throw new NotSupportedException(nameof(binaryExpression.NodeType));
+                }
+                var rightExpression = this.Visit(binaryExpression.Right);
+
+                var leftExpression = this.Visit(binaryExpression.Left);
+
+                if (binaryExpression.Right is MemberExpression rightMemberExpression&& binaryExpression.Left is MemberExpression leftMemberExpression
+                    && rightExpression is ColumnExpression rightColumnExpression &&
+                    leftExpression is ColumnExpression leftColumnExpression)
+                {
+                    var rightAlias= rightMemberExpression.Member.Name;
+                    var leftAlias = leftMemberExpression.Member.Name;
+                    var result = new JoinExpression(null, leftColumnExpression.Table, rightColumnExpression.Table,
+                        leftColumnExpression, @operator, rightColumnExpression);
+                    return result;
+                }
+                else
+                {
+                    throw new NotSupportedException(nameof(@operator));
+                }
+                
             }
             //throw new NotSupportedException(MethodName);
             return base.VisitBinary(binaryExpression);
@@ -1159,6 +1200,20 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var columnExpression = new ColumnExpression(propertyInfo.DeclaringType, alias, propertyInfo, 0);
 
                     return columnExpression;
+                }
+            }
+            else if (MethodName == nameof(RepositoryMethod.JoinOn))
+            {
+                if (memberExpression.Member is PropertyInfo propertyInfo)
+                {
+                    var table = new TableExpression(memberExpression.Member.ReflectedType);
+                    var column = new ColumnExpression(propertyInfo.PropertyType, "", propertyInfo,0);
+                    column.Table = table;
+                    return column;
+                }
+                else
+                {
+                    throw new NotSupportedException();
                 }
             }
             //if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.OrderBy) || MethodName == nameof(Queryable.OrderByDescending) || MethodName == nameof(Queryable.GroupBy))

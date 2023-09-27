@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using SummerBoot.Repository.ExpressionParser.Base;
+using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -82,12 +83,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public IQueryProvider Provider { get; private set; }
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
+        public List<JoinBodyBase<T>> JoinItems { get; set; } = new List<JoinBodyBase<T>>();
+        public List<object> MultiQuerySelectItems { get; set; } = new List<object>();
 
         public IEnumerator<T> GetEnumerator()
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
+                var dbParam = dbQueryProvider.GetDbQueryResultByExpression(this.Expression);
                 var result = dbQueryProvider.linkRepository.InternalQueryList<T>(dbParam);
                 //var result = new List<T>();
                 if (result == null)

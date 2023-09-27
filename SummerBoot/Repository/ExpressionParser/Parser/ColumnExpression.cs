@@ -43,7 +43,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.FunctionName = functionName;
         }
 
-        
+        public TableExpression Table { get; set; }
         /// <summary>
         /// 方法元信息
         /// </summary>
