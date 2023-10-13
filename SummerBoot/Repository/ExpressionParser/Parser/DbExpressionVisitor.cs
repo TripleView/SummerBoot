@@ -75,7 +75,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 case DbExpressionType.Query:
                     return this.VisitQuery((QueryExpression)exp);
                 case DbExpressionType.JoinOn:
-                    return this.VisitJoinOn((JoinOnExpression)exp);
+                    return this.VisitJoinAdapter((JoinAdapterExpression)exp);
+                case DbExpressionType.MultiSelect:
+                    return this.VisitMultiSelect((MultiSelectExpression)exp);
                 case DbExpressionType.Table:
                     return this.VisitTable((TableExpression)exp);
                 case DbExpressionType.Column:
@@ -84,7 +86,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             return base.Visit(exp);
         }
-        public virtual Expression VisitJoinOn(JoinOnExpression joinOnExpression)
+        public virtual Expression VisitJoinAdapter(JoinAdapterExpression joinOnExpression)
         {
             methodCallStack.Push(nameof(RepositoryMethod.JoinOn));
             if (joinOnExpression.OnExpression is LambdaExpression lambdaExpression)
@@ -97,6 +99,28 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
            
         }
+        public virtual Expression VisitMultiSelect(MultiSelectExpression multiSelectExpression)
+        {
+            if (multiSelectExpression.Expression is NewExpression newExpression)
+            {
+                var result = VisitMultiSelectNew(newExpression);
+                return result;
+            }
+            else if (multiSelectExpression.Expression is MemberInitExpression memberInitExpression)
+            {
+                var result = VisitMultiSelectMemberInit(memberInitExpression);
+                return result;
+            }
+            else if (multiSelectExpression.Expression is MemberExpression memberExpression)
+            {
+                var tableAlias = memberExpression.Member.Name;
+                var table = new TableExpression(multiSelectExpression.Expression.Type,tableAlias);
+                return new ColumnsExpression(table.Columns, memberExpression.Type);
+            }
+
+            throw new NotSupportedException(nameof(multiSelectExpression.Expression));
+        }
+        
         public virtual Expression VisitQuery(QueryExpression queryExpression)
         {
             return queryExpression;
@@ -649,18 +673,42 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     throw new NotSupportedException(nameof(binaryExpression.NodeType));
                 }
-                var rightExpression = this.Visit(binaryExpression.Right);
 
-                var leftExpression = this.Visit(binaryExpression.Left);
+                Expression rightExpression;
+                if (binaryExpression.Right is UnaryExpression rightEx)
+                {
+                    rightExpression = this.Visit(rightEx.Operand);
+                }
+                else
+                {
+                    rightExpression = this.Visit(binaryExpression.Right);
+                }
 
-                if (binaryExpression.Right is MemberExpression rightMemberExpression&& binaryExpression.Left is MemberExpression leftMemberExpression
-                    && rightExpression is ColumnExpression rightColumnExpression &&
+                Expression leftExpression;
+                if (binaryExpression.Left is UnaryExpression leftEx)
+                {
+                    leftExpression = this.Visit(leftEx.Operand);
+                }
+                else
+                {
+                    leftExpression = this.Visit(binaryExpression.Left);
+                }
+
+                if (rightExpression is ColumnExpression rightColumnExpression &&
                     leftExpression is ColumnExpression leftColumnExpression)
                 {
-                    var rightAlias= rightMemberExpression.Member.Name;
-                    var leftAlias = leftMemberExpression.Member.Name;
-                    var result = new JoinExpression(null, leftColumnExpression.Table, rightColumnExpression.Table,
+                    var result = new JoinOnExpression(
                         leftColumnExpression, @operator, rightColumnExpression);
+                    return result;
+                }else if (leftExpression is JoinConditionExpression leftJoinOnExpression &&
+                          rightExpression is JoinConditionExpression rightJoinOnExpression)
+                {
+                    var result = new JoinConditionExpression()
+                    {
+                        Left = leftJoinOnExpression,
+                        Right = rightJoinOnExpression,
+                        Operator = @operator
+                    };
                     return result;
                 }
                 else
@@ -1204,10 +1252,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             else if (MethodName == nameof(RepositoryMethod.JoinOn))
             {
-                if (memberExpression.Member is PropertyInfo propertyInfo)
+                if (memberExpression.Expression is MemberExpression rightSecondMemberExpression&& memberExpression.Member is PropertyInfo propertyInfo)
                 {
                     var table = new TableExpression(memberExpression.Member.ReflectedType);
-                    var column = new ColumnExpression(propertyInfo.PropertyType, "", propertyInfo,0);
+                    var tableAlias = rightSecondMemberExpression.Member.Name;
+                    var column = new ColumnExpression(propertyInfo.PropertyType, tableAlias, propertyInfo,0);
                     column.Table = table;
                     return column;
                 }
@@ -1275,8 +1324,65 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
+        private Expression VisitMultiSelectNew(NewExpression newExpression)
+        {
+            var newColumns = new List<ColumnExpression>();
+            for (int i = 0; i < newExpression.Members.Count; i++)
+            {
+                var memberInfo = newExpression.Members[i];
+                if (!(memberInfo is PropertyInfo))
+                {
+                    throw new NotSupportedException("only support T1,T2 etc");
+                }
+                var argument = newExpression.Arguments[i];
+                if (argument is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
+                {
+                    var tempColumnExpression = new ColumnExpression((memberInfo as PropertyInfo).PropertyType, memberExpression.Member.Name,
+                        memberInfo, 0);
+                    newColumns.Add(tempColumnExpression);
+                }
+            }
+
+            var result = new ColumnsExpression(newColumns, newExpression.Type);
+            return result;
+        }
+
+        private Expression VisitMultiSelectMemberInit(MemberInitExpression memberInitExpression)
+        {
+            var newColumns = new List<ColumnExpression>();
+
+            for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
+            {
+                var binding = memberInitExpression.Bindings[i];
+                var memberInfo = binding.Member;
+                if (!(memberInfo is PropertyInfo))
+                {
+                    throw new NotSupportedException("only support T1,T2 etc");
+                }
+
+                if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
+                {
+                    var tempColumnExpression = new ColumnExpression((memberInfo as PropertyInfo).PropertyType, memberExpression.Member.Name,
+                        memberInfo, 0);
+                    newColumns.Add(tempColumnExpression);
+                }
+                else
+                {
+                    throw new NotSupportedException("argument can not parse");
+                }
+            }
+
+            var result = new ColumnsExpression(newColumns, memberInitExpression.Type);
+            return result;
+        }
+
         protected override Expression VisitNew(NewExpression newExpression)
         {
+            //if (MethodName == nameof(RepositoryMethod.MultiSelect))
+            //{
+            //    return VisitMultiSelectNew(newExpression);
+            //}
+
             var newColumns = new List<ColumnExpression>();
 
             for (int i = 0; i < newExpression.Members.Count; i++)

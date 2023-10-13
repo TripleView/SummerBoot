@@ -2,6 +2,7 @@
 {
     public enum RepositoryMethod
     {
-        JoinOn
+        JoinOn,
+        MultiSelect
     }
 }

@@ -214,60 +214,54 @@ namespace SummerBoot.Repository
             return await repository.MaxAsync(selector);
         }
 
-
-
-        public static JoinBody<T1, T2> LeftJoin2<T1, T2, TResult>(this IQueryable<T1> source, T2 t2, Expression<Func<JoinCondition<T1, T2>, bool>> condition)
-        {
-            if (!(source is IRepository<T1> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
-            
-            //var c=Expression.Call()
-           var d= source.Provider.CreateQuery<T1>(Expression.Constant(1));
-           
-            return null;
-        }
-
         //public static 
 
-        public static JoinBody<T1, T2> LeftJoin<T1, T2>(this IQueryable<T1> source, T2 t2, Expression<Func<JoinCondition<T1, T2>, bool>> condition)
+        public static JoinBody<T1, T2> LeftJoin<T1, T2>(this IQueryable<T1> source, T2 t2, Expression<Func<JoinCondition<T1, T2>, bool>> condition) where T1:class where T2:class
         {
-            //var c=Expression.Call()
             if (!(source is IRepository<T1> repository))
             {
                 throw new Exception("only support IRepository");
             }
+
             if (repository == null) throw new ArgumentNullException("source");
 
             var result = new JoinBody<T1, T2>()
             {
                 JoinType = JoinType.LeftJoin,
                 Repository = repository,
-                Condition = condition
+                Condition = condition,
+                JoinTable = typeof(T2),
+                JoinTableAlias = nameof(T2)
             };
             repository.JoinItems.Add(result);
             return result;
         }
 
-        
-        public static SelectMultiQueryBody<T1, T2, TResult> Select<T1, T2,TResult>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select)
+
+        public static SelectMultiQueryBody<T1, T2, TResult> Select<T1, T2, TResult>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select)
         {
             var result = new SelectMultiQueryBody<T1, T2, TResult>()
             {
                 Select = select,
                 Source = source
             };
-            source.Repository.MultiQuerySelectItems.Add(select);
+            source.Repository.MultiQuerySelectItem = select;
             return result;
         }
 
-        public static List<TResult> ToList<T1, T2, TResult>(this SelectMultiQueryBody<T1, T2, TResult> source)
+        public static List<TResult> ToList<T1, T2, TResult>(this SelectMultiQueryBody<T1, T2, TResult> selectMultiQueryBody)
         {
-            if (source.Source.Repository.Provider is DbQueryProvider dbQueryProvider)
+            if (selectMultiQueryBody.Source.Repository.Provider is DbQueryProvider dbQueryProvider)
             {
-                dbQueryProvider.GetJoinQueryResultByExpression(source.Source.Repository);
+                if (!(selectMultiQueryBody.Source.Repository is IRepository<T1> repository))
+                {
+                    throw new Exception("only support IRepository");
+                }
+
+                var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
+
+                var result = repository.InternalQueryList<TResult>(parameter);
+                return result;
             }
             return new List<TResult>();
         }
@@ -283,16 +277,15 @@ namespace SummerBoot.Repository
             };
             repository.JoinItems.Add(result);
             return result;
-        
+
         }
 
         public static JoinBody<T1, T2, T3, T4> LeftJoin<T1, T2, T3, T4>(this JoinBody<T1, T2, T3> source, T4 t4, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> condition)
         {
 
-            var result =new JoinBody<T1, T2, T3, T4>()
+            var result = new JoinBody<T1, T2, T3, T4>()
             {
                 JoinType = JoinType.LeftJoin,
-       
             };
 
             return result;
@@ -300,16 +293,16 @@ namespace SummerBoot.Repository
 
     }
 
-   
 
-   
 
-    public class SelectMultiQueryBody<T1, T2, TResult> 
+
+
+    public class SelectMultiQueryBody<T1, T2, TResult>
     {
         public JoinBody<T1, T2> Source { get; set; }
         public Expression<Func<JoinCondition<T1, T2>, TResult>> Select { get; set; }
     }
 
-  
-  
+
+
 }

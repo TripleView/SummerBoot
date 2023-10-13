@@ -68,23 +68,53 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var expression = repository.Expression;
             //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
-            var middleResult = dbExpressionVisitor.Visit(expression);
+            var queryBody = dbExpressionVisitor.Visit(expression);
+            var joins = new List<JoinExpression>();
             foreach (var joinItem in repository.JoinItems)
             {
-                var joinOnExpression = new JoinOnExpression(joinItem.Condition as Expression);
+                var joinAdapterExpression = new JoinAdapterExpression(joinItem.Condition as Expression);
                 var visitor = new DbExpressionVisitor();
-                var joinResult = visitor.Visit(joinOnExpression) ;
-                if (joinResult is JoinExpression joinExpression)
+                var joinResult = visitor.Visit(joinAdapterExpression) ;
+                var joinTable= new TableExpression(joinItem.JoinTable);
+                if (joinResult is JoinConditionExpression joinCondition)
                 {
-
+                    var joinExpression = new JoinExpression(joinItem.JoinType, joinTable, joinItem.JoinTableAlias);
+                    joinExpression.JoinCondition = joinCondition;
+                    joins.Add(joinExpression);
                 }
             }
-           
-            //var cc=dbExpressionVisitor.Visit(joinItems.)
-            //将我们自己的expression转换成sql
-            queryFormatter.Format(middleResult);
-            var param = queryFormatter.GetDbQueryDetail();
-            return param;
+
+            var selectColumns = new List<ColumnExpression>();
+            if (repository.MultiQuerySelectItem != null)
+            {
+                var visitor = new DbExpressionVisitor();
+                if (repository.MultiQuerySelectItem is LambdaExpression lambda)
+                {
+                    var multiSelectExpression = new MultiSelectExpression( lambda.Body);
+                    var multiSelectExpressionResult = visitor.Visit(multiSelectExpression);
+                    if (multiSelectExpressionResult is ColumnsExpression columnsExpression)
+                    {
+                        selectColumns.AddRange(columnsExpression.ColumnExpressions);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException((repository.MultiQuerySelectItem as Expression).Type.Name);
+                }
+               
+            }
+            
+            if (queryBody is TableExpression tableExpression)
+            {
+                var result = new SelectExpression(null, "T1", selectColumns, tableExpression,
+                    joins: joins);
+                //将我们自己的expression转换成sql
+                queryFormatter.Format(result);
+                var param = queryFormatter.GetDbQueryDetail();
+                return param;
+            }
+
+            throw new NotSupportedException();
         }
 
         public DbQueryResult GetDbPageQueryResultByExpression(Expression expression)

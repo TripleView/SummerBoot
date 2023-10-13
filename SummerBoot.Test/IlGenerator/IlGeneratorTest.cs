@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using Xunit;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection.Emit;
@@ -2512,6 +2513,192 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             return dd;
             ;
             //Assert.Equal(typeof(IlPerson), re);
+        }
+
+        /// <summary>
+        /// 测试AnonymousType匿名类型的生成
+        /// </summary>
+        [Fact]
+        public static void TestAnonymousType()
+        {
+            //<>f__AnonymousType1`
+            var anonymousTypeInstance = new { a = 1, b = "b" };
+            var result= GenerateAnonymousType(anonymousTypeInstance);
+            
+            Assert.Equal(45,result.a);
+            Assert.Equal("hhh", result.b);
+
+        }
+
+        private static T GenerateAnonymousType<T>(T t)
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), t.GetType(),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var ctor = t.GetType().GetConstructors().FirstOrDefault();
+            il.Emit(OpCodes.Ldc_I4, 45);
+            il.Emit(OpCodes.Ldstr, "hhh");
+            il.Emit(OpCodes.Newobj, ctor);
+
+            ////il.Emit(OpCodes.Ldstr, "何泽平");
+            //il.BeginExceptionBlock();
+            //il.Emit(OpCodes.Ldstr, "abc");
+            //il.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ToInt32), new Type[] { typeof(string) }));
+            //il.Emit(OpCodes.Pop);
+            //il.BeginCatchBlock(typeof(Exception));
+            //il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintException)));
+            ////il.Emit(OpCodes.Call, typeof(Exception).GetMethod("get_Message"));
+            ////il.Emit(OpCodes.Call, typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) }));
+
+            //////il.Emit(OpCodes.Ret);
+            //il.EndExceptionBlock();
+
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<T>)dynamicMethod.CreateDelegate(typeof(Func<T>));
+            var result= dd();
+            return result;
+        }
+
+        /// <summary>
+        /// 测试生成list并且往里面添加数据
+        /// </summary>
+        [Fact]
+        public static void TestInitListAndAddItem()
+        {
+            //var ff = new List<object>();
+            //var ffr = ff.ToArray();
+            var dynamicMethod = new DynamicMethod("TestInitListAndAddItem" + Guid.NewGuid().ToString("N"), typeof(object[]),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var propertyValuesLocal = il.DeclareLocal(typeof(List<object>));
+            //堆栈用[]表示，则当前为type的实例，即[target]
+
+            //il.Emit(OpCodes.Dup);// [target,target]
+            il.Emit(OpCodes.Newobj, typeof(List<object>).GetConstructors().First());
+            il.Emit(OpCodes.Stloc, propertyValuesLocal);
+           
+            il.Emit(OpCodes.Ldloc, propertyValuesLocal);
+            il.Emit(OpCodes.Ldstr, "abc");
+            il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));
+            il.Emit(OpCodes.Ldloc, propertyValuesLocal);
+            il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("ToArray"));
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
+           var result=  dd();
+            //Assert.Equal(45, result.a);
+            //Assert.Equal("hhh", result.b);
+
+        }
+
+        [Fact]
+        public static void TestLongToInt()
+        {
+            //var ff = new List<object>();
+            //var ffr = ff.ToArray();
+            //var dynamicMethod = new DynamicMethod("TestLongToInt" + Guid.NewGuid().ToString("N"), typeof(int),
+            //    new Type[1]{typeof(long) });
+            var dynamicMethod = new DynamicMethod("TestLongToInt" + Guid.NewGuid().ToString("N"), typeof(int),
+                new Type[1] { typeof(object) });
+            var il = dynamicMethod.GetILGenerator();
+            var propertyValuesLocal = il.DeclareLocal(typeof(List<object>));
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Unbox_Any,typeof(long));
+            il.Emit(OpCodes.Conv_Ovf_I4);
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<object, int>)dynamicMethod.CreateDelegate(typeof(Func<object, int>));
+            var cc = dd(5L);
+        }
+
+        /// <summary>
+        /// 测试匿名类型能否使用object参数进行初始化,通过实验证明参数为object不可行,只能传递实际参数
+        /// </summary>
+        [Fact]
+        public static void TestAnonymousTypeWithObjectParameter()
+        {
+            //<>f__AnonymousType1`
+            var anonymousTypeInstance = new { a = 1, b = "b" };
+            var result = GenerateAnonymousTypeWithObjectParameter(anonymousTypeInstance,45, "hhh");
+
+            Assert.Equal(45, result.a);
+            Assert.Equal("hhh", result.b);
+
+        }
+
+        private static T GenerateAnonymousTypeWithObjectParameter<T>(T t, int p1, string p2)
+        {
+            var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), t.GetType(),
+                new Type[]{typeof(int),typeof(string)});
+            var il = dynamicMethod.GetILGenerator();
+            var ctor = t.GetType().GetConstructors().FirstOrDefault();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Newobj, ctor);
+
+            ////il.Emit(OpCodes.Ldstr, "何泽平");
+            //il.BeginExceptionBlock();
+            //il.Emit(OpCodes.Ldstr, "abc");
+            //il.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ToInt32), new Type[] { typeof(string) }));
+            //il.Emit(OpCodes.Pop);
+            //il.BeginCatchBlock(typeof(Exception));
+            //il.Emit(OpCodes.Call, typeof(IlGeneratorTest).GetMethod(nameof(IlGeneratorTest.PrintException)));
+            ////il.Emit(OpCodes.Call, typeof(Exception).GetMethod("get_Message"));
+            ////il.Emit(OpCodes.Call, typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) }));
+
+            //////il.Emit(OpCodes.Ret);
+            //il.EndExceptionBlock();
+
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<int, string, T>)dynamicMethod.CreateDelegate(typeof(Func<int,string,T>));
+            var result = dd(p1,p2);
+            return result;
+        }
+
+
+        /// <summary>
+        /// 测试方法中string类型能否返回给object类型,事实证明string类型可以直接返回给object
+        /// </summary>
+        [Fact]
+        public static void TestStringReturnToObject()
+        {
+            var dynamicMethod = new DynamicMethod("TestStringReturnToObject" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[1] { typeof(string) });
+            var il = dynamicMethod.GetILGenerator();
+            var propertyValuesLocal = il.DeclareLocal(typeof(List<object>));
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+            //var dd = (Func<long,Type>)dynamicMethod.CreateDelegate(typeof(Func<long,Type>));
+            //var dd = (Action<object>)dynamicMethod.CreateDelegate(typeof(Action<object>));
+            var dd = (Func<string, object>)dynamicMethod.CreateDelegate(typeof(Func<string, object>));
+            var result = dd("abc");
+            //dd(5L);
+            Assert.Equal("abc", result);
+            //Assert.Equal("hhh", result.b);
+
+        }
+
+        /// <summary>
+        /// 测试方法中int类型能否返回给object类型,事实证明int无法直接返回给object,需要box以后才行，OpCodes.Box这个指令的第二个参数是原本的类型，box以后类型变成object
+        /// </summary>
+        [Fact]
+        public static void TestIntReturnToObject()
+        {
+            //var ff = new List<object>();
+            //var ffr = ff.ToArray();
+            //var dynamicMethod = new DynamicMethod("TestLongToInt" + Guid.NewGuid().ToString("N"), typeof(int),
+            //    new Type[1]{typeof(long) });
+            var dynamicMethod = new DynamicMethod("TestIntReturnToObject" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[1] { typeof(int) });
+            var il = dynamicMethod.GetILGenerator();
+            var c = il.DeclareLocal(typeof(int));
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Box,typeof(int));
+            il.Emit(OpCodes.Ret);
+            var dd = (Func<int, object>)dynamicMethod.CreateDelegate(typeof(Func<int, object>));
+            var cc = dd(123);
+            //dd(5L);
+            Assert.Equal(123, cc);
+            //Assert.Equal("hhh", result.b);
+
         }
     }
 }

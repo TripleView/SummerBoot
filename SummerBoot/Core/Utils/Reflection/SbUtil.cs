@@ -490,9 +490,19 @@ namespace SummerBoot.Core
                 }
 
                 result = new List<MemberInfoCache>();
+                List<PropertyInfo> propertyInfos = new List<PropertyInfo>();
 
-                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
-                    .ToList();
+               
+                if (type.IsAnonymousType())
+                {
+                    propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                        .ToList();
+                }
+                else
+                {
+                    propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                       .ToList();
+                }
 
                 for (var i = 0; i < propertyInfos.Count; i++)
                 {
@@ -570,6 +580,16 @@ namespace SummerBoot.Core
                 return result;
 
             }
+        }
+
+        /// <summary>
+        /// Determine whether the type is an anonymous type(判断类型是否为匿名类)
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsAnonymousType(this Type type)
+        {
+            return type.IsClass && type.Name.StartsWith("<>f__AnonymousType1`");
         }
     }
 }

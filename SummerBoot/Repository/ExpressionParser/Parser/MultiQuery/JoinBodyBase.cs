@@ -17,6 +17,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.MultiQuery
         /// join的条件
         /// </summary>
         public object  Condition { get; set; }
+        /// <summary>
+        /// join表的类
+        /// </summary>
+        public Type JoinTable { get; set; }
+       /// <summary>
+       /// join表的别名
+       /// </summary>
+        public string JoinTableAlias { get; set; }
     }
     public class JoinBody<T1, T2> : JoinBodyBase<T1>
     {

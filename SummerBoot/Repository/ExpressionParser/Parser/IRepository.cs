@@ -11,10 +11,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery,IAsyncQueryable<T>
     {
         List<SelectItem<T>> SelectItems { set; get; }
-
+       
         List<JoinBodyBase<T>> JoinItems { set; get; }
 
-        List<object> MultiQuerySelectItems { set; get; }
+        object MultiQuerySelectItem { set; get; }
         int ExecuteUpdate();
      
         /// <summary>

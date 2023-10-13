@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using SummerBoot.Core;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -21,6 +22,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             : base((ExpressionType)DbExpressionType.Table, type)
         {
         }
+
+        public TableExpression(Type type,string tableAlias)
+            : base((ExpressionType)DbExpressionType.Table, type)
+        {
+            this.TableAlias = tableAlias;
+        }
+
+        /// <summary>
+        /// 表格别名
+        /// </summary>
+        public string TableAlias { get; set; }
 
         /// <summary>
         /// 表的名称
@@ -65,11 +77,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                  
                     //排除掉不映射的列
                     var properties = Type.GetProperties().Where(it => !it.GetCustomAttributes().OfType<NotMappedAttribute>().Any()).ToList();
-
+                    var tableAlias=TableAlias.HasText()?TableAlias:"";
                     foreach (var propertyInfo in properties)
                     {
                         _columns.Add(new ColumnExpression(propertyInfo.PropertyType,
-                             "", propertyInfo, i++)
+                            tableAlias, propertyInfo, i++)
                         {
                             ValueType = propertyInfo.PropertyType
                         });

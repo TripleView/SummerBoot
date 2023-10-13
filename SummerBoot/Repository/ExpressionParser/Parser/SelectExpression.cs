@@ -10,7 +10,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     public class SelectExpression : QueryExpression
     {
         public SelectExpression(Type type, string alias, List<ColumnExpression> columns, Expression from, WhereExpression where = null,
-            List<GroupByExpression> groupBy = null, List<OrderByExpression> orderBy = null)
+            List<GroupByExpression> groupBy = null, List<OrderByExpression> orderBy = null, List<JoinExpression> joins = null)
             : base((ExpressionType)DbExpressionType.Select, type)
         {
             Alias = alias;
@@ -19,6 +19,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             Where = where;
             GroupBy = groupBy ?? new List<GroupByExpression>();
             OrderBy = orderBy ?? new List<OrderByExpression>();
+            Joins = joins ?? new List<JoinExpression>();
         }
 
         /// <summary>
@@ -58,7 +59,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// Where条件
         /// </summary>
         public WhereExpression Where { get; set; }
-
+        /// <summary>
+        /// join other table
+        /// </summary>
+        public List<JoinExpression> Joins { get; set; }
         /// <summary>
         /// GroupBy
         /// </summary>

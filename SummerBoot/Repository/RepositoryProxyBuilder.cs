@@ -34,8 +34,8 @@ namespace SummerBoot.Repository
                 nameof(IRepository<BaseEntity>.CountAsync),
                "set_JoinItems",
                "get_JoinItems",
-               "set_MultiQuerySelectItems",
-               "get_MultiQuerySelectItems",
+               "set_MultiQuerySelectItem",
+               "get_MultiQuerySelectItem",
         };
 
         public object Build(Type interfaceType, params object[] constructor)

@@ -669,7 +669,7 @@ namespace SummerBoot.Repository.Core
                         SetUpSingleParameter(dbCommand, tempParamInfo.Name, tempParamInfo, databaseUnit);
                     }
 
-                    sql = GetInListSql(sql, paramInfo.Name, count,databaseUnit);
+                    sql = GetInListSql(sql, paramInfo.Name, count, databaseUnit);
 
                 }
                 //参数为单个类型
@@ -694,7 +694,7 @@ namespace SummerBoot.Repository.Core
             }
             else
             {
-                var propertyType = paramInfo.ValueType?? paramInfo.Value.GetType();
+                var propertyType = paramInfo.ValueType ?? paramInfo.Value.GetType();
 
                 if (propertyType.IsNullable())
                 {
@@ -747,7 +747,7 @@ namespace SummerBoot.Repository.Core
             dbCommand.Parameters.Add(parameter);
         }
 
-        private static string GetInListSql(string sql, string parameterName, int count,DatabaseUnit databaseUnit)
+        private static string GetInListSql(string sql, string parameterName, int count, DatabaseUnit databaseUnit)
         {
             var pattern = ("([?@:]" + Regex.Escape(parameterName) + @")(?!\w)(\s+(?i)unknown(?-i))?");
             var result = Regex.Replace(sql, pattern, match =>
@@ -762,14 +762,14 @@ namespace SummerBoot.Repository.Core
                     }
                     else
                     {
-                        result= "(SELECT null WHERE 1 = 0)";
+                        result = "(SELECT null WHERE 1 = 0)";
                     }
-                    
+
                     return result;
                 }
                 else
                 {
-                   
+
                     if (match.Groups[2].Success)
                     {
                         var suffix = match.Groups[2].Value;
@@ -792,7 +792,7 @@ namespace SummerBoot.Repository.Core
                     }
                 }
 
-               
+
             }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
             return result;
@@ -815,6 +815,10 @@ namespace SummerBoot.Repository.Core
                 return GetStructDeserializer(type, underlyingType ?? type, databaseUnit);
             }
 
+            if (type.IsAnonymousType())
+            {
+                return GetAnonymousTypeDeserializer(type, dr, databaseUnit);
+            }
             return GetTypeDeserializer(type, dr, databaseUnit);
         }
 
@@ -858,6 +862,7 @@ namespace SummerBoot.Repository.Core
                 }
                 else
                 {
+
                     var ctor = type.GetConstructor(Type.EmptyTypes);
                     if (ctor == null)
                     {
@@ -977,6 +982,157 @@ namespace SummerBoot.Repository.Core
 
             return result;
         }
+
+        public static Func<IDataReader, object> GetAnonymousTypeDeserializer(Type type, IDataReader dr,
+            DatabaseUnit databaseUnit)
+        {
+            var dynamicMethod = new DynamicMethod("GetAnonymousTypeDeserializer" + Guid.NewGuid().ToString("N"), typeof(object),
+               new Type[] { typeof(IDataReader) });
+            var il = dynamicMethod.GetILGenerator();
+            var errorIndexLocal = il.DeclareLocal(typeof(int));
+            var returnValueLocal = il.DeclareLocal(type);
+            var propertyValuesLocal = il.DeclareLocal(typeof(List<object>));
+
+            il.Emit(OpCodes.Newobj, typeof(List<object>).GetConstructors().First());
+            il.Emit(OpCodes.Stloc, propertyValuesLocal);
+
+            var queryMemberCacheInfos = GetQueryMemberCacheInfos(dr, type);
+
+            //堆栈用[]表示，则当前为[]
+            //try
+            var tyrLabel = il.BeginExceptionBlock();
+            var backUpObject = il.DeclareLocal(typeof(object));
+            var endLabel = il.DefineLabel();
+            var ctor = type.GetConstructors().FirstOrDefault();
+            queryMemberCacheInfos = queryMemberCacheInfos.OrderBy(it => it.DataReaderIndex).ToList();
+            var localArgs = new List<LocalBuilder>();
+            // for循环中的变量，在循环结束后，堆栈里的变量都会被清空
+            for (var i = 0; i < queryMemberCacheInfos.Count; i++)
+            {
+               
+                var queryMemberCacheInfo = queryMemberCacheInfos[i];
+                var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
+                var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
+                var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
+                //实际类型
+                var realType = nullableEntityFieldType ?? entityFieldType;
+
+                var localArg = il.DeclareLocal(realType);
+                localArgs.Add(localArg);
+                var dbNullLabel = il.DefineLabel();
+                var finishLabel = il.DefineLabel();
+
+                il.Emit(OpCodes.Ldloc, propertyValuesLocal);// [list]
+                il.EmitInt32(i);// [list,i]
+                il.SteadOfLocal(errorIndexLocal);//[list]
+                //通过索引从dataReader里读取数据，此时读取回来的是object类型
+                il.Emit(OpCodes.Ldarg_0); //[list,dataReader]
+                il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[list,dataReader,i]
+                il.Emit(OpCodes.Callvirt, GetItem);// [list, getItemValue]
+
+                //判断返回值是否为dbnull，如果是，则跳转到结束
+                il.Emit(OpCodes.Dup);// [list, getItemValue,getItemValue]
+                il.Emit(OpCodes.Isinst, typeof(DBNull));// [list, getItemValue, bool]
+                il.Emit(OpCodes.Brtrue_S, dbNullLabel);// [list, getItemValue]
+                //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
+                //对获取到的值进行备份,存到字段backUpObject里
+                il.Emit(OpCodes.Dup);// [list, getItemValue,getItemValue]
+                il.SteadOfLocal(backUpObject);// [list, getItemValue]
+
+                //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));//[]
+               
+                if (DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(realType))
+                {
+                    //这里是一个静态类，可以直接调用。
+                    var typeHandlerCacheType = DatabaseUnit.TypeHandlers[databaseUnit.Id][realType];
+                    il.Emit(OpCodes.Call, typeHandlerCacheType.GetMethod("Parse"));
+                    //判断是否为可空类型
+                    if (nullableEntityFieldType != null)
+                    {
+                        il.Emit(OpCodes.Newobj, entityFieldType.GetConstructor(new[] { realType }));
+                    }
+                }
+                else
+                {
+                    il.ConvertTypeToTargetType(drFieldType, entityFieldType);// [list, realValue]
+                }
+
+                il.Emit(OpCodes.Stloc, localArg);
+
+                //continue;
+                il.Emit(OpCodes.Br_S, finishLabel);
+                ////il.Emit(OpCodes.Call, typeof(object).GetMethod(nameof(object.ToString), new[] { typeof(string) }));
+                //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));//[]
+                //il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
+                //il.Emit(OpCodes.Br_S, finishLabel);
+
+
+                // il.Emit(OpCodes.Call,typeof(object).GetMethod(nameof(object.ToString),new []{typeof(string)}));
+                // il.Emit(OpCodes.Box,typeof(object));
+                // il.Emit(OpCodes.Call,typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
+                // il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
+
+                il.MarkLabel(dbNullLabel);
+                il.Emit(OpCodes.Pop);// [list]
+                il.Emit(OpCodes.Ldnull);// [list,null]
+                //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));//[]
+                il.Emit(OpCodes.Stloc, localArg);
+                il.Emit(OpCodes.Br_S, finishLabel);
+                //il.Emit(OpCodes.Pop);// [list]
+                //il.Emit(OpCodes.Pop);// []
+                //il.Emit(OpCodes.Pop);// []
+                il.Emit(OpCodes.Br_S, finishLabel);
+                il.MarkLabel(finishLabel);
+                //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj2)));
+            }
+            il.MarkLabel(endLabel);
+            il.BeginCatchBlock(typeof(Exception));
+            //此时栈顶元素为[exception]
+            il.Emit(OpCodes.Ldloc, backUpObject);
+            il.Emit(OpCodes.Ldloc, errorIndexLocal);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(ThrowRepositoryException)));
+            il.EndExceptionBlock();
+
+          
+            //il.Emit(OpCodes.Box);
+            //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("ToArray"));
+            //var objArr = il.DeclareLocal(typeof(object[]));
+            //il.Emit(OpCodes.Stloc, objArr);
+            //il.Emit(OpCodes.Ldloc, objArr);
+            //il.Emit(OpCodes.Ldc_I4, 0);
+            //il.Emit(OpCodes.Ldelem_Ref);
+            ////il.Emit(OpCodes.Ldloc, objArr);
+            //il.Emit(OpCodes.Ldc_I4, 1);
+            //il.Emit(OpCodes.Ldelem_Ref);
+            //for (var i = 0; i < queryMemberCacheInfos.Count; i++)
+            //{
+            //    il.Emit(OpCodes.Ldloc, propertyValuesLocal);// [list]
+            //    il.Emit(OpCodes.Ldc_I4, i);
+            //    il.Emit(OpCodes.Callvirt,typeof(List<object>).GetMethod("get_Item"));
+            //    //il.Emit(OpCodes.Ldloc, objArr);
+            //    //il.Emit(OpCodes.Ldc_I4, i);
+            //    //il.Emit(OpCodes.Ldelem_Ref);
+            //}
+            //il.Emit(OpCodes.Ldloc, propertyValuesLocal);// [list]
+            //il.Emit(OpCodes.Ldc_I4, 0);
+            //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("get_Item"));
+          for (var i = 0; i < localArgs.Count; i++)
+          {
+              var localArg = localArgs[i];
+
+              il.Emit(OpCodes.Ldloc, localArg);
+            }
+            il.Emit(OpCodes.Newobj, ctor);
+            //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj2)));
+            //il.Emit(OpCodes.Ldstr, "123");
+            il.Emit(OpCodes.Ret);
+
+            var result = (Func<IDataReader, object>)dynamicMethod.CreateDelegate(typeof(Func<IDataReader, object>));
+
+            return result;
+        }
+
         /// <summary>
         /// 读取datareader转为struct类型
         /// </summary>
@@ -1015,6 +1171,11 @@ namespace SummerBoot.Repository.Core
             var st = new StackTrace();
         }
         public static void DebugObj(Exception ex)
+        {
+
+        }
+
+        public static void DebugObj2(string obj)
         {
 
         }

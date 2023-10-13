@@ -5,7 +5,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using SummerBoot.Core;
+using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 using SummerBoot.Repository.ExpressionParser.Util;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
@@ -61,7 +63,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             return table;
         }
-        
+
         protected string BoxColumnName(string columnName)
         {
             if (columnName == "*")
@@ -144,7 +146,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.Clear();
             if (expression is SelectExpression selectExpression)
             {
-                var result = this.VisitSelect(selectExpression);
+                if (selectExpression.Joins.Count == 0)
+                {
+                    var result = this.VisitSelect(selectExpression);
+                }
+                else
+                {
+                    var result = this.VisitMultiJoinSelect(selectExpression);
+
+                }
+
             }
             else if (expression is WhereExpression whereExpression)
             {
@@ -152,12 +163,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             else if (expression is TableExpression tableExpression)
             {
-                
+
                 var result = this.VisitTable(tableExpression);
             }
             else
             {
-                
+
                 throw new NotSupportedException(nameof(expression));
             }
 
@@ -241,7 +252,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 ParameterType = valueType,
                 Value = finalValue
             };
-            
+
             this.sqlParameters.Add(sqlParameter);
             parameterIndex++;
 
@@ -294,6 +305,22 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
+        private string JoinTypeToString(JoinType joinType)
+        {
+            switch (joinType)
+            {
+                case JoinType.LeftJoin:
+                    return "left join";
+                case JoinType.InnerJoin:
+                    return "join";
+                case JoinType.RightJoin:
+                    return "right join";
+                case JoinType.FullJoin:
+                    return "full join";
+            }
+
+            throw new NotSupportedException($"can not change {joinType.ToString()}");
+        }
         /// <summary>
         /// 处理正常逻辑
         /// </summary>
@@ -326,7 +353,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         _sb.Append(table.Schema + ".");
                     }
                     _sb.Append(BoxTableName(table.Name));
-                    _sb.AppendFormat(" {0}", BoxTableName(select.Alias));
+                    _sb.AppendFormat(" {0}", select.Alias);
+                    //_sb.AppendFormat(" {0}", BoxTableName(select.Alias));
                 }
                 else if (select.From is SelectExpression subSelectExpression)
                 {
@@ -340,6 +368,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 throw new ArgumentException("loss from");
             }
+
+            if (select.Joins.Count > 0)
+            {
+                foreach (var joinExpression in select.Joins)
+                {
+                    _sb.Append($" {JoinTypeToString(joinExpression.JoinType)} {BoxTableName(joinExpression.JoinTable.Name)} {joinExpression.JoinTableAlias} on ");
+                    ParseJoinCondition(_sb, joinExpression.JoinCondition);
+                }
+            }
+
 
             var hasWhere = false;
             if (select.Where != null)
@@ -399,10 +437,43 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
+        private void ParseJoinCondition(StringBuilder sb, JoinConditionExpression joinCondition)
+        {
+            sb.Append("(");
+
+            if (joinCondition is JoinOnExpression joinOn)
+            {
+                _sb.Append(
+                    $" {joinOn.LeftColumn.TableAlias}.{BoxColumnName(joinOn.LeftColumn.ColumnName)} {joinOn.OnOperator} {joinOn.RightColumn.TableAlias}.{BoxColumnName(joinOn.RightColumn.ColumnName)}");
+            }
+            else
+            {
+                ParseJoinCondition(sb,joinCondition.Left);
+                sb.Append($" {joinCondition.Operator} ");
+                ParseJoinCondition(sb, joinCondition.Right);
+            }
+
+            sb.Append(")");
+          
+        }
         public override Expression VisitSelect(SelectExpression select)
         {
             RenameSelectExpressionInternalAlias(select);
 
+            if (select.HasPagination)
+            {
+                HandlingPaging(select);
+            }
+            else
+            {
+                HandlingNormal(select);
+            }
+
+            return select;
+        }
+
+        public Expression VisitMultiJoinSelect(SelectExpression select)
+        {
             if (select.HasPagination)
             {
                 HandlingPaging(select);
@@ -450,7 +521,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     if (whereConditionExpression.Operator == "=")
                     {
                         _sb.Append("IS NULL");
-                    }else if (whereConditionExpression.Operator == "<>")
+                    }
+                    else if (whereConditionExpression.Operator == "<>")
                     {
                         _sb.Append("IS NOT NULL");
                     }

@@ -84,7 +84,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public IQueryProvider Provider { get; private set; }
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
         public List<JoinBodyBase<T>> JoinItems { get; set; } = new List<JoinBodyBase<T>>();
-        public List<object> MultiQuerySelectItems { get; set; } = new List<object>();
+        public object MultiQuerySelectItem { get; set; } 
 
         public IEnumerator<T> GetEnumerator()
         {

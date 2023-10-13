@@ -8,11 +8,14 @@
         Table,
         Join,
         JoinOn,
+        JoinCondition,
         Where,
         WhereCondition,
         WhereTrueCondition,
         FunctionWhereCondition,
         OrderBy,
-        GroupBy
+        GroupBy,
+        MultiSelect,
+        Columns
     }
 }

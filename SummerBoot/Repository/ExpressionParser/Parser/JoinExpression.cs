@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
+using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -8,41 +10,35 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     /// </summary>
     public class JoinExpression : DbBaseExpression
     {
-        public JoinExpression(Type type, TableExpression leftTable, TableExpression rightTable, ColumnExpression leftColumn, string onOperator, ColumnExpression rightColumn)
-            : base((ExpressionType)DbExpressionType.Join, type)
+        public JoinExpression( JoinType joinType, TableExpression joinTable, string joinTableAlias)
+            : base((ExpressionType)DbExpressionType.Join, typeof(object))
         {
-            this.LeftTable = leftTable;
-            this.RightTable = rightTable;
-            this.LeftColumn = leftColumn;
-            this.RightColumn = rightColumn;
-            this.OnOperator = onOperator;
+            this.JoinTable = joinTable;
+            this.JoinTableAlias = joinTableAlias;
+            this.JoinType = joinType;
         }
 
         #region 属性
+        /// <summary>
+        /// 关联条件
+        /// </summary>
+        public JoinConditionExpression JoinCondition { get; set; }
+       
+        /// <summary>
+        /// join方式
+        /// </summary>
+        public JoinType JoinType { get; set; }
+        /// <summary>
+        /// join的表
+        /// </summary>
+        public TableExpression JoinTable { get; set; }
 
         /// <summary>
-        /// 左表
+        /// join表的别名
         /// </summary>
-        public TableExpression LeftTable { get; set; }
-
-        /// <summary>
-        /// 右表
-        /// </summary>
-        public TableExpression RightTable { get; set; }
-
-        /// <summary>
-        /// 左表匹配键
-        /// </summary>
-        public ColumnExpression LeftColumn { get; set; }
-
-        public string OnOperator { get; set; }
-        /// <summary>
-        /// 右表匹配键
-        /// </summary>
-        public ColumnExpression RightColumn { get; set; }
-
-   
-
+        public string JoinTableAlias { get; set; }
         #endregion
     }
+
+
 }
