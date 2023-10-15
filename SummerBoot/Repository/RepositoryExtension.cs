@@ -249,6 +249,18 @@ namespace SummerBoot.Repository
             return result;
         }
 
+        public static SelectMultiQueryBody<T1, T2, TResult> Select<T1, T2, TResult, TResult1>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select, Expression<Func<JoinCondition<T1, T2>, TResult1>> autoFill) where TResult1:class,new()
+        {
+            var result = new SelectMultiQueryBody<T1, T2, TResult>()
+            {
+                Select = select,
+                Source = source
+            };
+            source.Repository.MultiQuerySelectItem = select;
+            return result;
+        }
+
+
         public static List<TResult> ToList<T1, T2, TResult>(this SelectMultiQueryBody<T1, T2, TResult> selectMultiQueryBody)
         {
             if (selectMultiQueryBody.Source.Repository.Provider is DbQueryProvider dbQueryProvider)
