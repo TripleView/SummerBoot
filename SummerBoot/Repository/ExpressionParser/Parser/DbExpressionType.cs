@@ -16,6 +16,7 @@
         OrderBy,
         GroupBy,
         MultiSelect,
-        Columns
+        Columns,
+        MultiSelectAutoFill
     }
 }

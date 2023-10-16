@@ -84,8 +84,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public IQueryProvider Provider { get; private set; }
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
         public List<JoinBodyBase<T>> JoinItems { get; set; } = new List<JoinBodyBase<T>>();
-        public object MultiQuerySelectItem { get; set; } 
+        public object MultiQuerySelectItem { get; set; }
 
+        public object MultiQuerySelectAutoFillItem { get; set; }
+
+        public object MultiQueryWhereItem { get; set; }
+        
         public IEnumerator<T> GetEnumerator()
         {
             if (Provider is DbQueryProvider dbQueryProvider)

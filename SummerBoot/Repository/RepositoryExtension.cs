@@ -249,17 +249,35 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public static SelectMultiQueryBody<T1, T2, TResult> Select<T1, T2, TResult, TResult1>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select, Expression<Func<JoinCondition<T1, T2>, TResult1>> autoFill) where TResult1:class,new()
+        public static SelectMultiQueryBody<T1, T2, TResult,TAutoFill> Select<T1, T2, TResult, TAutoFill>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select, Expression<Func<JoinCondition<T1, T2>, TAutoFill>> autoFill) where TAutoFill : class,new()
         {
-            var result = new SelectMultiQueryBody<T1, T2, TResult>()
+            var result = new SelectMultiQueryBody<T1, T2, TResult, TAutoFill>()
             {
                 Select = select,
-                Source = source
+                Source = source,
+                AuToFill = autoFill
             };
             source.Repository.MultiQuerySelectItem = select;
+            source.Repository.MultiQuerySelectAutoFillItem = autoFill;
             return result;
         }
 
+        public static List<TResult> ToList<T1, T2, TResult, TAutoFill>(this SelectMultiQueryBody<T1, T2, TResult, TAutoFill> selectMultiQueryBody)
+        {
+            if (selectMultiQueryBody.Source.Repository.Provider is DbQueryProvider dbQueryProvider)
+            {
+                if (!(selectMultiQueryBody.Source.Repository is IRepository<T1> repository))
+                {
+                    throw new Exception("only support IRepository");
+                }
+
+                var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
+
+                var result = repository.InternalQueryList<TResult>(parameter);
+                return result;
+            }
+            return new List<TResult>();
+        }
 
         public static List<TResult> ToList<T1, T2, TResult>(this SelectMultiQueryBody<T1, T2, TResult> selectMultiQueryBody)
         {
@@ -276,6 +294,35 @@ namespace SummerBoot.Repository
                 return result;
             }
             return new List<TResult>();
+        }
+
+        public static JoinBody<T1, T2> Where<T1, T2>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> condition)
+        {
+            source.Repository.MultiQueryWhereItem = condition;
+            return source;
+        }
+
+        public static JoinBody<T1, T2> OrderBy<T1, T2, TResult>(this JoinBody<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
+        {
+            source.Repository.MultiQueryOrderByItem = orderBy;
+            return source;
+        }
+
+        public static Page<TResult> ToPage<T1, T2, TResult>(this SelectMultiQueryBody<T1, T2, TResult> selectMultiQueryBody,Pageable pageable)
+        {
+            if (selectMultiQueryBody.Source.Repository.Provider is DbQueryProvider dbQueryProvider)
+            {
+                if (!(selectMultiQueryBody.Source.Repository is IRepository<T1> repository))
+                {
+                    throw new Exception("only support IRepository");
+                }
+
+                var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
+
+                var result = dbQueryProvider.linkRepository.InternalQueryPage<TResult>(parameter);
+                return result;
+            }
+            return new Page<TResult>();
         }
 
         public static JoinBody<T1, T2, T3> LeftJoin<T1, T2, T3>(this JoinBody<T1, T2> source, T3 t3, Expression<Func<JoinCondition<T1, T2, T3>, bool>> condition)
@@ -306,15 +353,18 @@ namespace SummerBoot.Repository
     }
 
 
-
-
-
     public class SelectMultiQueryBody<T1, T2, TResult>
     {
         public JoinBody<T1, T2> Source { get; set; }
         public Expression<Func<JoinCondition<T1, T2>, TResult>> Select { get; set; }
     }
 
-
+    public class SelectMultiQueryBody<T1, T2, TResult, TAutoFill>: SelectMultiQueryBody<T1, T2, TResult>
+    {
+        /// <summary>
+        /// 自动填充的部分
+        /// </summary>
+        public Expression<Func<JoinCondition<T1, T2>, TAutoFill>> AuToFill { get; set; }
+    }
 
 }

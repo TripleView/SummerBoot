@@ -36,6 +36,8 @@ namespace SummerBoot.Repository
                "get_JoinItems",
                "set_MultiQuerySelectItem",
                "get_MultiQuerySelectItem",
+               "set_MultiQuerySelectAutoFillItem",
+               "get_MultiQuerySelectAutoFillItem",
         };
 
         public object Build(Type interfaceType, params object[] constructor)

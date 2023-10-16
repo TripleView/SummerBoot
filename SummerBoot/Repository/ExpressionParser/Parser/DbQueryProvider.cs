@@ -101,9 +101,26 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     throw new NotSupportedException((repository.MultiQuerySelectItem as Expression).Type.Name);
                 }
-               
             }
-            
+
+            if (repository.MultiQuerySelectAutoFillItem != null)
+            {
+                var visitor = new DbExpressionVisitor();
+                if (repository.MultiQuerySelectAutoFillItem is LambdaExpression lambda)
+                {
+                    var multiSelectAutoFillExpression = new MultiSelectAutoFillExpression(lambda.Body);
+                    var multiSelectAutoFillExpressionResult = visitor.Visit(multiSelectAutoFillExpression);
+                    if (multiSelectAutoFillExpressionResult is ColumnsExpression columnsExpression)
+                    {
+                        selectColumns.AddRange(columnsExpression.ColumnExpressions);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException((repository.MultiQuerySelectItem as Expression).Type.Name);
+                }
+            }
+
             if (queryBody is TableExpression tableExpression)
             {
                 var result = new SelectExpression(null, "T1", selectColumns, tableExpression,

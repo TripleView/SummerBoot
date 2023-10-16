@@ -10,4 +10,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             this.Expression = expression;
         }
     }
+
+    public class MultiSelectAutoFillExpression : DbBaseExpression
+    {
+        public Expression Expression { get; set; }
+        public MultiSelectAutoFillExpression(Expression expression) : base((ExpressionType)DbExpressionType.MultiSelectAutoFill, null)
+        {
+            this.Expression = expression;
+        }
+    }
 }

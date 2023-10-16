@@ -15,6 +15,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         List<JoinBodyBase<T>> JoinItems { set; get; }
 
         object MultiQuerySelectItem { set; get; }
+        object MultiQuerySelectAutoFillItem { set; get; }
+
+        object MultiQueryOrderByItem { set; get; }
+
+        object MultiQueryWhereItem { set; get; }
         int ExecuteUpdate();
      
         /// <summary>

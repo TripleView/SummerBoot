@@ -78,6 +78,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return this.VisitJoinAdapter((JoinAdapterExpression)exp);
                 case DbExpressionType.MultiSelect:
                     return this.VisitMultiSelect((MultiSelectExpression)exp);
+                case DbExpressionType.MultiSelectAutoFill:
+                    return this.VisitMultiSelectAutoFill((MultiSelectAutoFillExpression)exp);
                 case DbExpressionType.Table:
                     return this.VisitTable((TableExpression)exp);
                 case DbExpressionType.Column:
@@ -120,7 +122,20 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             throw new NotSupportedException(nameof(multiSelectExpression.Expression));
         }
+
+        public virtual Expression VisitMultiSelectAutoFill(MultiSelectAutoFillExpression multiSelectAutoFillExpression)
+        {
+            if (multiSelectAutoFillExpression.Expression is MemberExpression memberExpression)
+            {
+                var tableAlias = memberExpression.Member.Name;
+                var table = new TableExpression(multiSelectAutoFillExpression.Expression.Type, tableAlias);
+                return new ColumnsExpression(table.Columns, memberExpression.Type);
+            }
+
+            throw new NotSupportedException(nameof(multiSelectAutoFillExpression));
+        }
         
+
         public virtual Expression VisitQuery(QueryExpression queryExpression)
         {
             return queryExpression;
@@ -1360,10 +1375,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     throw new NotSupportedException("only support T1,T2 etc");
                 }
 
-                if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
+                if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression firstMemberExpression  && firstMemberExpression.Expression is MemberExpression memberExpression)
                 {
-                    var tempColumnExpression = new ColumnExpression((memberInfo as PropertyInfo).PropertyType, memberExpression.Member.Name,
-                        memberInfo, 0);
+                    var tempColumnExpression = new ColumnExpression((firstMemberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
+                        firstMemberExpression.Member, 0);
+                    tempColumnExpression.ColumnAlias =DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
                     newColumns.Add(tempColumnExpression);
                 }
                 else
