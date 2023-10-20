@@ -10,8 +10,10 @@
 
     }
 
-    public class JoinCondition<Table1, Table2, Table3>: JoinCondition<Table1, Table2>
+    public class JoinCondition<Table1, Table2, Table3>: IJoinCondition
     {
+        public Table1 T1 { get; set; }
+        public Table2 T2 { get; set; }
         public Table3 T3 { get; set; }
 
     }

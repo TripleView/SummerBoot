@@ -17,6 +17,8 @@
         GroupBy,
         MultiSelect,
         Columns,
-        MultiSelectAutoFill
+        MultiSelectAutoFill,
+        MultiQueryWhere,
+        MultiQueryOrderBy
     }
 }

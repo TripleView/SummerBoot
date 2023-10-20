@@ -26,17 +26,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.MultiQuery
        /// </summary>
         public string JoinTableAlias { get; set; }
     }
-    public class JoinBody<T1, T2> : JoinBodyBase<T1>
+    public class JoinBody2<T1, T2> : JoinBodyBase<T1>
     {
        
     }
 
-    public class JoinBody<T1, T2, T3> : JoinBody<T1, T2>
+    public class JoinBody3<T1, T2, T3> : JoinBodyBase<T1>
     {
       
     }
 
-    public class JoinBody<T1, T2, T3, T4> : JoinBody<T1, T2, T3>
+    public class JoinBody4<T1, T2, T3, T4> : JoinBodyBase<T1>
     {
     }
 }

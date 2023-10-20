@@ -305,7 +305,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
-        private string JoinTypeToString(JoinType joinType)
+        protected string JoinTypeToString(JoinType joinType)
         {
             switch (joinType)
             {
@@ -353,8 +353,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         _sb.Append(table.Schema + ".");
                     }
                     _sb.Append(BoxTableName(table.Name));
-                    _sb.AppendFormat(" {0}", select.Alias);
-                    //_sb.AppendFormat(" {0}", BoxTableName(select.Alias));
+                    //_sb.AppendFormat(" {0}", select.Alias);
+                    _sb.AppendFormat(" {0}", BoxTableName(select.Alias));
                 }
                 else if (select.From is SelectExpression subSelectExpression)
                 {
@@ -373,7 +373,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 foreach (var joinExpression in select.Joins)
                 {
-                    _sb.Append($" {JoinTypeToString(joinExpression.JoinType)} {BoxTableName(joinExpression.JoinTable.Name)} {joinExpression.JoinTableAlias} on ");
+                    _sb.Append($" {JoinTypeToString(joinExpression.JoinType)} {BoxTableName(joinExpression.JoinTable.Name)} {BoxTableName(joinExpression.JoinTableAlias)} on ");
                     ParseJoinCondition(_sb, joinExpression.JoinCondition);
                 }
             }
@@ -437,14 +437,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
-        private void ParseJoinCondition(StringBuilder sb, JoinConditionExpression joinCondition)
+        protected void ParseJoinCondition(StringBuilder sb, JoinConditionExpression joinCondition)
         {
             sb.Append("(");
 
             if (joinCondition is JoinOnExpression joinOn)
             {
                 _sb.Append(
-                    $" {joinOn.LeftColumn.TableAlias}.{BoxColumnName(joinOn.LeftColumn.ColumnName)} {joinOn.OnOperator} {joinOn.RightColumn.TableAlias}.{BoxColumnName(joinOn.RightColumn.ColumnName)}");
+                    $" {BoxTableName( joinOn.LeftColumn.TableAlias)}.{BoxColumnName(joinOn.LeftColumn.ColumnName)} {joinOn.OnOperator} {BoxTableName( joinOn.RightColumn.TableAlias)}.{BoxColumnName(joinOn.RightColumn.ColumnName)}");
             }
             else
             {

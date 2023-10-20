@@ -34,5 +34,7 @@ namespace SummerBoot.Test.Mysql.Db
         public DbSet<NotNullableTable> NotNullableTable { get; set; }
 
         public DbSet<GuidModel> GuidModel { get; set; }
+
+        public DbSet<Address> Address { get; set; }
     }
 }

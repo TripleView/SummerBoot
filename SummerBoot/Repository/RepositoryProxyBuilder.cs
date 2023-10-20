@@ -32,12 +32,8 @@ namespace SummerBoot.Repository
                 nameof(IRepository<BaseEntity>.SumAsync),
                 nameof(IRepository<BaseEntity>.AverageAsync),
                 nameof(IRepository<BaseEntity>.CountAsync),
-               "set_JoinItems",
-               "get_JoinItems",
-               "set_MultiQuerySelectItem",
-               "get_MultiQuerySelectItem",
-               "set_MultiQuerySelectAutoFillItem",
-               "get_MultiQuerySelectAutoFillItem",
+               "set_MultiQueryContext",
+               "get_MultiQueryContext",
         };
 
         public object Build(Type interfaceType, params object[] constructor)

@@ -80,6 +80,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return this.VisitMultiSelect((MultiSelectExpression)exp);
                 case DbExpressionType.MultiSelectAutoFill:
                     return this.VisitMultiSelectAutoFill((MultiSelectAutoFillExpression)exp);
+                case DbExpressionType.MultiQueryWhere:
+                    return this.VisitMultiQueryWhere((MultiQueryWhereAdapterExpression)exp);
+                case DbExpressionType.MultiQueryOrderBy:
+                    return this.VisitMultiQueryOrderBy((MultiQueryOrderByAdapterExpression)exp);
                 case DbExpressionType.Table:
                     return this.VisitTable((TableExpression)exp);
                 case DbExpressionType.Column:
@@ -88,19 +92,33 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             return base.Visit(exp);
         }
+        public virtual Expression VisitMultiQueryOrderBy(MultiQueryOrderByAdapterExpression orderByAdapterExpression)
+        {
+            methodCallStack.Push(nameof(RepositoryMethod.MultiQueryOrderBy));
+            var result = Visit(orderByAdapterExpression.OnExpression);
+            methodCallStack.Pop();
+            return result;
+
+
+        }
+
         public virtual Expression VisitJoinAdapter(JoinAdapterExpression joinOnExpression)
         {
             methodCallStack.Push(nameof(RepositoryMethod.JoinOn));
             if (joinOnExpression.OnExpression is LambdaExpression lambdaExpression)
             {
-                return Visit(lambdaExpression.Body);
+                var result = Visit(lambdaExpression.Body);
+                methodCallStack.Pop();
+                return result;
             }
             else
             {
+                methodCallStack.Pop();
                 throw new NotSupportedException();
             }
-           
+
         }
+
         public virtual Expression VisitMultiSelect(MultiSelectExpression multiSelectExpression)
         {
             if (multiSelectExpression.Expression is NewExpression newExpression)
@@ -116,7 +134,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             else if (multiSelectExpression.Expression is MemberExpression memberExpression)
             {
                 var tableAlias = memberExpression.Member.Name;
-                var table = new TableExpression(multiSelectExpression.Expression.Type,tableAlias);
+                var table = new TableExpression(multiSelectExpression.Expression.Type, tableAlias);
                 return new ColumnsExpression(table.Columns, memberExpression.Type);
             }
 
@@ -134,7 +152,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             throw new NotSupportedException(nameof(multiSelectAutoFillExpression));
         }
-        
+
+        public virtual Expression VisitMultiQueryWhere(MultiQueryWhereAdapterExpression multiQueryWhereAdapterExpression)
+        {
+            methodCallStack.Push(nameof(RepositoryMethod.MultiQueryWhere));
+            var result = Visit(multiQueryWhereAdapterExpression.OnExpression);
+            methodCallStack.Pop();
+            return result;
+
+        }
 
         public virtual Expression VisitQuery(QueryExpression queryExpression)
         {
@@ -591,7 +617,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if ( MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -715,7 +741,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var result = new JoinOnExpression(
                         leftColumnExpression, @operator, rightColumnExpression);
                     return result;
-                }else if (leftExpression is JoinConditionExpression leftJoinOnExpression &&
+                }
+                else if (leftExpression is JoinConditionExpression leftJoinOnExpression &&
                           rightExpression is JoinConditionExpression rightJoinOnExpression)
                 {
                     var result = new JoinConditionExpression()
@@ -730,7 +757,114 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     throw new NotSupportedException(nameof(@operator));
                 }
-                
+
+            }
+            else if (MethodName == nameof(RepositoryMethod.MultiQueryWhere))
+            {
+                var @operator = nodeTypeMappings[binaryExpression.NodeType];
+                var result = new WhereExpression(@operator);
+                if (string.IsNullOrWhiteSpace(@operator))
+                {
+                    throw new NotSupportedException(nameof(binaryExpression.NodeType));
+                }
+
+                Expression rightExpression;
+                if (binaryExpression.Right is UnaryExpression rightEx)
+                {
+                    rightExpression = this.Visit(rightEx.Operand);
+                }
+                else
+                {
+                    rightExpression = this.Visit(binaryExpression.Right);
+                }
+
+                Expression leftExpression;
+                if (binaryExpression.Left is UnaryExpression leftEx)
+                {
+                    leftExpression = this.Visit(leftEx.Operand);
+                }
+                else
+                {
+                    leftExpression = this.Visit(binaryExpression.Left);
+                }
+
+                if (leftExpression is ColumnExpression leftColumnExpression && rightExpression is ConstantExpression rightConstantExpression)
+                {
+                    return new WhereConditionExpression(leftColumnExpression, @operator,
+                        rightConstantExpression.Value)
+                    {
+                        ValueType = leftColumnExpression.ValueType
+                    };
+                }
+                else if (rightExpression is ColumnExpression rightColumnExpression && leftExpression is ConstantExpression leftConstantExpression)
+                {
+                    return new WhereConditionExpression(rightColumnExpression, @operator,
+                        leftConstantExpression.Value)
+                    {
+                        ValueType = rightColumnExpression.ValueType
+                    };
+                }
+
+                else if (leftExpression is ColumnExpression leftColumnExpression2 && leftColumnExpression2.Type == typeof(bool) && rightExpression is WhereExpression rightWhereExpression2)
+                {
+                    //如果是column类型的bool值，默认为true
+                    var left = new WhereConditionExpression(leftColumnExpression2, "=", 1)
+                    {
+                        ValueType = leftColumnExpression2.ValueType
+                    };
+                    result.Left = left;
+                    result.Right = rightWhereExpression2;
+                }
+                else if (rightExpression is ColumnExpression rightColumnExpression2 && rightExpression.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression2)
+                {
+                    //如果是column类型的bool值，默认为true
+                    var right = new WhereConditionExpression(rightColumnExpression2, "=", 1) { ValueType = rightColumnExpression2.ValueType };
+                    result.Left = leftWhereExpression2;
+                    result.Right = right;
+                }
+                else if (rightExpression is ColumnExpression rightColumnExpression3 && rightExpression.Type == typeof(bool) && leftExpression is ColumnExpression leftColumnExpression3 && leftColumnExpression3.Type == typeof(bool))
+                {
+                    //如果是column类型的bool值，默认为true
+                    var right = new WhereConditionExpression(rightColumnExpression3, "=", 1) { ValueType = rightColumnExpression3.ValueType };
+                    var left = new WhereConditionExpression(leftColumnExpression3, "=", 1) { ValueType = leftColumnExpression3.ValueType };
+                    result.Left = left;
+                    result.Right = right;
+                }
+                else if (leftExpression is WhereExpression leftWhereExpression &&
+                   rightExpression is WhereExpression rightWhereExpression)
+                {
+                    result.Left = leftWhereExpression;
+                    result.Right = rightWhereExpression;
+
+                }
+                //兼容It=>true这种
+                else if (leftExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(bool) && rightExpression is WhereExpression whereExpression)
+                {
+                    var value = (bool)constantExpression.Value;
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value)
+                    {
+                        ValueType = typeof(bool)
+                    };
+                    result.Left = whereTrueFalseValueCondition;
+                    result.Right = whereExpression;
+                }
+                //兼容It=>true这种
+                else if (rightExpression is ConstantExpression rightConstantExpression3 && rightConstantExpression3.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression3)
+                {
+                    var value = (bool)rightConstantExpression3.Value;
+                    var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value)
+                    {
+                        ValueType = typeof(bool)
+                    };
+                    result.Left = leftWhereExpression3;
+                    result.Right = whereTrueFalseValueCondition;
+                }
+                else
+                {
+                    throw new NotSupportedException(MethodName);
+                }
+
+
             }
             //throw new NotSupportedException(MethodName);
             return base.VisitBinary(binaryExpression);
@@ -1265,13 +1399,26 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return columnExpression;
                 }
             }
-            else if (MethodName == nameof(RepositoryMethod.JoinOn))
+            else if (MethodName == nameof(RepositoryMethod.JoinOn) || MethodName == nameof(RepositoryMethod.MultiQueryWhere) || MethodName == nameof(RepositoryMethod.MultiQueryOrderBy))
             {
-                if (memberExpression.Expression is MemberExpression rightSecondMemberExpression&& memberExpression.Member is PropertyInfo propertyInfo)
+                //解析类似于it.T1.Name这种
+                if (IsMemberExpression(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
                 {
                     var table = new TableExpression(memberExpression.Member.ReflectedType);
                     var tableAlias = rightSecondMemberExpression.Member.Name;
-                    var column = new ColumnExpression(propertyInfo.PropertyType, tableAlias, propertyInfo,0);
+                    var column = new ColumnExpression(propertyInfo.PropertyType, tableAlias, propertyInfo, 0);
+                    column.Table = table;
+                    return column;
+                }
+                else if (IsMemberExpression(memberExpression) == 3 && memberExpression.Member.Name=="Length" && memberExpression.Member.DeclaringType==typeof(string))
+                {
+                    var firstLayer = GetNestedMemberExpression(memberExpression, 3);
+                    var secondLayer = GetNestedMemberExpression(memberExpression, 2);
+                    var table = new TableExpression(memberExpression.Member.ReflectedType);
+                    var tableAlias = firstLayer.Member.Name;
+                    var secondLayerPropertyInfo = secondLayer.Member as PropertyInfo;
+                    var column = new ColumnExpression(secondLayerPropertyInfo.PropertyType, tableAlias, secondLayerPropertyInfo, 0);
+                    column.FunctionName = "LEN";
                     column.Table = table;
                     return column;
                 }
@@ -1339,6 +1486,53 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
+
+        /// <summary>
+        /// 获取嵌套的member的层数
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        private int IsMemberExpression(Expression expression)
+        {
+            var result = 0;
+            if (expression is MemberExpression memberExpression)
+            {
+                result++;
+                result += IsMemberExpression(memberExpression.Expression);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 获取嵌套的指定层数的memberExpression,比如it.T1.Name这种，获取第二层，即.Name这层
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="numberOfLayers">嵌套的层数</param>
+        /// <returns></returns>
+        private MemberExpression GetNestedMemberExpression(Expression expression,int numberOfLayers,int currentLayer=0)
+        {
+            if (expression is MemberExpression memberExpression)
+            {
+                currentLayer++;
+                if (currentLayer == numberOfLayers)
+                {
+                    return memberExpression;
+                }
+                var next= GetNestedMemberExpression(memberExpression.Expression,numberOfLayers,currentLayer);
+                if (next == null)
+                {
+                    throw new NotSupportedException($"can not find {numberOfLayers} memberExpression");
+                }
+
+                return next;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         private Expression VisitMultiSelectNew(NewExpression newExpression)
         {
             var newColumns = new List<ColumnExpression>();
@@ -1352,8 +1546,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var argument = newExpression.Arguments[i];
                 if (argument is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
                 {
-                    var tempColumnExpression = new ColumnExpression((memberInfo as PropertyInfo).PropertyType, memberExpression.Member.Name,
-                        memberInfo, 0);
+                    var tempColumnExpression = new ColumnExpression((firstMemberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
+                        firstMemberExpression.Member, 0);
+                    tempColumnExpression.ColumnAlias = memberInfo.Name;
                     newColumns.Add(tempColumnExpression);
                 }
             }
@@ -1375,11 +1570,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     throw new NotSupportedException("only support T1,T2 etc");
                 }
 
-                if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression firstMemberExpression  && firstMemberExpression.Expression is MemberExpression memberExpression)
+                if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
                 {
                     var tempColumnExpression = new ColumnExpression((firstMemberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
                         firstMemberExpression.Member, 0);
-                    tempColumnExpression.ColumnAlias =DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
+                    tempColumnExpression.ColumnAlias = DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
                     newColumns.Add(tempColumnExpression);
                 }
                 else

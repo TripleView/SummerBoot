@@ -63,19 +63,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
 
-        public DbQueryResult GetJoinQueryResultByExpression<T>(IRepository<T> repository)
+        public DbQueryResult GetJoinQueryResultByExpression<T>(IRepository<T> repository, IPageable pageable = null)
         {
             var expression = repository.Expression;
             //这一步将expression转化成我们自己的expression
+
+            //join
             var dbExpressionVisitor = new DbExpressionVisitor();
             var queryBody = dbExpressionVisitor.Visit(expression);
             var joins = new List<JoinExpression>();
-            foreach (var joinItem in repository.JoinItems)
+            foreach (var joinItem in repository.MultiQueryContext.JoinItems)
             {
                 var joinAdapterExpression = new JoinAdapterExpression(joinItem.Condition as Expression);
                 var visitor = new DbExpressionVisitor();
-                var joinResult = visitor.Visit(joinAdapterExpression) ;
-                var joinTable= new TableExpression(joinItem.JoinTable);
+                var joinResult = visitor.Visit(joinAdapterExpression);
+                var joinTable = new TableExpression(joinItem.JoinTable);
                 if (joinResult is JoinConditionExpression joinCondition)
                 {
                     var joinExpression = new JoinExpression(joinItem.JoinType, joinTable, joinItem.JoinTableAlias);
@@ -84,13 +86,34 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
             }
 
-            var selectColumns = new List<ColumnExpression>();
-            if (repository.MultiQuerySelectItem != null)
+            //where
+            WhereExpression whereExpression = null;
+            if (repository.MultiQueryContext.MultiQueryWhereItem != null)
             {
                 var visitor = new DbExpressionVisitor();
-                if (repository.MultiQuerySelectItem is LambdaExpression lambda)
+                if (repository.MultiQueryContext.MultiQueryWhereItem is LambdaExpression lambda)
                 {
-                    var multiSelectExpression = new MultiSelectExpression( lambda.Body);
+                    var multiQueryWhereAdapterExpression = new MultiQueryWhereAdapterExpression(lambda.Body);
+                    var multiQueryWhereAdapterExpressionResult = visitor.Visit(multiQueryWhereAdapterExpression);
+
+                    if (multiQueryWhereAdapterExpressionResult is WhereExpression tempWhereExpression)
+                    {
+                        whereExpression = tempWhereExpression;
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException((repository.MultiQueryContext.MultiQuerySelectItem as Expression).Type.Name);
+                }
+            }
+
+            var selectColumns = new List<ColumnExpression>();
+            if (repository.MultiQueryContext.MultiQuerySelectItem != null)
+            {
+                var visitor = new DbExpressionVisitor();
+                if (repository.MultiQueryContext.MultiQuerySelectItem is LambdaExpression lambda)
+                {
+                    var multiSelectExpression = new MultiSelectExpression(lambda.Body);
                     var multiSelectExpressionResult = visitor.Visit(multiSelectExpression);
                     if (multiSelectExpressionResult is ColumnsExpression columnsExpression)
                     {
@@ -99,14 +122,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 else
                 {
-                    throw new NotSupportedException((repository.MultiQuerySelectItem as Expression).Type.Name);
+                    throw new NotSupportedException((repository.MultiQueryContext.MultiQuerySelectItem as Expression).Type.Name);
                 }
             }
 
-            if (repository.MultiQuerySelectAutoFillItem != null)
+            if (repository.MultiQueryContext.MultiQuerySelectAutoFillItem != null)
             {
                 var visitor = new DbExpressionVisitor();
-                if (repository.MultiQuerySelectAutoFillItem is LambdaExpression lambda)
+                if (repository.MultiQueryContext.MultiQuerySelectAutoFillItem is LambdaExpression lambda)
                 {
                     var multiSelectAutoFillExpression = new MultiSelectAutoFillExpression(lambda.Body);
                     var multiSelectAutoFillExpressionResult = visitor.Visit(multiSelectAutoFillExpression);
@@ -117,14 +140,49 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 else
                 {
-                    throw new NotSupportedException((repository.MultiQuerySelectItem as Expression).Type.Name);
+                    throw new NotSupportedException((repository.MultiQueryContext.MultiQuerySelectItem as Expression).Type.Name);
                 }
+            }
+
+            //order by
+            var orderByExpressions = new List<OrderByExpression>();
+            if (repository.MultiQueryContext.MultiQueryOrderByItems.Any())
+            {
+                foreach (var multiQueryOrderByItem in repository.MultiQueryContext.MultiQueryOrderByItems)
+                {
+                    var visitor = new DbExpressionVisitor();
+
+                    if (multiQueryOrderByItem.OrderByExpression is LambdaExpression lambda)
+                    {
+                        var multiQueryOrderByAdapterExpression = new MultiQueryOrderByAdapterExpression(lambda.Body);
+                        var multiQueryOrderByAdapterExpressionResult = visitor.Visit(multiQueryOrderByAdapterExpression);
+                        if (multiQueryOrderByAdapterExpressionResult is ColumnExpression columnsExpression)
+                        {
+                            var orderByExpression = new OrderByExpression(orderByType: multiQueryOrderByItem.OrderByType, columnsExpression);
+                            orderByExpressions.Add(orderByExpression);
+                        }
+                    }
+                    else
+                    {
+                        throw new NotSupportedException((multiQueryOrderByItem.OrderByExpression as Expression).Type.Name);
+                    }
+
+                }
+
+
+
+
             }
 
             if (queryBody is TableExpression tableExpression)
             {
                 var result = new SelectExpression(null, "T1", selectColumns, tableExpression,
-                    joins: joins);
+                    joins: joins, where: whereExpression, orderBy: orderByExpressions);
+                if (pageable != null)
+                {
+                    result.Skip = (pageable.PageNumber - 1) * pageable.PageSize;
+                    result.Take = pageable.PageSize;
+                }
                 //将我们自己的expression转换成sql
                 queryFormatter.Format(result);
                 var param = queryFormatter.GetDbQueryDetail();

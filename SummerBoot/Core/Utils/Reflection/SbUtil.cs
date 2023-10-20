@@ -589,7 +589,7 @@ namespace SummerBoot.Core
         /// <returns></returns>
         public static bool IsAnonymousType(this Type type)
         {
-            return type.IsClass && type.Name.StartsWith("<>f__AnonymousType1`");
+            return type.IsClass && type.Name.StartsWith("<>f__AnonymousType");
         }
     }
 }

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using SummerBoot.Test.Sqlite.Dto;
 using Xunit;
 using Xunit.Priority;
 
@@ -36,9 +37,1019 @@ namespace SummerBoot.Test.Sqlite
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试3张表联查
+        /// </summary>
+        [Fact, Priority(320)]
+        public async Task TestLeftJoin4TableAsync()
+        {
+            InitSqliteDatabase("Data Source=./TestLeftJoin4TableAsync.db");
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+            var customer1 = new Customer()
+            {
+                Age = 1,
+                Name = "bob",
+                CustomerNo = "A1",
+                TotalConsumptionAmount = 1
+            };
+
+            var customer2 = new Customer()
+            {
+                Age = 2,
+                Name = "jack",
+                CustomerNo = "A2",
+                TotalConsumptionAmount = 2
+            };
+            await customerRepository.InsertAsync(customer1);
+            await customerRepository.InsertAsync(customer2);
+            var address1 = new Address()
+            {
+                CustomerId = customer1.Id,
+                City = "A"
+            };
+            var address2 = new Address()
+            {
+                CustomerId = customer2.Id,
+                City = "B"
+            };
+            await addressRepository.InsertAsync(address1);
+            await addressRepository.InsertAsync(address2);
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer1.Id,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer2.Id,
+                OrderNo = "DEF",
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var orderList = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+                .ToListAsync();
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal("A", orderList[0].CustomerCity);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal("A", orderList[1].CustomerCity);
+            Assert.Equal(1, orderList[1].Age);
+
+            //test anonymous type
+            var orderList2 = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City })
+                .ToListAsync();
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal("A1", orderList2[0].CustomerNo);
+            Assert.Equal(1, orderList2[0].Age);
+            Assert.Equal("A", orderList2[0].CustomerCity);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal("A1", orderList2[1].CustomerNo);
+            Assert.Equal(1, orderList2[1].Age);
+            Assert.Equal("A", orderList2[1].CustomerCity);
+
+
+            var orderAddresses = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T4)
+                .ToListAsync();
+            Assert.Equal(2, orderAddresses.Count);
+            Assert.Equal("A", orderAddresses[1].City);
+
+            ////测试分页
+            var pageable = new Pageable(1, 5);
+            var orderPageList = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+                .ToPageAsync(pageable);
+            orderList = orderPageList.Data;
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal("A", orderList[0].CustomerCity);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal(1, orderList[1].Age);
+            Assert.Equal("A", orderList[1].CustomerCity);
+
+            ////test anonymous type
+            var orderPageList2 = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City })
+                .ToPageAsync(pageable);
+            var orderList3 = orderPageList2.Data;
+            Assert.Equal(2, orderList3.Count);
+            Assert.Equal(1, orderList3[0].Quantity);
+            Assert.Equal("A", orderList3[0].ProductName);
+            Assert.Equal("ABC", orderList3[0].OrderNo);
+            Assert.Equal("A1", orderList3[0].CustomerNo);
+            Assert.Equal(1, orderList3[0].Age);
+            Assert.Equal("A", orderList3[0].CustomerCity);
+            Assert.Equal(2, orderList3[1].Quantity);
+            Assert.Equal("B", orderList3[1].ProductName);
+            Assert.Equal("ABC", orderList3[1].OrderNo);
+            Assert.Equal("A1", orderList3[1].CustomerNo);
+            Assert.Equal(1, orderList3[1].Age);
+            Assert.Equal("A", orderList3[1].CustomerCity);
+
+            var orderAddressPages = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T4)
+                .ToPageAsync(pageable);
+
+            orderAddresses = orderAddressPages.Data;
+            Assert.Equal(2, orderAddresses.Count);
+            Assert.Equal("A", orderAddresses[1].City);
+        }
+
+        /// <summary>
+        /// 测试3张表联查
+        /// </summary>
+        [Fact, Priority(319)]
+        public async Task TestLeftJoin3TableAsync()
+        {
+            InitSqliteDatabase("Data Source=./TestLeftJoin3TableAsync.db");
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var customer1 = new Customer()
+            {
+                Age = 1,
+                Name = "bob",
+                CustomerNo = "A1",
+                TotalConsumptionAmount = 1
+            };
+
+            var customer2 = new Customer()
+            {
+                Age = 2,
+                Name = "jack",
+                CustomerNo = "A2",
+                TotalConsumptionAmount = 2
+            };
+            await customerRepository.InsertAsync(customer1);
+            await customerRepository.InsertAsync(customer2);
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer1.Id,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer2.Id,
+                OrderNo = "DEF",
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var orderList = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+                .ToListAsync();
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal(1, orderList[1].Age);
+
+            //test anonymous type
+            var orderList2 = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age })
+                .ToListAsync();
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal("A1", orderList2[0].CustomerNo);
+            Assert.Equal(1, orderList2[0].Age);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal("A1", orderList2[1].CustomerNo);
+            Assert.Equal(1, orderList2[1].Age);
+
+
+            var orderCustomers = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T3)
+                .ToListAsync();
+            Assert.Equal(2, orderCustomers.Count);
+            Assert.Equal("A1", orderCustomers[1].CustomerNo);
+            Assert.Equal("bob", orderCustomers[1].Name);
+
+            ////测试分页
+            var pageable = new Pageable(1, 5);
+            var orderPageList = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+                .ToPageAsync(pageable);
+            orderList = orderPageList.Data;
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal(1, orderList[1].Age);
+
+            ////test anonymous type
+            var orderPageList2 = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age })
+                .ToPageAsync(pageable);
+            orderList2 = orderPageList2.Data;
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal("A1", orderList2[0].CustomerNo);
+            Assert.Equal(1, orderList2[0].Age);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal("A1", orderList2[1].CustomerNo);
+            Assert.Equal(1, orderList2[1].Age);
+
+            var orderCustomerPages = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T3)
+                .ToPageAsync(pageable);
+            orderCustomers = orderCustomerPages.Data;
+            Assert.Equal(2, orderCustomers.Count);
+            Assert.Equal("A1", orderCustomers[1].CustomerNo);
+            Assert.Equal("bob", orderCustomers[1].Name);
+        }
+        /// <summary>
+        /// 测试2张表联查
+        /// </summary>
+        [Fact, Priority(318)]
+        public async Task TestLeftJoin2TableAsync()
+        {
+            InitSqliteDatabase("Data Source=./TestLeftJoin2TableAsync.db");
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = 1,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = 2,
+                OrderNo = "DEF",
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var orderList = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity }, x => x.T1)
+                .ToListAsync();
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal(1, orderList[1].CustomerId);
+
+            //test anonymous type
+            var orderList2 = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId })
+                .ToListAsync();
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal(1, orderList2[1].CustomerId);
+
+
+            var orderDetails = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderByDescending(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T2)
+                .ToListAsync();
+            Assert.Equal(2, orderDetails.Count);
+            Assert.Equal(1, orderDetails[1].Quantity);
+            Assert.Equal("A", orderDetails[1].ProductName);
+            Assert.Equal(2, orderDetails[0].Quantity);
+            Assert.Equal("B", orderDetails[0].ProductName);
+
+            //测试分页
+            var pageable = new Pageable(1, 5);
+            var orderPageList = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity }, x => x.T1)
+                .ToPageAsync(pageable);
+
+            Assert.Equal(2, orderPageList.TotalPages);
+            orderList = orderPageList.Data;
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal(1, orderList[1].CustomerId);
+
+            //test anonymous type
+            var orderPageList2 = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId })
+                .ToPageAsync(pageable);
+
+            Assert.Equal(2, orderPageList2.TotalPages);
+            orderList2 = orderPageList2.Data;
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal(1, orderList2[1].CustomerId);
+
+            var orderPageDetails = await orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderByDescending(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T2)
+                .ToPageAsync(pageable);
+            Assert.Equal(2, orderPageDetails.TotalPages);
+            orderDetails = orderPageDetails.Data;
+            Assert.Equal(2, orderDetails.Count);
+            Assert.Equal(1, orderDetails[1].Quantity);
+            Assert.Equal("A", orderDetails[1].ProductName);
+            Assert.Equal(2, orderDetails[0].Quantity);
+            Assert.Equal("B", orderDetails[0].ProductName);
+        }
+
+        /// <summary>
+        /// 测试3张表联查
+        /// </summary>
+        [Fact, Priority(417)]
+        public async Task TestLeftJoin4Table()
+        {
+            InitSqliteDatabase("Data Source=./TestLeftJoin4Table.db");
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+            var customer1 = new Customer()
+            {
+                Age = 1,
+                Name = "bob",
+                CustomerNo = "A1",
+                TotalConsumptionAmount = 1
+            };
+
+            var customer2 = new Customer()
+            {
+                Age = 2,
+                Name = "jack",
+                CustomerNo = "A2",
+                TotalConsumptionAmount = 2
+            };
+            await customerRepository.InsertAsync(customer1);
+            await customerRepository.InsertAsync(customer2);
+            var address1 = new Address()
+            {
+                CustomerId = customer1.Id,
+                City = "A"
+            };
+            var address2 = new Address()
+            {
+                CustomerId = customer2.Id,
+                City = "B"
+            };
+            await addressRepository.InsertAsync(address1);
+            await addressRepository.InsertAsync(address2);
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer1.Id,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer2.Id,
+                OrderNo = "DEF",
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var orderList = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+                .ToList();
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal("A", orderList[0].CustomerCity);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal("A", orderList[1].CustomerCity);
+            Assert.Equal(1, orderList[1].Age);
+
+            //test anonymous type
+            var orderList2 = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City })
+                .ToList();
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal("A1", orderList2[0].CustomerNo);
+            Assert.Equal(1, orderList2[0].Age);
+            Assert.Equal("A", orderList2[0].CustomerCity);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal("A1", orderList2[1].CustomerNo);
+            Assert.Equal(1, orderList2[1].Age);
+            Assert.Equal("A", orderList2[1].CustomerCity);
+
+
+            var orderAddresses = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T4)
+                .ToList();
+            Assert.Equal(2, orderAddresses.Count);
+            Assert.Equal("A", orderAddresses[1].City);
+
+            ////测试分页
+            var pageable = new Pageable(1, 5);
+            var orderPageList = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+                .ToPage(pageable);
+            orderList = orderPageList.Data;
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal("A", orderList[0].CustomerCity);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal(1, orderList[1].Age);
+            Assert.Equal("A", orderList[1].CustomerCity);
+
+            ////test anonymous type
+            var orderPageList2 = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City })
+                .ToPage(pageable);
+            var orderList3 = orderPageList2.Data;
+            Assert.Equal(2, orderList3.Count);
+            Assert.Equal(1, orderList3[0].Quantity);
+            Assert.Equal("A", orderList3[0].ProductName);
+            Assert.Equal("ABC", orderList3[0].OrderNo);
+            Assert.Equal("A1", orderList3[0].CustomerNo);
+            Assert.Equal(1, orderList3[0].Age);
+            Assert.Equal("A", orderList3[0].CustomerCity);
+            Assert.Equal(2, orderList3[1].Quantity);
+            Assert.Equal("B", orderList3[1].ProductName);
+            Assert.Equal("ABC", orderList3[1].OrderNo);
+            Assert.Equal("A1", orderList3[1].CustomerNo);
+            Assert.Equal(1, orderList3[1].Age);
+            Assert.Equal("A", orderList3[1].CustomerCity);
+
+            var orderAddressPages = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T4)
+                .ToPage(pageable);
+
+            orderAddresses = orderAddressPages.Data;
+            Assert.Equal(2, orderAddresses.Count);
+            Assert.Equal("A", orderAddresses[1].City);
+        }
+
+        /// <summary>
+        /// 测试3张表联查
+        /// </summary>
+        [Fact, Priority(316)]
+        public async Task TestLeftJoin3Table()
+        {
+            InitSqliteDatabase("Data Source=./TestLeftJoin3Table.db");
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var customer1 = new Customer()
+            {
+                Age = 1,
+                Name = "bob",
+                CustomerNo = "A1",
+                TotalConsumptionAmount = 1
+            };
+
+            var customer2 = new Customer()
+            {
+                Age = 2,
+                Name = "jack",
+                CustomerNo = "A2",
+                TotalConsumptionAmount = 2
+            };
+            await customerRepository.InsertAsync(customer1);
+            await customerRepository.InsertAsync(customer2);
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer1.Id,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = customer2.Id,
+                OrderNo = "DEF",
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var orderList = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+                .ToList();
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal(1, orderList[1].Age);
+
+            //test anonymous type
+            var orderList2 = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age })
+                .ToList();
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal("A1", orderList2[0].CustomerNo);
+            Assert.Equal(1, orderList2[0].Age);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal("A1", orderList2[1].CustomerNo);
+            Assert.Equal(1, orderList2[1].Age);
+
+
+            var orderCustomers = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T3)
+                .ToList();
+            Assert.Equal(2, orderCustomers.Count);
+            Assert.Equal("A1", orderCustomers[1].CustomerNo);
+            Assert.Equal("bob", orderCustomers[1].Name);
+
+            ////测试分页
+            var pageable = new Pageable(1, 5);
+            var orderPageList = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+                .ToPage(pageable);
+            orderList = orderPageList.Data;
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal("A1", orderList[0].CustomerNo);
+            Assert.Equal(1, orderList[0].Age);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal("A1", orderList[1].CustomerNo);
+            Assert.Equal(1, orderList[1].Age);
+
+            ////test anonymous type
+            var orderPageList2 = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age })
+                .ToPage(pageable);
+            orderList2 = orderPageList2.Data;
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal("A1", orderList2[0].CustomerNo);
+            Assert.Equal(1, orderList2[0].Age);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal("A1", orderList2[1].CustomerNo);
+            Assert.Equal(1, orderList2[1].Age);
+
+            var orderCustomerPages = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+                .OrderByDescending(it => it.T3.Age)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T3)
+                .ToPage(pageable);
+            orderCustomers = orderCustomerPages.Data;
+            Assert.Equal(2, orderCustomers.Count);
+            Assert.Equal("A1", orderCustomers[1].CustomerNo);
+            Assert.Equal("bob", orderCustomers[1].Name);
+        }
+        /// <summary>
+        /// 测试2张表联查
+        /// </summary>
+        [Fact, Priority(315)]
+        public async Task TestLeftJoin2Table()
+        {
+            InitSqliteDatabase("Data Source=./TestLeftJoin2Table.db");
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = 1,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                CustomerId = 2,
+                OrderNo = "DEF",
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var orderList = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity }, x => x.T1)
+                .ToList();
+            Assert.Equal(2, orderList.Count);
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal(1, orderList[1].CustomerId);
+
+            //test anonymous type
+            var orderList2 = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId })
+                .ToList();
+            Assert.Equal(2, orderList2.Count);
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal(1, orderList2[1].CustomerId);
+
+
+            var orderDetails = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderByDescending(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T2)
+                .ToList();
+            Assert.Equal(2, orderDetails.Count);
+            Assert.Equal(1, orderDetails[1].Quantity);
+            Assert.Equal("A", orderDetails[1].ProductName);
+            Assert.Equal(2, orderDetails[0].Quantity);
+            Assert.Equal("B", orderDetails[0].ProductName);
+
+            //测试分页
+            var pageable = new Pageable(1, 5);
+            var orderPageList = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity }, x => x.T1)
+                .ToPage(pageable);
+
+            Assert.Equal(2, orderPageList.TotalPages);
+            orderList = orderPageList.Data;
+            Assert.Equal(1, orderList[0].Quantity);
+            Assert.Equal("A", orderList[0].ProductName);
+            Assert.Equal("ABC", orderList[0].OrderNo);
+            Assert.Equal(2, orderList[1].Quantity);
+            Assert.Equal("B", orderList[1].ProductName);
+            Assert.Equal("ABC", orderList[1].OrderNo);
+            Assert.Equal(1, orderList[1].CustomerId);
+
+            //test anonymous type
+            var orderPageList2 = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderBy(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => new { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, OrderNo = it.T1.OrderNo, CustomerId = it.T1.CustomerId })
+                .ToPage(pageable);
+
+            Assert.Equal(2, orderPageList2.TotalPages);
+            orderList2 = orderPageList2.Data;
+            Assert.Equal(1, orderList2[0].Quantity);
+            Assert.Equal("A", orderList2[0].ProductName);
+            Assert.Equal("ABC", orderList2[0].OrderNo);
+            Assert.Equal(2, orderList2[1].Quantity);
+            Assert.Equal("B", orderList2[1].ProductName);
+            Assert.Equal("ABC", orderList2[1].OrderNo);
+            Assert.Equal(1, orderList2[1].CustomerId);
+
+            var orderPageDetails = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+                .OrderByDescending(it => it.T2.Quantity)
+                .Where(it => it.T1.State == 1)
+                .Select(it => it.T2)
+                .ToPage(pageable);
+            Assert.Equal(2, orderPageDetails.TotalPages);
+            orderDetails = orderPageDetails.Data;
+            Assert.Equal(2, orderDetails.Count);
+            Assert.Equal(1, orderDetails[1].Quantity);
+            Assert.Equal("A", orderDetails[1].ProductName);
+            Assert.Equal(2, orderDetails[0].Quantity);
+            Assert.Equal("B", orderDetails[0].ProductName);
+        }
+
+        /// <summary>
         /// 测试插入实体和更新实体前的自定义函数
         /// </summary>
-        [Fact, Priority(113)]
+        [Fact, Priority(310)]
         public async Task TestBeforeInsertAndUpdateEvent()
         {
             InitSqliteDatabase("Data Source=./TestBeforeInsertAndUpdateEvent.db");

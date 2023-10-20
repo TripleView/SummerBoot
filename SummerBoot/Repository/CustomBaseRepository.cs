@@ -34,6 +34,7 @@ namespace SummerBoot.Repository
         protected DatabaseUnit databaseUnit;
         public override int InternalExecute(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
             var result = dbConnection.Execute(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
@@ -43,6 +44,7 @@ namespace SummerBoot.Repository
 
         public override async Task<int> InternalExecuteAsync(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
             var result = await dbConnection.ExecuteAsync(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
@@ -52,6 +54,7 @@ namespace SummerBoot.Repository
 
         public override Page<TResult> InternalQueryPage<TResult>(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
@@ -68,7 +71,7 @@ namespace SummerBoot.Repository
 
         public override async Task<Page<TResult>> InternalQueryPageAsync<TResult>(DbQueryResult param)
         {
-
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
@@ -86,6 +89,7 @@ namespace SummerBoot.Repository
 
         public override List<TResult> InternalQueryList<TResult>(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
@@ -97,6 +101,7 @@ namespace SummerBoot.Repository
 
         public override async Task<List<TResult>> InternalQueryListAsync<TResult>(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
@@ -115,7 +120,6 @@ namespace SummerBoot.Repository
         public List<TResult> QueryList<TResult>(string sql, object param = null)
         {
             OpenDb();
-
             var result = dbConnection.Query<TResult>(databaseUnit, sql, param, dbTransaction).ToList();
 
             CloseDb();
@@ -201,6 +205,7 @@ namespace SummerBoot.Repository
 
         public override TResult InternalQuery<TResult>(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
@@ -213,6 +218,7 @@ namespace SummerBoot.Repository
 
         public override async Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param)
         {
+            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
@@ -267,7 +273,7 @@ namespace SummerBoot.Repository
         {
             databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
 
             if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
@@ -350,6 +356,7 @@ namespace SummerBoot.Repository
         public List<T> GetAll()
         {
             var internalResult = InternalGetAll();
+            databaseUnit.OnLogSqlInfo(internalResult);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
             var result = dbConnection.Query<T>(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction).ToList();
@@ -374,7 +381,7 @@ namespace SummerBoot.Repository
             //}
             databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             var result = dbConnection.Execute(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
@@ -390,7 +397,7 @@ namespace SummerBoot.Repository
             //}
 
             var internalResult = InternalDelete(t);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             var result = dbConnection.Execute(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
@@ -401,6 +408,7 @@ namespace SummerBoot.Repository
         {
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
+            databaseUnit.OnLogSqlInfo(internalResult);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
             var result = dbConnection.Execute(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction);
@@ -412,6 +420,7 @@ namespace SummerBoot.Repository
         public T Get(object id)
         {
             DbQueryResult internalResult = InternalGet(id);
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
 
@@ -432,7 +441,7 @@ namespace SummerBoot.Repository
             }
 
             var internalResult = InternalFastInsert(list);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             if (databaseUnit.IsOracle)
             {
@@ -607,7 +616,7 @@ namespace SummerBoot.Repository
         {
             databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
 
             if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
@@ -690,6 +699,7 @@ namespace SummerBoot.Repository
         public async Task<List<T>> GetAllAsync()
         {
             var internalResult = InternalGetAll();
+            databaseUnit.OnLogSqlInfo(internalResult);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
             var result = (await dbConnection.QueryAsync<T>(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction)).ToList();
@@ -714,7 +724,7 @@ namespace SummerBoot.Repository
             //}
             databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
@@ -725,6 +735,7 @@ namespace SummerBoot.Repository
         {
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
+            databaseUnit.OnLogSqlInfo(internalResult);
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
             var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction);
@@ -741,7 +752,7 @@ namespace SummerBoot.Repository
             //}
 
             var internalResult = InternalDelete(t);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
             CloseDb();
@@ -751,6 +762,7 @@ namespace SummerBoot.Repository
         public async Task<T> GetAsync(object id)
         {
             DbQueryResult internalResult = InternalGet(id);
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
 
@@ -786,7 +798,7 @@ namespace SummerBoot.Repository
             }
 
             var internalResult = InternalFastInsert(list);
-
+            databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
             if (databaseUnit.IsOracle)
             {

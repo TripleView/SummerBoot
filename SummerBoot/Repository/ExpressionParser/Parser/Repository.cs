@@ -83,12 +83,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public IQueryProvider Provider { get; private set; }
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
-        public List<JoinBodyBase<T>> JoinItems { get; set; } = new List<JoinBodyBase<T>>();
-        public object MultiQuerySelectItem { get; set; }
 
-        public object MultiQuerySelectAutoFillItem { get; set; }
-
-        public object MultiQueryWhereItem { get; set; }
+        public MultiQueryContext<T> MultiQueryContext { get; set; } = new MultiQueryContext<T>();
         
         public IEnumerator<T> GetEnumerator()
         {
@@ -239,8 +235,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
+                var sw = new System.Diagnostics.Stopwatch();
+                sw.Start();
                 var dbParam = dbQueryProvider.GetDbPageQueryResultByExpression(Expression);
+                sw.Stop();
+                var c0 = sw.ElapsedMilliseconds;
+                //var sw = new System.Diagnostics.Stopwatch();
+                sw.Restart();
                 var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
+                sw.Stop();
+                var c = sw.ElapsedMilliseconds;
                 return result;
             }
             return default;

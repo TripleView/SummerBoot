@@ -30,5 +30,7 @@ namespace SummerBoot.Test.Sqlite.Db
         public DbSet<NullableTable> NullableTable { get; set; }
         public DbSet<NotNullableTable> NotNullableTable { get; set; }
         public DbSet<GuidModel> GuidModel { get; set; }
+
+        public DbSet<Address> Address { get; set; }
     }
 }

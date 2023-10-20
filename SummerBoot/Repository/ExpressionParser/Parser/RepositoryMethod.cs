@@ -3,6 +3,8 @@
     public enum RepositoryMethod
     {
         JoinOn,
-        MultiSelect
+        MultiSelect,
+        MultiQueryWhere,
+        MultiQueryOrderBy
     }
 }

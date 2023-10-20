@@ -1,16 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.Diagnostics;
 using SummerBoot.Repository.Core;
+using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 
 namespace SummerBoot.Repository
 {
     public delegate void RepositoryEvent(object entity);
 
+    public delegate void RepositoryLogEvent(DbQueryResult dbQueryResult);
     /// <summary>
     /// 数据库单元
     /// </summary>
@@ -233,12 +236,22 @@ namespace SummerBoot.Repository
         public Func<string, string> TableNameMapping { get; set; }
         public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
 
-        public static Dictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
-            new Dictionary<Guid, Dictionary<Type, Type>>();
+        public static ConcurrentDictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
+            new ConcurrentDictionary<Guid, Dictionary<Type, Type>>();
         /// <summary>
         /// 插入前事件
         /// </summary>
         public event RepositoryEvent BeforeInsert;
+
+        public event RepositoryLogEvent LogSql;
+
+        public void OnLogSqlInfo(DbQueryResult dbQueryResult)
+        {
+            if (LogSql != null)
+            {
+                LogSql(dbQueryResult);
+            }
+        }
 
         public void OnBeforeInsert(object entity)
         {
@@ -279,7 +292,7 @@ namespace SummerBoot.Repository
             this.ConnectionString = connectionString;
             this.ParameterTypeMaps = AllDatabaseParameterTypeMaps[DatabaseType];
             this.Id = Guid.NewGuid();
-            TypeHandlers.Add(Id, new Dictionary<Type, Type>());
+            TypeHandlers.TryAdd(Id, new Dictionary<Type, Type>());
         }
         public Type IUnitOfWorkType { get; }
         public List<Type> BindRepositoryTypes { get; private set; } = new List<Type>();
