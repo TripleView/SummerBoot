@@ -40,7 +40,7 @@ namespace SummerBoot.Test.Oracle
         /// 测试where条件的各种情况
         /// </summary>
         [Fact, Priority(218)]
-        public async Task TestWhereCombinee()
+        public async Task TestWhereCombine()
         {
             InitOracleDatabase();
 
@@ -69,9 +69,6 @@ namespace SummerBoot.Test.Oracle
 
             #region 测试单表where
 
-            
-
-           
             var customerList1 = await customerRepository.Where(it => it.Name == "bob").ToListAsync();
             Assert.Equal(2, customerList1.Count);
             var customerList2 = await customerRepository.Where(it => it.Name == "bob").Where(it=>it.Age==1).ToListAsync();
@@ -205,7 +202,7 @@ namespace SummerBoot.Test.Oracle
             Assert.Equal(2, result11.Count);
 
             var result111 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId &&it.T2.City.Length>0)
+                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City.StartsWith("A"))
                 .OrWhere(it => it.T2.City == "A")
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();

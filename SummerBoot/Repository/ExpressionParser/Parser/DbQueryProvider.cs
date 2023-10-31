@@ -74,11 +74,20 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             var joins = new List<JoinExpression>();
             foreach (var joinItem in repository.MultiQueryContext.JoinItems)
             {
-                var joinAdapterExpression = new JoinAdapterExpression(joinItem.Condition as Expression);
+                if (joinItem.Condition is LambdaExpression lambdaExpression)
+                {
+
+                }
+                else
+                {
+                    throw new NotSupportedException(joinItem.Condition.ToString());
+                }
+
+                var joinAdapterExpression = new MultiQueryWhereAdapterExpression(lambdaExpression.Body);
                 var visitor = new DbExpressionVisitor();
                 var joinResult = visitor.Visit(joinAdapterExpression);
                 var joinTable = new TableExpression(joinItem.JoinTable);
-                if (joinResult is JoinConditionExpression joinCondition)
+                if (joinResult is WhereExpression joinCondition)
                 {
                     var joinExpression = new JoinExpression(joinItem.JoinType, joinTable, joinItem.JoinTableAlias);
                     joinExpression.JoinCondition = joinCondition;

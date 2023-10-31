@@ -19,11 +19,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
         #region 属性
+        ///// <summary>
+        ///// 关联条件
+        ///// </summary>
+        //public JoinConditionExpression JoinCondition { get; set; }
+
         /// <summary>
         /// 关联条件
         /// </summary>
-        public JoinConditionExpression JoinCondition { get; set; }
-       
+        public WhereExpression JoinCondition { get; set; }
+
         /// <summary>
         /// join方式
         /// </summary>

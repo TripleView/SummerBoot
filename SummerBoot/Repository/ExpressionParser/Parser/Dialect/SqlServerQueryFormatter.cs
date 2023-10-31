@@ -348,7 +348,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                 foreach (var joinExpression in select.Joins)
                 {
                     _sb.Append($" {JoinTypeToString(joinExpression.JoinType)} {BoxTableName(joinExpression.JoinTable.Name)} {BoxTableName(joinExpression.JoinTableAlias)} on ");
-                    ParseJoinCondition(_sb, joinExpression.JoinCondition);
+                    this.VisitWhere(joinExpression.JoinCondition);
                 }
             }
 

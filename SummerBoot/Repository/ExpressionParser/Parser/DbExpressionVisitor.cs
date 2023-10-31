@@ -75,8 +75,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 case DbExpressionType.Join:
                 case DbExpressionType.Query:
                     return this.VisitQuery((QueryExpression)exp);
-                case DbExpressionType.JoinOn:
-                    return this.VisitJoinAdapter((JoinAdapterExpression)exp);
+            
                 case DbExpressionType.MultiSelect:
                     return this.VisitMultiSelect((MultiSelectExpression)exp);
                 case DbExpressionType.MultiSelectAutoFill:
@@ -100,23 +99,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             methodCallStack.Pop();
             return result;
 
-
-        }
-
-        public virtual Expression VisitJoinAdapter(JoinAdapterExpression joinOnExpression)
-        {
-            methodCallStack.Push(nameof(RepositoryMethod.JoinOn));
-            if (joinOnExpression.OnExpression is LambdaExpression lambdaExpression)
-            {
-                var result = Visit(lambdaExpression.Body);
-                methodCallStack.Pop();
-                return result;
-            }
-            else
-            {
-                methodCallStack.Pop();
-                throw new NotSupportedException();
-            }
 
         }
 
@@ -720,72 +702,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 return result;
 
             }
-            else if (MethodName == nameof(RepositoryMethod.JoinOn))
-            {
-                var @operator = nodeTypeMappings[binaryExpression.NodeType];
-                if (string.IsNullOrWhiteSpace(@operator))
-                {
-                    throw new NotSupportedException(nameof(binaryExpression.NodeType));
-                }
-
-                Expression rightExpression;
-                if (binaryExpression.Right is UnaryExpression rightEx)
-                {
-                    rightExpression = this.Visit(rightEx.Operand);
-                }
-                else
-                {
-                    rightExpression = this.Visit(binaryExpression.Right);
-                }
-
-                Expression leftExpression;
-                if (binaryExpression.Left is UnaryExpression leftEx)
-                {
-                    leftExpression = this.Visit(leftEx.Operand);
-                }
-                else
-                {
-                    leftExpression = this.Visit(binaryExpression.Left);
-                }
-
-                if (rightExpression is ColumnExpression rightColumnExpression &&
-                    leftExpression is ColumnExpression leftColumnExpression)
-                {
-                    var result = new JoinOnExpression(
-                        leftColumnExpression, @operator, rightColumnExpression);
-                    return result;
-                }
-                else if (leftExpression is JoinConditionExpression leftJoinOnExpression &&
-                          rightExpression is JoinConditionExpression rightJoinOnExpression)
-                {
-                    var result = new JoinConditionExpression()
-                    {
-                        Left = leftJoinOnExpression,
-                        Right = rightJoinOnExpression,
-                        Operator = @operator
-                    };
-                    return result;
-                }
-                else if (leftExpression is ColumnExpression leftJoinOnExpression2 &&
-                         rightExpression is ConstantExpression rightJoinOnExpression2)
-                {
-                    var result = new JoinOnValueExpression(
-                        leftJoinOnExpression2, @operator, rightJoinOnExpression2.Value);
-                    return result;
-                }
-                else if (leftExpression is ConstantExpression leftJoinOnExpression3 &&
-                         rightExpression is ColumnExpression rightJoinOnExpression3)
-                {
-                    var result = new JoinOnValueExpression(
-                        rightJoinOnExpression3, @operator, leftJoinOnExpression3.Value);
-                    return result;
-                }
-                else
-                {
-                    throw new NotSupportedException(nameof(@operator));
-                }
-
-            }
             else if (MethodName == nameof(RepositoryMethod.MultiQueryWhere))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
@@ -891,6 +807,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     result.Left = leftWhereExpression3;
                     result.Right = whereTrueFalseValueCondition;
                     return result;
+                }
+                else if (rightExpression is ColumnExpression rightColumnExpression4 &&  leftExpression is ColumnExpression leftColumnExpression4)
+                {
+
+                    var whereTrueFalseValueCondition =
+                        new WhereTwoColumnExpression(leftColumnExpression4, @operator, rightColumnExpression4);
+                   
+                    return whereTrueFalseValueCondition;
                 }
                 else
                 {

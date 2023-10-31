@@ -374,7 +374,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 foreach (var joinExpression in select.Joins)
                 {
                     _sb.Append($" {JoinTypeToString(joinExpression.JoinType)} {BoxTableName(joinExpression.JoinTable.Name)} {BoxTableName(joinExpression.JoinTableAlias)} on ");
-                    ParseJoinCondition(_sb, joinExpression.JoinCondition);
+    
+                    this.VisitWhere(joinExpression.JoinCondition);
                 }
             }
 
@@ -437,29 +438,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
-        protected void ParseJoinCondition(StringBuilder sb, JoinConditionExpression joinCondition)
-        {
-            sb.Append("(");
-
-            if (joinCondition is JoinOnExpression joinOn)
-            {
-                _sb.Append(
-                    $" {BoxTableName( joinOn.LeftColumn.TableAlias)}.{BoxColumnName(joinOn.LeftColumn.ColumnName)} {joinOn.OnOperator} {BoxTableName( joinOn.RightColumn.TableAlias)}.{BoxColumnName(joinOn.RightColumn.ColumnName)}");
-            } else if (joinCondition is JoinOnValueExpression joinOnValue)
-            {
-                _sb.Append(
-                    $" {BoxTableName(joinOnValue.Column.TableAlias)}.{BoxColumnName(joinOnValue.Column.ColumnName)} {joinOnValue.OnOperator} {BoxParameter(joinOnValue.Value, joinOnValue.Value.GetType())}");
-            }
-            else
-            {
-                ParseJoinCondition(sb,joinCondition.Left);
-                sb.Append($" {joinCondition.Operator} ");
-                ParseJoinCondition(sb, joinCondition.Right);
-            }
-
-            sb.Append(")");
-          
-        }
         public override Expression VisitSelect(SelectExpression select)
         {
             RenameSelectExpressionInternalAlias(select);
@@ -545,6 +523,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 _sb.Append(" (");
                 this.VisitWhere(functionWhereConditionExpression.WhereExpression);
                 _sb.Append(" )");
+            }
+            else if (whereExpression is WhereTwoColumnExpression whereTwoColumn)
+            {
+                this.VisitColumn(whereTwoColumn.LeftColumnExpression);
+                _sb.Append(" ");
+                _sb.Append(whereTwoColumn.Operator);
+                _sb.Append(" ");
+                this.VisitColumn(whereTwoColumn.RightColumnExpression);
+                _sb.Append(" ");
             }
 
             _sb.Append(" )");
