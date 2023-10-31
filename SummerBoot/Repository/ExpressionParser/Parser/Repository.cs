@@ -455,6 +455,22 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             return default;
         }
+
+        
+        //public IQueryable<T> OrWhere(Expression<Predicate<T>> predicate)
+        //{
+            
+        //    var methodInfo = new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(QueryableMethodsExtension.OrWhere)
+        //        .GetMethodInfo().GetGenericMethodDefinition().MakeGenericMethod(typeof(T));
+            
+        //    return Provider.CreateQuery<T>(
+        //        Expression.Call(
+        //            null,
+        //            methodInfo,
+        //            this.Expression, Expression.Quote(predicate)
+        //        ));
+        //    return this;
+        //}
     }
 
 }

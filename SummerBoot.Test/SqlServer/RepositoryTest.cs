@@ -20,6 +20,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using SummerBoot.Repository.Generator;
+using SummerBoot.Test.Common.Dto;
 using SummerBoot.Test.SqlServer.Dto;
 using Xunit;
 using Xunit.Priority;
@@ -31,6 +32,73 @@ namespace SummerBoot.Test.SqlServer
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// 测试where条件中右边的值为dto的属性，并且同时测试从list里获取索引为0或者1的值
+        /// </summary>
+        [Fact, Priority(421)]
+        public async Task TestParameterWithListPropertyDtoAndGetItem()
+        {
+            InitDatabase();
+
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+
+            var customer1 = new Customer()
+            {
+                Age = 1,
+                Name = "bob",
+                CustomerNo = "A1",
+                TotalConsumptionAmount = 1
+            };
+
+            var customer2 = new Customer()
+            {
+                Age = 2,
+                Name = "jack",
+                CustomerNo = "A2",
+                TotalConsumptionAmount = 2
+            };
+            await customerRepository.InsertAsync(customer1);
+            await customerRepository.InsertAsync(customer2);
+            var baseTime = new DateTime(2023, 10, 24, 17, 0, 0);
+            var date1 = baseTime.AddMinutes(-10);
+            var date2 = baseTime.AddMinutes(-5);
+            var date3 = baseTime.AddMinutes(-7);
+            var date4 = baseTime.AddMinutes(-12);
+            var address1 = new Address()
+            {
+                CustomerId = customer1.Id,
+                City = "A",
+                CreateOn = date3
+            };
+            var address2 = new Address()
+            {
+                CustomerId = customer2.Id,
+                City = "B",
+                CreateOn = date4
+            };
+
+            await addressRepository.InsertAsync(address1);
+            await addressRepository.InsertAsync(address2);
+
+            var p = new ParameterWithListPropertyDto()
+            {
+                DateTimes = new List<DateTime>() { date1, date2 }
+            };
+
+            var addressList = await addressRepository.Where(it => it.CreateOn > p.DateTimes[0] && it.CreateOn < p.DateTimes[1]).ToListAsync();
+
+            Assert.Equal(1, addressList.Count);
+            Assert.True(CompareTwoDate(date3, addressList[0].CreateOn));
+            Assert.Equal("A", addressList[0].City);
+        }
+
+        private bool CompareTwoDate(DateTime date1, DateTime date2)
+        {
+            return date1.Year == date2.Year && date1.Month == date2.Month && date1.Day == date2.Day &&
+                   date1.Hour == date2.Hour && date1.Minute == date2.Minute && date1.Second == date2.Second;
+        }
 
         /// <summary>
         /// 测试3张表联查

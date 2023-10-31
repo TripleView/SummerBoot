@@ -7,13 +7,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     /// <summary>
     /// Join on表达式
     /// </summary>
-    public class JoinOnExpression : JoinConditionExpression
+    public class JoinOnValueExpression : JoinConditionExpression
     {
-        public JoinOnExpression(ColumnExpression leftColumn, string onOperator, ColumnExpression rightColumn)
+        public JoinOnValueExpression(ColumnExpression column, string onOperator, object value)
             : base()
         {
-            this.LeftColumn = leftColumn;
-            this.RightColumn = rightColumn;
+            this.Column = column;
+            this.Value = value;
             this.OnOperator = onOperator;
         }
 
@@ -22,17 +22,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <summary>
         /// 左表匹配键
         /// </summary>
-        public ColumnExpression LeftColumn { get; set; }
+        public ColumnExpression Column { get; set; }
 
         public string OnOperator { get; set; }
         /// <summary>
         /// 右表匹配键
         /// </summary>
-        public ColumnExpression RightColumn { get; set; }
+        public object Value { get; set; }
 
         #endregion
 
-        public override string NodeTypeName => nameof(JoinOnExpression);
+        public override string NodeTypeName => nameof(JoinOnValueExpression);
     }
 
 

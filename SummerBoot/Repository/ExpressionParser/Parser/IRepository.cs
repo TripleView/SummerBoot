@@ -27,6 +27,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <returns></returns>
         Page<T> ToPage(IPageable pageable);
 
+        //IQueryable<T> OrWhere(Expression<Predicate<T>> predicate);
 
     }
 }

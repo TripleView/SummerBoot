@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -216,10 +217,22 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var lastMethodCallName = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName);
                     return result;
-
+                //get_Item方法的意思是从list里取数，比如list[0]
+                case "get_Item":
+                    if (node.Arguments.Count == 1 && node.Arguments[0] is ConstantExpression constantExpression)
+                    {
+                        var obj = GetValue(node.Object);
+                        var value = method.Invoke(obj, new[] { constantExpression.Value });
+                        return Expression.Constant(value);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("get_Item");
+                    }
+                    break;
                 case nameof(Queryable.Where):
-
-                    methodCallStack.Push(nameof(Queryable.Where));
+                case nameof(QueryableMethodsExtension.OrWhere):
+                    methodCallStack.Push(method.Name);
                     //MethodName = method.Name;
                     var result2 = this.VisitWhereCall(node);
                     var lastMethodCallName2 = methodCallStack.Pop();
@@ -617,7 +630,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
 
             }
-            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if (MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var @operator = nodeTypeMappings[binaryExpression.NodeType];
                 if (string.IsNullOrWhiteSpace(@operator))
@@ -753,6 +766,20 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     };
                     return result;
                 }
+                else if (leftExpression is ColumnExpression leftJoinOnExpression2 &&
+                         rightExpression is ConstantExpression rightJoinOnExpression2)
+                {
+                    var result = new JoinOnValueExpression(
+                        leftJoinOnExpression2, @operator, rightJoinOnExpression2.Value);
+                    return result;
+                }
+                else if (leftExpression is ConstantExpression leftJoinOnExpression3 &&
+                         rightExpression is ColumnExpression rightJoinOnExpression3)
+                {
+                    var result = new JoinOnValueExpression(
+                        rightJoinOnExpression3, @operator, leftJoinOnExpression3.Value);
+                    return result;
+                }
                 else
                 {
                     throw new NotSupportedException(nameof(@operator));
@@ -814,6 +841,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     };
                     result.Left = left;
                     result.Right = rightWhereExpression2;
+                    return result;
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression2 && rightExpression.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression2)
                 {
@@ -821,6 +849,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var right = new WhereConditionExpression(rightColumnExpression2, "=", 1) { ValueType = rightColumnExpression2.ValueType };
                     result.Left = leftWhereExpression2;
                     result.Right = right;
+                    return result;
                 }
                 else if (rightExpression is ColumnExpression rightColumnExpression3 && rightExpression.Type == typeof(bool) && leftExpression is ColumnExpression leftColumnExpression3 && leftColumnExpression3.Type == typeof(bool))
                 {
@@ -829,12 +858,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var left = new WhereConditionExpression(leftColumnExpression3, "=", 1) { ValueType = leftColumnExpression3.ValueType };
                     result.Left = left;
                     result.Right = right;
+                    return result;
                 }
                 else if (leftExpression is WhereExpression leftWhereExpression &&
                    rightExpression is WhereExpression rightWhereExpression)
                 {
                     result.Left = leftWhereExpression;
                     result.Right = rightWhereExpression;
+                    return result;
 
                 }
                 //兼容It=>true这种
@@ -847,6 +878,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     };
                     result.Left = whereTrueFalseValueCondition;
                     result.Right = whereExpression;
+                    return result;
                 }
                 //兼容It=>true这种
                 else if (rightExpression is ConstantExpression rightConstantExpression3 && rightConstantExpression3.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression3)
@@ -858,6 +890,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     };
                     result.Left = leftWhereExpression3;
                     result.Right = whereTrueFalseValueCondition;
+                    return result;
                 }
                 else
                 {
@@ -1067,41 +1100,78 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             else
             {
-                var source = (TableExpression)this.Visit(whereCall.Arguments[0]);
+                var @operator = MethodName == nameof(QueryableMethodsExtension.OrWhere) ? "or" : "and";
+                var tempVisitResult = this.Visit(whereCall.Arguments[0]);
                 var lambda = (LambdaExpression)this.StripQuotes(whereCall.Arguments[1]);
                 var bodyExpression = this.Visit(lambda.Body);
-
-
+               
+                TableExpression source=null;
+                SelectExpression selectExpression = null;
+                if (tempVisitResult is TableExpression tempTableExpression)
+                {
+                    source = tempTableExpression;
+                }else if (tempVisitResult is SelectExpression tempSelectExpression)
+                {
+                    selectExpression = tempSelectExpression;
+                }
+                else
+                {
+                    throw new NotSupportedException(tempVisitResult?.NodeType.ToString());
+                }
+                
                 //兼容it.isHandsome这种单true的条件
                 if (bodyExpression is ColumnExpression columnExpression && columnExpression.Type == typeof(bool))
                 {
                     var whereConditionExpression = new WhereConditionExpression(columnExpression, "=", 1);
-                    var result = new SelectExpression(null, "", source.Columns, source, whereConditionExpression);
-                    return result;
+                    selectExpression= CombineSelectExpression(source, whereConditionExpression, selectExpression, @operator);
+                   
+                    return selectExpression;
+
                 }
                 else if (bodyExpression is WhereExpression whereExpression)
                 {
-                    var result = new SelectExpression(null, "", source.Columns, source, whereExpression);
-                    return result;
+                    selectExpression = CombineSelectExpression(source, whereExpression, selectExpression, @operator);
+                    return selectExpression;
                 }
                 //兼容It=>true这种
                 else if (bodyExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(bool))
                 {
                     var value = (bool)constantExpression.Value;
                     var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value);
-                    var result = new SelectExpression(null, "", source.Columns, source, whereTrueFalseValueCondition);
-                    return result;
+                    selectExpression = CombineSelectExpression(source, whereTrueFalseValueCondition, selectExpression, @operator);
+                    return selectExpression;
                 }
                 else
                 {
                     throw new NotSupportedException(nameof(bodyExpression));
                 }
-
-                return whereCall;
             }
 
         }
 
+        private SelectExpression CombineSelectExpression(TableExpression source ,WhereExpression whereExpression,SelectExpression selectExpression, string @operator)
+        {
+            if (selectExpression == null)
+            {
+                var result = new SelectExpression(null, "", source.Columns, source, whereExpression);
+                return result;
+            }
+
+            if (selectExpression.Where != null)
+            {
+                var tempWhereExpression = new WhereExpression(@operator)
+                {
+                    Left = selectExpression.Where,
+                    Right = whereExpression
+                };
+                selectExpression.Where = tempWhereExpression;
+            }
+            else
+            {
+                selectExpression.Where = whereExpression;
+            }
+            return selectExpression;
+        }
 
         public virtual Expression VisitOrderByCall(MethodCallExpression whereCall)
         {
@@ -1331,7 +1401,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
 
             //如果缓存中没有任何列
-            if (_lastColumns.Count == 0) return base.VisitParameter(param);
+            if (_lastColumns.Count == 0)
+            {
+                var tableExpression = new TableExpression(param.Type);
+                _lastColumns = tableExpression.Columns.ToDictionary(x => x.ColumnName);
+            }
 
             //根据_lastColumns中生成newColumns,Name = Expression.Constant(oldColumn)也就是对oldColumn的一个引用
             var newColumns = _lastColumns.Values.Select(oldColumn =>
@@ -1401,8 +1475,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
             else if (MethodName == nameof(RepositoryMethod.JoinOn) || MethodName == nameof(RepositoryMethod.MultiQueryWhere) || MethodName == nameof(RepositoryMethod.MultiQueryOrderBy))
             {
+                //解析静态值,例如dto里的参数，dto.Name
+                if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is ConstantExpression constantExpression)
+                {
+                    var value = GetValue(memberExpression);
+                    return Expression.Constant(value);
+                }
                 //解析类似于it.T1.Name这种
-                if (IsMemberExpression(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
+                else if (GetNumberOfMemberExpressionLayers(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
                 {
                     var table = new TableExpression(memberExpression.Member.ReflectedType);
                     var tableAlias = rightSecondMemberExpression.Member.Name;
@@ -1410,7 +1490,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     column.Table = table;
                     return column;
                 }
-                else if (IsMemberExpression(memberExpression) == 3 && memberExpression.Member.Name=="Length" && memberExpression.Member.DeclaringType==typeof(string))
+                else if (GetNumberOfMemberExpressionLayers(memberExpression) == 3 && memberExpression.Member.Name == "Length" && memberExpression.Member.DeclaringType == typeof(string))
                 {
                     var firstLayer = GetNestedMemberExpression(memberExpression, 3);
                     var secondLayer = GetNestedMemberExpression(memberExpression, 2);
@@ -1492,25 +1572,41 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// </summary>
         /// <param name="expression"></param>
         /// <returns></returns>
-        private int IsMemberExpression(Expression expression)
+        private int GetNumberOfMemberExpressionLayers(Expression expression)
         {
             var result = 0;
             if (expression is MemberExpression memberExpression)
             {
                 result++;
-                result += IsMemberExpression(memberExpression.Expression);
+                result += GetNumberOfMemberExpressionLayers(memberExpression.Expression);
             }
 
             return result;
         }
 
         /// <summary>
+        /// 获取memberexpression嵌套的最后一个expression,例如it.T1.Name
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        private Expression GetMemberExpressionLastExpression(Expression expression)
+        {
+            if (expression is MemberExpression memberExpression)
+            {
+                return GetMemberExpressionLastExpression(memberExpression.Expression);
+            }
+            else
+            {
+                return expression;
+            }
+        }
+        /// <summary>
         /// 获取嵌套的指定层数的memberExpression,比如it.T1.Name这种，获取第二层，即.Name这层
         /// </summary>
         /// <param name="expression"></param>
         /// <param name="numberOfLayers">嵌套的层数</param>
         /// <returns></returns>
-        private MemberExpression GetNestedMemberExpression(Expression expression,int numberOfLayers,int currentLayer=0)
+        private MemberExpression GetNestedMemberExpression(Expression expression, int numberOfLayers, int currentLayer = 0)
         {
             if (expression is MemberExpression memberExpression)
             {
@@ -1519,7 +1615,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     return memberExpression;
                 }
-                var next= GetNestedMemberExpression(memberExpression.Expression,numberOfLayers,currentLayer);
+                var next = GetNestedMemberExpression(memberExpression.Expression, numberOfLayers, currentLayer);
                 if (next == null)
                 {
                     throw new NotSupportedException($"can not find {numberOfLayers} memberExpression");

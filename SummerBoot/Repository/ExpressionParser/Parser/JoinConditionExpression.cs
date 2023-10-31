@@ -27,6 +27,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 操作符
         /// </summary>
         public string Operator { get; set; }
+
+        public override string NodeTypeName => nameof(JoinConditionExpression);
     }
 
 

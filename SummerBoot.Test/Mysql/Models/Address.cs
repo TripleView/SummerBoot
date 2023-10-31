@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System;
 
 namespace SummerBoot.Test.Mysql.Models
 {
@@ -10,6 +11,8 @@ namespace SummerBoot.Test.Mysql.Models
         public int Id { set; get; }
         public int CustomerId { get; set; }
         public string City { get; set; }
+
+        public DateTime CreateOn { get; set; }
     }
 }
 

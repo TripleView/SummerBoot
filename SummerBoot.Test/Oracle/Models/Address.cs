@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace SummerBoot.Test.Oracle.Models
@@ -11,6 +12,8 @@ namespace SummerBoot.Test.Oracle.Models
         [Column("CUSTOMERID")]
         public int CustomerId { get; set; }
         public string City { get; set; }
+
+        public DateTime CreateOn { get; set; }
     }
 }
 

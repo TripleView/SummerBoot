@@ -14,7 +14,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             NodeType = expressionType;
         }
         public override ExpressionType NodeType { get; }
-        public string NodeTypeName => ((DbExpressionType)NodeType).ToString();
+        public virtual string NodeTypeName => ((DbExpressionType)NodeType).ToString();
         public override Type Type { get; }
         
     }

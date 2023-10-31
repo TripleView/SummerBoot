@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using StackExchange.Redis;
+using SummerBoot.Core;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 using SummerBoot.Repository.MultiQuery;
@@ -492,22 +494,151 @@ namespace SummerBoot.Repository
         #endregion
 
         #region Where
-        public static JoinBody2<T1, T2> Where<T1, T2>(this JoinBody2<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> condition)
+        public static JoinBody2<T1, T2> Where<T1, T2>(this JoinBody2<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> on)
         {
-            source.Repository.MultiQueryContext.MultiQueryWhereItem = condition;
+            if (source.Repository.MultiQueryContext.MultiQueryWhereItem == null)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = on;
+            }
+            else if (source.Repository.MultiQueryContext.MultiQueryWhereItem is Expression<Func<JoinCondition<T1, T2>, bool>> previewOn)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = previewOn.And(on);
+            }
             return source;
         }
 
-        public static JoinBody3<T1, T2, T3> Where<T1, T2, T3>(this JoinBody3<T1, T2, T3> source, Expression<Func<JoinCondition<T1, T2, T3>, bool>> condition)
+        public static JoinBody2<T1, T2> OrWhere<T1, T2>(this JoinBody2<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> on)
         {
-            source.Repository.MultiQueryContext.MultiQueryWhereItem = condition;
+            if (source.Repository.MultiQueryContext.MultiQueryWhereItem == null)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = on;
+            }
+            else if (source.Repository.MultiQueryContext.MultiQueryWhereItem is Expression<Func<JoinCondition<T1, T2>, bool>> previewOn)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = previewOn.Or(on);
+            }
+            return source;
+        }
+        public static JoinBody2<T1, T2> WhereIf<T1, T2>(this JoinBody2<T1, T2> source, bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        {
+            if (condition)
+            {
+                return source.Where(on);
+            }
+            else
+            {
+                return source;
+            }
+        }
+
+        public static JoinBody2<T1, T2> OrWhereIf<T1, T2>(this JoinBody2<T1, T2> source, bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        {
+            if (condition)
+            {
+                return source.OrWhere(on);
+            }
+            else
+            {
+                return source;
+            }
+        }
+
+        public static JoinBody3<T1, T2, T3> Where<T1, T2, T3>(this JoinBody3<T1, T2, T3> source, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+        {
+            if (source.Repository.MultiQueryContext.MultiQueryWhereItem == null)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = on;
+            }
+            else if (source.Repository.MultiQueryContext.MultiQueryWhereItem is Expression<Func<JoinCondition<T1, T2, T3>, bool>> previewOn)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = previewOn.And(on);
+            }
             return source;
         }
 
-        public static JoinBody4<T1, T2, T3, T4> Where<T1, T2, T3, T4>(this JoinBody4<T1, T2, T3, T4> source, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> condition)
+        public static JoinBody3<T1, T2, T3> OrWhere<T1, T2, T3>(this JoinBody3<T1, T2, T3> source, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
         {
-            source.Repository.MultiQueryContext.MultiQueryWhereItem = condition;
+            if (source.Repository.MultiQueryContext.MultiQueryWhereItem == null)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = on;
+            }
+            else if (source.Repository.MultiQueryContext.MultiQueryWhereItem is Expression<Func<JoinCondition<T1, T2, T3>, bool>> previewOn)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = previewOn.Or(on);
+            }
             return source;
+        }
+        public static JoinBody3<T1, T2, T3> WhereIf<T1, T2, T3>(this JoinBody3<T1, T2, T3> source, bool condition, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+        {
+            if (condition)
+            {
+                return source.Where(on);
+            }
+            else
+            {
+                return source;
+            }
+        }
+
+        public static JoinBody3<T1, T2, T3> OrWhereIf<T1, T2, T3>(this JoinBody3<T1, T2, T3> source, bool condition, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+        {
+            if (condition)
+            {
+                return source.OrWhere(on);
+            }
+            else
+            {
+                return source;
+            }
+        }
+
+        public static JoinBody4<T1, T2, T3, T4> Where<T1, T2, T3, T4>(this JoinBody4<T1, T2, T3, T4> source, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
+        {
+            if (source.Repository.MultiQueryContext.MultiQueryWhereItem == null)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = on;
+            }
+            else if (source.Repository.MultiQueryContext.MultiQueryWhereItem is Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> previewOn)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = previewOn.And(on);
+            }
+            return source;
+        }
+
+        public static JoinBody4<T1, T2, T3, T4> OrWhere<T1, T2, T3, T4>(this JoinBody4<T1, T2, T3, T4> source, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
+        {
+            if (source.Repository.MultiQueryContext.MultiQueryWhereItem == null)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = on;
+            }
+            else if (source.Repository.MultiQueryContext.MultiQueryWhereItem is Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> previewOn)
+            {
+                source.Repository.MultiQueryContext.MultiQueryWhereItem = previewOn.Or(on);
+            }
+            return source;
+        }
+        public static JoinBody4<T1, T2, T3, T4> WhereIf<T1, T2, T3, T4>(this JoinBody4<T1, T2, T3, T4> source, bool condition, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
+        {
+            if (condition)
+            {
+                return source.Where(on);
+            }
+            else
+            {
+                return source;
+            }
+        }
+
+        public static JoinBody4<T1, T2, T3, T4> OrWhereIf<T1, T2, T3, T4>(this JoinBody4<T1, T2, T3, T4> source, bool condition, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
+        {
+            if (condition)
+            {
+                return source.OrWhere(on);
+            }
+            else
+            {
+                return source;
+            }
         }
         #endregion
 

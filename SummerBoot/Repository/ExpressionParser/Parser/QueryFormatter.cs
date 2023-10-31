@@ -445,6 +445,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 _sb.Append(
                     $" {BoxTableName( joinOn.LeftColumn.TableAlias)}.{BoxColumnName(joinOn.LeftColumn.ColumnName)} {joinOn.OnOperator} {BoxTableName( joinOn.RightColumn.TableAlias)}.{BoxColumnName(joinOn.RightColumn.ColumnName)}");
+            } else if (joinCondition is JoinOnValueExpression joinOnValue)
+            {
+                _sb.Append(
+                    $" {BoxTableName(joinOnValue.Column.TableAlias)}.{BoxColumnName(joinOnValue.Column.ColumnName)} {joinOnValue.OnOperator} {BoxParameter(joinOnValue.Value, joinOnValue.Value.GetType())}");
             }
             else
             {

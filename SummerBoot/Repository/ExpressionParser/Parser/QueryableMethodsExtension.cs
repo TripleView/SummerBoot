@@ -92,5 +92,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             throw new NotSupportedException(methodName);
         }
+
+        public static IQueryable<T> OrWhere<T>(this IQueryable<T> source, Expression<Func<T, bool>> predicate)
+        {
+            return source;
+        }
     }
 }

@@ -11,7 +11,7 @@ using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository
 {
-    public  static partial class RepositoryExtension
+    public static partial class RepositoryExtension
     {
         /// <summary>
         /// 对仓储查出的结果进行赋值
@@ -214,5 +214,44 @@ namespace SummerBoot.Repository
             return await repository.MaxAsync(selector);
         }
 
+        public static IQueryable<T> OrWhere<T>(this IQueryable<T> source, Expression<Func<T, bool>> predicate)
+        {
+            if (!(source is IRepository<T> repository))
+            {
+                throw new Exception("only support IRepository");
+            }
+
+            if (repository == null) throw new ArgumentNullException("source");
+            var methodInfo = new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(QueryableMethodsExtension.OrWhere)
+                .GetMethodInfo().GetGenericMethodDefinition().MakeGenericMethod(typeof(T));
+
+            return repository.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    methodInfo,
+                    repository.Expression, Expression.Quote(predicate)
+                ));
+
+        }
+
+        public static IQueryable<T> WhereIf<T>(this IQueryable<T> source, bool condition, Expression<Func<T, bool>> predicate)
+        {
+            if (condition)
+            {
+                return source.Where(predicate);
+            }
+
+            return source;
+        }
+
+        public static IQueryable<T> OrWhereIf<T>(this IQueryable<T> source, bool condition, Expression<Func<T, bool>> predicate)
+        {
+            if (condition)
+            {
+                return source.OrWhere(predicate);
+            }
+
+            return source;
+        }
     }
 }
