@@ -89,6 +89,13 @@ namespace SummerBoot.Test.Mysql
 
             var customerList8 = await customerRepository.OrWhere(it => it.CustomerNo == "A2").ToListAsync();
             Assert.Equal(1, customerList8.Count);
+
+            var newTestCustomer = new Customer()
+            {
+                CustomerNo = " A2 "
+            };
+            var customerList9 = await customerRepository.Where(it => it.CustomerNo.Contains(newTestCustomer.CustomerNo.Trim())).ToListAsync();
+            Assert.Equal(1, customerList9.Count);
             #endregion
 
 

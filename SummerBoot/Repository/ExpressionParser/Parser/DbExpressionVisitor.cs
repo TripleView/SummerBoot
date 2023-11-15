@@ -371,7 +371,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         }
                         else
                         {
-                            throw new NotSupportedException(methodName);
+                            var result = this.Visit(node.Arguments[0]);
+                            if (result is ConstantExpression constantExpression2)
+                            {
+                                var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "like", BoxMethodLikeParameter(constantExpression2.Value, methodName));
+                                return whereConditionExpression2;
+                            }
+                            else
+                            {
+                                throw new NotSupportedException(methodName);
+                            }
                         }
 
                     }
