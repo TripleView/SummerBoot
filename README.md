@@ -53,7 +53,9 @@ net core 3.1, net 6
       - [5.3.1 The interface comes with an Update method, which can update a single entity or a list of entities](#531-the-interface-comes-with-an-update-method-which-can-update-a-single-entity-or-a-list-of-entities)
       - [5.3.2 It also supports the update method based on Lambda chain syntax](#532-it-also-supports-the-update-method-based-on-lambda-chain-syntax)
     - [5.4 Query](#54-query)
-      - [5.4.1 Lambda chain syntax query, such as:](#541-lambda-chain-syntax-query-such-as)
+      - [5.4.1 Lambda chain syntax query](#541-lambda-chain-syntax-query)
+        - [5.4.1.1 Single table query](#5411-single-table-query)
+        - [5.4.1.2 Multiple table joint query](#5412-multiple-table-joint-query)
       - [5.4.2 Define methods directly in the interface, and add annotations to the methods, such as Select, Update, Delete](#542-define-methods-directly-in-the-interface-and-add-annotations-to-the-methods-such-as-select-update-delete)
       - [5.4.4 Select annotations are spliced in this way where query conditions](#544-select-annotations-are-spliced-in-this-way-where-query-conditions)
     - [5.5 Transaction Support](#55-transaction-support)
@@ -351,7 +353,8 @@ var updateCount = customerRepository.Where(it => it.Name == "testCustomer")
 
 ### 5.4 Query
 It supports normal query and paged query, and there are two ways to query.
-#### 5.4.1 Lambda chain syntax query, such as:
+#### 5.4.1 Lambda chain syntax query
+##### 5.4.1.1 Single table query
 ```` csharp
 //regular query
 var allCustomers = await customerRepository.GetAllAsync();
@@ -371,6 +374,38 @@ var pageResult = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(1
 
 var pageable = new Pageable(1, 10);
 var pageResult2 = await customerRepository.ToPageAsync(pageable);
+````
+
+##### 5.4.1.2 Multiple table joint query
+Supports InnerJoin, LeftJoin, RightJoin, WhereIf, OrWhereIf and other extensions, supports up to 4 table joint queries, and supports returning entity types or anonymous types.
+````csharp
+//Back to list
+ var orderList8 = await orderHeaderRepository
+     .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+     .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+     .InnerJoin(new Address(),it=>it.T4.CustomerId==it.T3.Id &&it.T4.CreateOn== date3)
+     .OrderBy(it => it.T2.Quantity)
+     .Where(it => it.T3.CustomerNo == "A1")
+     .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age,CustomerCity = it.T4.City}, x => x.T1)
+     .ToListAsync();
+
+var result7 = await customerRepository
+    .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+    .Where(it => it.T1.CustomerNo == "A2")
+    .OrWhereIf(false, it => it.T2.City == "B")
+    .Select(it => new { it.T1.CustomerNo, it.T2.City })
+    .ToListAsync();
+
+// pagination
+var pageable = new Pageable(1, 5);
+var orderPageList = orderHeaderRepository
+    .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+    .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+    .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+    .OrderBy(it => it.T2.Quantity)
+    .Where(it => it.T1.State == 1)
+    .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+    .ToPage(pageable);
 ````
 
 #### 5.4.2 Define methods directly in the interface, and add annotations to the methods, such as Select, Update, Delete

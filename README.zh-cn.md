@@ -52,7 +52,9 @@ net core 3.1,net 6
       - [5.3.1 接口自带了Update方法，可以更新单个实体，或者实体列表](#531-接口自带了update方法可以更新单个实体或者实体列表)
       - [5.3.2 同时还支持基于Lambda链式语法的更新方式](#532-同时还支持基于lambda链式语法的更新方式)
     - [5.4 查](#54-查)
-      - [5.4.1 Lambda链式语法查询，如：](#541-lambda链式语法查询如)
+      - [5.4.1 Lambda链式语法查询](#541-lambda链式语法查询)
+        - [5.4.1.1 单表查询](#5411-单表查询)
+        - [5.4.1.2 多表联查](#5412-多表联查)
       - [5.4.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete](#542-直接在接口里定义方法并且在方法上加上注解如selectupdatedelete)
       - [5.4.3 注解里的sql支持从配置里读取](#543-注解里的sql支持从配置里读取)
       - [5.4.4 select注解这种方式拼接where查询条件](#544-select注解这种方式拼接where查询条件)
@@ -349,9 +351,10 @@ var updateCount= customerRepository.Where(it=>it.Name == "testCustomer")
 
 ### 5.4 查
 支持正常查询与分页查询，查询有2种方式。
-#### 5.4.1 Lambda链式语法查询，如：
+#### 5.4.1 Lambda链式语法查询
+##### 5.4.1.1 单表查询
 ````csharp
-//常规查询
+//单表查询
 var allCustomers = await customerRepository.GetAllAsync();
 
 var customerById = await customerRepository.GetAsync(1);
@@ -369,8 +372,39 @@ var pageResult = await customerRepository.Where(it => it.Age > 5).Skip(0).Take(1
 
 var pageable = new Pageable(1, 10);
 var pageResult2 = await customerRepository.ToPageAsync(pageable);
-````
 
+````
+##### 5.4.1.2 多表联查
+支持InnerJoin，LeftJoin，RightJoin，WhereIf,OrWhereIf等扩展，最大支持4表联查，支持返回实体类型或者匿名类型。
+````csharp
+//返回列表
+ var orderList8 = await orderHeaderRepository
+     .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+     .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+     .InnerJoin(new Address(),it=>it.T4.CustomerId==it.T3.Id &&it.T4.CreateOn== date3)
+     .OrderBy(it => it.T2.Quantity)
+     .Where(it => it.T3.CustomerNo == "A1")
+     .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age,CustomerCity = it.T4.City}, x => x.T1)
+     .ToListAsync();
+
+var result7 = await customerRepository
+    .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+    .Where(it => it.T1.CustomerNo == "A2")
+    .OrWhereIf(false, it => it.T2.City == "B")
+    .Select(it => new { it.T1.CustomerNo, it.T2.City })
+    .ToListAsync();
+
+//分页查询
+var pageable = new Pageable(1, 5);
+var orderPageList = orderHeaderRepository
+    .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+    .LeftJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+    .LeftJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+    .OrderBy(it => it.T2.Quantity)
+    .Where(it => it.T1.State == 1)
+    .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+    .ToPage(pageable);
+````
 #### 5.4.2 直接在接口里定义方法，并且在方法上加上注解，如Select,Update,Delete
  然后在Select,Update,Delete里写sql语句,如
 ````csharp
