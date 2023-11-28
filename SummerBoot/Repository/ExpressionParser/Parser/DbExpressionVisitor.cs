@@ -75,7 +75,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 case DbExpressionType.Join:
                 case DbExpressionType.Query:
                     return this.VisitQuery((QueryExpression)exp);
-            
+
                 case DbExpressionType.MultiSelect:
                     return this.VisitMultiSelect((MultiSelectExpression)exp);
                 case DbExpressionType.MultiSelectAutoFill:
@@ -817,12 +817,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     result.Right = whereTrueFalseValueCondition;
                     return result;
                 }
-                else if (rightExpression is ColumnExpression rightColumnExpression4 &&  leftExpression is ColumnExpression leftColumnExpression4)
+                else if (rightExpression is ColumnExpression rightColumnExpression4 && leftExpression is ColumnExpression leftColumnExpression4)
                 {
 
                     var whereTrueFalseValueCondition =
                         new WhereTwoColumnExpression(leftColumnExpression4, @operator, rightColumnExpression4);
-                   
+
                     return whereTrueFalseValueCondition;
                 }
                 else
@@ -1037,13 +1037,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var tempVisitResult = this.Visit(whereCall.Arguments[0]);
                 var lambda = (LambdaExpression)this.StripQuotes(whereCall.Arguments[1]);
                 var bodyExpression = this.Visit(lambda.Body);
-               
-                TableExpression source=null;
+
+                TableExpression source = null;
                 SelectExpression selectExpression = null;
                 if (tempVisitResult is TableExpression tempTableExpression)
                 {
                     source = tempTableExpression;
-                }else if (tempVisitResult is SelectExpression tempSelectExpression)
+                }
+                else if (tempVisitResult is SelectExpression tempSelectExpression)
                 {
                     selectExpression = tempSelectExpression;
                 }
@@ -1051,13 +1052,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     throw new NotSupportedException(tempVisitResult?.NodeType.ToString());
                 }
-                
+
                 //兼容it.isHandsome这种单true的条件
                 if (bodyExpression is ColumnExpression columnExpression && columnExpression.Type == typeof(bool))
                 {
                     var whereConditionExpression = new WhereConditionExpression(columnExpression, "=", 1);
-                    selectExpression= CombineSelectExpression(source, whereConditionExpression, selectExpression, @operator);
-                   
+                    selectExpression = CombineSelectExpression(source, whereConditionExpression, selectExpression, @operator);
+
                     return selectExpression;
 
                 }
@@ -1082,7 +1083,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
-        private SelectExpression CombineSelectExpression(TableExpression source ,WhereExpression whereExpression,SelectExpression selectExpression, string @operator)
+        private SelectExpression CombineSelectExpression(TableExpression source, WhereExpression whereExpression, SelectExpression selectExpression, string @operator)
         {
             if (selectExpression == null)
             {
@@ -1435,6 +1436,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     column.Table = table;
                     return column;
                 }
+                //如果是匿名类
+                else if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is NewExpression newExpression && newExpression.Arguments.Any() && newExpression.Arguments[0] is ConstantExpression)
+                {
+                    var value = GetValue(memberExpression);
+                    return Expression.Constant(value);
+                }
                 else
                 {
                     throw new NotSupportedException();
@@ -1463,8 +1470,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     }
                     else
                     {
-                        var value = GetValue(memberExpression);
-                        return Expression.Constant(value);
+                        //判断是否为可空类型
+                        if (memberExpression.Member != null && memberExpression.Member.Name == "Value" &&
+                            memberExpression.Member.DeclaringType != null &&
+                            memberExpression.Member.DeclaringType.IsGenericType &&
+                            memberExpression.Member.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        {
+                            var middlExpression = this.Visit(parentExpression);
+                            return middlExpression;
+                        }
+                        else
+                        {
+                            var value = GetValue(memberExpression);
+                            return Expression.Constant(value);
+                        }
+
                     }
 
                 }
@@ -1484,6 +1504,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 //如果是constant
                 else if (memberExpression.Expression is ConstantExpression constantExpression)
+                {
+                    var value = GetValue(memberExpression);
+                    return Expression.Constant(value);
+                    //return constantExpression;
+                }
+                //如果是匿名类
+                else if (memberExpression.Expression is NewExpression newExpression && newExpression.Arguments.Any() && newExpression.Arguments[0] is ConstantExpression)
                 {
                     var value = GetValue(memberExpression);
                     return Expression.Constant(value);

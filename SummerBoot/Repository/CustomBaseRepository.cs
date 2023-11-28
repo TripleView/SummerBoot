@@ -213,7 +213,7 @@ namespace SummerBoot.Repository
 
             CloseDb();
             return result;
-           
+
         }
 
         public override async Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param)
@@ -222,8 +222,8 @@ namespace SummerBoot.Repository
             OpenDb();
             var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
 
-            var result =await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
-            
+            var result = await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
+
             CloseDb();
             return result;
         }
@@ -625,6 +625,52 @@ namespace SummerBoot.Repository
                 if (internalResult.IdKeyPropertyInfo != null)
                 {
                     dynamicParameters.Add(internalResult.IdName, 0, dbType: DbType.Int32, direction: ParameterDirection.Output);
+                }
+
+                if (databaseType == DatabaseType.Pgsql)
+                {
+                    foreach (var dynamicParametersGetParamInfo in dynamicParameters.GetParamInfos)
+                    {
+                        if (dynamicParametersGetParamInfo.Value != null && dynamicParametersGetParamInfo.Value.ValueType != null && (dynamicParametersGetParamInfo.Value.ValueType.IsEnum || (dynamicParametersGetParamInfo.Value.ValueType.IsNullable() && Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType).IsEnum)))
+                        {
+                            var enumType = dynamicParametersGetParamInfo.Value.ValueType.IsEnum? dynamicParametersGetParamInfo.Value.ValueType : Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType);
+                            var enumUnderlyingType=  Enum.GetUnderlyingType(enumType);
+                            if (dynamicParametersGetParamInfo.Value.Value != null)
+                            {
+                                if (enumUnderlyingType == typeof(int))
+                                {
+                                    dynamicParametersGetParamInfo.Value.Value =
+                                        Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
+                                    dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
+                                }
+                                else if (enumUnderlyingType == typeof(uint))
+                                {
+                                    dynamicParametersGetParamInfo.Value.Value =
+                                        Convert.ToUInt32(dynamicParametersGetParamInfo.Value.Value);
+                                    dynamicParametersGetParamInfo.Value.ValueType = typeof(uint);
+                                }
+                                else if (enumUnderlyingType == typeof(long))
+                                {
+                                    dynamicParametersGetParamInfo.Value.Value =
+                                        Convert.ToInt64(dynamicParametersGetParamInfo.Value.Value);
+                                    dynamicParametersGetParamInfo.Value.ValueType = typeof(long);
+                                }
+                                else if (enumUnderlyingType == typeof(ulong))
+                                {
+                                    dynamicParametersGetParamInfo.Value.Value =
+                                        Convert.ToUInt64(dynamicParametersGetParamInfo.Value.Value);
+                                    dynamicParametersGetParamInfo.Value.ValueType = typeof(ulong);
+                                }
+                                else
+                                {
+                                    dynamicParametersGetParamInfo.Value.Value =
+                                        Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
+                                    dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
+                                }
+
+                            }
+                        }
+                    }
                 }
 
                 var sql = internalResult.Sql;

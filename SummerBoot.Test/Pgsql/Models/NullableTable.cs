@@ -54,6 +54,8 @@ namespace SummerBoot.Test.Pgsql.Models
         [Column("testint3")]
         [Description("Int2")]
         public int? Int3 { get; set; }
+        [Column("enum3")]
+        public Enum3? Enum3 { get; set; }
     }
 
 }

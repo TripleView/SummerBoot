@@ -472,6 +472,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
 
             int index = 0;
+            
             _sb.Append(" (");
             if (whereExpression.Left != null && whereExpression.Right != null)
             {

@@ -24,6 +24,8 @@ using SummerBoot.Test.Common.Dto;
 using SummerBoot.Test.SqlServer.Dto;
 using Xunit;
 using Xunit.Priority;
+using MySqlX.XDevAPI.Relational;
+using Polly.Caching;
 
 namespace SummerBoot.Test.SqlServer
 {
@@ -32,6 +34,52 @@ namespace SummerBoot.Test.SqlServer
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        /// <summary>
+        /// 测试where条件中参数是可空类型
+        /// </summary>
+        [Fact, Priority(423)]
+        public async Task TestWhereConditionHaveNullableValue()
+        {
+            InitDatabase();
+
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < 5; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = i,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = DateTime.Now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+            var list = new List<int>() { 1, 11, 111 };
+            var result = nullableTableRepository.Where(it => list.Contains(it.Int2.Value)).ToList();
+            Assert.Equal(1, result.Count);
+            Assert.Equal(1, result[0].Int2);
+            var result2 = nullableTableRepository.Where(it => it.Int2.Value == new { value = 2 }.value).ToList();
+            Assert.Equal(1, result2.Count);
+            Assert.Equal(2, result2[0].Int2);
+        }
 
         /// <summary>
         /// 测试where条件的各种情况
@@ -190,6 +238,19 @@ namespace SummerBoot.Test.SqlServer
             await orderDetailRepository.InsertAsync(orderDetail3);
             await orderDetailRepository.InsertAsync(orderDetail4);
             #region 测试双表where
+
+            var result01 = await customerRepository
+                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City==new {city="B"}.city)
+                .Select(it => new { it.T1.CustomerNo, it.T2.City })
+                .ToListAsync();
+            Assert.Equal(1, result01.Count);
+
+            var result02 = await customerRepository
+                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId )
+                .Where(it=>it.T2.City == new { city = "B" }.city)
+                .Select(it => new { it.T1.CustomerNo, it.T2.City })
+                .ToListAsync();
+            Assert.Equal(1, result02.Count);
 
             var result = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
@@ -1568,7 +1629,7 @@ namespace SummerBoot.Test.SqlServer
             InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
             var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
-          
+
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {
@@ -1861,7 +1922,7 @@ namespace SummerBoot.Test.SqlServer
             var total = 2000;
             InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
-       
+
             var sw = new Stopwatch();
             var nullableTableList = new List<NullableTable>();
 
@@ -2767,13 +2828,13 @@ namespace SummerBoot.Test.SqlServer
             var newCount4 = await customerRepository.GetAllAsync();
             Assert.Equal(8, newCount4.Count);
             await customerRepository.InsertAsync(new Customer() { Age = 200, Name = null });
-            var emptyNameCustomers =await customerRepository.Where(it => it.Name == null).ToListAsync();
+            var emptyNameCustomers = await customerRepository.Where(it => it.Name == null).ToListAsync();
             Assert.Equal(1, emptyNameCustomers.Count);
-            var notNullNameCustomers =await customerRepository.Where(it => it.Name != null).ToListAsync();
+            var notNullNameCustomers = await customerRepository.Where(it => it.Name != null).ToListAsync();
             Assert.Equal(8, notNullNameCustomers.Count);
             //测试空列表
             var parameters = new List<string>();
-            var emptyCustomers= await customerRepository.Where(it => parameters.Contains(it.Name)).ToListAsync();
+            var emptyCustomers = await customerRepository.Where(it => parameters.Contains(it.Name)).ToListAsync();
             Assert.Empty(emptyCustomers);
         }
 
@@ -2969,14 +3030,14 @@ namespace SummerBoot.Test.SqlServer
             var newCount4 = customerRepository.GetAll();
             Assert.Equal(8, newCount4.Count);
             customerRepository.Insert(new Customer() { Age = 200, Name = null });
-            var emptyNameCustomers= customerRepository.Where(it => it.Name == null).ToList();
+            var emptyNameCustomers = customerRepository.Where(it => it.Name == null).ToList();
             Assert.Equal(1, emptyNameCustomers.Count);
             var notNullNameCustomers = customerRepository.Where(it => it.Name != null).ToList();
             Assert.Equal(8, notNullNameCustomers.Count);
 
             //测试空列表
             var parameters = new List<string>();
-            var emptyCustomers =  customerRepository.Where(it => parameters.Contains(it.Name)).ToList();
+            var emptyCustomers = customerRepository.Where(it => parameters.Contains(it.Name)).ToList();
             Assert.Empty(emptyCustomers);
         }
 

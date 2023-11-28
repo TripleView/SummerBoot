@@ -30,7 +30,6 @@ namespace SummerBoot.Repository
         private IDbConnection shareDbTransactionLinkDbConnection;
         public void Dispose()
         {
-            Console.WriteLine(123);
             this.ReleaseDbTransaction();
             this.ReleaseDbConnection();
         }

@@ -8,6 +8,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -661,7 +662,7 @@ namespace SummerBoot.Repository.Core
                         }
                         var tempParamInfo = new ParamInfo()
                         {
-                            Name = info.Key + count,
+                            Name = info.Key +"s"+ count,
                             Value = tempValue,
                             ValueType = tempValue.GetType(),
                             ParameterDirection = ParameterDirection.Input
@@ -753,6 +754,7 @@ namespace SummerBoot.Repository.Core
             var result = Regex.Replace(sql, pattern, match =>
             {
                 var variableName = match.Groups[1].Value;
+                variableName += "s";
                 if (count == 0)
                 {
                     var result = "";
@@ -769,9 +771,9 @@ namespace SummerBoot.Repository.Core
                 }
                 else
                 {
-
                     if (match.Groups[2].Success)
                     {
+                       
                         var suffix = match.Groups[2].Value;
 
                         var sb = new StringBuilder().Append(variableName).Append(1).Append(suffix);

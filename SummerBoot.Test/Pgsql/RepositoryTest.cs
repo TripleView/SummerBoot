@@ -33,6 +33,54 @@ namespace SummerBoot.Test.Pgsql
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试where条件中参数是可空类型
+        /// </summary>
+        [Fact, Priority(523)]
+        public async Task TestWhereConditionHaveNullableValue()
+        {
+            InitDatabase();
+
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTableList = new List<NullableTable>();
+
+            for (int i = 0; i < 5; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = i,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = DateTime.Now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Enum3 = Model.Enum3.y,
+                    Int3 = 4
+                };
+
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.InsertAsync(nullableTableList);
+            var list = new List<int>() { 1, 11, 111 };
+            var result = nullableTableRepository.Where(it => list.Contains(it.Int2.Value)).ToList();
+            Assert.Equal(1, result.Count);
+            Assert.Equal(1, result[0].Int2);
+            var result2 = nullableTableRepository.Where(it => it.Int2.Value == new { value = 2 }.value).ToList();
+            Assert.Equal(1, result2.Count);
+            Assert.Equal(2, result2[0].Int2);
+        }
+
+
+        /// <summary>
         /// 测试where条件的各种情况
         /// </summary>
         [Fact, Priority(522)]
@@ -189,6 +237,18 @@ namespace SummerBoot.Test.Pgsql
             await orderDetailRepository.InsertAsync(orderDetail3);
             await orderDetailRepository.InsertAsync(orderDetail4);
             #region 测试双表where
+            var result01 = await customerRepository
+                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City == new { city = "B" }.city)
+                .Select(it => new { it.T1.CustomerNo, it.T2.City })
+                .ToListAsync();
+            Assert.Equal(1, result01.Count);
+
+            var result02 = await customerRepository
+                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+                .Where(it => it.T2.City == new { city = "B" }.city)
+                .Select(it => new { it.T1.CustomerNo, it.T2.City })
+                .ToListAsync();
+            Assert.Equal(1, result02.Count);
 
             var result = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
@@ -2455,6 +2515,8 @@ namespace SummerBoot.Test.Pgsql
             sb.AppendLine("      public int? Enum2 { get; set; }");
             sb.AppendLine("      [Column(\"testint3\")]");
             sb.AppendLine("      public int? Testint3 { get; set; }");
+            sb.AppendLine("      [Column(\"enum3\")]");
+            sb.AppendLine("      public long? Enum3 { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
             exceptStr = sb.ToString();
@@ -2549,6 +2611,7 @@ namespace SummerBoot.Test.Pgsql
             sb.AppendLine("    \"string3\" text NULL,");
             sb.AppendLine("    \"enum2\" int4 NULL,");
             sb.AppendLine("    \"testint3\" int4 NULL,");
+            sb.AppendLine("    \"enum3\" int4 NULL,");
             sb.AppendLine(" CONSTRAINT nullabletable2_pk PRIMARY KEY (id)");
             sb.AppendLine(")");
             var exceptStr = sb.ToString();

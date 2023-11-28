@@ -5,4 +5,10 @@
         x,
         y
     }
+
+    public enum Enum3:long
+    {
+        x,
+        y
+    }
 }
