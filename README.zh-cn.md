@@ -23,7 +23,7 @@ SummerBootAdmin](https://github.com/TripleView/SummerBootAdmin)，一个基于�
  
  ```PM> Install-Package SummerBoot```
 # 支持框架
-net core 3.1,net 6
+net core 3.1, net 6,net 8
 
 # 文档目录
 - [感谢jetbrain提供的ide许可证](#感谢jetbrain提供的ide许可证)

@@ -24,7 +24,7 @@ SummerBoot in your project .
  
  ```PM> Install-Package SummerBoot ```
 # support frame
-net core 3.1, net 6
+net core 3.1, net 6,net 8
 
 # document directory
 - [Thanks for the ide license provided by jetbrain](#thanks-for-the-ide-license-provided-by-jetbrain)
