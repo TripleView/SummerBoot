@@ -23,7 +23,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
         }
 
-        public TableExpression(Type type,string tableAlias)
+        public TableExpression(Type type, string tableAlias)
             : base((ExpressionType)DbExpressionType.Table, type)
         {
             this.TableAlias = tableAlias;
@@ -37,12 +37,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// <summary>
         /// 表的名称
         /// </summary>
-        public string Name 
+        public string Name
         {
             get
             {
                 //查找tableAttribute特性,看下有没有自定义表名
-                var tableAttribute =Type.GetCustomAttribute<TableAttribute>();
+                var tableAttribute = Type.GetCustomAttribute<TableAttribute>();
                 //如果没有该特性，直接使用类名作为表名
                 var tableName = tableAttribute == null ? Type.Name : tableAttribute.Name;
                 return tableName;
@@ -63,6 +63,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 return schema;
             }
         }
+
+        private static object lockObj = new object();
+
         /// <summary>
         /// 表的列
         /// </summary>
@@ -72,21 +75,27 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 if (_columns == null)
                 {
-                    int i = 0;
-                    _columns = new List<ColumnExpression>();
-                 
-                    //排除掉不映射的列
-                    var properties = Type.GetProperties().Where(it => !it.GetCustomAttributes().OfType<NotMappedAttribute>().Any()).ToList();
-                    var tableAlias=TableAlias.HasText()?TableAlias:"";
-                    foreach (var propertyInfo in properties)
+                    lock (lockObj)
                     {
-                        _columns.Add(new ColumnExpression(propertyInfo.PropertyType,
-                            tableAlias, propertyInfo, i++)
+                        if (_columns == null)
                         {
-                            ValueType = propertyInfo.PropertyType
-                        });
+                            int i = 0;
+                            _columns = new List<ColumnExpression>();
+
+                            //排除掉不映射的列
+                            var properties = Type.GetProperties()
+                                .Where(it => !it.GetCustomAttributes().OfType<NotMappedAttribute>().Any()).ToList();
+                            var tableAlias = TableAlias.HasText() ? TableAlias : "";
+                            foreach (var propertyInfo in properties)
+                            {
+                                _columns.Add(new ColumnExpression(propertyInfo.PropertyType,
+                                    tableAlias, propertyInfo, i++)
+                                {
+                                    ValueType = propertyInfo.PropertyType
+                                });
+                            }
+                        }
                     }
-                    
                 }
 
                 return _columns;
