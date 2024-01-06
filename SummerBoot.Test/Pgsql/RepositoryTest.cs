@@ -33,6 +33,52 @@ namespace SummerBoot.Test.Pgsql
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试where条件中参数包含方法
+        /// </summary>
+        [Fact, Priority(524)]
+        public async Task TestWhereConditionContainOtherMethod()
+        {
+            InitDatabase();
+
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTableList = new List<NullableTable>();
+            var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
+            for (int i = 0; i < 5; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = i,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = dateNow.AddMinutes(i),
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = "sb",
+                    String3 = "sb",
+                    Long2 = 2
+                };
+
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.InsertAsync(nullableTableList);
+            var result = nullableTableRepository.Where(it => it.DateTime2 >= dateNow.AddMinutes(3)).ToList();
+            Assert.Equal(2, result.Count);
+
+            var result2 = nullableTableRepository.Where(it => it.DateTime2 >= TestWhereConditionContainDateTimeMethodItem(dateNow)).ToList();
+            Assert.Equal(2, result2.Count);
+        }
+
+        private DateTime TestWhereConditionContainDateTimeMethodItem(DateTime dateTime)
+        {
+            return dateTime.AddMinutes(3);
+        }
+        /// <summary>
         /// 测试where条件中参数是可空类型
         /// </summary>
         [Fact, Priority(523)]

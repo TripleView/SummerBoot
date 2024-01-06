@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using SummerBoot.Core;
 using SummerBoot.Repository.ExpressionParser.Util;
+using DateTime = System.DateTime;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -491,6 +492,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     throw new NotSupportedException(methodName);
                 }
             }
+            else if (method.DeclaringType == typeof(DateTime))
+            {
+                var date = this.GetValue(node);
+                return ConstantExpression.Constant(date);
+            }
             else
             {
                 //collection
@@ -570,6 +576,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 }
                 else
                 {
+                    var date = this.GetValue(node);
+                    return ConstantExpression.Constant(date);
                     throw new NotSupportedException(methodName);
                 }
             }
