@@ -25,5 +25,7 @@ namespace SummerBoot.Test.Oracle.Models
         /// </summary>
         [Column("TOTALCONSUMPTIONAMOUNT")]
         public decimal TotalConsumptionAmount { set; get; }
+        [Column("BIRTHDAY")]
+        public DateTime? BirthDay { get; set; }
     }
 }

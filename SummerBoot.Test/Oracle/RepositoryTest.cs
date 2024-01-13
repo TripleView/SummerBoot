@@ -139,13 +139,14 @@ namespace SummerBoot.Test.Oracle
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
+            var birthDay = new DateTime(1992, 2, 15);
             var customer1 = new Customer()
             {
                 Age = 1,
                 Name = "bob",
                 CustomerNo = "A1",
-                TotalConsumptionAmount = 1
+                TotalConsumptionAmount = 1,
+                BirthDay = birthDay
             };
 
             var customer2 = new Customer()
@@ -297,6 +298,21 @@ namespace SummerBoot.Test.Oracle
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();
             Assert.Equal(1, result02.Count);
+
+            var result03 = await customerRepository
+                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+                .Where(it => it.T2.City == new { city = "B" }.city)
+                .Select(it => it.T1.CustomerNo)
+                .ToListAsync();
+            Assert.Equal(1, result03.Count);
+
+            var result04 = await customerRepository
+                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+                .Where(it => it.T2.City == new { city = "B" }.city)
+                .Select(it => new { it.T1.BirthDay, it.T2.City })
+                .ToListAsync();
+            Assert.Equal(1, result04.Count);
+            Assert.Equal(birthDay, result04[0].BirthDay);
 
             var result = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
@@ -2452,6 +2468,8 @@ namespace SummerBoot.Test.Oracle
             sb.AppendLine("      public string CUSTOMERNO { get; set; }");
             sb.AppendLine("      [Column(\"TOTALCONSUMPTIONAMOUNT\")]");
             sb.AppendLine("      public decimal TOTALCONSUMPTIONAMOUNT { get; set; }");
+            sb.AppendLine("      [Column(\"BIRTHDAY\")]");
+            sb.AppendLine("      public DateTime? BIRTHDAY { get; set; }");
             sb.AppendLine("   }");
             sb.AppendLine("}");
             var exceptStr = sb.ToString();

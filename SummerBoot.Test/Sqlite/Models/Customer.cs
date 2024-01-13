@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SummerBoot.Test.Sqlite.Models
@@ -17,5 +18,10 @@ namespace SummerBoot.Test.Sqlite.Models
         /// 总消费金额
         /// </summary>
         public decimal TotalConsumptionAmount { set; get; }
+
+        /// <summary>
+        /// 生日
+        /// </summary>
+        public DateTime? BirthDay { set; get; }
     }
 }

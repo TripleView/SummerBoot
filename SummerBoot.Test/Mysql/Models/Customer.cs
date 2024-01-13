@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SummerBoot.Test.Mysql.Models
@@ -17,6 +18,9 @@ namespace SummerBoot.Test.Mysql.Models
         /// 总消费金额
         /// </summary>
         public decimal TotalConsumptionAmount { set; get; }
+
+        [Column("BirthDay")]
+        public DateTime? BirthDay { get; set; }
     }
 
 }

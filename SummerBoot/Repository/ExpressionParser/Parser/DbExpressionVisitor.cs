@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using SummerBoot.Core;
+using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 using SummerBoot.Repository.ExpressionParser.Util;
 using DateTime = System.DateTime;
 
@@ -115,11 +116,12 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var result = VisitMultiSelectMemberInit(memberInitExpression);
                 return result;
             }
-            else if (multiSelectExpression.Expression is MemberExpression memberExpression)
+            else
             {
-                var tableAlias = memberExpression.Member.Name;
-                var table = new TableExpression(multiSelectExpression.Expression.Type, tableAlias);
-                return new ColumnsExpression(table.Columns, memberExpression.Type);
+                methodCallStack.Push(nameof(RepositoryMethod.MultiSelect));
+                var result = Visit(multiSelectExpression.Expression);
+                methodCallStack.Pop();
+                return result;
             }
 
             throw new NotSupportedException(nameof(multiSelectExpression.Expression));
@@ -1415,7 +1417,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return columnExpression;
                 }
             }
-            else if (MethodName == nameof(RepositoryMethod.JoinOn) || MethodName == nameof(RepositoryMethod.MultiQueryWhere) || MethodName == nameof(RepositoryMethod.MultiQueryOrderBy))
+            else if (MethodName == nameof(RepositoryMethod.JoinOn) || MethodName == nameof(RepositoryMethod.MultiQueryWhere) || MethodName == nameof(RepositoryMethod.MultiQueryOrderBy) || MethodName == nameof(RepositoryMethod.MultiSelect))
             {
                 //解析静态值,例如dto里的参数，dto.Name
                 if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is ConstantExpression constantExpression)
@@ -1449,6 +1451,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 {
                     var value = GetValue(memberExpression);
                     return Expression.Constant(value);
+                }
+                //只有一层，类似于it.T1这种
+                else if (GetNumberOfMemberExpressionLayers(memberExpression) == 1
+                         && memberExpression.Expression.Type != null
+                         && memberExpression.Expression.Type.Name.Contains("JoinCondition"))
+                {
+                    var tableAlias = memberExpression.Member.Name;
+                    var table = new TableExpression(memberExpression.Type, tableAlias);
+                    return new ColumnsExpression(table.Columns, memberExpression.Type);
                 }
                 else
                 {

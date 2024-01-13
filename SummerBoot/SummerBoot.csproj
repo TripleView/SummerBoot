@@ -6,7 +6,7 @@
     <StartupObject />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>2.0.9</Version>
+    <Version>2.1.1</Version>
     <Description>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。Combining the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming focuses on "what to do" rather than "how to do it", and writes code at a higher level. SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.</Description>
     <PackageReleaseNotes>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。Combining the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming focuses on "what to do" rather than "how to do it", and writes code at a higher level. SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/TripleView/SummerBoot</RepositoryUrl>

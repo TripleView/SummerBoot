@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SummerBoot.Test.Pgsql.Models
@@ -22,5 +23,8 @@ namespace SummerBoot.Test.Pgsql.Models
         /// </summary>
         [Column("totalconsumptionamount")]
         public decimal TotalConsumptionAmount { set; get; }
+
+        [Column("BirthDay")]
+        public DateTime? BirthDay { get; set; }
     }
 }

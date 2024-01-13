@@ -1018,8 +1018,8 @@ namespace SummerBoot.Repository.Core
                 var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
                 //实际类型
                 var realType = nullableEntityFieldType ?? entityFieldType;
-
-                var localArg = il.DeclareLocal(realType);
+                var localArg = il.DeclareLocal(entityFieldType);
+                //var localArg = il.DeclareLocal(realType);
                 localArgs.Add(localArg);
                 var dbNullLabel = il.DefineLabel();
                 var finishLabel = il.DefineLabel();

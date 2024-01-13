@@ -128,6 +128,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     {
                         selectColumns.AddRange(columnsExpression.ColumnExpressions);
                     }
+                    else if (multiSelectExpressionResult is ColumnExpression columnExpression)
+                    {
+                        selectColumns.Add(columnExpression);
+                    }
                 }
                 else
                 {
