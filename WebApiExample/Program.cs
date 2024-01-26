@@ -21,6 +21,8 @@ namespace WebApiExample
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddSummerBoot();
+            //Ìí¼ÓÄÚ´æ»º´æ
+            builder.Services.AddSummerBootCache(it => it.UseMemory());
             builder.Services.AddSummerBootFeign(it =>
             {
                 it.AddNacos(builder.Configuration);

@@ -5,9 +5,18 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Feign.Nacos
 {
-    [FeignClient(Url = "${nacos:serviceAddress}",Timeout = 60)]
+    [FeignClient(Url = "${nacos:serviceAddress}", InterceptorType = typeof(AuthInterceptor), Timeout = 60)]
     public interface INacosService
     {
+        /// <summary>
+        /// 服务器需要授权的在请求前获取Token
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [PostMapping("/nacos/v1/auth/login")]
+        [IgnoreInterceptor]
+        Task<GetTokenOutputDto> QueryToken([Query] QueryTokenDto dto);
+
         /// <summary>
         /// 注册实例
         /// </summary>
