@@ -372,9 +372,10 @@ namespace SummerBoot.Core
         {
             if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
 
+            var customDbFactoryType = GenerateCustomDbFactory(modBuilder, serviceType);
+
             object Factory(IServiceProvider provider)
             {
-                var customDbFactoryType = GenerateCustomDbFactory(modBuilder, serviceType);
                 var customDbFactory = customDbFactoryType.CreateInstance(new object[] { databaseUnit });
                 return customDbFactory;
             };

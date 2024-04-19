@@ -100,7 +100,7 @@ net core 3.1, net 6,net 8
 - [SummerBoot中的人性化的设计](#summerboot中的人性化的设计)
 
 # SummerBoot中使用repository进行数据库操作
-summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，支持多数据库多链接，包括常见的5种数据库类型（sqlserver，mysql，oracle，sqlite,pgsql）的增删改查操作,如果有其他数据库需求，可以参考以上5个的源码，给本项目贡献代码。orm不支持多表联查的lambda查询，因为我认为多表查询直接写sql更容易上手与维护。
+summerBoot基于工作单元与仓储模式开发了自己的ORM模块，即repository，支持多数据库多链接，包括常见的5种数据库类型（sqlserver，mysql，oracle，sqlite,pgsql）的增删改查操作,如果有其他数据库需求，可以参考以上5个的源码，给本项目贡献代码。
 
 ## 准备工作
 需要自己通过nuget安装相应的数据库依赖包，比如SqlServer的Microsoft.Data.SqlClient，mysql的Mysql.data, oracle的Oracle.ManagedDataAccess.Core,pgsql的Npgsql

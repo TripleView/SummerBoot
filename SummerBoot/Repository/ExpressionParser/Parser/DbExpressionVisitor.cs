@@ -1461,6 +1461,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     var table = new TableExpression(memberExpression.Type, tableAlias);
                     return new ColumnsExpression(table.Columns, memberExpression.Type);
                 }
+                else if(IsNullableGetValue(memberExpression))
+                {
+                    return Visit(memberExpression.Expression);
+                }
                 else
                 {
                     throw new NotSupportedException();
@@ -1490,10 +1494,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     else
                     {
                         //判断是否为可空类型
-                        if (memberExpression.Member != null && memberExpression.Member.Name == "Value" &&
-                            memberExpression.Member.DeclaringType != null &&
-                            memberExpression.Member.DeclaringType.IsGenericType &&
-                            memberExpression.Member.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        if (IsNullableGetValue(memberExpression))
                         {
                             var middlExpression = this.Visit(parentExpression);
                             return middlExpression;
@@ -1545,7 +1546,18 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
-
+        /// <summary>
+        /// 判断是否可空类型
+        /// </summary>
+        /// <param name="memberExpression"></param>
+        /// <returns></returns>
+        private bool IsNullableGetValue(MemberExpression memberExpression)
+        {
+            return memberExpression.Member != null && memberExpression.Member.Name == "Value" &&
+                            memberExpression.Member.DeclaringType != null &&
+                            memberExpression.Member.DeclaringType.IsGenericType &&
+                            memberExpression.Member.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>);
+        }
         /// <summary>
         /// 获取嵌套的member的层数
         /// </summary>

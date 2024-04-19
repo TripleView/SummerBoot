@@ -100,7 +100,7 @@ net core 3.1, net 6,net 8
 
 
 # SummerBoot uses repository for database operations
-summerBoot has developed its own ORM module based on the work unit and warehousing mode, that is, repository, which supports multiple databases and multiple links, including addition, deletion , modification and query operations of five common database types (sqlserver, mysql, oracle, sqlite, pgsql) , if there are other For database requirements, you can refer to the above 5 source codes and contribute codes to this project.orm does not support lambda queries for multi-table joint query, because I think it is easier to use and maintain multi-table queries directly in SQL .
+summerBoot has developed its own ORM module based on the work unit and warehousing mode, that is, repository, which supports multiple databases and multiple links, including addition, deletion , modification and query operations of five common database types (sqlserver, mysql, oracle, sqlite, pgsql) , if there are other For database requirements, you can refer to the above 5 source codes and contribute codes to this project.
 
 ## Preparation
 You need to install the corresponding database dependency package through nuget , such as Microsoft.Data.SqlClient of SqlServer , Mysql.data of mysql , Oracle.ManagedDataAccess.Core of oracle, Npgsql of pgsql
