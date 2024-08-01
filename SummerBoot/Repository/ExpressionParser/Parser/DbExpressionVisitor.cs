@@ -1536,6 +1536,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     return Expression.Constant(value);
                     //return constantExpression;
                 }
+                //如果是new一个实例，如new TestWhereNewDatetime().Time
+                else if (memberExpression.Expression is NewExpression newExpression2 )
+                {
+                    var value = GetValue(memberExpression);
+                    return Expression.Constant(value);
+                    //return constantExpression;
+                }
                 else
                 {
                     var result = new ColumnExpression(null, "", null, 0);
@@ -1676,10 +1683,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected override Expression VisitNew(NewExpression newExpression)
         {
-            //if (MethodName == nameof(RepositoryMethod.MultiSelect))
-            //{
-            //    return VisitMultiSelectNew(newExpression);
-            //}
+            if (newExpression.Members == null)
+            {
+                var value = GetValue(newExpression);
+                return Expression.Constant(value);
+            }
 
             var newColumns = new List<ColumnExpression>();
 

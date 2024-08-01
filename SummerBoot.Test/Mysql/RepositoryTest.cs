@@ -35,6 +35,19 @@ namespace SummerBoot.Test.Mysql
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试left/right join时左右实体类里连接属性为可空类型 
+        /// </summary>
+        [Fact, Priority(125)]
+        public async Task TestJoinEntityWithNullableProperty()
+        {
+            InitDatabase();
+
+            var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
+            var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+
+        }
+
+        /// <summary>
         /// 测试where条件中参数包含方法
         /// </summary>
         [Fact, Priority(124)]

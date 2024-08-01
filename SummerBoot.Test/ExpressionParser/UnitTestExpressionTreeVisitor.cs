@@ -168,6 +168,25 @@ namespace ExpressionParser.Test
     {
         void ExecuteDelete();
     }
+
+    /// <summary>
+    /// 测试new datetime这种情况
+    /// </summary>
+    public class TestWhereNewDatetime
+    {
+        public DateTime Time { get; set; }
+    }
+    public interface ITestWhereNewDatetimeRepository : IRepository<TestWhereNewDatetime>
+    {
+
+    }
+    public class TestWhereNewDatetimeRepository : Repository<TestWhereNewDatetime>, ITestWhereNewDatetimeRepository
+    {
+        public TestWhereNewDatetimeRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), ""))
+        {
+
+        }
+    }
     public class UnitTestExpressionTreeVisitor
     {
         [Fact]
@@ -799,6 +818,31 @@ namespace ExpressionParser.Test
             Assert.Equal(15, r1MiddleResult.SqlParameters[4].Value);
         }
 
+        [Fact]
+        public void TestWhere38()
+        {
+            var testWhereNewDatetimeRepository = new TestWhereNewDatetimeRepository();
+            var p0 = new DateTime(2024, 7, 23);
+            var result = testWhereNewDatetimeRepository.Where(it => it.Time == new DateTime(2024, 7, 23)).ToList();
+            var r1MiddleResult = testWhereNewDatetimeRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT [p0].[Time] FROM [TestWhereNewDatetime] [p0] WHERE  ([p0].[Time] = @y0 )", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(p0, r1MiddleResult.SqlParameters[0].Value);
+        }
+
+        [Fact]
+        public void TestWhere39()
+        {
+            var testWhereNewDatetimeRepository = new TestWhereNewDatetimeRepository();
+            var p0 = new DateTime();
+            var result = testWhereNewDatetimeRepository.Where(it => it.Time == new TestWhereNewDatetime().Time).ToList();
+            var r1MiddleResult = testWhereNewDatetimeRepository.GetDbQueryDetail();
+            Assert.Equal("SELECT [p0].[Time] FROM [TestWhereNewDatetime] [p0] WHERE  ([p0].[Time] = @y0 )", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.SqlParameters.Count);
+            Assert.Equal("@y0", r1MiddleResult.SqlParameters[0].ParameterName);
+            Assert.Equal(p0, r1MiddleResult.SqlParameters[0].Value);
+        }
 
         [Fact]
         public void TestCombineSelectAndWhere()
