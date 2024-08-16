@@ -1681,6 +1681,36 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return result;
         }
 
+        protected override Expression VisitMemberInit(MemberInitExpression memberInitExpression)
+        {
+            var newColumns = new List<ColumnExpression>();
+
+            for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
+            {
+                var binding = memberInitExpression.Bindings[i];
+                var memberInfo = binding.Member;
+                if (!(memberInfo is PropertyInfo))
+                {
+                    throw new NotSupportedException(memberInfo.ToString());
+                }
+
+                if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression   memberExpression)
+                {
+                    var tempColumnExpression = new ColumnExpression((memberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
+                        memberExpression.Member, 0);
+                    tempColumnExpression.ColumnAlias = DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
+                    newColumns.Add(tempColumnExpression);
+                }
+                else
+                {
+                    throw new NotSupportedException("argument can not parse");
+                }
+            }
+
+            var result = new ColumnsExpression(newColumns, memberInitExpression.Type);
+            return result;
+        }
+
         protected override Expression VisitNew(NewExpression newExpression)
         {
             if (newExpression.Members == null)
