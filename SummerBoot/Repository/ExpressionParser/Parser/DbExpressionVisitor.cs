@@ -421,7 +421,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                         return columnExpression;
 
                     }
-                    else if (objectExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(string))
+                   
+                    else if (objectExpression is ConstantExpression constantExpression && (constantExpression.Type == typeof(string)|| constantExpression.Value is null))
                     {
                         if (constantExpression.Value is null)
                         {
