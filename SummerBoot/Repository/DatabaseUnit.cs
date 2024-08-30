@@ -14,6 +14,8 @@ namespace SummerBoot.Repository
     public delegate void RepositoryEvent(object entity);
 
     public delegate void RepositoryLogEvent(DbQueryResult dbQueryResult);
+
+    public delegate string RepositoryReplaceSqlEvent(string sql);
     /// <summary>
     /// 数据库单元
     /// </summary>
@@ -242,8 +244,31 @@ namespace SummerBoot.Repository
         /// 插入前事件
         /// </summary>
         public event RepositoryEvent BeforeInsert;
-
+        /// <summary>
+        ///log Event
+        /// 打印事件
+        /// </summary>
         public event RepositoryLogEvent LogSql;
+        /// <summary>
+        /// 更新前事件
+        /// </summary>
+        public event RepositoryEvent BeforeUpdate;
+
+        /// <summary>
+        /// ReplaceSql event
+        /// 允许替换sql事件
+        /// </summary>
+        public event RepositoryReplaceSqlEvent ReplaceSql;
+
+        public string OnReplaceSql(string sql)
+        {
+            if (ReplaceSql != null)
+            {
+                return ReplaceSql(sql);
+            }
+
+            return sql;
+        }
 
         public void OnLogSqlInfo(DbQueryResult dbQueryResult)
         {
@@ -260,10 +285,7 @@ namespace SummerBoot.Repository
                 BeforeInsert(entity);
             }
         }
-        /// <summary>
-        /// 更新前事件
-        /// </summary>
-        public event RepositoryEvent BeforeUpdate;
+        
         public void OnBeforeUpdate(object entity)
         {
             if (BeforeUpdate != null)

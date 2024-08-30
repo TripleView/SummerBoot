@@ -35,6 +35,40 @@ namespace SummerBoot.Test.Mysql
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试left/right join时左右实体类里有string类型,并且string类型为null时调用trim方法
+        /// </summary>
+        [Fact, Priority(126)]
+        public async Task TestJoinEntityWithStringNullCallMethod()
+        {
+            InitDatabase();
+
+            var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
+            var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+            var propNullTest = new PropNullTest()
+            {
+                Name = "test"
+            };
+            await propNullTestRepository.InsertAsync(propNullTest);
+            var propNullTestItem = new PropNullTestItem()
+            {
+                Name = "testitem",
+                MapId = propNullTest.Id
+            };
+            await propNullTestItemRepository.InsertAsync(propNullTestItem);
+
+            var test= new PropNullTest()
+            {
+                Name = null
+            };
+
+            var result = await propNullTestRepository.InnerJoin(new PropNullTestItem(), it => it.T1.Id == it.T2.MapId&&it.T2.Name==test.Name.Trim())
+                .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+            Assert.Empty(result);
+     
+        }
+
+
+        /// <summary>
         /// 测试left/right join时左右实体类里连接属性为可空类型 
         /// </summary>
         [Fact, Priority(125)]
@@ -44,7 +78,23 @@ namespace SummerBoot.Test.Mysql
 
             var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
             var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+            var propNullTest = new PropNullTest()
+            {
+                Name = "test"
+            };
+            await propNullTestRepository.InsertAsync(propNullTest);
+            var propNullTestItem = new PropNullTestItem()
+            {
+                Name = "testitem",
+                MapId = propNullTest.Id
+            };
+            await propNullTestItemRepository.InsertAsync(propNullTestItem);
 
+            var result = await propNullTestRepository.LeftJoin(new PropNullTestItem(), it => it.T1.Id == it.T2.MapId)
+                .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+            Assert.Single(result);
+            Assert.Equal("test",result.First().Name);
+            Assert.Equal(1,result.First().MapId);
         }
 
         /// <summary>

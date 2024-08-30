@@ -32,5 +32,9 @@ namespace SummerBoot.Test.Sqlite.Db
         public DbSet<GuidModel> GuidModel { get; set; }
 
         public DbSet<Address> Address { get; set; }
+
+        public DbSet<PropNullTest> PropNullTest { get; set; }
+
+        public DbSet<PropNullTestItem> PropNullTestItem { get; set; }
     }
 }

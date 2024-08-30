@@ -18,6 +18,8 @@ using MySqlConnector;
 using Oracle.ManagedDataAccess.Client;
 using SummerBoot.Core;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit.Priority;
 
 namespace ExpressionParser.Test
 {
@@ -189,6 +191,7 @@ namespace ExpressionParser.Test
     }
     public class UnitTestExpressionTreeVisitor
     {
+
         [Fact]
         public async Task TestCount()
         {

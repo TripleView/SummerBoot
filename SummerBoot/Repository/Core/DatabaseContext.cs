@@ -149,7 +149,7 @@ namespace SummerBoot.Repository.Core
                 cmd.SetUpParameter(dbParameters, databaseUnit, ref sql);
             }
 
-            cmd.CommandText = sql;
+            cmd.CommandText = databaseUnit.OnReplaceSql(sql);
 
             return cmd;
         }

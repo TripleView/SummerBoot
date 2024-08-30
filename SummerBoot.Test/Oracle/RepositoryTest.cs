@@ -36,12 +36,75 @@ namespace SummerBoot.Test.Oracle
         private IServiceProvider serviceProvider;
 
         /// <summary>
+        /// 测试left/right join时左右实体类里有string类型,并且string类型为null时调用trim方法
+        /// </summary>
+        [Fact, Priority(426)]
+        public async Task TestJoinEntityWithStringNullCallMethod()
+        {
+            InitDatabase();
+
+            var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
+            var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+            var propNullTest = new PropNullTest()
+            {
+                Name = "test"
+            };
+            await propNullTestRepository.InsertAsync(propNullTest);
+            var propNullTestItem = new PropNullTestItem()
+            {
+                Name = "testitem",
+                MapId = propNullTest.Id
+            };
+            await propNullTestItemRepository.InsertAsync(propNullTestItem);
+
+            var test = new PropNullTest()
+            {
+                Name = null
+            };
+
+            var result = await propNullTestRepository.InnerJoin(new PropNullTestItem(), it => it.T1.Id == it.T2.MapId && it.T2.Name == test.Name.Trim())
+                .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+            Assert.Empty(result);
+
+        }
+
+
+        /// <summary>
+        /// 测试left/right join时左右实体类里连接属性为可空类型 
+        /// </summary>
+        [Fact, Priority(425)]
+        public async Task TestJoinEntityWithNullableProperty()
+        {
+            InitDatabase();
+
+            var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
+            var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+            var propNullTest = new PropNullTest()
+            {
+                Name = "test"
+            };
+            await propNullTestRepository.InsertAsync(propNullTest);
+            var propNullTestItem = new PropNullTestItem()
+            {
+                Name = "testitem",
+                MapId = propNullTest.Id
+            };
+            await propNullTestItemRepository.InsertAsync(propNullTestItem);
+
+            var result = await propNullTestRepository.LeftJoin(new PropNullTestItem(), it => it.T1.Id == it.T2.MapId)
+                .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+            Assert.Single(result);
+            Assert.Equal("test", result.First().Name);
+            Assert.Equal(1, result.First().MapId);
+        }
+
+        /// <summary>
         /// 测试where条件中参数包含方法
         /// </summary>
         [Fact, Priority(424)]
         public async Task TestWhereConditionContainOtherMethod()
         {
-            InitOracleDatabase();
+            InitDatabase();
 
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var nullableTableList = new List<NullableTable>();
@@ -87,7 +150,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(423)]
         public async Task TestWhereConditionHaveNullableValue()
         {
-            InitOracleDatabase();
+            InitDatabase();
 
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var nullableTableList = new List<NullableTable>();
@@ -133,7 +196,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(218)]
         public async Task TestWhereCombine()
         {
-            InitOracleDatabase();
+            InitDatabase();
 
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -576,7 +639,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(218)]
         public async Task TestParameterWithListPropertyDtoAndGetItem()
         {
-            InitOracleDatabase();
+            InitDatabase();
 
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -642,7 +705,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(217)]
         public async Task TestLeftJoin4TableAsync()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -838,7 +901,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(216)]
         public async Task TestLeftJoin3TableAsync()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -1007,7 +1070,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(215)]
         public async Task TestLeftJoin2TableAsync()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var orderHeader = new OrderHeader()
@@ -1147,7 +1210,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(217)]
         public async Task TestLeftJoin4Table()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -1343,7 +1406,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(216)]
         public async Task TestLeftJoin3Table()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
@@ -1512,7 +1575,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(215)]
         public async Task TestLeftJoin2Table()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var orderHeader = new OrderHeader()
@@ -1652,7 +1715,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(113)]
         public async Task TestBeforeInsertAndUpdateEvent()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
             var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
@@ -1686,7 +1749,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(214)]
         public async Task TestModelUseGuidAsId()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
             var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
             var id = Guid.NewGuid();
@@ -1716,7 +1779,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(213)]
         public async Task TestBatchInsertWithDbtransation()
         {
-            InitOracleDatabase();
+            InitDatabase();
 
             var guid = Guid.NewGuid();
             var now = DateTime.Now;
@@ -1795,7 +1858,7 @@ namespace SummerBoot.Test.Oracle
             var now = DateTime.Now;
             var now2 = now;
             var total = 2000;
-            InitOracleDatabase();
+            InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var sw = new Stopwatch();
@@ -1987,7 +2050,7 @@ namespace SummerBoot.Test.Oracle
             var now = DateTime.Now;
             var now2 = now;
             var total = 2000;
-            InitOracleDatabase();
+            InitDatabase();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var dbFactory = serviceProvider.GetService<IUnitOfWork1>().DbFactory;
             var sw = new Stopwatch();
@@ -2174,7 +2237,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(210)]
         public async Task TestGetSqlByConfigurationAsync()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
             var customer1 = new Customer() { Age = 3, Name = "sb" };
             var customer2 = new Customer() { Age = 5, Name = "sb2" };
@@ -2203,7 +2266,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(209)]
         public void TestGetSqlByConfiguration()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var testConfigurationRepository = serviceProvider.GetService<ICustomerTestConfigurationRepository>();
             var customer1 = new Customer() { Age = 3, Name = "sb" };
             var customer2 = new Customer() { Age = 5, Name = "sb2" };
@@ -2232,7 +2295,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(208)]
         public void TestTableSchemaAndAddPrimaryKey()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var customerWithSchema2Repository = serviceProvider.GetService<ICustomerWithSchema2Repository>();
             var sb = new StringBuilder();
@@ -2312,7 +2375,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(207)]
         public void TestCreateTableFromEntityAndCrud()
         {
-            InitOracleDatabase();
+            InitDatabase();
 
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var nullableTable2Repository = serviceProvider.GetService<INullableTable2Repository>();
@@ -2395,7 +2458,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(206)]
         public void TestTypeHandler()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var testTypeHandlerTableRepository = serviceProvider.GetService<ITestTypeHandlerTableRepository>();
             var sqls = dbGenerator.GenerateSql(new List<Type>() { typeof(TestTypeHandlerTable) });
@@ -2431,7 +2494,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(205)]
         public void TestTableColumnMap()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var tableColumnMapRepository = serviceProvider.GetService<ITableColumnMapRepository>();
             customerRepository.Insert(new Customer() { Name = "sb" });
@@ -2443,7 +2506,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(204)]
         public void TestGenerateCsharpClassByDatabaseInfo()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateCsharpClass(new List<string>() { "CUSTOMER", "NULLABLETABLE", "NOTNULLABLETABLE" }, "abc");
             Assert.Equal(3, result.Count);
@@ -2597,7 +2660,7 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(203)]
         public void TestGenerateDatabaseTableByCsharpClass()
         {
-            InitOracleDatabase();
+            InitDatabase();
             var dbGenerator = serviceProvider.GetService<IDbGenerator1>();
             var result = dbGenerator.GenerateSql(new List<Type>() { typeof(NullableTable2), typeof(NotNullableTable2) });
             Assert.Equal(2, result.Count());
@@ -2681,7 +2744,7 @@ namespace SummerBoot.Test.Oracle
             }
         }
 
-        private void InitOracleDatabase()
+        private void InitDatabase()
         {
             //??????????
             using (var database = new OracleDb())    //????
@@ -2720,14 +2783,14 @@ namespace SummerBoot.Test.Oracle
         [Fact, Priority(202)]
         public void TestOracle()
         {
-            InitOracleDatabase();
+            InitDatabase();
             TestRepository();
         }
 
         [Fact, Priority(201)]
         public async Task TestOracleAsync()
         {
-            InitOracleDatabase();
+            InitDatabase();
             await TestRepositoryAsync();
         }
 
@@ -2754,8 +2817,8 @@ namespace SummerBoot.Test.Oracle
                 it.AddDatabaseUnit<OracleConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
-                        //x.TableNameMapping = a => a.ToUpper();
-                        //x.ColumnNameMapping = a => a.ToUpper();
+                        x.TableNameMapping = a => a.ToUpper();
+                        x.ColumnNameMapping = a => a.ToUpper();
                         x.BindRepositorysWithAttribute<OracleAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>

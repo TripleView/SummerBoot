@@ -1078,9 +1078,11 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 Type.EmptyTypes);
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-            var objLocal = il.DeclareLocal(typeof(decimal));
+            var objLocal = il.DeclareLocal(typeof(IlPerson));
 
             il.Emit(OpCodes.Newobj, ctor);
+            il.Emit(OpCodes.Stloc,objLocal);
+            il.Emit(OpCodes.Ldloc, objLocal);
             il.Emit(OpCodes.Isinst, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
 

@@ -1,7 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SummerBoot.Test.Mysql.Models
+namespace SummerBoot.Test.SqlServer.Models
 {
 
     public class PropNullTest

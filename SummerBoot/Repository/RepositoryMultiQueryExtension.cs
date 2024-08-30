@@ -18,6 +18,9 @@ namespace SummerBoot.Repository
 
         public static JoinBody2<T1, T2> LeftJoin<T1, T2>(this IQueryable<T1> source, T2 t2, Expression<Func<JoinCondition<T1, T2>, bool>> condition) where T1 : class where T2 : class
         {
+
+            if (source == null) throw new ArgumentNullException("source");
+
             if (!(source is IRepository<T1> repository))
             {
                 throw new Exception("only support IRepository");
@@ -39,6 +42,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody3<T1, T2, T3> LeftJoin<T1, T2, T3>(this JoinBody2<T1, T2> source, T3 t3, Expression<Func<JoinCondition<T1, T2, T3>, bool>> condition)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var repository = source.Repository;
 
             var result = new JoinBody3<T1, T2, T3>()
@@ -55,6 +60,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody4<T1, T2, T3, T4> LeftJoin<T1, T2, T3, T4>(this JoinBody3<T1, T2, T3> source, T4 t4, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> condition)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var repository = source.Repository;
 
             var result = new JoinBody4<T1, T2, T3, T4>()
@@ -76,6 +83,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody2<T1, T2> RightJoin<T1, T2>(this IQueryable<T1> source, T2 t2, Expression<Func<JoinCondition<T1, T2>, bool>> condition) where T1 : class where T2 : class
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             if (!(source is IRepository<T1> repository))
             {
                 throw new Exception("only support IRepository");
@@ -97,6 +106,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody3<T1, T2, T3> RightJoin<T1, T2, T3>(this JoinBody2<T1, T2> source, T3 t3, Expression<Func<JoinCondition<T1, T2, T3>, bool>> condition)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var repository = source.Repository;
 
             var result = new JoinBody3<T1, T2, T3>()
@@ -113,6 +124,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody4<T1, T2, T3, T4> RightJoin<T1, T2, T3, T4>(this JoinBody3<T1, T2, T3> source, T4 t4, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> condition)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var repository = source.Repository;
 
             var result = new JoinBody4<T1, T2, T3, T4>()
@@ -134,6 +147,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody2<T1, T2> InnerJoin<T1, T2>(this IQueryable<T1> source, T2 t2, Expression<Func<JoinCondition<T1, T2>, bool>> condition) where T1 : class where T2 : class
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             if (!(source is IRepository<T1> repository))
             {
                 throw new Exception("only support IRepository");
@@ -155,6 +170,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody3<T1, T2, T3> InnerJoin<T1, T2, T3>(this JoinBody2<T1, T2> source, T3 t3, Expression<Func<JoinCondition<T1, T2, T3>, bool>> condition)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var repository = source.Repository;
 
             var result = new JoinBody3<T1, T2, T3>()
@@ -171,6 +188,8 @@ namespace SummerBoot.Repository
 
         public static JoinBody4<T1, T2, T3, T4> InnerJoin<T1, T2, T3, T4>(this JoinBody3<T1, T2, T3> source, T4 t4, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> condition)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var repository = source.Repository;
 
             var result = new JoinBody4<T1, T2, T3, T4>()
@@ -192,6 +211,9 @@ namespace SummerBoot.Repository
 
         public static SelectMultiQueryBody2<T1, T2, TResult> Select<T1, T2, TResult>(this JoinBody2<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select)
         {
+
+            if (source == null) throw new ArgumentNullException("source");
+
             var result = new SelectMultiQueryBody2<T1, T2, TResult>()
             {
                 Select = select,
@@ -203,6 +225,8 @@ namespace SummerBoot.Repository
 
         public static SelectMultiQueryBody3<T1, T2, T3, TResult> Select<T1, T2, T3, TResult>(this JoinBody3<T1, T2, T3> source, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> select)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var result = new SelectMultiQueryBody3<T1, T2, T3, TResult>()
             {
                 Select = select,
@@ -214,6 +238,8 @@ namespace SummerBoot.Repository
 
         public static SelectMultiQueryBody4<T1, T2, T3, T4, TResult> Select<T1, T2, T3, T4, TResult>(this JoinBody4<T1, T2, T3, T4> source, Expression<Func<JoinCondition<T1, T2, T3, T4>, TResult>> select)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var result = new SelectMultiQueryBody4<T1, T2, T3, T4, TResult>()
             {
                 Select = select,
@@ -225,6 +251,8 @@ namespace SummerBoot.Repository
 
         public static SelectMultiQueryBody2<T1, T2, TResult, TAutoFill> Select<T1, T2, TResult, TAutoFill>(this JoinBody2<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> select, Expression<Func<JoinCondition<T1, T2>, TAutoFill>> autoFill) where TAutoFill : class, new()
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var result = new SelectMultiQueryBody2<T1, T2, TResult, TAutoFill>()
             {
                 Select = select,
@@ -238,6 +266,8 @@ namespace SummerBoot.Repository
 
         public static SelectMultiQueryBody3<T1, T2, T3, TResult, TAutoFill> Select<T1, T2, T3, TResult, TAutoFill>(this JoinBody3<T1, T2, T3> source, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> select, Expression<Func<JoinCondition<T1, T2, T3>, TAutoFill>> autoFill) where TAutoFill : class, new()
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var result = new SelectMultiQueryBody3<T1, T2, T3, TResult, TAutoFill>()
             {
                 Select = select,
@@ -251,6 +281,8 @@ namespace SummerBoot.Repository
 
         public static SelectMultiQueryBody4<T1, T2, T3, T4, TResult, TAutoFill> Select<T1, T2, T3, T4, TResult, TAutoFill>(this JoinBody4<T1, T2, T3, T4> source, Expression<Func<JoinCondition<T1, T2, T3, T4>, TResult>> select, Expression<Func<JoinCondition<T1, T2, T3, T4>, TAutoFill>> autoFill) where TAutoFill : class, new()
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             var result = new SelectMultiQueryBody4<T1, T2, T3, T4, TResult, TAutoFill>()
             {
                 Select = select,
