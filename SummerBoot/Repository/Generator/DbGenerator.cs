@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Xml.Linq;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.Core;
@@ -64,7 +65,8 @@ namespace SummerBoot.Repository.Generator
                 "DateTime",
                 "bool",
                 "TimeSpan",
-                "byte"
+                "byte",
+                "DateTimeOffset"
             };
 
             var result = new List<string>();
@@ -167,7 +169,7 @@ namespace SummerBoot.Repository.Generator
                 var schema = tableAttribute?.Schema;
                 schema = databaseInfo.GetDefaultSchema(schema);
                 var tableDescription = tableDescriptionAttribute?.Description ?? "";
-                var propertys = type.GetProperties();
+                var propertys = type.GetProperties().OrderBy(it=>it.ReflectedType==it.DeclaringType?1:0).ToList();
                 var fieldInfos = new List<DatabaseFieldInfoDto>();
                 foreach (var propertyInfo in propertys)
                 {
@@ -327,6 +329,11 @@ namespace SummerBoot.Repository.Generator
             }
 
             return result;
+        }
+
+        public List<string> GetAllTableNames()
+        {
+           return databaseInfo.GetAllTableNames();
         }
     }
 }

@@ -435,6 +435,10 @@ namespace SummerBoot.Repository
         /// <param name="list"></param>
         public void FastBatchInsert(List<T> list)
         {
+            if (list.Count == 0)
+            {
+                return;
+            }
             foreach (var t in list)
             {
                 databaseUnit.OnBeforeInsert(t);
@@ -838,6 +842,10 @@ namespace SummerBoot.Repository
 
         public async Task FastBatchInsertAsync(List<T> list)
         {
+            if (list.Count == 0)
+            {
+                return;
+            }
             foreach (var t in list)
             {
                 databaseUnit.OnBeforeInsert(t);
@@ -849,6 +857,7 @@ namespace SummerBoot.Repository
             if (databaseUnit.IsOracle)
             {
                 var cmd = dbConnection.CreateCommand();
+                //cmd.CommandTimeout = 100000000;
                 cmd.CommandText = internalResult.Sql;
                 cmd.SetPropertyValue("ArrayBindCount", list.Count);
                 if (dbTransaction != null)
@@ -859,7 +868,6 @@ namespace SummerBoot.Repository
                 foreach (var parameter in internalResult.SqlParameters)
                 {
                     var param = cmd.CreateParameter();
-
                     if (parameter.DbType == DbType.Time)
                     {
                         var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;

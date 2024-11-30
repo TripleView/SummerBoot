@@ -133,6 +133,16 @@ namespace SummerBoot.Feign
                 usePathAsUrl = deleteMappingAttribute.UsePathAsUrl;
             }
 
+            //处理patch逻辑
+            var patchMappingAttribute = method.GetCustomAttribute<PatchMappingAttribute>();
+            if (patchMappingAttribute != null)
+            {
+                mappingCount++;
+                path = patchMappingAttribute.Value;
+                requestTemplate.HttpMethod = HttpMethod.Patch;
+                usePathAsUrl = patchMappingAttribute.UsePathAsUrl;
+            }
+
             if (mappingCount > 1)
             {
                 throw new NotSupportedException("only support one httpMapping");

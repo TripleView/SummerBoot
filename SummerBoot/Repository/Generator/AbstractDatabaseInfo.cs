@@ -1,4 +1,5 @@
 ﻿using SummerBoot.Repository.Generator.Dto;
+using System.Collections.Generic;
 
 namespace SummerBoot.Repository.Generator
 {
@@ -64,5 +65,7 @@ namespace SummerBoot.Repository.Generator
         public abstract DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName);
 
         public abstract string UpdateTableDescription(string schema, string tableName, string description);
+
+        public abstract List<string> GetAllTableNames();
     }
 }

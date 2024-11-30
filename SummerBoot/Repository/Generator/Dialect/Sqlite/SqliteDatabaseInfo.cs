@@ -205,5 +205,17 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
         {
             return "";
         }
+
+        public override List<string> GetAllTableNames()
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            var sql = @"SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                AND name NOT LIKE 'sqlite_%'";
+
+            var tableNames = dbConnection.Query<string>(databaseUnit, sql).ToList();
+            return tableNames;
+        }
     }
 }

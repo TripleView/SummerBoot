@@ -18,6 +18,8 @@ namespace SummerBoot.Repository.Generator
         /// <param name="generateDatabaseSqlResult"></param>
         void ExecuteGenerateSql(GenerateDatabaseSqlResult generateDatabaseSqlResult);
         List<string> GenerateCsharpClass( List<string> tableNames, string classNameSpace, string namesapce="");
+
+        List<string> GetAllTableNames();
     }
 
     public interface IDbGenerator1 : IDbGenerator{}

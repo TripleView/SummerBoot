@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using SummerBoot.Repository.Core;
+using System.Data.Common;
 
 namespace SummerBoot.Repository.Generator.Dialect.Oracle
 {
@@ -256,6 +257,15 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
 
             var result = dbConnection.QueryFirstOrDefault<string>(databaseUnit, "select USERNAME  from user_users");
             return result;
+        }
+
+        public override List<string> GetAllTableNames()
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            var sql = @"SELECT TABLE_NAME  FROM USER_TABLES";
+
+            var tableNames = dbConnection.Query<string>(databaseUnit, sql).ToList();
+            return tableNames;
         }
     }
 }

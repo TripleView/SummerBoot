@@ -233,5 +233,16 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var dbConnection = dbFactory.GetDbConnection();
             return dbConnection.Database;
         }
+
+        public override List<string> GetAllTableNames()
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            var sql = @"SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = DATABASE()";
+
+            var tableNames = dbConnection.Query<string>(databaseUnit, sql).ToList();
+            return tableNames;
+        }
     }
 }

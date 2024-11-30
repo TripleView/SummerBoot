@@ -100,6 +100,11 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 {
                     item = $"DateTime";
                 }
+                if (fieldInfo.ColumnDataType == "TIMESTAMP(7) WITH TIME ZONE")
+                {
+                    item = $"DateTimeOffset";
+                }
+                
                 //datetime类型，默认7位
                 if (fieldInfo.ColumnDataType == "INTERVAL DAY(8) TO SECOND(7)")
                 {

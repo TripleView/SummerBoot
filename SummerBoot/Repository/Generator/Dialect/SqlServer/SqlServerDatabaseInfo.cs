@@ -245,5 +245,16 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var result = dbConnection.QueryFirstOrDefault<string>(databaseUnit, "select SCHEMA_name()");
             return result;
         }
+
+        public override List<string> GetAllTableNames()
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            var sql = @"SELECT TABLE_NAME
+                        FROM INFORMATION_SCHEMA.TABLES
+                        WHERE TABLE_TYPE = 'BASE TABLE'";
+
+            var tableNames = dbConnection.Query<string>(databaseUnit, sql).ToList();
+            return tableNames;
+        }
     }
 }

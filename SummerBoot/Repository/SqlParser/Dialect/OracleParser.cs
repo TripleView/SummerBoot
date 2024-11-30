@@ -6,9 +6,9 @@ namespace SummerBoot.Repository.SqlParser.Dialect
 {
     public class OracleParser : SqlParser
     {
-        public OracleParser():base(":", "`", "`")
+        public OracleParser() : base(":", "\"", "\"")
         {
-            
+
         }
 
         public override ParserPageStringResult ParserPage(string sql, int page, int pageSize)
@@ -57,7 +57,7 @@ namespace SummerBoot.Repository.SqlParser.Dialect
                 sqlOrderBy = newSqlOrderBy;
             }
 
-            result.SqlParameters.Add(new SqlParameter(){ ParameterName = PageSizeName,Value = pageSize,ParameterType = typeof(int) } );
+            result.SqlParameters.Add(new SqlParameter() { ParameterName = PageSizeName, Value = pageSize, ParameterType = typeof(int) });
             result.SqlParameters.Add(new SqlParameter() { ParameterName = PageSkipName, Value = pageSkip, ParameterType = typeof(int) });
 
             var columnsOnly = $"sbInner.* FROM ({sqlOrderByRemoved}) sbInner";

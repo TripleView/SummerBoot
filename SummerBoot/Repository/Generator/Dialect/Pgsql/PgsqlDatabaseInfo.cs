@@ -259,5 +259,16 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 
             return "public";
         }
+
+        public override List<string> GetAllTableNames()
+        {
+            var dbConnection = dbFactory.GetDbConnection();
+            var sql = @"SELECT tablename
+                FROM pg_tables
+                WHERE schemaname = 'public'";
+
+            var tableNames = dbConnection.Query<string>(databaseUnit, sql).ToList();
+            return tableNames;
+        }
     }
 }

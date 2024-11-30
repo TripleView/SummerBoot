@@ -81,5 +81,7 @@ namespace SummerBoot.Repository.Generator
         /// </summary>
         /// <returns></returns>
         string GetDefaultSchema(string schema);
+
+        List<string> GetAllTableNames();
     }
 }
