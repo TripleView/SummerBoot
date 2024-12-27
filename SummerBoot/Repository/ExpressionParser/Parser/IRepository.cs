@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -10,8 +11,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 {
     public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery, IAsyncQueryable<T>
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         List<SelectItem<T>> SelectItems { set; get; }
-
+        [EditorBrowsable(EditorBrowsableState.Never)]
         MultiQueryContext<T> MultiQueryContext { set; get; }
         int ExecuteUpdate();
 
