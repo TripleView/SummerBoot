@@ -1284,6 +1284,9 @@ await testFeign.Test();
 在appsettings.json/appsettings.Development.json配置文件中添加配置
 ````json
  "nacos": {
+    //nacos开启鉴权的情况下才需要填写用户名和密码,否则为空
+    "username": "",
+    "password": "",
     //--------使用nacos则serviceAddress和namespaceId必填------
     //nacos服务地址，如http://172.16.189.242:8848
     "serviceAddress": "http://172.16.189.242:8848/",

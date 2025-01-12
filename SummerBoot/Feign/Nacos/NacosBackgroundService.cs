@@ -91,25 +91,32 @@ namespace SummerBoot.Feign.Nacos
             var serviceName = NacosUtil.GetServiceName(nacosOption.GroupName, nacosOption.ServiceName);
 
             ip = SbUtil.GetCurrentIp();
-
-            var result = await nacosService.RegisterInstance(new NacosRegisterInstanceDto()
+            var result = "";
+            try
             {
-                Ip = ip,
-                Port = nacosOption.Port!.Value,
-                ServiceName = serviceName,
-                NamespaceId = nacosOption.NamespaceId,
-                GroupName = nacosOption.GroupName,
-                ClusterName = "DEFAULT",
-                Enabled = true,
-                Weight = nacosOption.Weight,
-                Ephemeral = true,
-                Healthy = true,
-                MetaData = new Dictionary<string, string>()
+                result = await nacosService.RegisterInstance(new NacosRegisterInstanceDto()
                 {
-                    {"protocol",nacosOption.Protocol}
-                }
-            });
-
+                    Ip = ip,
+                    Port = nacosOption.Port!.Value,
+                    ServiceName = serviceName,
+                    NamespaceId = nacosOption.NamespaceId,
+                    GroupName = nacosOption.GroupName,
+                    ClusterName = "DEFAULT",
+                    Enabled = true,
+                    Weight = nacosOption.Weight,
+                    Ephemeral = true,
+                    Healthy = true,
+                    MetaData = new Dictionary<string, string>()
+                    {
+                        {"protocol",nacosOption.Protocol}
+                    }
+                });
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Failed to register nacos instance, reason:" + e.Message);
+            }
+            
             timer = new Timer(SendHeartBeats, cancellationToken, 1000, -1);
 
             if (result == "ok")

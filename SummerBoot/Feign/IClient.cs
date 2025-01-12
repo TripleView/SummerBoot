@@ -83,7 +83,7 @@ namespace SummerBoot.Feign
                     var message = "";
                     if (httpResponse.Content != null)
                     {
-                        message = httpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        message = await httpResponse.Content.ReadAsStringAsync();
                     }
 
                     if (message.IsNullOrWhiteSpace())
@@ -91,7 +91,7 @@ namespace SummerBoot.Feign
                         message = httpResponse.ReasonPhrase;
                     }
 
-                    var c = httpRequest;
+                    //Console.WriteLine(requestTemplate.Url+"-----message123:"+message);
                     throw new HttpRequestException(message);
                 }
 

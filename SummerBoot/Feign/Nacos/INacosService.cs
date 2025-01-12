@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Feign.Nacos
 {
-    [FeignClient(Url = "${nacos:serviceAddress}",Timeout = 60)]
+    [FeignClient(Url = "${nacos:serviceAddress}",Timeout = 60, InterceptorType = typeof(NacosLoginInterceptor))]
     public interface INacosService
     {
         /// <summary>
@@ -27,7 +27,14 @@ namespace SummerBoot.Feign.Nacos
         /// <returns></returns>
         [PutMapping("/nacos/v1/ns/instance/beat")]
         Task<SendInstanceHeartBeatOutputDto> SendInstanceHeartBeat([Query] SendInstanceHeartBeatDto dto);
-
+        /// <summary>
+        /// 登录
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [PostMapping("/nacos/v1/auth/users/login")]
+        [IgnoreInterceptor]
+        Task<NacosLoginOutputDto> LoginAsync([Body(BodySerializationKind.Form)] NacosLoginInputDto dto);
         /// <summary>
         /// 查询实例列表
         /// </summary>

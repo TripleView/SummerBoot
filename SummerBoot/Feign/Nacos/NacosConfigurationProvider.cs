@@ -230,7 +230,7 @@ namespace SummerBoot.Feign.Nacos
             }
             catch (Exception e)
             {
-                logger.LogError(e, "get configs error.reason");
+                throw new Exception("Failed to obtain nacos configuration, reason:" + e.Message);
             }
             finally
             {

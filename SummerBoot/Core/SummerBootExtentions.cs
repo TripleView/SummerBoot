@@ -140,7 +140,7 @@ namespace SummerBoot.Core
                 var databaseUnit = optionDatabaseUnit.Value;
                 //动态生成IDbFactory接口类型
                 var iCustomDbFactoryType = GenerateCustomInterface(modBuilder, typeof(IDbFactory));
-           
+
                 //注册工厂
                 AddSummerBootRepositoryCustomDbFactory(services, iCustomDbFactoryType, databaseUnit, modBuilder);
                 //动态生成ICustomUnitOfWork接口类型
@@ -155,13 +155,13 @@ namespace SummerBoot.Core
                 var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType);
                 services.AddScoped(repositoryServiceType);
                 //添加数据库生成器类
-                if (databaseUnit.IDbGeneratorType!=null)
+                if (databaseUnit.IDbGeneratorType != null)
                 {
                     //动态生成IDatabaseFieldMapping接口类型
                     var iDatabaseFieldMappingType = GenerateCustomInterface(modBuilder, typeof(IDatabaseFieldMapping));
                     var iDatabaseInfoType = GenerateCustomInterface(modBuilder, typeof(IDatabaseInfo));
                     var dbGeneratorType = GenerateCustomDbGenerator(modBuilder, iDatabaseFieldMappingType, iCustomDbFactoryType,
-                        iDatabaseInfoType,new Type[]{ databaseUnit.IDbGeneratorType });
+                        iDatabaseInfoType, new Type[] { databaseUnit.IDbGeneratorType });
                     services.AddTransient(databaseUnit.IDbGeneratorType, dbGeneratorType);
                     if (databaseUnit.IsSqlServer)
                     {
@@ -223,7 +223,7 @@ namespace SummerBoot.Core
                     }
                     else if (databaseUnit.IsOracle)
                     {
-                        
+
                         var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(OracleDatabaseFieldMapping),
                             iDatabaseFieldMappingType, Type.EmptyTypes);
                         services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
@@ -450,7 +450,7 @@ namespace SummerBoot.Core
         /// <param name="interfaceType"></param>
         /// <param name="constructorTypes"></param>
         /// <returns></returns>
-        private static Type GenerateClassImplementInterface(ModuleBuilder modBuilder,Type parentType, Type interfaceType, Type[] constructorTypes)
+        private static Type GenerateClassImplementInterface(ModuleBuilder modBuilder, Type parentType, Type interfaceType, Type[] constructorTypes)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -458,7 +458,7 @@ namespace SummerBoot.Core
 
             //要实现的接口
             Type[] interfaceTypes = new Type[] { interfaceType };
-         
+
 
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType(parentType.Name + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
@@ -466,7 +466,7 @@ namespace SummerBoot.Core
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                constructorTypes );
+                constructorTypes);
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             if (constructorTypes.Length >= 1)
@@ -481,7 +481,7 @@ namespace SummerBoot.Core
             {
                 conIl.Emit(OpCodes.Ldarg_3);
             }
-            
+
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 
@@ -541,7 +541,7 @@ namespace SummerBoot.Core
         /// <param name="ICustomUnitOfWorkType"></param>
         /// <param name="ICustomDbFactoryType"></param>
         /// <returns></returns>
-        private static Type GenerateCustomDbGenerator(ModuleBuilder modBuilder, Type IDatabaseFieldMappingType, Type ICustomDbFactoryType,Type IDatabaseInfoType, Type[] interfaceTypes)
+        private static Type GenerateCustomDbGenerator(ModuleBuilder modBuilder, Type IDatabaseFieldMappingType, Type ICustomDbFactoryType, Type IDatabaseInfoType, Type[] interfaceTypes)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -549,7 +549,7 @@ namespace SummerBoot.Core
 
             //父类型
             Type parentType;
-            
+
             parentType = typeof(DbGenerator);
 
             //得到类型生成器            
@@ -727,11 +727,10 @@ namespace SummerBoot.Core
             }
 
             services.AddHttpClient();
-
+            services.AddSummerBootCache();
             services.TryAddTransient<IClient, IClient.DefaultFeignClient>();
             services.TryAddSingleton<IFeignEncoder, IFeignEncoder.DefaultEncoder>();
             services.TryAddSingleton<IFeignDecoder, IFeignDecoder.DefaultDecoder>();
-
             services.TryAddTransient<HttpService>();
             services.TryAddTransient<FeignHttpClientHandler>();
             services.AddSingleton<FeignOption>(it => feignOption);
@@ -786,10 +785,18 @@ namespace SummerBoot.Core
 
             var feignProxyBuilder = new FeignProxyBuilder();
             var feignTypes = new List<Type>();
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList(); ;
+            var requestInterceptorTypes = new List<Type>();
+            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
+
             foreach (var assembly in allAssemblies)
             {
+                requestInterceptorTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsClass && it.GetInterfaces().FirstOrDefault(x=>x==typeof(IRequestInterceptor))!=null).ToList());
                 feignTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null).ToList());
+            }
+
+            foreach (var type in requestInterceptorTypes)
+            {
+                services.TryAddTransient(type);
             }
 
             foreach (var type in feignTypes)

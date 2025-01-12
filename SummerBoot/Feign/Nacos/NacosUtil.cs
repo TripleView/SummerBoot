@@ -1,4 +1,7 @@
-﻿namespace SummerBoot.Feign.Nacos
+﻿using System.Collections.Concurrent;
+using SummerBoot.Feign.Nacos.Dto;
+
+namespace SummerBoot.Feign.Nacos
 {
     public class NacosUtil
     {
@@ -14,5 +17,9 @@
         {
             return groupName + "@@" + serviceName;
         }
+
+        public static ConcurrentDictionary<string, FeignCacheEntity> FeignCache = new ConcurrentDictionary<string, FeignCacheEntity>();
     }
+
+
 }

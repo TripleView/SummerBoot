@@ -1286,6 +1286,9 @@ await testFeign.Test();
 in appsettings.json / appsettings.Development.json configuration file
 ```` json
 "nacos": {
+    //Username and password are required only when nacos enables authentication, otherwise they are empty.
+    "username": "",
+    "password": "",
     //--------Using nacos , serviceAddress and namespaceId are required------
     // nacos service address, such as http://172.16.189.242:8848
     "serviceAddress":"http://172.16.189.242:8848/",
