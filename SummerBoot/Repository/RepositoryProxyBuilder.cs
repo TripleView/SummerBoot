@@ -190,11 +190,6 @@ namespace SummerBoot.Repository
 
             foreach (MethodInfo targetMethod in targetMethods)
             {
-                if (targetMethod.Name == "ToPage")
-                {
-                    var c = "123";
-                }
-
                 //只挑出virtual的方法
                 if (targetMethod.IsVirtual)
                 {

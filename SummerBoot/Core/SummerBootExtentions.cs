@@ -23,6 +23,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
+using SummerBoot.Repository.DataMigrate;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Repository.Generator.Dialect;
 using SummerBoot.Repository.Generator.Dialect.Oracle;
@@ -304,9 +305,17 @@ namespace SummerBoot.Core
                         services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
                     }
                 }
-
-
+                //数据迁移
+                if (databaseUnit.IsDataMigrateMode)
+                {
+                    //动态生成迁移仓储基类
+                    var customDataMigrateBaseRepositoryType = GenerateDataMigrateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType, databaseUnit.DataMigrateRepositoryType);
+                    var type = databaseUnit.DataMigrateRepositoryType;
+                    services.AddScoped(type, customDataMigrateBaseRepositoryType);
+                }
+                //仓储
                 var autoRepositoryTypes = databaseUnit.BindRepositoryTypes;
+                
                 foreach (var type in autoRepositoryTypes)
                 {
 
@@ -518,6 +527,45 @@ namespace SummerBoot.Core
             TFirst.SetGenericParameterAttributes(
                 GenericParameterAttributes.ReferenceTypeConstraint);
 
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
+
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
+
+        /// <summary>
+        /// 生成迁移仓储基类
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="constructorType"></param>
+        /// <param name="interfaceType"></param>
+        /// <returns></returns>
+        private static Type GenerateDataMigrateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type ICustomDbFactoryType,Type iDataMigrateRepositoryType)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = new Type[]{iDataMigrateRepositoryType};
+            parentType = typeof(BaseMigrateDataRepository);
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("BaseMigrateDataRepository" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+            
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,

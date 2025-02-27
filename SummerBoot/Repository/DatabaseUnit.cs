@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Reflection;
-using Microsoft.AspNetCore.Mvc.Diagnostics;
-using SummerBoot.Repository.Core;
+﻿using SummerBoot.Repository.Core;
+using SummerBoot.Repository.DataMigrate;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Reflection;
 
 namespace SummerBoot.Repository
 {
@@ -231,12 +231,29 @@ namespace SummerBoot.Repository
         /// <summary>
         /// Sets column name mapping at database unit scope;设置数据库单元范围内的列名映射
         /// </summary>
-        public Func<string,string> ColumnNameMapping { get; set; }
+        public Func<string, string> ColumnNameMapping { get; set; }
         /// <summary>
         /// Set Table name mapping at database unit scope;设置数据库单元范围内的表名映射
         /// </summary>
         public Func<string, string> TableNameMapping { get; set; }
         public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
+        /// <summary>
+        /// Is it data migration mode? If yes, ignore id auto-increment when inserting data
+        /// 是否为数据迁移模式,如果是，则插入数据时忽略id自增
+        /// </summary>
+        internal bool IsDataMigrateMode { get; private set; }
+
+        internal Type DataMigrateRepositoryType { get; private set; }
+        /// <summary>
+        /// 添加数据迁移功能
+        /// Add data migration function
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void AddDataMigrate<T>() where T : IDataMigrateRepository
+        {
+            this.IsDataMigrateMode = true;
+            DataMigrateRepositoryType = typeof(T);
+        }
 
         public static ConcurrentDictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
             new ConcurrentDictionary<Guid, Dictionary<Type, Type>>();
@@ -285,14 +302,14 @@ namespace SummerBoot.Repository
                 BeforeInsert(entity);
             }
         }
-        
+
         public void OnBeforeUpdate(object entity)
         {
             if (BeforeUpdate != null)
             {
                 BeforeUpdate(entity);
             }
-           
+
         }
         /// <summary>
         /// 查询超时时间
@@ -337,9 +354,15 @@ namespace SummerBoot.Repository
         {
             var autoRepositoryTypes = new List<Type>();
             var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
+            var tName = typeof(TAttribute).Name;
             foreach (var assembly in allAssemblies)
             {
-                autoRepositoryTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>() != null).ToList());
+                var types = assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>()?.GetType() ==typeof(TAttribute)).ToList();
+                if (types.Any())
+                {
+                    autoRepositoryTypes.AddRange(types);
+                }
+               
             }
             foreach (var autoRepositoryType in autoRepositoryTypes)
             {

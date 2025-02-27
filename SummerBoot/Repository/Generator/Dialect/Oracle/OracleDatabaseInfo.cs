@@ -101,6 +101,11 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
                 columnDataType = fieldInfo.StringMaxLength.HasValue && fieldInfo.StringMaxLength.Value != int.MaxValue
                     ? $"NVARCHAR2({fieldInfo.StringMaxLength.Value})"
                     : $"NVARCHAR2(2000)";
+                //字符串长度>2000，则自动转为clob类型
+                if (fieldInfo.StringMaxLength.HasValue && fieldInfo.StringMaxLength.Value > 2000)
+                {
+                    columnDataType = "CLOB";
+                }
             }
             //自定义NUMBER精度类型
             if (fieldInfo.ColumnDataType == "NUMBER")

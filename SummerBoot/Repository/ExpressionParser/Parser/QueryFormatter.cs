@@ -374,7 +374,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 foreach (var joinExpression in select.Joins)
                 {
                     _sb.Append($" {JoinTypeToString(joinExpression.JoinType)} {BoxTableName(joinExpression.JoinTable.Name)} {BoxTableName(joinExpression.JoinTableAlias)} on ");
-    
+
                     this.VisitWhere(joinExpression.JoinCondition);
                 }
             }
@@ -472,7 +472,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
 
             int index = 0;
-            
+
             _sb.Append(" (");
             if (whereExpression.Left != null && whereExpression.Right != null)
             {
@@ -579,7 +579,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             foreach (var column in table.Columns)
             {
-                if (column.IsKey && column.IsDatabaseGeneratedIdentity)
+                if (column.IsKey && column.IsDatabaseGeneratedIdentity && !databaseUnit.IsDataMigrateMode)
                 {
                     continue;
                 }

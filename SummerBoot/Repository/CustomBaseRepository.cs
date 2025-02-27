@@ -626,7 +626,7 @@ namespace SummerBoot.Repository
             if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
             {
                 var dynamicParameters = new DynamicParameters(t);
-                if (internalResult.IdKeyPropertyInfo != null)
+                if (internalResult.IdKeyPropertyInfo != null && !databaseUnit.IsDataMigrateMode)
                 {
                     dynamicParameters.Add(internalResult.IdName, 0, dbType: DbType.Int32, direction: ParameterDirection.Output);
                 }
@@ -637,8 +637,8 @@ namespace SummerBoot.Repository
                     {
                         if (dynamicParametersGetParamInfo.Value != null && dynamicParametersGetParamInfo.Value.ValueType != null && (dynamicParametersGetParamInfo.Value.ValueType.IsEnum || (dynamicParametersGetParamInfo.Value.ValueType.IsNullable() && Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType).IsEnum)))
                         {
-                            var enumType = dynamicParametersGetParamInfo.Value.ValueType.IsEnum? dynamicParametersGetParamInfo.Value.ValueType : Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType);
-                            var enumUnderlyingType=  Enum.GetUnderlyingType(enumType);
+                            var enumType = dynamicParametersGetParamInfo.Value.ValueType.IsEnum ? dynamicParametersGetParamInfo.Value.ValueType : Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType);
+                            var enumUnderlyingType = Enum.GetUnderlyingType(enumType);
                             if (dynamicParametersGetParamInfo.Value.Value != null)
                             {
                                 if (enumUnderlyingType == typeof(int))
