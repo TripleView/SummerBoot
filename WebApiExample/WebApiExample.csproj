@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.1" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <!--<PackageReference Include="MySqlConnector" Version="2.1.10" />-->
     <PackageReference Include="MySql.Data" Version="8.0.29" />
   </ItemGroup>
