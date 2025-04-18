@@ -7,7 +7,7 @@ namespace SummerBoot.Core
 {
     public static partial class SbUtil
     {
-        public static IDictionary<Type, DbType> CsharpTypeToDbTypeMap = new Dictionary<Type, DbType>()
+        public static Dictionary<Type, DbType> CsharpTypeToDbTypeMap = new Dictionary<Type, DbType>()
         {
             {typeof(object), DbType.Object},
             {typeof(byte), DbType.Byte},

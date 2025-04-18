@@ -58,19 +58,6 @@ namespace SummerBoot.Repository.Core
             }
         }
 
-        private static async Task<int> ExecuteNonQueryAsync(this IDbCommand cmd, CancellationToken cancel)
-        {
-            if (cmd is DbCommand dbCommand)
-            {
-                var result = await dbCommand.ExecuteNonQueryAsync(cancel);
-                return result;
-            }
-            else
-            {
-                throw new InvalidOperationException("Async operations require use of a DbCommand");
-            }
-        }
-
         private static async Task<DbDataReader> ExecuteReaderWithCommandBehaviorAsync(this IDbCommand cmd, CommandBehavior behavior, CancellationToken cancel)
         {
             if (cmd is DbCommand dbCommand)
@@ -83,7 +70,6 @@ namespace SummerBoot.Repository.Core
                 throw new InvalidOperationException("Async operations require use of a DbCommand");
             }
         }
-
 
         public static async Task<T> QueryFirstOrDefaultAsync<T>(this IDbConnection dbConnection, DatabaseUnit databaseUnit, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null, CancellationToken token = default)
         {
@@ -662,7 +648,7 @@ namespace SummerBoot.Repository.Core
                         }
                         var tempParamInfo = new ParamInfo()
                         {
-                            Name = info.Key +"s"+ count,
+                            Name = info.Key + "s" + count,
                             Value = tempValue,
                             ValueType = tempValue.GetType(),
                             ParameterDirection = ParameterDirection.Input
@@ -716,13 +702,12 @@ namespace SummerBoot.Repository.Core
                     DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(propertyType))
                 {
                     var typeHandlerCache = DatabaseUnit.TypeHandlers[databaseUnit.Id][propertyType];
-                    typeHandlerCache.GetMethod("SetValue").Invoke(null, new object[] { parameter, paramInfo.Value });
+                    typeHandlerCache.GetMethod("SetValue")?.Invoke(null, new object[] { parameter, paramInfo.Value });
                     isSetValue = false;
                 }
-
-                else if (databaseUnit.ParameterTypeMaps.ContainsKey(propertyType) && databaseUnit.ParameterTypeMaps[propertyType].HasValue)
+                else if (databaseUnit.ParameterTypeMaps.ContainsKey(propertyType))
                 {
-                    parameter.DbType = databaseUnit.ParameterTypeMaps[propertyType].Value;
+                    parameter.DbType = databaseUnit.ParameterTypeMaps[propertyType];
                 }
                 else
                 {
@@ -773,7 +758,7 @@ namespace SummerBoot.Repository.Core
                 {
                     if (match.Groups[2].Success)
                     {
-                       
+
                         var suffix = match.Groups[2].Value;
 
                         var sb = new StringBuilder().Append(variableName).Append(1).Append(suffix);
@@ -835,7 +820,7 @@ namespace SummerBoot.Repository.Core
             {
                 return false;
             }
-            return type.IsPrimitiveValueType() || type.IsString() || type.IsEnum;
+            return type.IsPrimitiveValueType() || type.IsString() || type.IsEnum || type == typeof(Guid);
         }
 
         /// <summary>
@@ -1011,7 +996,7 @@ namespace SummerBoot.Repository.Core
             // for循环中的变量，在循环结束后，堆栈里的变量都会被清空
             for (var i = 0; i < queryMemberCacheInfos.Count; i++)
             {
-               
+
                 var queryMemberCacheInfo = queryMemberCacheInfos[i];
                 var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
                 var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
@@ -1042,7 +1027,7 @@ namespace SummerBoot.Repository.Core
                 il.SteadOfLocal(backUpObject);// [list, getItemValue]
 
                 //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));//[]
-               
+
                 if (DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(realType))
                 {
                     //这里是一个静态类，可以直接调用。
@@ -1096,7 +1081,7 @@ namespace SummerBoot.Repository.Core
             il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(ThrowRepositoryException)));
             il.EndExceptionBlock();
 
-          
+
             //il.Emit(OpCodes.Box);
             //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("ToArray"));
             //var objArr = il.DeclareLocal(typeof(object[]));
@@ -1119,11 +1104,11 @@ namespace SummerBoot.Repository.Core
             //il.Emit(OpCodes.Ldloc, propertyValuesLocal);// [list]
             //il.Emit(OpCodes.Ldc_I4, 0);
             //il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("get_Item"));
-          for (var i = 0; i < localArgs.Count; i++)
-          {
-              var localArg = localArgs[i];
+            for (var i = 0; i < localArgs.Count; i++)
+            {
+                var localArg = localArgs[i];
 
-              il.Emit(OpCodes.Ldloc, localArg);
+                il.Emit(OpCodes.Ldloc, localArg);
             }
             il.Emit(OpCodes.Newobj, ctor);
             //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj2)));

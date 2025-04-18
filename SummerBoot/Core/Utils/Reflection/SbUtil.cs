@@ -349,7 +349,7 @@ namespace SummerBoot.Core
             }
 
             Func<T, object[]> func;
-            var key = typeof(T).FullName + propertyInfos.Select(it => it.Name).ToList().StringJoin();
+            var key = typeof(T).FullName + propertyInfos.Select(it => it.Name).ToList().StringJoin(',');
             if (CacheDictionary.TryGetValue(key, out var cacheFunc))
             {
                 func = (Func<T, object[]>)cacheFunc;
@@ -590,6 +590,30 @@ namespace SummerBoot.Core
         public static bool IsAnonymousType(this Type type)
         {
             return type.IsClass && type.Name.StartsWith("<>f__AnonymousType");
+        }
+
+        /// <summary>
+        /// Get all classes under the current app;获取当前app下所有的类
+        /// </summary>
+        /// <returns></returns>
+        public static List<Type> GetAppAllTypes()
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
+            var result = new List<Type>();
+            foreach (var assembly in assemblies)
+            {
+                try
+                {
+                    var types = assembly.GetExportedTypes();
+                    result.AddRange(types);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+
+            return result;
         }
     }
 }

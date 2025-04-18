@@ -97,6 +97,8 @@ namespace SummerBoot.Repository
                 databaseUnit.SetTypeHandler(typeof(TimeSpan), new TimeSpanTypeHandler());
                 if (databaseUnit.IsOracle)
                 {
+                    databaseUnit.SetParameterTypeMap(typeof(Guid), DbType.Binary);
+                    databaseUnit.SetParameterTypeMap(typeof(bool), DbType.Byte);
                     databaseUnit.SetTypeHandler(typeof(bool), new BoolNumericTypeHandler());
                     databaseUnit.SetTypeHandler(typeof(Guid), new OracleGuidTypeHandler());
                 }

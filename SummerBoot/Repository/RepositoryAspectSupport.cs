@@ -17,10 +17,10 @@ namespace SummerBoot.Repository
 {
     public class RepositoryAspectSupport
     {
-        public RepositoryAspectSupport(IUnitOfWork uow, IDbFactory dbFactory)
+        public RepositoryAspectSupport(IUnitOfWork uow)
         {
             this.uow = uow;
-            this.dbFactory = dbFactory;
+            this.dbFactory = uow.DbFactory;
         }
         private IPageable pageable;
         private IServiceProvider ServiceProvider { set; get; }

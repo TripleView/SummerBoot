@@ -158,7 +158,7 @@ namespace SummerBoot.Repository.Generator
         }
 
 
-        public List<GenerateDatabaseSqlResult> GenerateSql(List<Type> types)
+        public List<GenerateDatabaseSqlResult> GenerateSql(List<Type> types, Dictionary<Type, string> fieldTypeMappers = null)
         {
             var result = new List<GenerateDatabaseSqlResult>();
             foreach (var type in types)
@@ -169,7 +169,7 @@ namespace SummerBoot.Repository.Generator
                 var schema = tableAttribute?.Schema;
                 schema = databaseInfo.GetDefaultSchema(schema);
                 var tableDescription = tableDescriptionAttribute?.Description ?? "";
-                var propertys = type.GetProperties().OrderBy(it=>it.ReflectedType==it.DeclaringType?1:0).ToList();
+                var propertys = type.GetProperties().OrderBy(it => it.ReflectedType == it.DeclaringType ? 1 : 0).ToList();
                 var fieldInfos = new List<DatabaseFieldInfoDto>();
                 foreach (var propertyInfo in propertys)
                 {
@@ -208,10 +208,16 @@ namespace SummerBoot.Repository.Generator
                     var databaseGeneratedAttribute = propertyInfo.GetCustomAttribute<DatabaseGeneratedAttribute>();
                     var descriptionAttribute = propertyInfo.GetCustomAttribute<DescriptionAttribute>();
                     var stringLengthAttribute = propertyInfo.GetCustomAttribute<StringLengthAttribute>();
+                    var maxLengthAttribute = propertyInfo.GetCustomAttribute<MaxLengthAttribute>();
                     var decimalPrecisionAttribute = propertyInfo.GetCustomAttribute<DecimalPrecisionAttribute>();
-
+                    //默认字段映射
                     var dbFieldTypeName = databaseFieldMapping.ConvertCsharpTypeToDatabaseType(new List<string>() { fieldTypeName.Name }).FirstOrDefault();
-
+                    //自定义通用字段映射
+                    if (fieldTypeMappers != null && fieldTypeMappers.TryGetValue(fieldTypeName, out var tempDbFieldTypeName))
+                    {
+                        dbFieldTypeName = tempDbFieldTypeName;
+                    }
+                    //最高级别的column字段映射
                     if (columnAttribute != null && columnAttribute.TypeName.HasText())
                     {
                         dbFieldTypeName = columnAttribute.TypeName;
@@ -237,7 +243,7 @@ namespace SummerBoot.Repository.Generator
                         IsKey = keyAttribute != null,
                         IsAutoCreate = databaseGeneratedAttribute != null && databaseGeneratedAttribute.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,
                         Description = descriptionAttribute != null ? descriptionAttribute.Description : "",
-                        StringMaxLength = stringLengthAttribute?.MaximumLength,
+                        StringMaxLength = maxLengthAttribute?.Length ?? stringLengthAttribute?.MaximumLength,
                         Precision = precision,
                         Scale = scale,
                         ColumnType = propertyInfo.PropertyType
@@ -302,7 +308,7 @@ namespace SummerBoot.Repository.Generator
                         else
                         {
                             //没有注释，补充注释
-                            if (dbFieldInfo.Description.HasText()&& fieldInfo.Description.HasText()&& dbFieldInfo.Description != fieldInfo.Description)
+                            if (dbFieldInfo.Description.HasText() && fieldInfo.Description.HasText() && dbFieldInfo.Description != fieldInfo.Description)
                             {
                                 var createFieldDescriptionSql = databaseInfo.UpdateTableFieldDescription(schema, tableName, fieldInfo);
                                 if (createFieldDescriptionSql.HasText())
@@ -333,7 +339,12 @@ namespace SummerBoot.Repository.Generator
 
         public List<string> GetAllTableNames()
         {
-           return databaseInfo.GetAllTableNames();
+            return databaseInfo.GetAllTableNames();
+        }
+
+        public DatabaseTableInfoDto GetTableInfoByName(string tableName)
+        {
+            return databaseInfo.GetTableInfoByName("",tableName);
         }
     }
 }

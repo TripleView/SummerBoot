@@ -24,12 +24,14 @@ using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
 using SummerBoot.Repository.DataMigrate;
+using SummerBoot.Repository.DataMigrate.Dialect;
 using SummerBoot.Repository.Generator;
 using SummerBoot.Repository.Generator.Dialect;
 using SummerBoot.Repository.Generator.Dialect.Oracle;
 using SummerBoot.Repository.Generator.Dialect.Sqlite;
 using SummerBoot.Repository.Generator.Dialect.SqlServer;
 using Guid = System.Guid;
+using ManualRepositoryAttribute = SummerBoot.Repository.ManualRepositoryAttribute;
 
 namespace SummerBoot.Core
 {
@@ -44,16 +46,16 @@ namespace SummerBoot.Core
             //Console.WriteLine("进入多语言模式"+f);
             services.AddLogging();
 
-            var types = Assembly.GetCallingAssembly().GetExportedTypes()
-                .Union(Assembly.GetExecutingAssembly().GetExportedTypes()).Distinct().ToList();
-            var autoRegisterTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<AutoRegisterAttribute>() != null).ToList();
+            var types = SbUtil.GetAppAllTypes();
+            var autoRegisterTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<AutoRegisterAttribute>() != null
+                                                                 && (it.BaseType == null || (it.BaseType != null && !it.BaseType.IsGenericType) || (it.BaseType != null && it.BaseType.IsGenericType && it.BaseType.GetGenericTypeDefinition() != typeof(CustomBaseRepository<>)))).ToList();
 
             autoRegisterTypes.ForEach(it =>
             {
                 var autoRegisterAttribute = it.GetCustomAttribute<AutoRegisterAttribute>();
                 if (autoRegisterAttribute == null) return;
                 var interfaceType = autoRegisterAttribute.InterfaceType;
-                if (interfaceType == null) throw new ArgumentNullException(it.Name + "对应的接口不能为空");
+                if (interfaceType == null) throw new ArgumentNullException(it.Name + "The corresponding interface type cannot be empty");
                 if (!it.GetInterfaces().Contains(interfaceType)) throw new Exception(it.Name + "必须继承接口" + interfaceType.Name);
 
                 switch (autoRegisterAttribute.ServiceLifetime)
@@ -149,11 +151,11 @@ namespace SummerBoot.Core
                 //注册工作单元
                 services.AddScoped(databaseUnit.IUnitOfWorkType, customUnitOfWorkType);
                 //动态生成仓储基类
-                var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType);
+                var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType);
                 services.AddScoped(typeof(IBaseRepository<>), customBaseRepositoryType);
                 services.AddScoped(customBaseRepositoryType);
                 //动态生成RepositoryService
-                var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType);
+                var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType);
                 services.AddScoped(repositoryServiceType);
                 //添加数据库生成器类
                 if (databaseUnit.IDbGeneratorType != null)
@@ -308,17 +310,22 @@ namespace SummerBoot.Core
                 //数据迁移
                 if (databaseUnit.IsDataMigrateMode)
                 {
+                    if (!databaseUnit.IsOracle)
+                    {
+                        throw new NotSupportedException("Only supports Oracle");
+                    }
                     //动态生成迁移仓储基类
-                    var customDataMigrateBaseRepositoryType = GenerateDataMigrateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDbFactoryType, databaseUnit.DataMigrateRepositoryType);
+                    var customDataMigrateBaseRepositoryType = GenerateDataMigrateCustomBaseRepository(modBuilder, databaseUnit);
                     var type = databaseUnit.DataMigrateRepositoryType;
                     services.AddScoped(type, customDataMigrateBaseRepositoryType);
                 }
                 //仓储
-                var autoRepositoryTypes = databaseUnit.BindRepositoryTypes;
-                
+                var bindRepositoryTypes = databaseUnit.BindRepositoryTypes;
+                var autoRepositoryTypes = bindRepositoryTypes.Where(x => x.IsInterface).ToList();
+                var manualRepositoryTypes = bindRepositoryTypes.Where(x => x.IsClass).ToList();
+
                 foreach (var type in autoRepositoryTypes)
                 {
-
                     var baseRepositoryType = type.GetInterfaces().FirstOrDefault(it =>
                         it.IsGenericType && it.GetGenericTypeDefinition() == typeof(IBaseRepository<>));
                     if (baseRepositoryType == null)
@@ -329,6 +336,25 @@ namespace SummerBoot.Core
                     repositoryProxyBuilder.InitInterface(type, customBaseRepositoryType, repositoryServiceType);
                     services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, databaseUnit);
                 }
+
+                foreach (var type in manualRepositoryTypes)
+                {
+                    var manualRepositoryAttribute = type.GetCustomAttributes()
+                        .FirstOrDefault(x => x.GetType().BaseType == typeof(ManualRepositoryAttribute));
+                    if (manualRepositoryAttribute == null)
+                    {
+                        continue;
+                    }
+
+                    var interfaceType = ((ManualRepositoryAttribute)manualRepositoryAttribute).InterfaceType;
+                    if (interfaceType == null)
+                    {
+                        continue;
+                    }
+
+                    services.AddScoped(interfaceType, type);
+                    //services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, databaseUnit);
+                }
             }
 
             services.AddSingleton(t => option);
@@ -338,6 +364,35 @@ namespace SummerBoot.Core
         }
 
         private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
+            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType, DatabaseUnit databaseUnit)
+        {
+            if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
+
+            object Factory(IServiceProvider provider)
+            {
+                var repositoyProxyBuilder = (RepositoryProxyBuilder)provider.GetService<IRepositoryProxyBuilder>();
+                var repositoyService = (RepositoryService)provider.GetService(repositoryServiceType);
+                repositoyService!.SetDatabaseUnit(databaseUnit);
+                var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IBaseRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
+                if (repositoryType != null)
+                {
+                    var genericType = repositoryType.GetGenericArguments().First();
+                    var baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
+                    var baseRepository = provider.GetService(baseRepositoryType);
+                    var proxy1 = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider, baseRepository);
+                    return proxy1;
+                }
+                var proxy = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider);
+                return proxy;
+            };
+
+            var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
+            services.Add(serviceDescriptor);
+
+            return services;
+        }
+
+        private static IServiceCollection AddSummerBootManualRepositoryService(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType, DatabaseUnit databaseUnit)
         {
             if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
@@ -505,7 +560,7 @@ namespace SummerBoot.Core
         /// <param name="constructorType"></param>
         /// <param name="interfaceType"></param>
         /// <returns></returns>
-        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type ICustomDbFactoryType)
+        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -530,12 +585,11 @@ namespace SummerBoot.Core
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
+                new Type[] { ICustomUnitOfWorkType });
 
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
-            conIl.Emit(OpCodes.Ldarg_2);
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 
@@ -551,7 +605,7 @@ namespace SummerBoot.Core
         /// <param name="constructorType"></param>
         /// <param name="interfaceType"></param>
         /// <returns></returns>
-        private static Type GenerateDataMigrateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type ICustomDbFactoryType,Type iDataMigrateRepositoryType)
+        private static Type GenerateDataMigrateCustomBaseRepository(ModuleBuilder modBuilder, DatabaseUnit databaseUnit)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -560,21 +614,27 @@ namespace SummerBoot.Core
             //父类型
             Type parentType;
             //要实现的接口
-            Type[] interfaceTypes = new Type[]{iDataMigrateRepositoryType};
-            parentType = typeof(BaseMigrateDataRepository);
+            Type[] interfaceTypes = new Type[] { databaseUnit.DataMigrateRepositoryType };
+            if (databaseUnit.IsOracle)
+            {
+                parentType = typeof(OracleMigrateDataRepository);
+            }
+            else
+            {
+                throw new NotSupportedException("only support oracle");
+            }
 
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType("BaseMigrateDataRepository" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
-            
+
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
+                new Type[] { databaseUnit.IUnitOfWorkType });
 
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
-            conIl.Emit(OpCodes.Ldarg_2);
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 
@@ -627,7 +687,7 @@ namespace SummerBoot.Core
         /// <param name="ICustomUnitOfWorkType"></param>
         /// <param name="ICustomDbFactoryType"></param>
         /// <returns></returns>
-        private static Type GenerateRepositoryService(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type ICustomDbFactoryType)
+        private static Type GenerateRepositoryService(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -646,12 +706,11 @@ namespace SummerBoot.Core
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] { ICustomUnitOfWorkType, ICustomDbFactoryType });
+                new Type[] { ICustomUnitOfWorkType });
 
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
-            conIl.Emit(OpCodes.Ldarg_2);
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 
@@ -838,7 +897,7 @@ namespace SummerBoot.Core
 
             foreach (var assembly in allAssemblies)
             {
-                requestInterceptorTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsClass && it.GetInterfaces().FirstOrDefault(x=>x==typeof(IRequestInterceptor))!=null).ToList());
+                requestInterceptorTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsClass && it.GetInterfaces().FirstOrDefault(x => x == typeof(IRequestInterceptor)) != null).ToList());
                 feignTypes.AddRange(assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<FeignClientAttribute>() != null).ToList());
             }
 

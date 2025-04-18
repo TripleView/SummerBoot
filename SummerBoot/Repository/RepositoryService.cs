@@ -12,7 +12,7 @@ namespace SummerBoot.Repository
 {
     public class RepositoryService : RepositoryAspectSupport
     {
-        public RepositoryService(IUnitOfWork uow, IDbFactory dbFactory):base(uow, dbFactory)
+        public RepositoryService(IUnitOfWork uow):base(uow)
         {
         }
 

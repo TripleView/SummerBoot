@@ -38,7 +38,6 @@ namespace SummerBoot.Repository
         {
             var dbConnection = (IDbConnection)DatabaseUnit.DbConnectionType.CreateInstance(null);
             dbConnection.ConnectionString = DatabaseUnit.ConnectionString;
-            
             dbConnection.Open();
             return dbConnection;
         }

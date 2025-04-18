@@ -181,7 +181,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             schema = GetDefaultSchema(schema);
-            var dbConnection = dbFactory.GetDbConnection();
+            using var dbConnection = dbFactory.GetDbConnection();
             var sql = @"select c.name as columnName,t.name as columnDataType
                  ,convert(bit,c.IsNullable)  as isNullable
                  ,convert(bit,case when exists(select 1 from sysobjects where xtype='PK' and parent_obj=c.id and name in (
@@ -189,7 +189,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
                          select indid from sysindexkeys where id = c.id and colid=c.colid))) then 1 else 0 end) 
                              as IsKey
                  ,convert(bit,COLUMNPROPERTY(c.id,c.name,'IsIdentity')) as isAutoCreate
-                 ,c.Length as [占用字节] 
+                     ,c.Length as Length
+                   ,CASE WHEN t.name IN ('nchar', 'nvarchar') THEN (case when c.length=-1 then -1 else c.length / 2 end ) ELSE -999 END AS StringMaxLength  
                  ,COLUMNPROPERTY(c.id,c.name,'PRECISION') as Precision
                  ,isnull(COLUMNPROPERTY(c.id,c.name,'Scale'),0) as Scale
                  ,ISNULL(CM.text,'') as [默认值]

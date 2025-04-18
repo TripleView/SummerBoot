@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using SummerBoot.Core;
 
 namespace SummerBoot.Repository
 {
@@ -22,213 +23,6 @@ namespace SummerBoot.Repository
     public class DatabaseUnit
     {
         /// <summary>
-        /// 所有数据库的参数与数据库类型的映射汇总
-        /// </summary>
-        private readonly Dictionary<DatabaseType, Dictionary<Type, DbType?>> AllDatabaseParameterTypeMaps = new Dictionary<DatabaseType, Dictionary<Type, DbType?>>()
-        {
-            {DatabaseType.Mysql,new Dictionary<Type, DbType?>(37)
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = null,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(byte?)] = DbType.Byte,
-                [typeof(sbyte?)] = DbType.SByte,
-                [typeof(short?)] = DbType.Int16,
-                [typeof(ushort?)] = DbType.UInt16,
-                [typeof(int?)] = DbType.Int32,
-                [typeof(uint?)] = DbType.UInt32,
-                [typeof(long?)] = DbType.Int64,
-                [typeof(ulong?)] = DbType.UInt64,
-                [typeof(float?)] = DbType.Single,
-                [typeof(double?)] = DbType.Double,
-                [typeof(decimal?)] = DbType.Decimal,
-                [typeof(bool?)] = DbType.Boolean,
-                [typeof(char?)] = DbType.StringFixedLength,
-                [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = DbType.DateTime,
-                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan?)] = null,
-                [typeof(object)] = DbType.Object
-            }},
-            {DatabaseType.SqlServer,new Dictionary<Type, DbType?>(37)
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = null,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = null,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(byte?)] = DbType.Byte,
-                [typeof(sbyte?)] = DbType.SByte,
-                [typeof(short?)] = DbType.Int16,
-                [typeof(ushort?)] = DbType.UInt16,
-                [typeof(int?)] = DbType.Int32,
-                [typeof(uint?)] = DbType.UInt32,
-                [typeof(long?)] = DbType.Int64,
-                [typeof(ulong?)] = DbType.UInt64,
-                [typeof(float?)] = DbType.Single,
-                [typeof(double?)] = DbType.Double,
-                [typeof(decimal?)] = DbType.Decimal,
-                [typeof(bool?)] = DbType.Boolean,
-                [typeof(char?)] = DbType.StringFixedLength,
-                [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = null,
-                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan?)] = null,
-                [typeof(object)] = DbType.Object
-            }},
-            {DatabaseType.Oracle,new Dictionary<Type, DbType?>(37)
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = null,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(byte?)] = DbType.Byte,
-                [typeof(sbyte?)] = DbType.SByte,
-                [typeof(short?)] = DbType.Int16,
-                [typeof(ushort?)] = DbType.UInt16,
-                [typeof(int?)] = DbType.Int32,
-                [typeof(uint?)] = DbType.UInt32,
-                [typeof(long?)] = DbType.Int64,
-                [typeof(ulong?)] = DbType.UInt64,
-                [typeof(float?)] = DbType.Single,
-                [typeof(double?)] = DbType.Double,
-                [typeof(decimal?)] = DbType.Decimal,
-                [typeof(bool?)] = DbType.Boolean,
-                [typeof(char?)] = DbType.StringFixedLength,
-                [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = DbType.DateTime,
-                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan?)] = null,
-                [typeof(object)] = DbType.Object
-            }},
-            {DatabaseType.Sqlite,new Dictionary<Type, DbType?>(37)
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = null,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(byte?)] = DbType.Byte,
-                [typeof(sbyte?)] = DbType.SByte,
-                [typeof(short?)] = DbType.Int16,
-                [typeof(ushort?)] = DbType.UInt16,
-                [typeof(int?)] = DbType.Int32,
-                [typeof(uint?)] = DbType.UInt32,
-                [typeof(long?)] = DbType.Int64,
-                [typeof(ulong?)] = DbType.UInt64,
-                [typeof(float?)] = DbType.Single,
-                [typeof(double?)] = DbType.Double,
-                [typeof(decimal?)] = DbType.Decimal,
-                [typeof(bool?)] = DbType.Boolean,
-                [typeof(char?)] = DbType.StringFixedLength,
-                [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = DbType.DateTime,
-                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan?)] = null,
-                [typeof(object)] = DbType.Object
-            }},
-            {DatabaseType.Pgsql,new Dictionary<Type, DbType?>(37)
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = null,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(byte?)] = DbType.Byte,
-                [typeof(sbyte?)] = DbType.SByte,
-                [typeof(short?)] = DbType.Int16,
-                [typeof(ushort?)] = DbType.UInt16,
-                [typeof(int?)] = DbType.Int32,
-                [typeof(uint?)] = DbType.UInt32,
-                [typeof(long?)] = DbType.Int64,
-                [typeof(ulong?)] = DbType.UInt64,
-                [typeof(float?)] = DbType.Single,
-                [typeof(double?)] = DbType.Double,
-                [typeof(decimal?)] = DbType.Decimal,
-                [typeof(bool?)] = DbType.Boolean,
-                [typeof(char?)] = DbType.StringFixedLength,
-                [typeof(Guid?)] = DbType.Guid,
-                [typeof(DateTime?)] = DbType.DateTime,
-                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan?)] = null,
-                [typeof(object)] = DbType.Object
-            }},
-        };
-
-        /// <summary>
         /// Sets column name mapping at database unit scope;设置数据库单元范围内的列名映射
         /// </summary>
         public Func<string, string> ColumnNameMapping { get; set; }
@@ -236,7 +30,7 @@ namespace SummerBoot.Repository
         /// Set Table name mapping at database unit scope;设置数据库单元范围内的表名映射
         /// </summary>
         public Func<string, string> TableNameMapping { get; set; }
-        public Dictionary<Type, DbType?> ParameterTypeMaps { get; }
+        public Dictionary<Type, DbType> ParameterTypeMaps { get; }
         /// <summary>
         /// Is it data migration mode? If yes, ignore id auto-increment when inserting data
         /// 是否为数据迁移模式,如果是，则插入数据时忽略id自增
@@ -257,6 +51,9 @@ namespace SummerBoot.Repository
 
         public static ConcurrentDictionary<Guid, Dictionary<Type, Type>> TypeHandlers { get; } =
             new ConcurrentDictionary<Guid, Dictionary<Type, Type>>();
+
+        #region events
+
         /// <summary>
         /// 插入前事件
         /// </summary>
@@ -311,16 +108,19 @@ namespace SummerBoot.Repository
             }
 
         }
+
+        #endregion
+
         /// <summary>
-        /// 查询超时时间
+        /// Query timeout;查询超时时间
         /// </summary>
         public int CommandTimeout { get; set; } = 3000;
         /// <summary>
-        /// 数据库生成器类
+        ///Database Generator Class; 数据库生成器类
         /// </summary>
-        public Type IDbGeneratorType { get; set; }
+        public Type IDbGeneratorType { get;private set; }
         /// <summary>
-        /// 数据库单元id
+        /// Database unit id;数据库单元id
         /// </summary>
         public Guid Id { private set; get; }
 
@@ -329,15 +129,27 @@ namespace SummerBoot.Repository
             this.IUnitOfWorkType = iUnitOfWorkType;
             this.DbConnectionType = dbConnectionType;
             this.ConnectionString = connectionString;
-            this.ParameterTypeMaps = AllDatabaseParameterTypeMaps[DatabaseType];
+            this.ParameterTypeMaps = SbUtil.CsharpTypeToDbTypeMap.DeepClone();
             this.Id = Guid.NewGuid();
             TypeHandlers.TryAdd(Id, new Dictionary<Type, Type>());
         }
+
+        /// <summary>
+        /// Unit of Work Type;工作单元类型
+        /// </summary>
         public Type IUnitOfWorkType { get; }
+        /// <summary>
+        /// Automatically generated list of storage types;自动生成的仓储类型列表
+        /// </summary>
         public List<Type> BindRepositoryTypes { get; private set; } = new List<Type>();
 
         /// <summary>
-        /// 绑定单个仓储
+        /// Manually generated list of storage types;手动生成的仓储类型列表
+        /// </summary>
+        //public Dictionary<Type, Type> BindManualRepositoryTypes { get; private set; } = new Dictionary<Type, Type>();
+
+        /// <summary>
+        /// Binding a single repository;绑定单个仓储
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="TEntity"></typeparam>
@@ -347,28 +159,35 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// 通过特性绑定仓储接口
+        /// Automatic storage interface through feature binding;通过特性绑定自动仓储接口
         /// </summary>
         /// <typeparam name="TAttribute"></typeparam>
         public void BindRepositorysWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
         {
-            var autoRepositoryTypes = new List<Type>();
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(it => !it.IsDynamic).ToList();
-            var tName = typeof(TAttribute).Name;
-            foreach (var assembly in allAssemblies)
-            {
-                var types = assembly.GetExportedTypes().Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>()?.GetType() ==typeof(TAttribute)).ToList();
-                if (types.Any())
-                {
-                    autoRepositoryTypes.AddRange(types);
-                }
-               
-            }
+            var types = SbUtil.GetAppAllTypes();
+            var autoRepositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>()?.GetType() == typeof(TAttribute)).ToList();
+
             foreach (var autoRepositoryType in autoRepositoryTypes)
             {
                 this.BindRepository(autoRepositoryType);
             }
         }
+
+        /// <summary>
+        /// Manual repository interface through feature binding;通过特性绑定手动仓储接口
+        /// </summary>
+        /// <typeparam name="TAttribute"></typeparam>
+        public void BindManualRepositorysWithAttribute<TAttribute>() where TAttribute : ManualRepositoryAttribute
+        {
+            var types = SbUtil.GetAppAllTypes();
+            var autoRepositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>()?.GetType() == typeof(TAttribute)).ToList();
+
+            foreach (var autoRepositoryType in autoRepositoryTypes)
+            {
+                this.BindRepository(autoRepositoryType);
+            }
+        }
+
 
         /// <summary>
         /// 绑定数据库生成器
@@ -392,12 +211,13 @@ namespace SummerBoot.Repository
         {
             this.BindRepositoryTypes.Add(iRepositoryType);
         }
+
         /// <summary>
         /// 设置参数类型映射
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dbType"></param>
-        public void SetParameterTypeMap(Type type, DbType? dbType)
+        public void SetParameterTypeMap(Type type, DbType dbType)
         {
             if (this.ParameterTypeMaps.ContainsKey(type))
             {

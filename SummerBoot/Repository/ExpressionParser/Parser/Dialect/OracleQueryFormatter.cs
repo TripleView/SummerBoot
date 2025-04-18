@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using SummerBoot.Core;
@@ -9,7 +10,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
 {
     public class OracleQueryFormatter : QueryFormatter
     {
-        public OracleQueryFormatter(DatabaseUnit databaseUnit) : base(":", "\"", "\"",databaseUnit)
+        public OracleQueryFormatter(DatabaseUnit databaseUnit) : base(":", "\"", "\"", databaseUnit)
         {
 
         }
@@ -433,7 +434,23 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             {
                 var propertyName = propertyNames[i];
                 var propertyType = propertyTypes[i];
-                var dbType = propertyType.CSharpTypeToDbType(DatabaseType.Oracle);
+
+                if (databaseUnit.ParameterTypeMaps.TryGetValue(propertyType, out var dbType))
+                {
+
+                }
+                else
+                {
+                    //Determine whether it is an enumeration;判断是否为枚举 
+                    if (propertyType.IsEnum || (propertyType.GetUnderlyingType()?.IsEnum == true))
+                    {
+                        dbType = DbType.Byte;
+                    }
+                    else
+                    {
+                        throw new NotSupportedException(propertyType.Name);
+                    }
+                }
                 //if (dbType == DbType.Time|| dbType == DbType.DateTime)
                 //{
                 //    continue;
@@ -447,8 +464,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     array!.SetValue(propertyValue, k);
                     k++;
                 }
-                
-                this.sqlParameters.Add(new SqlParameter() { Value = array, DbType =dbType });
+
+                this.sqlParameters.Add(new SqlParameter() { Value = array, DbType = dbType });
             }
 
             _sb.Append($"insert into {tableName} ({string.Join(",", columnNameList)}) values ({string.Join(",", parameterNameList)})");

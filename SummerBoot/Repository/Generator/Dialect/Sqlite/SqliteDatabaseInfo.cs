@@ -120,7 +120,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
 
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
-            var dbConnection = dbFactory.GetDbConnection();
+            using var dbConnection = dbFactory.GetDbConnection();
 
             var sql = @"SELECT sql FROM sqlite_master WHERE tbl_name = @tableName";
             var fieldInfos = new List<DatabaseFieldInfoDto>();

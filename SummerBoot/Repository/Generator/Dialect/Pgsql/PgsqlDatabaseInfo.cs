@@ -162,7 +162,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
         }
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
-            var dbConnection = dbFactory.GetDbConnection();
+            using var dbConnection = dbFactory.GetDbConnection();
             schema = GetDefaultSchema(schema);
             var sql = @"select
 	                    col.column_name as ColumnName,

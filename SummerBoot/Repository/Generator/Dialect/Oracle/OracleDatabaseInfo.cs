@@ -214,7 +214,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Oracle
         public override DatabaseTableInfoDto GetTableInfoByName(string schema, string tableName)
         {
             schema = GetDefaultSchema(schema);
-            var dbConnection = dbFactory.GetDbConnection();
+            using var dbConnection = dbFactory.GetDbConnection();
             var sql = @"   select c.*,d.comments Description from (select a.column_name AS ColumnName , a.data_type AS ColumnDataType,a.DATA_PRECISION AS Precision,a.DATA_SCALE AS Scale,  a.data_length ,CASE when a.nullable='Y' THEN 1 ELSE 0 end as IsNullable,CASE when  b.column_name is not null then 1 else 0 END IsKey  from all_tab_columns a left join 
                 (select cu.* from all_cons_columns cu, all_constraints au where cu.constraint_name = au.constraint_name and au.constraint_type = 'P' and au.Table_Name=:tableName and au.owner=:schemaName  and cu.Table_Name=:tableName and cu.owner=:schemaName) b on 
                 b.table_name = a.Table_Name and a.column_name = b.column_name where a.Table_Name=:tableName and a.owner=:schemaName ORDER BY a.column_id) c left join all_col_comments d on c.ColumnName = d.column_name  and d.owner=:schemaName  where d.table_name =:tableName
