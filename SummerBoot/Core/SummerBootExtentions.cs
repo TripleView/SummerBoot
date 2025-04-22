@@ -152,7 +152,7 @@ namespace SummerBoot.Core
                 services.AddScoped(databaseUnit.IUnitOfWorkType, customUnitOfWorkType);
                 //动态生成仓储基类
                 var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType);
-                services.AddScoped(typeof(IBaseRepository<>), customBaseRepositoryType);
+                
                 services.AddScoped(customBaseRepositoryType);
                 //动态生成RepositoryService
                 var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType);
@@ -391,36 +391,6 @@ namespace SummerBoot.Core
 
             return services;
         }
-
-        private static IServiceCollection AddSummerBootManualRepositoryService(this IServiceCollection services, Type serviceType,
-            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType, DatabaseUnit databaseUnit)
-        {
-            if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
-
-            object Factory(IServiceProvider provider)
-            {
-                var repositoyProxyBuilder = (RepositoryProxyBuilder)provider.GetService<IRepositoryProxyBuilder>();
-                var repositoyService = (RepositoryService)provider.GetService(repositoryServiceType);
-                repositoyService!.SetDatabaseUnit(databaseUnit);
-                var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IBaseRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
-                if (repositoryType != null)
-                {
-                    var genericType = repositoryType.GetGenericArguments().First();
-                    var baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
-                    var baseRepository = provider.GetService(baseRepositoryType);
-                    var proxy1 = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider, baseRepository);
-                    return proxy1;
-                }
-                var proxy = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider);
-                return proxy;
-            };
-
-            var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
-            services.Add(serviceDescriptor);
-
-            return services;
-        }
-
 
         /// <summary>
         /// 添加自定义数据工厂接口和自定义数据工厂到ioc容器

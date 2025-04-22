@@ -193,7 +193,7 @@ public class Performance
             it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(connectionString,
                 x =>
                 {
-                    x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+                    x.BindRepositoriesWithAttribute<AutoRepository1Attribute>();
                     x.BindDbGeneratorType<IDbGenerator1>();
                     x.BeforeInsert += new RepositoryEvent(entity =>
                     {

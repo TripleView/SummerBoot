@@ -35,10 +35,48 @@ namespace SummerBoot.Test.Oracle
     {
         private IServiceProvider serviceProvider;
 
+        [Fact, Priority(224)]
+        public async Task TestAnonymousListsAsParameters()
+        {
+            InitDatabase();
+            var guid = Guid.NewGuid();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var guidModelForListParameterRepository = serviceProvider.GetService<IGuidModelForListParameterRepository>();
+
+            var model = new GuidModel()
+            {
+                Name = "a"
+            };
+            
+            await guidModelRepository.InsertAsync(model);
+            var r = await guidModelForListParameterRepository.GetListByNames(new List<string>(){"a","b","c"});
+            Assert.Equal(1, r.Count);
+            Assert.Equal("a", r[0].Name);
+        }
+
+        [Fact, Priority(223)]
+        public async Task TestGuid()
+        {
+            InitDatabase();
+            var guid = Guid.NewGuid();
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTableManualRepository = serviceProvider.GetService<INullableTableManualRepository>();
+
+            var model = new NullableTable()
+            {
+                Guid2 = guid
+            };
+            await nullableTableRepository.InsertAsync(model);
+            var r = await nullableTableManualRepository.GetGuid();
+            Assert.Equal(guid, r);
+            var r2 = await nullableTableManualRepository.GetGuidWithNullResult();
+            Assert.Equal(null, null);
+        }
+
         /// <summary>
         /// 测试left/right join时左右实体类里有string类型,并且string类型为null时调用trim方法
         /// </summary>
-        [Fact, Priority(426)]
+        [Fact, Priority(222)]
         public async Task TestJoinEntityWithStringNullCallMethod()
         {
             InitDatabase();
@@ -72,7 +110,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试left/right join时左右实体类里连接属性为可空类型 
         /// </summary>
-        [Fact, Priority(425)]
+        [Fact, Priority(221)]
         public async Task TestJoinEntityWithNullableProperty()
         {
             InitDatabase();
@@ -101,7 +139,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试where条件中参数包含方法
         /// </summary>
-        [Fact, Priority(424)]
+        [Fact, Priority(220)]
         public async Task TestWhereConditionContainOtherMethod()
         {
             InitDatabase();
@@ -147,7 +185,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试where条件中参数是可空类型
         /// </summary>
-        [Fact, Priority(423)]
+        [Fact, Priority(219)]
         public async Task TestWhereConditionHaveNullableValue()
         {
             InitDatabase();
@@ -226,19 +264,19 @@ namespace SummerBoot.Test.Oracle
 
             var customerList1 = await customerRepository.Where(it => it.Name == "bob").ToListAsync();
             Assert.Equal(2, customerList1.Count);
-            var customerList2 = await customerRepository.Where(it => it.Name == "bob").Where(it=>it.Age==1).ToListAsync();
+            var customerList2 = await customerRepository.Where(it => it.Name == "bob").Where(it => it.Age == 1).ToListAsync();
             Assert.Equal(1, customerList2.Count);
 
-            var customerList3 = await customerRepository.Where(it => it.CustomerNo == "A2").OrWhere(it=>it.Age==1).ToListAsync();
+            var customerList3 = await customerRepository.Where(it => it.CustomerNo == "A2").OrWhere(it => it.Age == 1).ToListAsync();
             Assert.Equal(2, customerList3.Count);
 
-            var customerList4 = await customerRepository.WhereIf(true,it=>it.CustomerNo == "A2").ToListAsync();
+            var customerList4 = await customerRepository.WhereIf(true, it => it.CustomerNo == "A2").ToListAsync();
             Assert.Equal(1, customerList4.Count);
 
             var customerList5 = await customerRepository.WhereIf(false, it => it.CustomerNo == "A2").ToListAsync();
             Assert.Equal(2, customerList5.Count);
 
-            var customerList6 = await customerRepository.Where(it => it.CustomerNo == "A2").OrWhereIf(true,it => it.Age == 1).ToListAsync();
+            var customerList6 = await customerRepository.Where(it => it.CustomerNo == "A2").OrWhereIf(true, it => it.Age == 1).ToListAsync();
             Assert.Equal(2, customerList6.Count);
 
             var customerList7 = await customerRepository.Where(it => it.CustomerNo == "A2").OrWhereIf(false, it => it.Age == 1).ToListAsync();
@@ -379,10 +417,10 @@ namespace SummerBoot.Test.Oracle
 
             var result = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it=>it.T2.City=="A")
+                .Where(it => it.T2.City == "A")
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();
-            Assert.Equal(2,result.Count);
+            Assert.Equal(2, result.Count);
 
             var result11 = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
@@ -401,14 +439,14 @@ namespace SummerBoot.Test.Oracle
             var result2 = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
                 .Where(it => it.T2.City == "A")
-                .Where(it=>it.T1.CustomerNo=="A1")
+                .Where(it => it.T1.CustomerNo == "A1")
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();
             Assert.Equal(1, result2.Count);
 
             var result3 = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .WhereIf(true,it => it.T2.City == "A")
+                .WhereIf(true, it => it.T2.City == "A")
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();
             Assert.Equal(2, result3.Count);
@@ -423,7 +461,7 @@ namespace SummerBoot.Test.Oracle
             var result5 = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
                 .Where(it => it.T1.CustomerNo == "A2")
-                .OrWhere(it=>it.T2.City=="B")
+                .OrWhere(it => it.T2.City == "B")
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();
             Assert.Equal(2, result5.Count);
@@ -431,7 +469,7 @@ namespace SummerBoot.Test.Oracle
             var result6 = await customerRepository
                 .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
                 .Where(it => it.T1.CustomerNo == "A2")
-                .OrWhereIf(true,it => it.T2.City == "B")
+                .OrWhereIf(true, it => it.T2.City == "B")
                 .Select(it => new { it.T1.CustomerNo, it.T2.City })
                 .ToListAsync();
             Assert.Equal(2, result6.Count);
@@ -452,7 +490,7 @@ namespace SummerBoot.Test.Oracle
                 .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
                 .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
                 .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo== "A1")
+                .Where(it => it.T3.CustomerNo == "A1")
                 .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
                 .ToListAsync();
             Assert.Equal(3, orderList.Count);
@@ -460,12 +498,12 @@ namespace SummerBoot.Test.Oracle
             Assert.Equal("B", orderList[1].ProductName);
             Assert.Equal("D", orderList[2].ProductName);
 
-            var orderList1= await orderHeaderRepository
+            var orderList1 = await orderHeaderRepository
                 .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
                 .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
                 .OrderBy(it => it.T2.Quantity)
                 .Where(it => it.T3.CustomerNo == "A1")
-                .Where(it=>it.T1.CreateTime==firstBuyDate)
+                .Where(it => it.T1.CreateTime == firstBuyDate)
                 .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
                 .ToListAsync();
             Assert.Equal(2, orderList1.Count);
@@ -489,7 +527,7 @@ namespace SummerBoot.Test.Oracle
                 .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
                 .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
                 .OrderBy(it => it.T2.Quantity)
-                .WhereIf(true,it => it.T3.CustomerNo == "A1")
+                .WhereIf(true, it => it.T3.CustomerNo == "A1")
                 .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
                 .ToListAsync();
             Assert.Equal(3, orderList4.Count);
@@ -510,7 +548,7 @@ namespace SummerBoot.Test.Oracle
                 .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
                 .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
                 .OrderBy(it => it.T2.Quantity)
-                .OrWhereIf(true,it => it.T3.CustomerNo == "A1")
+                .OrWhereIf(true, it => it.T3.CustomerNo == "A1")
                 .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
                 .ToListAsync();
             Assert.Equal(3, orderList6.Count);
@@ -538,10 +576,10 @@ namespace SummerBoot.Test.Oracle
             var orderList8 = await orderHeaderRepository
                 .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
                 .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(),it=>it.T4.CustomerId==it.T3.Id &&it.T4.CreateOn== date3)
+                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
                 .OrderBy(it => it.T2.Quantity)
                 .Where(it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age,CustomerCity = it.T4.City}, x => x.T1)
+                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
                 .ToListAsync();
             Assert.Equal(3, orderList8.Count);
             Assert.Equal("A", orderList8[0].ProductName);
@@ -2819,7 +2857,8 @@ namespace SummerBoot.Test.Oracle
                     {
                         x.TableNameMapping = a => a.ToUpper();
                         x.ColumnNameMapping = a => a.ToUpper();
-                        x.BindRepositorysWithAttribute<OracleAutoRepositoryAttribute>();
+                        x.BindRepositoriesWithAttribute<OracleAutoRepositoryAttribute>();
+                        x.BindManualRepositoriesWithAttribute<OracleManualRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {
@@ -3272,6 +3311,11 @@ namespace SummerBoot.Test.Oracle
             var r1 = orderQueryRepository.GetOrderQuery();
             var r2 = orderQueryRepository.GetOrderQueryList();
         }
+
+        /// <summary>
+        /// 测试left/right join时左右实体类里有string类型,并且string类型为null时调用trim方法
+        /// </summary>
+       
 
     }
 }

@@ -37,7 +37,7 @@ namespace WebApiExample
                         //绑定单个仓储
                         //x.BindRepository<IMysqlCustomerRepository,Customer>();
                         //通过自定义注解批量绑定仓储
-                        x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+                        x.BindRepositoriesWithAttribute<AutoRepository1Attribute>();
 
                         //绑定数据库生成接口
                         x.BindDbGeneratorType<IDbGenerator1>();
@@ -68,7 +68,7 @@ namespace WebApiExample
                 it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
                     x =>
                     {
-                        x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
+                        x.BindRepositoriesWithAttribute<AutoRepository2Attribute>();
                         x.BindDbGeneratorType<IDbGenerator2>();
                     });
             });

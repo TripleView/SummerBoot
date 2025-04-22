@@ -555,8 +555,17 @@ namespace SummerBoot.Core
 
                 result = new List<MemberInfoCache>();
 
-                var propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanRead && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
-                    .ToList();
+                var propertyInfos = new List<PropertyInfo>();
+
+                if (type.IsAnonymousType())
+                {
+                    propertyInfos = type.GetProperties().ToList();
+                }
+                else
+                {
+                    propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanRead && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                        .ToList();
+                }
 
                 for (var i = 0; i < propertyInfos.Count; i++)
                 {
@@ -609,7 +618,7 @@ namespace SummerBoot.Core
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                   
                 }
             }
 

@@ -162,7 +162,7 @@ namespace SummerBoot.Repository
         /// Automatic storage interface through feature binding;通过特性绑定自动仓储接口
         /// </summary>
         /// <typeparam name="TAttribute"></typeparam>
-        public void BindRepositorysWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
+        public void BindRepositoriesWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
         {
             var types = SbUtil.GetAppAllTypes();
             var autoRepositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>()?.GetType() == typeof(TAttribute)).ToList();
@@ -177,10 +177,10 @@ namespace SummerBoot.Repository
         /// Manual repository interface through feature binding;通过特性绑定手动仓储接口
         /// </summary>
         /// <typeparam name="TAttribute"></typeparam>
-        public void BindManualRepositorysWithAttribute<TAttribute>() where TAttribute : ManualRepositoryAttribute
+        public void BindManualRepositoriesWithAttribute<TAttribute>() where TAttribute : ManualRepositoryAttribute
         {
             var types = SbUtil.GetAppAllTypes();
-            var autoRepositoryTypes = types.Where(it => it.IsInterface && it.GetCustomAttribute<TAttribute>()?.GetType() == typeof(TAttribute)).ToList();
+            var autoRepositoryTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<TAttribute>()?.GetType() == typeof(TAttribute)).ToList();
 
             foreach (var autoRepositoryType in autoRepositoryTypes)
             {

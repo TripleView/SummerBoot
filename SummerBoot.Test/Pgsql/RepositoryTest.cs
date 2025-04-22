@@ -2865,7 +2865,7 @@ namespace SummerBoot.Test.Pgsql
                 it.AddDatabaseUnit<NpgsqlConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
-                        x.BindRepositorysWithAttribute<PgsqlAutoRepositoryAttribute>();
+                        x.BindRepositoriesWithAttribute<PgsqlAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {

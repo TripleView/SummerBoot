@@ -8,4 +8,13 @@ namespace SummerBoot.Test.Oracle
     public class OracleAutoRepositoryAttribute : AutoRepositoryAttribute
     {
     }
+
+    public class OracleManualRepositoryAttribute : ManualRepositoryAttribute
+    {
+        public OracleManualRepositoryAttribute(Type type):base(type)
+        {
+            
+        }
+    }
+    
 }

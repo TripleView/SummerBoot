@@ -2172,7 +2172,7 @@ namespace SummerBoot.Test.Sqlite
                 it.AddDatabaseUnit<SQLiteConnection, IUnitOfWork1>(databaseString,
                     x =>
                     {
-                        x.BindRepositorysWithAttribute<SqliteAutoRepositoryAttribute>();
+                        x.BindRepositoriesWithAttribute<SqliteAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {

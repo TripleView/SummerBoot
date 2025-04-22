@@ -2866,7 +2866,7 @@ namespace SummerBoot.Test.Mysql
                 it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(connectionString,
                     x =>
                     {
-                        x.BindRepositorysWithAttribute<MysqlAutoRepositoryAttribute>();
+                        x.BindRepositoriesWithAttribute<MysqlAutoRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {

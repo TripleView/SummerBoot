@@ -106,7 +106,7 @@ summerBoot has developed its own ORM module based on the work unit and warehousi
 You need to install the corresponding database dependency package through nuget , such as Microsoft.Data.SqlClient of SqlServer , Mysql.data of mysql , Oracle.ManagedDataAccess.Core of oracle, Npgsql of pgsql
 
 ## 1.Registration service
-The repository supports multiple databases and multiple links.In the repository, we call a link a database unit.The following example demonstrates adding two database units to a project.The first is the mysql database type, and the second is the sqlserver database type ., add a database unit through the AddDatabaseUnit method, the parameters are the dbConnection class of the corresponding database and the work unit interface (the work unit interface is used for transactions), the framework provides 9 work unit interfaces IUnitOfWork1\~IUnitOfWork9 by default, of course, you can also customize the work unit interface , you only need to inherit the interface from IUnitOfWork .Because there are multiple database units, the warehouse needs to be bound to the corresponding database unit.You can bind a single warehouse through BindRepository , or add a custom annotation on the warehouse (this annotation needs to be inherited from AutoRepositoryAttribute , which is provided by the framework by default.AutoRepository1Attribute~AutoRepository9Attribute), and then use the BindRepositorysWithAttribute method to bind warehouses in batches.At the same time, you can add pre-insert callbacks and pre-update callbacks in the unit (for example, it can be used to add creation time and update time), add custom type mappings, and add custom field mappings Handler, add table name mapping, add field name mapping (table name mapping and field name mapping can be used in situations where database fields and entity class fields are different, such as oracle database, table name field names are all uppercase, but entity classes are Pascal named), etc.
+The repository supports multiple databases and multiple links.In the repository, we call a link a database unit.The following example demonstrates adding two database units to a project.The first is the mysql database type, and the second is the sqlserver database type ., add a database unit through the AddDatabaseUnit method, the parameters are the dbConnection class of the corresponding database and the work unit interface (the work unit interface is used for transactions), the framework provides 9 work unit interfaces IUnitOfWork1\~IUnitOfWork9 by default, of course, you can also customize the work unit interface , you only need to inherit the interface from IUnitOfWork .Because there are multiple database units, the warehouse needs to be bound to the corresponding database unit.You can bind a single warehouse through BindRepository , or add a custom annotation on the warehouse (this annotation needs to be inherited from AutoRepositoryAttribute , which is provided by the framework by default.AutoRepository1Attribute~AutoRepository9Attribute), and then use the BindRepositoriesWithAttribute method to bind warehouses in batches.At the same time, you can add pre-insert callbacks and pre-update callbacks in the unit (for example, it can be used to add creation time and update time), add custom type mappings, and add custom field mappings Handler, add table name mapping, add field name mapping (table name mapping and field name mapping can be used in situations where database fields and entity class fields are different, such as oracle database, table name field names are all uppercase, but entity classes are Pascal named), etc.
 
 ````csharp
 builder.Services.AddSummerBoot();
@@ -134,7 +134,7 @@ builder.Services.AddSummerBootRepository(it =>
 						//x.BindRepository<IMysqlCustomerRepository,Customer>();
 
 						//Batch binding Repositorys through custom annotations
-						x.BindRepositorysWithAttribute<AutoRepository1Attribute>();
+						x.BindRepositoriesWithAttribute<AutoRepository1Attribute>();
 
 						 //Bind database generation interface
 						x.BindDbGeneratorType<IDbGenerator1>();
@@ -170,7 +170,7 @@ builder.Services.AddSummerBootRepository(it =>
 		it.AddDatabaseUnit<SqlConnection, IUnitOfWork2>(sqlServerDbConnectionString,
 				x =>
 				{
-						x.BindRepositorysWithAttribute<AutoRepository2Attribute>();
+						x.BindRepositoriesWithAttribute<AutoRepository2Attribute>();
 						x.BindDbGeneratorType<IDbGenerator2>();
 				});
 });
