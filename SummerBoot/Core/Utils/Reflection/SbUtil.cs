@@ -500,7 +500,7 @@ namespace SummerBoot.Core
                 }
                 else
                 {
-                    propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.CanWrite && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
+                    propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(it => it.GetCustomAttribute<NotMappedAttribute>() == null && it.CanWrite && (it.PropertyType.IsValueType || it.PropertyType == typeof(string)))
                        .ToList();
                 }
 

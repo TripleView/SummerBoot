@@ -865,11 +865,12 @@ namespace SummerBoot.Repository.Core
                 return tempResult;
                 //throw new Exception("The column to query could not be found");
             }
-
+            //判断是否为值类型
+            var isValueType = type.IsValueType;
             //try
             var tyrLabel = il.BeginExceptionBlock();
             //定义返回值
-            if (type.IsValueType)
+            if (isValueType)
             {
                 il.Emit(OpCodes.Ldloca, returnValueLocal);
                 il.Emit(OpCodes.Initobj, type);
@@ -910,7 +911,7 @@ namespace SummerBoot.Repository.Core
                 //通过索引从dataReader里读取数据，此时读取回来的是object类型
                 il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
                 il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[target, target,dataReader,i]
-                il.Emit(OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
+                il.Emit( OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
                 //判断返回值是否为dbnull，如果是，则跳转到结束
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.Emit(OpCodes.Isinst, typeof(DBNull));// [target, target, getItemValue, bool]
@@ -952,7 +953,16 @@ namespace SummerBoot.Repository.Core
                 il.MarkLabel(finishLabel);
             }
             il.MarkLabel(endLabel);
-            il.SteadOfLocal(returnValueLocal);
+            if (isValueType)
+            {
+                //因为valueType是Ldloca方式加载的，即指针方式，所以无需替换给returnValueLocal
+                il.Emit(OpCodes.Pop);// []
+            }
+            else
+            {
+                il.SteadOfLocal(returnValueLocal);
+            }
+            
 
             il.BeginCatchBlock(typeof(Exception));
             //此时栈顶元素为[exception]
@@ -963,6 +973,11 @@ namespace SummerBoot.Repository.Core
             il.EndExceptionBlock();
 
             il.Emit(OpCodes.Ldloc, returnValueLocal);
+            if (isValueType)
+            {
+                //值类型返回给object，需要装箱
+                il.Emit(OpCodes.Box, type);
+            }
             il.Emit(OpCodes.Ret);
 
             var result = (Func<IDataReader, object>)dynamicMethod.CreateDelegate(typeof(Func<IDataReader, object>));

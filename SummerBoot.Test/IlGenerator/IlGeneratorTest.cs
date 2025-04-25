@@ -25,6 +25,7 @@ using SummerBoot.Repository;
 using SummerBoot.Test.Model;
 using IlPerson = SummerBoot.Test.IlGenerator.Dto.IlPerson;
 using Xunit.Priority;
+using System.Reflection;
 
 namespace SummerBoot.Test.IlGenerator
 {
@@ -1179,7 +1180,6 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var ctor = typeof(IlPerson).GetConstructor(Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             il.Emit(OpCodes.Ldtoken, typeof(IlPerson));
-
             il.Emit(OpCodes.Ret);
 
             var dd = (Func<Type>)dynamicMethod.CreateDelegate(typeof(Func<Type>));
@@ -1476,7 +1476,9 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         }
 
         /// <summary>
-        /// 测试InitObject和Ldloca，该指令仅针对值类型的结构体，而不是原生的int等
+        /// 测试InitObject和Ldloca，该指令仅针对值类型的结构体，而不是原生的int等,
+        /// 测试结论，每次都要Ldloca加载本地变量的地址到堆栈上，然后加载值，再调用赋值方法,Ldloc不行
+        /// 同时Callvirt和Call调用没有区别
         /// </summary>
         [Fact]
         public static void TestInitObjectAndLdloca()
@@ -1487,16 +1489,19 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var ilRe = il.DeclareLocal(typeof(IlValueTypeItem));
-            var nameProperty = typeof(IlValueTypeItem).GetProperty("Name");
+            var nameProperty = typeof(IlValueTypeItem).GetProperty(nameof(IlValueTypeItem.Name));
+            var ageProperty = typeof(IlValueTypeItem).GetProperty(nameof(IlValueTypeItem.Age));
             var ctor = typeof(IlResult).GetConstructor(Type.EmptyTypes);
 
             il.Emit(OpCodes.Ldloca, ilRe);
 
             il.Emit(OpCodes.Initobj, typeof(IlValueTypeItem)); //stack is 
-
             il.Emit(OpCodes.Ldloca, ilRe);
             il.Emit(OpCodes.Ldstr, "何泽平");
-            il.Emit(OpCodes.Call, nameProperty.GetSetMethod());
+            il.Emit(OpCodes.Callvirt, nameProperty.GetSetMethod());
+            il.Emit(OpCodes.Ldloca, ilRe);
+            il.Emit(OpCodes.Ldc_I4, 3);
+            il.Emit(OpCodes.Call, ageProperty.GetSetMethod());
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Box, typeof(IlValueTypeItem));
             il.Emit(OpCodes.Ret);
@@ -1504,6 +1509,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
             var re = (IlValueTypeItem)dd();
             Assert.Equal("何泽平", re.Name);
+            Assert.Equal(3, re.Age);
         }
 
         /// <summary>
@@ -2675,7 +2681,6 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             //dd(5L);
             Assert.Equal("abc", result);
             //Assert.Equal("hhh", result.b);
-
         }
 
         /// <summary>
@@ -2701,6 +2706,53 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             Assert.Equal(123, cc);
             //Assert.Equal("hhh", result.b);
 
+        }
+
+        /// <summary>
+        /// 测试初始化自定义结构体,结论Newobj即可
+        /// </summary>
+        [Fact]
+        public static void TestInitStruct()
+        {
+            var type = typeof(TestReturnStruct);
+            var dynamicMethod = new DynamicMethod("TestInitStruct" + Guid.NewGuid().ToString("N"), typeof(TestReturnStruct),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            var f1 = il.DeclareLocal(typeof(TestReturnStruct));
+            
+            il.Emit(OpCodes.Call, typeof(Guid).GetMethod(nameof(Guid.NewGuid)));
+            il.Emit(OpCodes.Ldstr, "abc");
+            il.Emit(OpCodes.Newobj, type.GetConstructors().FirstOrDefault(x=>x.GetParameters().Length==2));
+            //il.Emit(OpCodes.Box,typeof(TestReturnStruct));
+            il.Emit(OpCodes.Ret);
+          
+            var dd = (Func<TestReturnStruct>)dynamicMethod.CreateDelegate(typeof(Func<TestReturnStruct>));
+            var result = dd();
+        
+            Assert.Equal("abc", result.Name);
+        }
+
+        /// <summary>
+        /// 测试pop指令是否可以滥用，结论，不可以，要严格看堆栈上的情况
+        /// </summary>
+        [Fact]
+        public static void TestPop()
+        {
+            var type = typeof(TestReturnStruct);
+            var dynamicMethod = new DynamicMethod("TestPop" + Guid.NewGuid().ToString("N"), typeof(int),
+                Type.EmptyTypes);
+            var il = dynamicMethod.GetILGenerator();
+            
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldc_I4,2);
+
+            il.Emit(OpCodes.Ret);
+
+            var dd = (Func<int>)dynamicMethod.CreateDelegate(typeof(Func<int>));
+            Assert.Throws<InvalidProgramException>(() =>
+            {
+                var result = dd();
+            });
         }
     }
 }

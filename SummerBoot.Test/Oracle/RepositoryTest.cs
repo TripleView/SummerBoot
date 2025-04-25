@@ -35,6 +35,60 @@ namespace SummerBoot.Test.Oracle
     {
         private IServiceProvider serviceProvider;
 
+        [Fact, Priority(226)]
+        public async Task TestStructOrClassAsParameter()
+        {
+            //InitDatabase();
+            InitService();
+            var guid = Guid.NewGuid();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var testStructAsParametersOrReturnValuesRepository = serviceProvider.GetService<ITestStructAsParametersOrReturnValuesRepository>();
+            var guidModelForListParameterRepository = serviceProvider.GetService<IGuidModelForListParameterRepository>();
+
+            var model = new GuidModel()
+            {
+                Id = guid,
+                Name = "a"
+            };
+
+            await guidModelRepository.InsertAsync(model);
+            
+            var r3 = await guidModelForListParameterRepository.TestStructAsParameter(new TestReturnStruct()
+            {
+                Name = "a"
+            });
+        }
+
+        [Fact, Priority(225)]
+        public async Task TestStructOrClassAsReturnValue()
+        {
+            InitDatabase();
+            //InitService();
+            var guid = Guid.NewGuid();
+            var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
+            var testStructAsParametersOrReturnValuesRepository = serviceProvider.GetService<ITestStructAsParametersOrReturnValuesRepository>();
+            
+            var model = new GuidModel()
+            {
+                Id = guid,
+                Name = "a"
+            };
+
+            await guidModelRepository.InsertAsync(model);
+            var r = await testStructAsParametersOrReturnValuesRepository.TestReturnClass();
+            var r2 = await testStructAsParametersOrReturnValuesRepository.TestReturnStruct();
+            Assert.True(r.Count==r2.Count);
+            for (var i = 0; i < r.Count; i++)
+            {
+                var item1 = r[i];
+                var item2 = r2[i];
+                Assert.Equal(item1.Name,item2.Name);
+                Assert.Equal(item1.Guid, item2.Guid);
+            }
+
+        }
+
+
         [Fact, Priority(224)]
         public async Task TestAnonymousListsAsParameters()
         {
