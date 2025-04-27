@@ -51,7 +51,7 @@ namespace SummerBoot.Test.IlGenerator
             }
 
             var databaseUnit = new DatabaseUnit(typeof(IUnitOfWork), typeof(MySqlConnection), connectionString);
-    
+
             databaseUnit.SetTypeHandler(typeof(Guid), new GuidTypeHandler());
 
             using (var conn = new MySqlConnection(connectionString))
@@ -77,10 +77,10 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 cmd.ExecuteNonQuery();
                 var insertSql = @"INSERT INTO TestQueryMulti(Name,Age) VALUES ('何泽平',30);Select LAST_INSERT_ID() id";
                 var gridReader = conn.QueryMultiple(databaseUnit, insertSql);
-                var id= gridReader.Read<int>().FirstOrDefault();
+                var id = gridReader.Read<int>().FirstOrDefault();
                 Assert.Equal(1, id);
 
-                using (var grid = conn.QueryMultiple(databaseUnit,"select 1; select 2; select @x; select 4", new { x = 3 }))
+                using (var grid = conn.QueryMultiple(databaseUnit, "select 1; select 2; select @x; select 4", new { x = 3 }))
                 {
                     var a = grid.Read<int>();
                     var b = grid.Read<int>();
@@ -92,10 +92,10 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                     Assert.Equal(3, c.Single());
                     Assert.Equal(4, d.Single());
                 }
-               
+
             }
 
-          
+
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             Assert.Equal(IlEnum.a, r5);
             var r6 = func3(2);
             Assert.Equal(IlEnum.b, r6);
-       
+
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var func4 = DatabaseContext.ChangeTypeToOtherType<dynamic>(typeof(string));
             var r7 = func4("1");
             Assert.Equal("1", r7);
-          
+
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',2,'" + guidValue + "')";
                 effectiveRows = conn.Execute(databaseUnit, insertSql);
                 Assert.Equal(1, effectiveRows);
-                
+
                 var sql = "select * from test where id=@id";
                 var result = conn.Query<IlPerson>(databaseUnit, sql, new { id = guidValue }).ToList();
                 Assert.Equal(1, result.Count);
@@ -470,7 +470,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 Assert.Equal(1, effectiveRows);
 
                 var sql = "select * from test where id=@id";
-                var result =await conn.QueryFirstOrDefaultAsync<IlPerson>(databaseUnit, sql, new { id = guidValue });
+                var result = await conn.QueryFirstOrDefaultAsync<IlPerson>(databaseUnit, sql, new { id = guidValue });
                 Assert.Equal(new Guid(guidValue), result.Id);
 
                 var result2 = await conn.QueryFirstOrDefaultAsync<IlPerson>(databaseUnit, sql, new { id = Guid.NewGuid().ToString() });
@@ -525,16 +525,16 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
 
                 var guidValue = Guid.NewGuid().ToString();
                 insertSql = @"INSERT INTO test (Name,Age,id) VALUES ('何泽平',2,'" + guidValue + "')";
-                effectiveRows =await conn.ExecuteAsync(databaseUnit, insertSql);
+                effectiveRows = await conn.ExecuteAsync(databaseUnit, insertSql);
                 Assert.Equal(1, effectiveRows);
 
                 var sql = "select * from test where id=@id";
-                var result =(await conn.QueryAsync<IlPerson>(databaseUnit, sql, new { id = guidValue })).ToList();
+                var result = (await conn.QueryAsync<IlPerson>(databaseUnit, sql, new { id = guidValue })).ToList();
                 Assert.Equal(1, result.Count);
                 Assert.Equal(new Guid(guidValue), result[0].Id);
 
                 var sql2 = "select age from test where id=@id";
-                var result2 =(await conn.QueryAsync<IlEnum?>(databaseUnit, sql2, new { id = guidValue })).ToList();
+                var result2 = (await conn.QueryAsync<IlEnum?>(databaseUnit, sql2, new { id = guidValue })).ToList();
                 Assert.Equal(1, result2.Count);
                 Assert.Equal(IlEnum.b, result2[0]);
 
@@ -1082,7 +1082,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var objLocal = il.DeclareLocal(typeof(IlPerson));
 
             il.Emit(OpCodes.Newobj, ctor);
-            il.Emit(OpCodes.Stloc,objLocal);
+            il.Emit(OpCodes.Stloc, objLocal);
             il.Emit(OpCodes.Ldloc, objLocal);
             il.Emit(OpCodes.Isinst, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
@@ -1133,7 +1133,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             il.Emit(OpCodes.Newobj, ctor);
             il.Emit(OpCodes.Isinst, typeof(IlPerson));
             il.Emit(OpCodes.Ret);
-           
+
             var dd = (Func<IlPerson>)dynamicMethod.CreateDelegate(typeof(Func<IlPerson>));
             var re = dd();
             Assert.NotNull(re);
@@ -2531,9 +2531,9 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         {
             //<>f__AnonymousType1`
             var anonymousTypeInstance = new { a = 1, b = "b" };
-            var result= GenerateAnonymousType(anonymousTypeInstance);
-            
-            Assert.Equal(45,result.a);
+            var result = GenerateAnonymousType(anonymousTypeInstance);
+
+            Assert.Equal(45, result.a);
             Assert.Equal("hhh", result.b);
 
         }
@@ -2563,7 +2563,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
 
             il.Emit(OpCodes.Ret);
             var dd = (Func<T>)dynamicMethod.CreateDelegate(typeof(Func<T>));
-            var result= dd();
+            var result = dd();
             return result;
         }
 
@@ -2584,7 +2584,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             //il.Emit(OpCodes.Dup);// [target,target]
             il.Emit(OpCodes.Newobj, typeof(List<object>).GetConstructors().First());
             il.Emit(OpCodes.Stloc, propertyValuesLocal);
-           
+
             il.Emit(OpCodes.Ldloc, propertyValuesLocal);
             il.Emit(OpCodes.Ldstr, "abc");
             il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));
@@ -2592,7 +2592,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             il.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("ToArray"));
             il.Emit(OpCodes.Ret);
             var dd = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
-           var result=  dd();
+            var result = dd();
             //Assert.Equal(45, result.a);
             //Assert.Equal("hhh", result.b);
 
@@ -2610,7 +2610,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var il = dynamicMethod.GetILGenerator();
             var propertyValuesLocal = il.DeclareLocal(typeof(List<object>));
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Unbox_Any,typeof(long));
+            il.Emit(OpCodes.Unbox_Any, typeof(long));
             il.Emit(OpCodes.Conv_Ovf_I4);
             il.Emit(OpCodes.Ret);
             var dd = (Func<object, int>)dynamicMethod.CreateDelegate(typeof(Func<object, int>));
@@ -2625,7 +2625,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         {
             //<>f__AnonymousType1`
             var anonymousTypeInstance = new { a = 1, b = "b" };
-            var result = GenerateAnonymousTypeWithObjectParameter(anonymousTypeInstance,45, "hhh");
+            var result = GenerateAnonymousTypeWithObjectParameter(anonymousTypeInstance, 45, "hhh");
 
             Assert.Equal(45, result.a);
             Assert.Equal("hhh", result.b);
@@ -2635,7 +2635,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
         private static T GenerateAnonymousTypeWithObjectParameter<T>(T t, int p1, string p2)
         {
             var dynamicMethod = new DynamicMethod("test" + Guid.NewGuid().ToString("N"), t.GetType(),
-                new Type[]{typeof(int),typeof(string)});
+                new Type[] { typeof(int), typeof(string) });
             var il = dynamicMethod.GetILGenerator();
             var ctor = t.GetType().GetConstructors().FirstOrDefault();
             il.Emit(OpCodes.Ldarg_0);
@@ -2656,8 +2656,8 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             //il.EndExceptionBlock();
 
             il.Emit(OpCodes.Ret);
-            var dd = (Func<int, string, T>)dynamicMethod.CreateDelegate(typeof(Func<int,string,T>));
-            var result = dd(p1,p2);
+            var dd = (Func<int, string, T>)dynamicMethod.CreateDelegate(typeof(Func<int, string, T>));
+            var result = dd(p1, p2);
             return result;
         }
 
@@ -2698,7 +2698,7 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var il = dynamicMethod.GetILGenerator();
             var c = il.DeclareLocal(typeof(int));
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Box,typeof(int));
+            il.Emit(OpCodes.Box, typeof(int));
             il.Emit(OpCodes.Ret);
             var dd = (Func<int, object>)dynamicMethod.CreateDelegate(typeof(Func<int, object>));
             var cc = dd(123);
@@ -2719,16 +2719,16 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
             var f1 = il.DeclareLocal(typeof(TestReturnStruct));
-            
+
             il.Emit(OpCodes.Call, typeof(Guid).GetMethod(nameof(Guid.NewGuid)));
             il.Emit(OpCodes.Ldstr, "abc");
-            il.Emit(OpCodes.Newobj, type.GetConstructors().FirstOrDefault(x=>x.GetParameters().Length==2));
+            il.Emit(OpCodes.Newobj, type.GetConstructors().FirstOrDefault(x => x.GetParameters().Length == 2));
             //il.Emit(OpCodes.Box,typeof(TestReturnStruct));
             il.Emit(OpCodes.Ret);
-          
+
             var dd = (Func<TestReturnStruct>)dynamicMethod.CreateDelegate(typeof(Func<TestReturnStruct>));
             var result = dd();
-        
+
             Assert.Equal("abc", result.Name);
         }
 
@@ -2742,9 +2742,9 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
             var dynamicMethod = new DynamicMethod("TestPop" + Guid.NewGuid().ToString("N"), typeof(int),
                 Type.EmptyTypes);
             var il = dynamicMethod.GetILGenerator();
-            
+
             il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Ldc_I4,2);
+            il.Emit(OpCodes.Ldc_I4, 2);
 
             il.Emit(OpCodes.Ret);
 
@@ -2754,5 +2754,57 @@ CONSTRAINT TestQueryMulti_pk PRIMARY KEY (Id)
                 var result = dd();
             });
         }
+        /// <summary>
+        /// 测试从结构体里获取属性值
+        /// </summary>
+        [Fact]
+        public static void TestGetValueFromStruct()
+        {
+            var type = typeof(TestReturnStruct);
+            var dynamicMethod = new DynamicMethod("TestGetValueFromStruct" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[]{ type });
+            var il = dynamicMethod.GetILGenerator();
+            var nameProperty = typeof(TestReturnStruct).GetProperty(nameof(TestReturnStruct.Name));
+            
+            il.Emit(OpCodes.Ldarga_S, 0);
+            il.Emit(OpCodes.Call, nameProperty.GetGetMethod());
+            il.Emit(OpCodes.Box, nameProperty.PropertyType);
+
+            il.Emit(OpCodes.Ret);
+            var p = new TestReturnStruct()
+            {
+                Name = "a"
+            };
+            var dd = (Func<TestReturnStruct, object>)dynamicMethod.CreateDelegate(typeof(Func<TestReturnStruct,object>));
+            var value= dd(p);
+            Assert.Equal("a",value);
+        }
+
+        /// <summary>
+        /// 测试从结构体里获取属性值
+        /// </summary>
+        [Fact]
+        public static void TestGetValueFromStruct2()
+        {
+            var type = typeof(TestReturnStruct);
+            var dynamicMethod = new DynamicMethod("TestGetValueFromStruct" + Guid.NewGuid().ToString("N"), typeof(object),
+                new Type[] { type });
+            var il = dynamicMethod.GetILGenerator();
+            var guidProperty = typeof(TestReturnStruct).GetProperty(nameof(TestReturnStruct.Guid));
+            il.Emit(OpCodes.Ldarga, 0);
+            il.Emit(OpCodes.Call, guidProperty.GetGetMethod());
+            il.Emit(OpCodes.Box, guidProperty.PropertyType);
+
+            il.Emit(OpCodes.Ret);
+            var p = new TestReturnStruct()
+            {
+                Name = "a"
+            };
+            var dd = (Func<TestReturnStruct, object>)dynamicMethod.CreateDelegate(typeof(Func<TestReturnStruct, object>));
+            var value = dd(p);
+            Assert.Equal(null, value);
+
+        }
+
     }
 }

@@ -247,14 +247,14 @@ namespace SummerBoot.Core
             }
 
             var dynamicMethod = new DynamicMethod("GetPropertyValueByEmit" + Guid.NewGuid().ToString("N"), typeof(object),
-                new Type[] { typeof(T) });
+                new Type[] { type });
 
             var il = dynamicMethod.GetILGenerator();
 
             if (type.IsValueType)
             {
-                il.Emit(OpCodes.Ldarga_S, 0);
-                il.Emit(OpCodes.Callvirt, property.GetGetMethod());
+                il.Emit(OpCodes.Ldarga, 0);
+                il.Emit(OpCodes.Call, property.GetGetMethod());
                 il.Emit(OpCodes.Box, property.PropertyType);
             }
             else
@@ -266,8 +266,8 @@ namespace SummerBoot.Core
             }
 
             il.Emit(OpCodes.Ret);
-
-            var lambda = dynamicMethod.CreateDelegate(typeof(Func<T, object>));
+            var funcType= typeof(Func<,>).MakeGenericType(type, typeof(object));
+            var lambda =dynamicMethod.CreateDelegate(funcType);
             CacheDictionary.TryAdd(key, lambda);
             var result = lambda.DynamicInvoke(model);
             return result;

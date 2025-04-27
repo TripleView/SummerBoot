@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -20,6 +21,13 @@ namespace SummerBoot.Repository.Core
                 foreach (var dpGetParamInfo in dp.GetParamInfos)
                 {
                     this.AddParamInfo(dpGetParamInfo.Key, dpGetParamInfo.Value);
+                }
+            }
+            else if (entity is IDictionary<string,object> dic)
+            {
+                foreach (var pair in dic)
+                {
+                    this.Add(pair.Key, pair.Value);
                 }
             }
             else

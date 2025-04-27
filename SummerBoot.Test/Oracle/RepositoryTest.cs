@@ -52,11 +52,12 @@ namespace SummerBoot.Test.Oracle
             };
 
             await guidModelRepository.InsertAsync(model);
-            
+
             var r3 = await guidModelForListParameterRepository.TestStructAsParameter(new TestReturnStruct()
             {
                 Name = "a"
             });
+            Assert.Equal("a", r3.Name);
         }
 
         [Fact, Priority(225)]
@@ -67,7 +68,7 @@ namespace SummerBoot.Test.Oracle
             var guid = Guid.NewGuid();
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
             var testStructAsParametersOrReturnValuesRepository = serviceProvider.GetService<ITestStructAsParametersOrReturnValuesRepository>();
-            
+
             var model = new GuidModel()
             {
                 Id = guid,
@@ -77,12 +78,12 @@ namespace SummerBoot.Test.Oracle
             await guidModelRepository.InsertAsync(model);
             var r = await testStructAsParametersOrReturnValuesRepository.TestReturnClass();
             var r2 = await testStructAsParametersOrReturnValuesRepository.TestReturnStruct();
-            Assert.True(r.Count==r2.Count);
+            Assert.True(r.Count == r2.Count);
             for (var i = 0; i < r.Count; i++)
             {
                 var item1 = r[i];
                 var item2 = r2[i];
-                Assert.Equal(item1.Name,item2.Name);
+                Assert.Equal(item1.Name, item2.Name);
                 Assert.Equal(item1.Guid, item2.Guid);
             }
 
@@ -101,9 +102,9 @@ namespace SummerBoot.Test.Oracle
             {
                 Name = "a"
             };
-            
+
             await guidModelRepository.InsertAsync(model);
-            var r = await guidModelForListParameterRepository.GetListByNames(new List<string>(){"a","b","c"});
+            var r = await guidModelForListParameterRepository.GetListByNames(new List<string>() { "a", "b", "c" });
             Assert.Equal(1, r.Count);
             Assert.Equal("a", r[0].Name);
         }
@@ -3369,7 +3370,7 @@ namespace SummerBoot.Test.Oracle
         /// <summary>
         /// 测试left/right join时左右实体类里有string类型,并且string类型为null时调用trim方法
         /// </summary>
-       
+
 
     }
 }

@@ -127,7 +127,10 @@ namespace SummerBoot.Repository
 
 
             optionAction(databaseUnit);
-
+            if (DatabaseUnits.ContainsKey(connectionString))
+            {
+                throw new RepeatAddDatabaseUnitException();
+            }
             DatabaseUnits[databaseUnit.ConnectionString] = databaseUnit;
         }
     }
