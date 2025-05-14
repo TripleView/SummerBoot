@@ -645,7 +645,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var columnName = column.ColumnName;
                 columnName = BoxColumnName(columnName);
                 columnNameList.Add(columnName);
-                var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                var parameterName = this.parameterPrefix + column.ColumnName;
                 middleList.Add(columnName + "=" + parameterName);
             }
 
@@ -654,7 +654,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             {
                 var columnName = BoxColumnName(column.ColumnName);
                 keyColumnNameList.Add(columnName);
-                var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+                var parameterName = this.parameterPrefix + column.ColumnName;
                 if (column.MemberInfo is PropertyInfo propertyInfo)
                 {
                     if (propertyInfo.GetValue(updateEntity) is null)
