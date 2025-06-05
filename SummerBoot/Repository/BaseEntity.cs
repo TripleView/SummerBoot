@@ -6,7 +6,7 @@ using SummerBoot.Repository.Attributes;
 
 namespace SummerBoot.Repository
 {
-    public abstract class BaseEntity
+    public abstract class BaseEntity : IBaseEntity
     {
         public BaseEntity()
         {

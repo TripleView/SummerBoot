@@ -1,61 +1,74 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <ApplicationIcon></ApplicationIcon>
-    <OutputType>Library</OutputType>
-    <StartupObject />
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>2.2.3</Version>
-    <Description>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。Combining the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming focuses on "what to do" rather than "how to do it", and writes code at a higher level. SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.</Description>
-    <PackageReleaseNotes>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。Combining the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming focuses on "what to do" rather than "how to do it", and writes code at a higher level. SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.</PackageReleaseNotes>
-    <RepositoryUrl>https://github.com/TripleView/SummerBoot</RepositoryUrl>
-    <RepositoryType>github</RepositoryType>
-    <Copyright>MIT</Copyright>
-    <IsPackable>true</IsPackable>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/TripleView/SummerBoot</PackageProjectUrl>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <TargetFrameworks>netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
-	  <LangVersion>latest</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<ApplicationIcon></ApplicationIcon>
+		<OutputType>Library</OutputType>
+		<StartupObject />
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<Version>2.2.4</Version>
+		<Description>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。Combining the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming focuses on "what to do" rather than "how to do it", and writes code at a higher level. SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.</Description>
+		<PackageReleaseNotes>将SpringBoot的先进理念与C#的简洁优雅合二为一，声明式编程，专注于”做什么”而不是”如何去做”，在更高层面写代码。SummerBoot,致力于打造一个易上手，好维护的人性化框架，让大家早点下班去做自己喜欢的事。Combining the advanced concepts of SpringBoot with the simplicity and elegance of C#, declarative programming focuses on "what to do" rather than "how to do it", and writes code at a higher level. SummerBoot is committed to creating an easy-to-use and easy-to-maintain humanized framework, so that everyone can get off work early to do what they like.</PackageReleaseNotes>
+		<RepositoryUrl>https://github.com/TripleView/SummerBoot</RepositoryUrl>
+		<RepositoryType>github</RepositoryType>
+		<Authors>TripleView</Authors>
+		<Copyright>MIT</Copyright>
+		<IsPackable>true</IsPackable>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/TripleView/SummerBoot</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<TargetFrameworks>netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+		<PackageIcon>logo.png</PackageIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Repository\DbAdapters\**" />
-    <Content Remove="Repository\DbAdapters\**" />
-    <EmbeddedResource Remove="Repository\DbAdapters\**" />
-    <None Remove="Repository\DbAdapters\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Repository\DbAdapters\**" />
+		<Content Remove="Repository\DbAdapters\**" />
+		<EmbeddedResource Remove="Repository\DbAdapters\**" />
+		<None Remove="Repository\DbAdapters\**" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Feign\HeaderAttribute.cs" />
-    <Compile Remove="Repository\BaseRepository.cs" />
-    <Compile Remove="Repository\RepositoryAspectSupport3.cs" />
-    <Compile Remove="Repository\RepositoryInterceptor.cs" />
-    <Compile Remove="Repository\RepositoryInterceptor2.cs" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Feign\HeaderAttribute.cs" />
+		<Compile Remove="Repository\BaseRepository.cs" />
+		<Compile Remove="Repository\RepositoryAspectSupport3.cs" />
+		<Compile Remove="Repository\RepositoryInterceptor.cs" />
+		<Compile Remove="Repository\RepositoryInterceptor2.cs" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include=".\logo.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-	  <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="3.1.27" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Polly" Version="7.2.3" />
-    <PackageReference Include="YamlDotNet" Version="12.0.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="3.1.27" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Polly" Version="7.2.3" />
+		<PackageReference Include="YamlDotNet" Version="12.0.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Repository\DataMigrate\Dialect\" />
-    <Folder Include="Repository\TypeHandler\Dialect\Mysql" />
-    <Folder Include="Repository\TypeHandler\Dialect\Pgsql\" />
-    <Folder Include="Repository\TypeHandler\Dialect\SqlServer\" />
-  </ItemGroup>
-  
+	<ItemGroup>
+		<Folder Include="Repository\DataMigrate\Dialect\" />
+		<Folder Include="Repository\TypeHandler\Dialect\Mysql" />
+		<Folder Include="Repository\TypeHandler\Dialect\Pgsql\" />
+		<Folder Include="Repository\TypeHandler\Dialect\SqlServer\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="logo.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
 
 
 </Project>

@@ -1437,18 +1437,18 @@ namespace ExpressionParser.Test
         public void TestUpdate2()
         {
             var hrRepository = new HrRepository();
-            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "����", EmployeNo = "666" };
+            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "test", EmployeNo = "666" };
             hrRepository.InternalUpdate(persion);
             var r1MiddleResult = hrRepository.GetDbQueryDetail();
 
-            Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@EmployeNo and [Name]=@Name", r1MiddleResult.Sql);
+            Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@hrEmployeeNo and [Name]=@Name", r1MiddleResult.Sql);
         }
 
         [Fact]
         public void TestIgnoreWhenUpdate()
         {
             var hrRepository = new HrRepository();
-            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "����", EmployeNo = "666", CreateOn = DateTime.Now };
+            var persion = new Hr() { Age = 5, HaveChildren = false, Name = "test", EmployeNo = "666", CreateOn = DateTime.Now };
 
             hrRepository.InternalInsert(persion);
 
@@ -1460,7 +1460,7 @@ namespace ExpressionParser.Test
 
             var r2MiddleResult = hrRepository.GetDbQueryDetail();
 
-            Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@EmployeNo and [Name]=@Name", r2MiddleResult.Sql);
+            Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@hrEmployeeNo and [Name]=@Name", r2MiddleResult.Sql);
         }
 
         [Fact]

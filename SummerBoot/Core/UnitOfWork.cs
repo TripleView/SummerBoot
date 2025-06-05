@@ -8,10 +8,14 @@ namespace SummerBoot.Core
     public class UnitOfWork : IUnitOfWork
     {
         public IDbFactory DbFactory { get; }
-        public UnitOfWork(ILogger<UnitOfWork> logger, IDbFactory dbFactory)
+
+        public IEntityClassHandler EntityClassHandler { get; }
+
+        public UnitOfWork(ILogger<UnitOfWork> logger, IDbFactory dbFactory,IEntityClassHandler entityClassHandler)
         {
-            this.Logger = logger;
+            Logger = logger;
             DbFactory = dbFactory;
+            EntityClassHandler = entityClassHandler;
         }
         /// <summary>
         /// 回调事件

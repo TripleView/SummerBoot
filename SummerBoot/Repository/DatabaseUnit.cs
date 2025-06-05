@@ -9,6 +9,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using SummerBoot.Core;
+using System.Security.Claims;
 
 namespace SummerBoot.Repository
 {
@@ -116,9 +117,15 @@ namespace SummerBoot.Repository
         /// </summary>
         public int CommandTimeout { get; set; } = 3000;
         /// <summary>
-        ///Database Generator Class; 数据库生成器类
+        ///Database Generator Class;
+        /// 数据库生成器类
         /// </summary>
-        public Type IDbGeneratorType { get;private set; }
+        public Type IDbGeneratorType { get; private set; }
+        /// <summary>
+        ///Entity Class Handler
+        ///实体类处理程序
+        /// </summary>
+        public Type EntityClassHandlerType { get; private set; }
         /// <summary>
         /// Database unit id;数据库单元id
         /// </summary>
@@ -188,7 +195,6 @@ namespace SummerBoot.Repository
             }
         }
 
-
         /// <summary>
         /// 绑定数据库生成器
         /// </summary>
@@ -201,10 +207,37 @@ namespace SummerBoot.Repository
         /// <summary>
         /// 绑定数据库生成器
         /// </summary>
-        /// <param name="iDbGeneratorType"></param>
         public void BindDbGeneratorType<T>() where T : IDbGenerator
         {
             this.IDbGeneratorType = typeof(T);
+        }
+
+        /// <summary>
+        /// Binding entity class handler
+        /// 绑定实体类处理程序
+        /// </summary>
+        /// <param name="entityClassHandlerType"></param>
+        public void BindEntityClassHandlerType(Type entityClassHandlerType)
+        {
+            CheckEntityClassHandlerType(entityClassHandlerType);
+            this.EntityClassHandlerType = entityClassHandlerType;
+        }
+
+        private void CheckEntityClassHandlerType(Type entityClassHandlerType)
+        {
+            if (!entityClassHandlerType.IsClass || !typeof(IEntityClassHandler).IsAssignableFrom(entityClassHandlerType))
+            {
+                throw new Exception("Entity class that needs to inherit from IEntityClassHandler");
+            }
+        }
+        /// <summary>
+        /// Binding entity class handler
+        /// 绑定实体类处理程序
+        /// </summary>
+        public void BindEntityClassHandlerType<T>() where T : IEntityClassHandler
+        {
+            CheckEntityClassHandlerType(typeof(T));
+            this.EntityClassHandlerType = typeof(T);
         }
 
         public void BindRepository(Type iRepositoryType)

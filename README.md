@@ -959,7 +959,7 @@ public class LoginInterceptor : IRequestInterceptor
 
     public LoginInterceptor(ILoginFeign loginFeign, IConfiguration configuration)
     {
-        this.loginFeign = loginFeign; _
+        this.loginFeign = loginFeign; 
         this.configuration = configuration;
     }
 
@@ -969,8 +969,8 @@ public class LoginInterceptor : IRequestInterceptor
         var username = configuration.GetSection("username").Value;
         var password = configuration.GetSection("password").Value;
 
-        var loginResultDto = await this.loginFeign.LoginAsync(new _ LoginDto(){ Name = username, Password = password});
-        if (loginResultDto! = null)
+        var loginResultDto = await this.loginFeign.LoginAsync(new LoginDto(){ Name = username, Password = password});
+        if (loginResultDto != null)
         {
             requestTemplate.Headers.Add("Authorization", new List<string>() { "Bearer" + loginResultDto.Token });
         }

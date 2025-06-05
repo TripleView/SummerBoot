@@ -144,16 +144,21 @@ namespace SummerBoot.Core
                 var databaseUnit = optionDatabaseUnit.Value;
                 //动态生成IDbFactory接口类型
                 var iCustomDbFactoryType = GenerateCustomInterface(modBuilder, typeof(IDbFactory));
+                //动态生成IEntityClassHandler接口类型
+                var iCustomEntityClassHandlerType = GenerateCustomInterface(modBuilder, typeof(IEntityClassHandler));
 
+                var customEntityClassHandlerType = GenerateCustomEntityClassHandler(modBuilder, databaseUnit.EntityClassHandlerType,
+                     iCustomEntityClassHandlerType);
+                services.AddScoped(iCustomEntityClassHandlerType, customEntityClassHandlerType);
                 //注册工厂
                 AddSummerBootRepositoryCustomDbFactory(services, iCustomDbFactoryType, databaseUnit, modBuilder);
                 //动态生成ICustomUnitOfWork接口类型
-                var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, databaseUnit.IUnitOfWorkType);
+                var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, databaseUnit.IUnitOfWorkType, iCustomEntityClassHandlerType);
                 //注册工作单元
                 services.AddScoped(databaseUnit.IUnitOfWorkType, customUnitOfWorkType);
                 //动态生成仓储基类
                 var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType);
-                
+
                 services.AddScoped(customBaseRepositoryType);
                 //动态生成RepositoryService
                 var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType);
@@ -364,6 +369,38 @@ namespace SummerBoot.Core
 
         }
 
+        private static Type GenerateCustomEntityClassHandler(ModuleBuilder modBuilder, Type parentType, Type interface1)
+        {
+            parentType ??= typeof(DefaultEntityClassHandler);
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
+            //父类型
+            ;
+            //要实现的接口
+            Type[] interfaceTypes = new Type[] { interface1 };
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomEntityClassHandler" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+            if (parentConstruct != null)
+            {
+                var parentParameterTypes = parentConstruct.GetParameters().Select(x => x.ParameterType).ToList();
+                var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                    parentParameterTypes.ToArray());
+                var conIl = constructor.GetILGenerator();
+                conIl.Emit(OpCodes.Ldarg_0);
+                for (int i = 0; i < parentParameterTypes.Count; i++)
+                {
+                    conIl.Emit(OpCodes.Ldarg, i + 1);
+                }
+                conIl.Emit(OpCodes.Call, parentConstruct);
+                conIl.Emit(OpCodes.Ret);
+            }
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
+
         private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
             ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType, DatabaseUnit databaseUnit)
         {
@@ -447,17 +484,16 @@ namespace SummerBoot.Core
             return resultType;
         }
 
-        private static Type GenerateCustomUnitOfWork(ModuleBuilder modBuilder, Type constructorType, Type interfaceType)
+        private static Type GenerateCustomUnitOfWork(ModuleBuilder modBuilder, Type constructorType, Type interfaceType, Type iCustomEntityClassHandlerType)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
             //父类型
-            Type parentType;
+            Type parentType = typeof(UnitOfWork);
             //要实现的接口
             Type[] interfaceTypes = new Type[] { interfaceType };
-            parentType = typeof(UnitOfWork);
 
             //得到类型生成器            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomUnitOfWork" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
@@ -465,11 +501,12 @@ namespace SummerBoot.Core
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] { typeof(ILogger<UnitOfWork>), constructorType });
+                new Type[] { typeof(ILogger<UnitOfWork>), constructorType, iCustomEntityClassHandlerType });
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
             conIl.Emit(OpCodes.Ldarg_2);
+            conIl.Emit(OpCodes.Ldarg_3);
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 

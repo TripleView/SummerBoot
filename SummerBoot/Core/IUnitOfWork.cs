@@ -33,6 +33,8 @@ namespace SummerBoot.Core
         void RegisterCallBack(Action action);
 
         IDbFactory DbFactory { get; }
+
+        IEntityClassHandler EntityClassHandler { get; }
     }
 
     public interface IUnitOfWork1: IUnitOfWork{}

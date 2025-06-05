@@ -22,7 +22,8 @@ namespace SummerBoot.Repository
             this.uow = uow;
             this.dbFactory = uow.DbFactory;
             this.databaseUnit = dbFactory.DatabaseUnit;
-            databaseType = databaseUnit.DatabaseType;
+            this.databaseType = databaseUnit.DatabaseType;
+            this.entityClassHandler = uow.EntityClassHandler;
             base.Init(databaseUnit);
         }
 
@@ -33,6 +34,7 @@ namespace SummerBoot.Repository
         protected DatabaseType databaseType;
         protected int cmdTimeOut = 1200;
         protected DatabaseUnit databaseUnit;
+        protected IEntityClassHandler entityClassHandler;
         public override int InternalExecute(DbQueryResult param)
         {
             databaseUnit.OnLogSqlInfo(param);
@@ -273,6 +275,11 @@ namespace SummerBoot.Repository
         public T Insert(T t)
         {
             databaseUnit.OnBeforeInsert(t);
+            if (t is IBaseEntity baseEntity)
+            {
+                entityClassHandler.ProcessingEntity(baseEntity);
+            }
+            
             var internalResult = InternalInsert(t);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
@@ -368,18 +375,10 @@ namespace SummerBoot.Repository
 
         public int Update(T t)
         {
-            //if (databaseUnit.AutoUpdateLastUpdateOn)
-            //{
-
-            //    if (t is BaseEntity baseEntity)
-            //    {
-            //        baseEntity.LastUpdateOn = databaseUnit.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //    }
-            //    else if (t is OracleBaseEntity oracleBaseEntity)
-            //    {
-            //        oracleBaseEntity.LastUpdateOn = databaseUnit.AutoUpdateLastUpdateOnUseUtc ? DateTime.UtcNow : DateTime.Now;
-            //    }
-            //}
+            if (t is IBaseEntity baseEntity)
+            {
+                entityClassHandler.ProcessingEntity(baseEntity,true);
+            }
             databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -443,6 +442,10 @@ namespace SummerBoot.Repository
             foreach (var t in list)
             {
                 databaseUnit.OnBeforeInsert(t);
+                if (t is IBaseEntity baseEntity)
+                {
+                    entityClassHandler.ProcessingEntity(baseEntity);
+                }
             }
 
             var internalResult = InternalFastInsert(list);
@@ -590,6 +593,10 @@ namespace SummerBoot.Repository
 
         public async Task<T> InsertAsync(T t)
         {
+            if (t is IBaseEntity baseEntity)
+            {
+               await entityClassHandler.ProcessingEntityAsync(baseEntity);
+            }
             databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -732,6 +739,10 @@ namespace SummerBoot.Repository
 
         public async Task<int> UpdateAsync(T t)
         {
+            if (t is IBaseEntity baseEntity)
+            {
+               await  entityClassHandler.ProcessingEntityAsync(baseEntity, true);
+            }
             databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -808,6 +819,10 @@ namespace SummerBoot.Repository
             }
             foreach (var t in list)
             {
+                if (t is IBaseEntity baseEntity)
+                {
+                    await entityClassHandler.ProcessingEntityAsync(baseEntity);
+                }
                 databaseUnit.OnBeforeInsert(t);
             }
 
