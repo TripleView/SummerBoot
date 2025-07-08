@@ -26,6 +26,7 @@ using Xunit;
 using Xunit.Priority;
 using MySqlX.XDevAPI.Relational;
 using Polly.Caching;
+using SummerBoot.Test.Common;
 
 namespace SummerBoot.Test.SqlServer
 {
@@ -2726,12 +2727,12 @@ namespace SummerBoot.Test.SqlServer
 
             }
         }
-        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
+       
         private void InitService()
         {
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
-            build.AddJsonFile(CONFIG_FILE, true, true);
+            build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var configurationRoot = build.Build();
 
             var services = new ServiceCollection();

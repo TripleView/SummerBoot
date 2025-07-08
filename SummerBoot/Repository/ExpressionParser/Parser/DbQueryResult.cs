@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -33,6 +34,26 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 列字段的信息
         /// </summary>
         public List<DbQueryResultPropertyInfoMapping> PropertyInfoMappings { get; set; }
+        /// <summary>
+        /// Get dynamic parameters
+        /// 获取动态参数
+        /// </summary>
+        /// <returns></returns>
+        public DynamicParameters GetDynamicParameters()
+        {
+            if (SqlParameters == null || SqlParameters.Count == 0)
+            {
+                return null;
+            }
+
+            var result = new DynamicParameters();
+            foreach (var parameter in SqlParameters)
+            {
+                result.Add(parameter.ParameterName, parameter.Value, valueType: parameter.ParameterType);
+            }
+
+            return result;
+        }
     }
 
     public class DbQueryResultPropertyInfoMapping

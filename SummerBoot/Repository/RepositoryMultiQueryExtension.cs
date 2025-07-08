@@ -316,7 +316,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = repository.InternalQueryList<TResult>(parameter);
+                var result = repository.QueryList<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -334,7 +334,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
 
-                var result = repository.InternalQueryList<TResult>(parameter);
+                var result = repository.QueryList<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -352,7 +352,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
 
-                var result = repository.InternalQueryList<TResult>(parameter);
+                var result = repository.QueryList<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -371,7 +371,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = repository.InternalQueryList<TResult>(parameter);
+                var result = repository.QueryList<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -389,7 +389,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = repository.InternalQueryList<TResult>(parameter);
+                var result = repository.QueryList<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -407,7 +407,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = repository.InternalQueryList<TResult>(parameter);
+                var result = repository.QueryList<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -426,7 +426,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = await repository.InternalQueryListAsync<TResult>(parameter);
+                var result = await repository.QueryListAsync<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -444,7 +444,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
 
-                var result = await repository.InternalQueryListAsync<TResult>(parameter);
+                var result = await repository.QueryListAsync<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -462,7 +462,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody.Source.Repository);
 
-                var result = await repository.InternalQueryListAsync<TResult>(parameter);
+                var result = await repository.QueryListAsync<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -481,7 +481,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = await repository.InternalQueryListAsync<TResult>(parameter);
+                var result = await repository.QueryListAsync<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -499,7 +499,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = await repository.InternalQueryListAsync<TResult>(parameter);
+                var result = await repository.QueryListAsync<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -517,7 +517,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository);
 
-                var result = await repository.InternalQueryListAsync<TResult>(parameter);
+                var result = await repository.QueryListAsync<TResult>(parameter.Sql,parameter.GetDynamicParameters());
                 ClearRepository(repository);
                 return result;
             }
@@ -852,7 +852,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository, pageable);
 
-                var result = dbQueryProvider.linkRepository.InternalQueryPage<TResult>(parameter);
+                var result = dbQueryProvider.linkRepository.QueryPage<TResult>(parameter.Sql,null,null);;
                 ClearRepository(repository);
                 return result;
             }
@@ -870,7 +870,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository, pageable);
 
-                var result = dbQueryProvider.linkRepository.InternalQueryPage<TResult>(parameter);
+                var result = dbQueryProvider.linkRepository.QueryPage<TResult>(parameter.Sql,null,null);;
                 ClearRepository(repository);
                 return result;
             }
@@ -888,7 +888,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository, pageable);
 
-                var result = dbQueryProvider.linkRepository.InternalQueryPage<TResult>(parameter);
+                var result = dbQueryProvider.linkRepository.QueryPage<TResult>(parameter.Sql,null,null);
                 ClearRepository(repository);
                 return result;
             }
@@ -906,7 +906,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository, pageable);
 
-                var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<TResult>(parameter);
+                var result = await dbQueryProvider.linkRepository.QueryPageAsync<TResult>(parameter.Sql,null,null);
                 ClearRepository(repository);
                 return result;
             }
@@ -924,7 +924,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository, pageable);
 
-                var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<TResult>(parameter);
+                var result = await dbQueryProvider.linkRepository.QueryPageAsync<TResult>(parameter.Sql, null, null);
                 ClearRepository(repository);
                 return result;
             }
@@ -942,7 +942,7 @@ namespace SummerBoot.Repository
 
                 var parameter = dbQueryProvider.GetJoinQueryResultByExpression(selectMultiQueryBody2.Source.Repository, pageable);
 
-                var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<TResult>(parameter);
+                var result = await dbQueryProvider.linkRepository.QueryPageAsync<TResult>(parameter.Sql,null,null);;
                 ClearRepository(repository);
                 return result;
             }

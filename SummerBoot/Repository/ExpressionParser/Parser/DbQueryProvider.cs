@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using SqlParser.Net;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser.Dialect;
 using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
@@ -13,7 +14,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     public class DbQueryProvider : IAsyncQueryProvider
     {
         public QueryFormatter queryFormatter;
-
+        private DbType dbType;
         public IDbExecuteAndQuery linkRepository;
         public DbQueryProvider(DatabaseUnit databaseUnit, IDbExecuteAndQuery linkRepository)
         {
@@ -22,18 +23,23 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             switch (databaseType)
             {
                 case DatabaseType.SqlServer:
+                    dbType = DbType.SqlServer;
                     this.queryFormatter = new SqlServerQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Mysql:
+                    dbType = DbType.MySql;
                     this.queryFormatter = new MysqlQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Oracle:
+                    dbType = DbType.Oracle;
                     this.queryFormatter = new OracleQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Sqlite:
+                    dbType = DbType.Sqlite;
                     this.queryFormatter = new SqliteQueryFormatter(databaseUnit);
                     break;
                 case DatabaseType.Pgsql:
+                    dbType = DbType.Pgsql;
                     this.queryFormatter = new PgsqlQueryFormatter(databaseUnit);
                     break;
             }
@@ -54,7 +60,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
+            var newDbExpressionVisitor = new NewDbExpressionVisitor(dbType);
             var middleResult = dbExpressionVisitor.Visit(expression);
+            newDbExpressionVisitor.Visit(expression);
             //var cc=dbExpressionVisitor.Visit(joinItems.)
             //将我们自己的expression转换成sql
             queryFormatter.Format(middleResult);
@@ -243,10 +251,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();
 
-            return linkRepository.InternalQuery<TResult>(param);
+            return linkRepository.QueryFirstOrDefault<TResult>(param.Sql,param.GetDynamicParameters());
         }
 
-        public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+        public async Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
         {
             var dbExpressionVisitor = new DbExpressionVisitor();
             var middleResult = dbExpressionVisitor.Visit(expression);
@@ -254,7 +262,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();
 
-            return linkRepository.InternalQueryAsync<TResult>(param);
+            return await linkRepository.QueryFirstOrDefaultAsync<TResult>(param.Sql,param.GetDynamicParameters());
         }
     }
 }

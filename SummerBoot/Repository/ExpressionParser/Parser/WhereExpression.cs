@@ -27,7 +27,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// </summary>
         public WhereExpression Left { get; set; }
         /// <summary>
-        /// 左边的部分
+        /// 右边的部分
         /// </summary>
         public WhereExpression Right { get; set; }
 

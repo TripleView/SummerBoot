@@ -35,34 +35,12 @@ namespace SummerBoot.Repository
         protected int cmdTimeOut = 1200;
         protected DatabaseUnit databaseUnit;
         protected IEntityClassHandler entityClassHandler;
-        public override int InternalExecute(DbQueryResult param)
-        {
-            databaseUnit.OnLogSqlInfo(param);
-            OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-            var result = dbConnection.Execute(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
-            CloseDb();
-            return result;
-        }
 
-        public override async Task<int> InternalExecuteAsync(DbQueryResult param)
+        public override Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null)
         {
-            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-            var result = await dbConnection.ExecuteAsync(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
-            CloseDb();
-            return result;
-        }
-
-        public override Page<TResult> InternalQueryPage<TResult>(DbQueryResult param)
-        {
-            databaseUnit.OnLogSqlInfo(param);
-            OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-
-            var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit, param.CountSql, dynamicParameters, dbTransaction);
-            var item = dbConnection.Query<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction).ToList();
+            var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit, "", param, dbTransaction);
+            var item = dbConnection.Query<TResult>(databaseUnit, sql, param, dbTransaction).ToList();
             CloseDb();
             var result = new Page<TResult>()
             {
@@ -72,14 +50,11 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public override async Task<Page<TResult>> InternalQueryPageAsync<TResult>(DbQueryResult param)
+        public override async Task<Page<TResult>> QueryPageAsync<TResult>(string sql, Pageable pageParameter, object param = null)
         {
-            databaseUnit.OnLogSqlInfo(param);
             OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-
-            var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, param.CountSql, dynamicParameters, dbTransaction);
-            var item = (await dbConnection.QueryAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction)).ToList();
+            var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, "", param, dbTransaction);
+            var item = (await dbConnection.QueryAsync<TResult>(databaseUnit, sql, param, dbTransaction)).ToList();
             CloseDb();
             var result = new Page<TResult>()
             {
@@ -89,30 +64,6 @@ namespace SummerBoot.Repository
             return result;
         }
 
-
-        public override List<TResult> InternalQueryList<TResult>(DbQueryResult param)
-        {
-            databaseUnit.OnLogSqlInfo(param);
-            OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-
-            var result = dbConnection.Query<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction).ToList();
-
-            CloseDb();
-            return result;
-        }
-
-        public override async Task<List<TResult>> InternalQueryListAsync<TResult>(DbQueryResult param)
-        {
-            databaseUnit.OnLogSqlInfo(param);
-            OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-
-            var result = (await dbConnection.QueryAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction)).ToList();
-
-            CloseDb();
-            return result;
-        }
         /// <summary>
         /// 查询列表
         /// </summary>
@@ -120,7 +71,7 @@ namespace SummerBoot.Repository
         /// <param name="sql"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public List<TResult> QueryList<TResult>(string sql, object param = null)
+        public override List<TResult> QueryList<TResult>(string sql, object param = null)
         {
             OpenDb();
             var result = dbConnection.Query<TResult>(databaseUnit, sql, param, dbTransaction).ToList();
@@ -136,7 +87,7 @@ namespace SummerBoot.Repository
         /// <param name="sql"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public async Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null)
+        public override async Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null)
         {
             OpenDb();
             var result = (await dbConnection.QueryAsync<TResult>(databaseUnit, sql, param, dbTransaction)).ToList();
@@ -151,7 +102,7 @@ namespace SummerBoot.Repository
         /// <param name="sql"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public TResult QueryFirstOrDefault<TResult>(string sql, object param = null)
+        public override TResult QueryFirstOrDefault<TResult>(string sql, object param = null)
         {
             OpenDb();
 
@@ -168,7 +119,7 @@ namespace SummerBoot.Repository
         /// <param name="sql"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public async Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null)
+        public override async Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null)
         {
             OpenDb();
 
@@ -184,7 +135,7 @@ namespace SummerBoot.Repository
         /// <param name="sql"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public int Execute(string sql, object param = null)
+        public override int Execute(string sql, object param = null)
         {
             OpenDb();
             var result = dbConnection.Execute(databaseUnit, sql, param, dbTransaction);
@@ -198,35 +149,10 @@ namespace SummerBoot.Repository
         /// <param name="sql"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public async Task<int> ExecuteAsync(string sql, object param = null)
+        public override async Task<int> ExecuteAsync(string sql, object param = null)
         {
             OpenDb();
             var result = await dbConnection.ExecuteAsync(databaseUnit, sql, param, dbTransaction);
-            CloseDb();
-            return result;
-        }
-
-        public override TResult InternalQuery<TResult>(DbQueryResult param)
-        {
-            databaseUnit.OnLogSqlInfo(param);
-            OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-
-            var result = dbConnection.QueryFirstOrDefault<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
-
-            CloseDb();
-            return result;
-
-        }
-
-        public override async Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param)
-        {
-            databaseUnit.OnLogSqlInfo(param);
-            OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(param.SqlParameters);
-
-            var result = await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, param.Sql, dynamicParameters, dbTransaction);
-
             CloseDb();
             return result;
         }
@@ -279,7 +205,7 @@ namespace SummerBoot.Repository
             {
                 entityClassHandler.ProcessingEntity(baseEntity);
             }
-            
+
             var internalResult = InternalInsert(t);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
@@ -377,7 +303,7 @@ namespace SummerBoot.Repository
         {
             if (t is IBaseEntity baseEntity)
             {
-                entityClassHandler.ProcessingEntity(baseEntity,true);
+                entityClassHandler.ProcessingEntity(baseEntity, true);
             }
             databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);
@@ -595,7 +521,7 @@ namespace SummerBoot.Repository
         {
             if (t is IBaseEntity baseEntity)
             {
-               await entityClassHandler.ProcessingEntityAsync(baseEntity);
+                await entityClassHandler.ProcessingEntityAsync(baseEntity);
             }
             databaseUnit.OnBeforeInsert(t);
             var internalResult = InternalInsert(t);
@@ -741,7 +667,7 @@ namespace SummerBoot.Repository
         {
             if (t is IBaseEntity baseEntity)
             {
-               await  entityClassHandler.ProcessingEntityAsync(baseEntity, true);
+                await entityClassHandler.ProcessingEntityAsync(baseEntity, true);
             }
             databaseUnit.OnBeforeUpdate(t);
             var internalResult = InternalUpdate(t);

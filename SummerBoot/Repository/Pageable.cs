@@ -7,6 +7,12 @@ namespace SummerBoot.Repository
 {
     public class Pageable : IPageable
     {
+        public Pageable(int pageNumber, int pageSize, List<OrderByItem> orderByItems)
+        {
+            PageNumber = pageNumber;
+            PageSize = pageSize;
+            OrderByItems = orderByItems;
+        }
         public Pageable(int pageNumber, int pageSize)
         {
             PageNumber = pageNumber;
@@ -15,7 +21,7 @@ namespace SummerBoot.Repository
 
         public Pageable()
         {
-            
+
         }
         /// <summary>
         /// 当前页
@@ -25,5 +31,11 @@ namespace SummerBoot.Repository
         /// 每页数量
         /// </summary>
         public int PageSize { set; get; }
+
+        /// <summary>
+        /// Sorting rules list
+        /// 排序规则列表
+        /// </summary>
+        public List<OrderByItem> OrderByItems { set; get; }
     }
 }

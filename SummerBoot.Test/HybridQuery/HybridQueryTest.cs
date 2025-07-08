@@ -26,7 +26,7 @@ public class HybridQueryTest
     {
         var build = new ConfigurationBuilder();
         build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
-        build.AddJsonFile(ConstValue.CONFIG_FILE, true, true);
+        build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
         var configurationRoot = build.Build();
 
         var services = new ServiceCollection();

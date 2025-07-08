@@ -22,6 +22,7 @@ using Xunit.Priority;
 using System.Diagnostics;
 using System.Reflection;
 using MySqlConnector;
+using SummerBoot.Test.Common;
 using SummerBoot.Test.Common.Dto;
 using SummerBoot.Test.Mysql.Dto;
 using MySqlBulkLoader = MySql.Data.MySqlClient.MySqlBulkLoader;
@@ -2844,12 +2845,12 @@ namespace SummerBoot.Test.Mysql
             }
             InitService();
         }
-        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
+        
         private void InitService()
         {
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
-            build.AddJsonFile(CONFIG_FILE, true, true);
+            build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var configurationRoot = build.Build();
 
             var services = new ServiceCollection();

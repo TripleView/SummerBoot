@@ -31,12 +31,22 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             Expression = Expression.Constant(this);
         }
 
-        public virtual Task<int> InternalExecuteAsync(DbQueryResult param)
+        public virtual Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null)
         {
             return default;
         }
 
-        public virtual int InternalExecute(DbQueryResult param)
+        public virtual Task<Page<TResult>> QueryPageAsync<TResult>(string sql, Pageable pageParameter, object param = null)
+        {
+            return default;
+        }
+
+        public virtual Task<int> ExecuteAsync(string sql, object param = null)
+        {
+            return default;
+        }
+
+        public virtual int Execute(string sql, object param = null)
         {
             return default;
         }
@@ -51,21 +61,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
-        public virtual TResult InternalQuery<TResult>(DbQueryResult param)
+        public virtual TResult QueryFirstOrDefault<TResult>(string sql, object param = null)
         {
             return default;
         }
 
-        public virtual Task<TResult> InternalQueryAsync<TResult>(DbQueryResult param)
+        public virtual Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null)
         {
             return default;
         }
 
-        public virtual List<TResult> InternalQueryList<TResult>(DbQueryResult param)
+        public virtual List<TResult> QueryList<TResult>(string sql, object param = null)
         {
             return default;
         }
-        public virtual Task<List<TResult>> InternalQueryListAsync<TResult>(DbQueryResult param)
+        public virtual Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null)
         {
             return default;
         }
@@ -91,7 +101,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(this.Expression);
-                var result = dbQueryProvider.linkRepository.InternalQueryList<T>(dbParam);
+                var result = dbQueryProvider.linkRepository.QueryList<T>(dbParam.Sql,dbParam.GetDynamicParameters());
                 //var result = new List<T>();
                 if (result == null)
                     yield break;
@@ -197,7 +207,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return dbQueryProvider.linkRepository.InternalExecute(dbQueryResult);
+                return dbQueryProvider.linkRepository.Execute(dbQueryResult.Sql,dbQueryResult.GetDynamicParameters());
             }
 
             return 0;
@@ -213,7 +223,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return await dbQueryProvider.linkRepository.InternalExecuteAsync(dbQueryResult);
+                return await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult.Sql,dbQueryResult.GetDynamicParameters());
             }
 
             return 0;
@@ -224,7 +234,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbPageQueryResultByExpression(Expression);
-                var result = dbQueryProvider.linkRepository.InternalQueryPage<T>(dbParam);
+                var result = dbQueryProvider.linkRepository.QueryPage<T>(dbParam.Sql,null,dbParam.GetDynamicParameters());
                 return result;
             }
 
@@ -242,7 +252,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var c0 = sw.ElapsedMilliseconds;
                 //var sw = new System.Diagnostics.Stopwatch();
                 sw.Restart();
-                var result = await dbQueryProvider.linkRepository.InternalQueryPageAsync<T>(dbParam);
+                var result = await dbQueryProvider.linkRepository.QueryPageAsync<T>(dbParam.Sql,null,dbParam.GetDynamicParameters());
                 sw.Stop();
                 var c = sw.ElapsedMilliseconds;
                 return result;
@@ -291,7 +301,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
-                var result = await dbQueryProvider.linkRepository.InternalQueryListAsync<T>(dbParam);
+                var result = await dbQueryProvider.linkRepository.QueryListAsync<T>(dbParam.Sql,dbParam.GetDynamicParameters());
                 return result;
             }
             return default;

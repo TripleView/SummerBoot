@@ -4,17 +4,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using SummerBoot.Repository.Core;
+using System;
 
 namespace SummerBoot.Repository.Generator.Dialect.SqlServer
 {
-    public class SqlServerDatabaseInfo :AbstractDatabaseInfo, IDatabaseInfo
+    public class SqlServerDatabaseInfo : AbstractDatabaseInfo, IDatabaseInfo
     {
         private readonly IDbFactory dbFactory;
 
-        public SqlServerDatabaseInfo(IDbFactory dbFactory):base("[", "]", dbFactory.DatabaseUnit)
+        public SqlServerDatabaseInfo(IDbFactory dbFactory) : base("[", "]", dbFactory.DatabaseUnit)
         {
             this.dbFactory = dbFactory;
-     
+
         }
 
         public override GenerateDatabaseSqlResult CreateTable(DatabaseTableInfoDto tableInfo)
@@ -93,7 +94,8 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             var nullableString = fieldInfo.IsNullable ? "NULL" : "NOT NULL";
             var columnDataType = fieldInfo.ColumnDataType;
             var primaryKeyString = fieldInfo.IsAutoCreate && fieldInfo.IsKey && isAlter ? "PRIMARY KEY" : "";
-            var defaultString = fieldInfo.ColumnType.IsNumberType() && !fieldInfo.IsNullable && isAlter && !fieldInfo.IsKey ? "DEFAULT 0" : "";
+            var defaultString = (fieldInfo.ColumnType.IsNumberType() || (fieldInfo.ColumnType.IsEnum && Enum.GetUnderlyingType(fieldInfo.ColumnType)?.IsNumberType() == true))
+                                && !fieldInfo.IsNullable && isAlter && !fieldInfo.IsKey ? "DEFAULT 0" : "";
             //string类型默认长度max，也可自定义
             if (fieldInfo.ColumnDataType == "nvarchar")
             {
@@ -120,7 +122,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             {
                 result += $" {defaultString}";
             }
-            
+
             if (identityString.HasText())
             {
                 result += $" {identityString}";
@@ -130,7 +132,7 @@ namespace SummerBoot.Repository.Generator.Dialect.SqlServer
             {
                 result += $" {primaryKeyString}";
             }
-          
+
             if (nullableString.HasText())
             {
                 result += $" {nullableString}";

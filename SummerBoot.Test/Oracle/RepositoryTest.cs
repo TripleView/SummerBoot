@@ -25,6 +25,7 @@ using SummerBoot.Test.Oracle.Dto;
 using Xunit;
 using Xunit.Priority;
 using StackExchange.Redis;
+using SummerBoot.Test.Common;
 using SummerBoot.Test.Common.Dto;
 
 namespace SummerBoot.Test.Oracle
@@ -34,6 +35,32 @@ namespace SummerBoot.Test.Oracle
     public class RepositoryTest
     {
         private IServiceProvider serviceProvider;
+
+        [Fact, Priority(226)]
+        public async Task TestInsertClob()
+        {
+            //InitDatabase();
+            InitService();
+            var testClobRepository = serviceProvider.GetService<ITestClobRepository>();
+            var dbGenerator1 = serviceProvider.GetService<IDbGenerator1>();
+            var executeSqls = dbGenerator1.GenerateSql(new List<Type>() { typeof(TestClob) });
+            foreach (var generateDatabaseSqlResult in executeSqls)
+            {
+                dbGenerator1.ExecuteGenerateSql(generateDatabaseSqlResult);
+            }
+            await testClobRepository.DeleteAsync(x => true);
+            var clobValue = Enumerable.Range(1, 4001).Select(x => "1").StringJoin("");
+            var model = new TestClob()
+            {
+                ClobField = clobValue
+            };
+
+            await testClobRepository.InsertAsync(model);
+
+            var r3 = await testClobRepository.FirstOrDefaultAsync();
+            Assert.Equal(clobValue, r3.ClobField);
+        }
+
 
         [Fact, Priority(226)]
         public async Task TestStructOrClassAsParameter()
@@ -2887,12 +2914,11 @@ namespace SummerBoot.Test.Oracle
             await TestRepositoryAsync();
         }
 
-        static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
         private void InitService()
         {
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
-            build.AddJsonFile(CONFIG_FILE, true, true);
+            build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var configurationRoot = build.Build();
             var services = new ServiceCollection();
 
