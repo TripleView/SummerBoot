@@ -95,13 +95,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
 
         public MultiQueryContext<T> MultiQueryContext { get; set; } = new MultiQueryContext<T>();
-        
+
         public IEnumerator<T> GetEnumerator()
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(this.Expression);
-                var result = dbQueryProvider.linkRepository.QueryList<T>(dbParam.Sql,dbParam.GetDynamicParameters());
+                var result = dbQueryProvider.linkRepository.QueryList<T>(dbParam.Sql, dbParam.Parameters);
                 //var result = new List<T>();
                 if (result == null)
                     yield break;
@@ -117,11 +117,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return ((IEnumerable)this.Provider.Execute(this.Expression)).GetEnumerator();
         }
 
-        public DbQueryResult GetDbQueryDetail()
+        public ExpressionTreeParsingResult GetParsingResult()
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                return dbQueryProvider.GetDbQueryDetail();
+                return dbQueryProvider.GetParsingResult();
             }
 
             return null;
@@ -207,7 +207,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return dbQueryProvider.linkRepository.Execute(dbQueryResult.Sql,dbQueryResult.GetDynamicParameters());
+                return dbQueryProvider.linkRepository.Execute(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
             }
 
             return 0;
@@ -223,7 +223,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbQueryResult = dbQueryProvider.queryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult.Sql,dbQueryResult.GetDynamicParameters());
+                return await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
             }
 
             return 0;
@@ -234,7 +234,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbPageQueryResultByExpression(Expression);
-                var result = dbQueryProvider.linkRepository.QueryPage<T>(dbParam.Sql,null,dbParam.GetDynamicParameters());
+                var result = dbQueryProvider.linkRepository.QueryPage<T>(dbParam.Sql, null, dbParam.GetDynamicParameters());
                 return result;
             }
 
@@ -252,7 +252,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 var c0 = sw.ElapsedMilliseconds;
                 //var sw = new System.Diagnostics.Stopwatch();
                 sw.Restart();
-                var result = await dbQueryProvider.linkRepository.QueryPageAsync<T>(dbParam.Sql,null,dbParam.GetDynamicParameters());
+                var result = await dbQueryProvider.linkRepository.QueryPageAsync<T>(dbParam.Sql, null, dbParam.GetDynamicParameters());
                 sw.Stop();
                 var c = sw.ElapsedMilliseconds;
                 return result;
@@ -301,7 +301,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbQueryResultByExpression(Expression);
-                var result = await dbQueryProvider.linkRepository.QueryListAsync<T>(dbParam.Sql,dbParam.GetDynamicParameters());
+                var result = await dbQueryProvider.linkRepository.QueryListAsync<T>(dbParam.Sql, dbParam.Parameters);
                 return result;
             }
             return default;
@@ -416,7 +416,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.First), true, 1, 2,typeof(bool));
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.First), true, 1, 2, typeof(bool));
                 methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
 
                 var newSelector = Expression.Quote(selector);
@@ -466,13 +466,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
-        
+
         //public IQueryable<T> OrWhere(Expression<Predicate<T>> predicate)
         //{
-            
+
         //    var methodInfo = new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(QueryableMethodsExtension.OrWhere)
         //        .GetMethodInfo().GetGenericMethodDefinition().MakeGenericMethod(typeof(T));
-            
+
         //    return Provider.CreateQuery<T>(
         //        Expression.Call(
         //            null,

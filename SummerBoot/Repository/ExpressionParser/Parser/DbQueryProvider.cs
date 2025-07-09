@@ -16,9 +16,13 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public QueryFormatter queryFormatter;
         private DbType dbType;
         public IDbExecuteAndQuery linkRepository;
+        protected DatabaseUnit databaseUnit;
+
+        private NewDbExpressionVisitor newDbExpressionVisitor;
         public DbQueryProvider(DatabaseUnit databaseUnit, IDbExecuteAndQuery linkRepository)
         {
             var databaseType = databaseUnit.DatabaseType;
+            this.databaseUnit = databaseUnit;
             this.linkRepository = linkRepository;
             switch (databaseType)
             {
@@ -56,18 +60,19 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return new Repository<TElement>(expression, this);
         }
 
-        public DbQueryResult GetDbQueryResultByExpression(Expression expression)
+        public ExpressionTreeParsingResult GetDbQueryResultByExpression(Expression expression)
         {
             //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
-            var newDbExpressionVisitor = new NewDbExpressionVisitor(dbType);
+            newDbExpressionVisitor = new NewDbExpressionVisitor(databaseUnit);
             var middleResult = dbExpressionVisitor.Visit(expression);
             newDbExpressionVisitor.Visit(expression);
+            var parsingResult = newDbExpressionVisitor.GetParsingResult();
             //var cc=dbExpressionVisitor.Visit(joinItems.)
             //将我们自己的expression转换成sql
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();
-            return param;
+            return parsingResult;
         }
 
 
@@ -232,9 +237,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return param;
         }
 
-        public DbQueryResult GetDbQueryDetail()
+        public ExpressionTreeParsingResult GetParsingResult()
         {
-            return queryFormatter.GetDbQueryDetail();
+            return newDbExpressionVisitor.GetParsingResult();
         }
 
         public object Execute(Expression expression)
