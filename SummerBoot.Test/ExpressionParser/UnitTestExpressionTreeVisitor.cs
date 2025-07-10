@@ -294,17 +294,13 @@ namespace ExpressionParser.Test
         [Fact]
         public void TestWhere2()
         {
+            
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.HaveChildren && it.Name == "hzp" && it.Age == 15).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( ([p0].[HaveChildren] = @y0 ) AND  ([p0].[Name] = @y1 )  ) AND  ([p0].[Age] = @y2 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(3, r1MiddleResult.Parameters.GetParamInfos.Count);
-            
-            //Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
-           
-            //Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
-           
-            //Assert.Equal(15, r1MiddleResult.Parameters.GetParamInfos["y2"].Value);
+            Assert.Equal("select * from [Person] as [p0] where((([p0].[HaveChildren] = 1) and([p0].[Name] = @y0)) and([p0].[Age] = 15))", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -313,14 +309,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.HaveChildren == false && it.Name == "hzp" && it.Age == 15).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( ([p0].[HaveChildren] = @y0 ) AND  ([p0].[Name] = @y1 )  ) AND  ([p0].[Age] = @y2 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(3, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(0, r1MiddleResult.Parameters[0].Value);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[1].Value);
-            //Assert.Equal("@y2", r1MiddleResult.Parameters[2].ParameterName);
-            //Assert.Equal(15, r1MiddleResult.Parameters[2].Value);
+            Assert.Equal("select * from [Person] as [p0] where((([p0].[HaveChildren] = 0) and([p0].[Name] = @y0)) and([p0].[Age] = 15))", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -329,14 +320,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name == "hzp" && it.HaveChildren == false && it.Age == 15).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( ([p0].[Name] = @y0 ) AND  ([p0].[HaveChildren] = @y1 )  ) AND  ([p0].[Age] = @y2 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(3, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters.GetParamInfos.Keys.ToList()[1].ToString());
-            //Assert.Equal(0, r1MiddleResult.Parameters[1].Value);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
-            //Assert.Equal("@y2", r1MiddleResult.Parameters[2].ParameterName);
-            //Assert.Equal(15, r1MiddleResult.Parameters[2].Value);
+            Assert.Equal("select * from [Person] as [p0] where((([p0].[Name] = @y0) and([p0].[HaveChildren] = 0)) and([p0].[Age] = 15))", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -345,14 +331,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name == "hzp" && it.HaveChildren && it.Age == 15).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( ([p0].[Name] = @y0 ) AND  ([p0].[HaveChildren] = @y1 )  ) AND  ([p0].[Age] = @y2 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(3, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[1].Value);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
-            //Assert.Equal("@y2", r1MiddleResult.Parameters[2].ParameterName);
-            //Assert.Equal(15, r1MiddleResult.Parameters[2].Value);
+            Assert.Equal("select * from [Person] as [p0] where((([p0].[Name] = @y0) and([p0].[HaveChildren] = 1)) and([p0].[Age] = 15))", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -361,13 +342,8 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.HaveChildren && it.HaveChildren).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ([p0].[HaveChildren] = @y0 ) AND  ([p0].[HaveChildren] = @y1 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[1].Value);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
-
+            Assert.Equal("select * from [Person] as [p0] where(([p0].[HaveChildren] = 1) and([p0].[HaveChildren] = 1))", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
         [Fact]
         public void TestWhere7()

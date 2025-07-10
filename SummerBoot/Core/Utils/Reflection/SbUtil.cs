@@ -624,5 +624,38 @@ namespace SummerBoot.Core
 
             return result;
         }
+
+        public static Type GetMemberType(this MemberInfo member)
+        {
+            switch (member)
+            {
+                case FieldInfo field:
+                    return field.FieldType;
+                case PropertyInfo property:
+                    return property.PropertyType;
+                case MethodInfo method:
+                    return method.ReturnType;
+                case EventInfo @event:
+                    return @event.EventHandlerType;
+                default:
+                    throw new NotSupportedException($"Unsupported member type: {member.GetType().Name}");
+            }
+        }
+
+        /// <summary>
+        /// Determine whether an object variable is a number
+        /// 判断一个object变量是否为数字
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsNumeric(this object obj)
+        {
+            return obj is byte || obj is sbyte ||
+                   obj is short || obj is ushort ||
+                   obj is int || obj is uint ||
+                   obj is long || obj is ulong ||
+                   obj is float || obj is double ||
+                   obj is decimal;
+        }
     }
 }
