@@ -351,10 +351,8 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => !it.HaveChildren).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (NOT  ( ([p0].[HaveChildren] = @y0 ) ) )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where not(([p0].[HaveChildren] = 1))", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
         [Fact]
         public void TestWhere8()
@@ -362,10 +360,8 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => !!it.HaveChildren).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (NOT  ( (NOT  ( ([p0].[HaveChildren] = @y0 ) ) ) ) )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where not(not(([p0].[HaveChildren] = 1)))", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
 
         [Fact]
@@ -374,23 +370,20 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.Length > 3).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (LEN([p0].[Name]) > @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(3, r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(len([p0].[Name]) > 3)", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
 
         [Fact]
         public void TestWhere10()
         {
-            var pet = new Pet() { Name = "С��" };
+            var pet = new Pet() { Name = "cat" };
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name == pet.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("С��", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("cat", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -399,14 +392,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name == "hzp" && (it.HaveChildren && it.Age == 15)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ([p0].[Name] = @y0 ) AND  ( ([p0].[HaveChildren] = @y1 ) AND  ([p0].[Age] = @y2 )  )  )", r1MiddleResult.Sql);
-            //Assert.Equal(3, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[1].Value);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
-            //Assert.Equal("@y2", r1MiddleResult.Parameters[2].ParameterName);
-            //Assert.Equal(15, r1MiddleResult.Parameters[2].Value);
+            Assert.Equal("select * from [Person] as [p0] where(([p0].[Name] = @y0) and(([p0].[HaveChildren] = 1) and([p0].[Age] = 15)))", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -415,14 +403,10 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => (it.Name == "hzp" && it.HaveChildren) && it.Age == 15).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ( ( ([p0].[Name] = @y0 ) AND  ([p0].[HaveChildren] = @y1 )  ) AND  ([p0].[Age] = @y2 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(3, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[1].Value);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
-            //Assert.Equal("@y2", r1MiddleResult.Parameters[2].ParameterName);
-            //Assert.Equal(15, r1MiddleResult.Parameters[2].Value);
+            Assert.Equal("select * from [Person] as [p0] where((([p0].[Name] = @y0) and([p0].[HaveChildren] = 1)) and([p0].[Age] = 15))", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+
         }
 
         [Fact]
@@ -431,11 +415,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.Contains("hzp")).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] like @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("%hzp%", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] like @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("%hzp%", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -445,11 +427,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.Contains(pet.Name)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] like @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("%hzp%", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] like @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("%hzp%", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]

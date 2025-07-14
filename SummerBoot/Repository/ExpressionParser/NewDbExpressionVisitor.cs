@@ -31,30 +31,35 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 leftQualifiers = "[";
                 rightQualifiers = "]";
                 prefix = "@";
+                lengthName = "len";
                 break;
             case DatabaseType.Mysql:
                 dbType = DbType.MySql;
                 leftQualifiers = "`";
                 rightQualifiers = "`";
                 prefix = "@";
+                lengthName = "length";
                 break;
             case DatabaseType.Oracle:
                 dbType = DbType.Oracle;
                 leftQualifiers = ":";
                 rightQualifiers = ":";
                 prefix = ":";
+                lengthName = "length";
                 break;
             case DatabaseType.Sqlite:
                 dbType = DbType.Sqlite;
                 leftQualifiers = "`";
                 rightQualifiers = "`";
                 prefix = ":";
+                lengthName = "length";
                 break;
             case DatabaseType.Pgsql:
                 dbType = DbType.Pgsql;
                 leftQualifiers = "\"";
                 rightQualifiers = "\"";
                 prefix = "@";
+                lengthName = "length";
                 break;
         }
     }
@@ -137,8 +142,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     private string rightQualifiers;
     /// <summary>
     /// Parameter prefix
+    /// 参数前缀，如@,:
     /// </summary>
     private string prefix;
+    /// <summary>
+    /// Database method name mapped to string length
+    /// 字符串length映射的数据库方法名
+    /// </summary>
+    private string lengthName;
     #endregion
     /// <summary>
     /// 上一次处理的方法名称
@@ -466,40 +477,41 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (stringMethodLikeInfoList.Contains(node.Method))
             {
                 var objectExpression = this.Visit(node.Object);
-                if (objectExpression is ColumnExpression columnExpression && node.Arguments.Count > 0)
+                var leftSqlExpression = GetSqlExpression(objectExpression);
+                if (node.Arguments.Count > 0)
                 {
+                    var c = LastMethodName;
+                    Expression sqlConstExpression = null;
+                    //it.Name.Contains("hzp")
                     if (node.Arguments[0] is ConstantExpression constantExpression)
                     {
-                        var whereConditionExpression = new WhereConditionExpression(columnExpression, "like", BoxMethodLikeParameter(constantExpression.Value, methodName));
-                        return whereConditionExpression;
+                        sqlConstExpression = GetConstExpression(constantExpression);
+                        AddLikeWildcards(sqlConstExpression, "%", "%");
                     }
+                    //it.Name.Contains(pet.Name)
                     else if (node.Arguments[0] is MemberExpression memberExpression)
                     {
-                        var memberResultExpression = this.Visit(memberExpression);
-                        if (memberResultExpression is ConstantExpression constantExpression2)
-                        {
-                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "like", BoxMethodLikeParameter(constantExpression2.Value, methodName));
-                            return whereConditionExpression2;
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(methodName);
-                        }
+                        sqlConstExpression = this.Visit(memberExpression);
+                        AddLikeWildcards(sqlConstExpression, "%", "%");
                     }
                     else
                     {
-                        var result = this.Visit(node.Arguments[0]);
-                        if (result is ConstantExpression constantExpression2)
-                        {
-                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "like", BoxMethodLikeParameter(constantExpression2.Value, methodName));
-                            return whereConditionExpression2;
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(methodName);
-                        }
+                        sqlConstExpression = this.Visit(node.Arguments[0]);
+                        AddLikeWildcards(sqlConstExpression, "%", "%");
                     }
 
+                    var rightSqlExpression = GetSqlExpression(sqlConstExpression);
+                    var binaryExpression = new SqlBinaryExpression()
+                    {
+                        Left = leftSqlExpression,
+                        Operator = SqlBinaryOperator.Like,
+                        Right = rightSqlExpression
+                    };
+
+                    return new WrapperExpression()
+                    {
+                        SqlExpression = binaryExpression
+                    };
                 }
                 else
                 {
@@ -695,7 +707,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 var date = this.GetValue(node);
                 return ConstantExpression.Constant(date);
-                throw new NotSupportedException(methodName);
             }
         }
 
@@ -972,12 +983,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     Value = sqlBoolExpression2.Value ? 1 : 0
                 };
             }
-           
+
         }
-        else
-        {
-            throw new NotSupportedException("AdaptingBooleanProperties");
-        }
+
     }
 
     private SqlExpression GetSqlExpression(Expression expression)
@@ -1400,22 +1408,38 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         var operand = unaryExpression.Operand;
         var middleResult = this.Visit(operand);
-        if (middleResult is ColumnExpression columnExpression && columnExpression.Type == typeof(bool))
+
+        if (middleResult is WrapperExpression wrapperExpression)
         {
-            var whereConditionExpression = new WhereConditionExpression(columnExpression, "=", 1);
-            whereConditionExpression.ValueType = typeof(int);
-            var result = new FunctionWhereConditionExpression(operatorString, whereConditionExpression);
-            return result;
-        }
-        else if (middleResult is WhereConditionExpression whereConditionExpression)
-        {
-            var result = new FunctionWhereConditionExpression(operatorString, whereConditionExpression);
-            return result;
-        }
-        else if (middleResult is FunctionWhereConditionExpression functionWhereConditionExpression)
-        {
-            var result = new FunctionWhereConditionExpression(operatorString, functionWhereConditionExpression);
-            return result;
+            SqlExpression body = wrapperExpression.SqlExpression;
+            if (unaryExpression.NodeType == ExpressionType.Not)
+            {
+                if (wrapperExpression.PropertyType == typeof(bool))
+                {
+                    body = new SqlBinaryExpression()
+                    {
+                        Left = wrapperExpression.SqlExpression,
+                        Operator = SqlBinaryOperator.EqualTo,
+                        Right = new SqlNumberExpression()
+                        {
+                            Value = 1m
+                        }
+                    };
+                }
+
+                var result = new SqlNotExpression()
+                {
+                    Body = body
+                };
+                return new WrapperExpression()
+                {
+                    SqlExpression = result
+                };
+            }
+            else
+            {
+                throw new NotSupportedException("");
+            }
         }
         else
         {
@@ -1522,7 +1546,51 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var objectMember = Expression.Convert(member, typeof(object));
         var getterLambda = Expression.Lambda<Func<object>>(objectMember);
         var getter = getterLambda.Compile();
-        return getter();
+        var result = getter();
+        return result;
+    }
+
+    private Expression GetConstExpression(Expression member)
+    {
+        var result = GetValue(member);
+        var tempR = new SqlExpression();
+        if (result.IsNumeric())
+        {
+            tempR = new SqlNumberExpression()
+            {
+                Value = (decimal)result
+            };
+        }
+        else
+        {
+            var parameterName = GetParameterAlias();
+            tempR = new SqlVariableExpression()
+            {
+                Prefix = prefix,
+                Name = parameterName
+            };
+
+            this.parameters.Add(parameterName, result);
+        }
+
+        return new WrapperExpression()
+        {
+            SqlExpression = tempR
+        };
+    }
+
+    /// <summary>
+    /// Add a wildcard like
+    /// 添加like的通配符
+    /// </summary>
+    /// <returns></returns>
+    private void AddLikeWildcards(Expression expression, string likeLeft = "", string likeRight = "")
+    {
+        var sqlExpression = GetSqlExpression(expression);
+        if (sqlExpression is SqlVariableExpression sqlVariableExpression && this.parameters.GetParamInfos[sqlVariableExpression.Name].Value is string str && (likeLeft.HasText() || likeRight.HasText()))
+        {
+            this.parameters.GetParamInfos[sqlVariableExpression.Name].Value = likeLeft + str + likeRight;
+        }
     }
 
     protected override Expression VisitMember(MemberExpression memberExpression)
@@ -1615,8 +1683,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             //解析静态值,例如dto里的参数，dto.Name
             if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is ConstantExpression constantExpression)
             {
-                var value = GetValue(memberExpression);
-                return Expression.Constant(value);
+                var value = GetConstExpression(memberExpression);
+                return value;
             }
             //解析类似于it.T1.Name这种
             else if (GetNumberOfMemberExpressionLayers(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
@@ -1670,19 +1738,26 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (memberExpression.Expression is MemberExpression parentExpression)
             {
                 //兼容it.name.length>5
-                if (memberExpression.Member is PropertyInfo propertyInfo && propertyInfo.GetMethod?.Name == "get_Length")
+                if (memberExpression.Member is PropertyInfo propertyInfo && propertyInfo?.Name == "Length")
                 {
                     //获取所有列
-                    var middlExpression = this.Visit(parentExpression);
-                    if (middlExpression is ColumnExpression column)
+                    var middleExpression = this.Visit(parentExpression);
+                    var sqlExpression = GetSqlExpression(middleExpression);
+                    var result = new SqlFunctionCallExpression()
                     {
-                        column.FunctionName = "LEN";
-                        return column;
-                    }
-                    else
+                        Name = new SqlIdentifierExpression()
+                        {
+                            Value = lengthName
+                        },
+                        Arguments = new List<SqlExpression>()
+                        {
+                            sqlExpression
+                        }
+                    };
+                    return new WrapperExpression()
                     {
-                        throw new NotSupportedException(nameof(middlExpression));
-                    }
+                        SqlExpression = result
+                    };
                 }
                 else
                 {
@@ -1694,8 +1769,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     }
                     else
                     {
-                        var value = GetValue(memberExpression);
-                        return Expression.Constant(value);
+                        var value = GetConstExpression(memberExpression);
+                        return value;
                     }
 
                 }
@@ -1762,6 +1837,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         throw new NotSupportedException(this.MethodName);
 
     }
+
 
     private T AppendQualifier<T>(T t) where T : IQualifierExpression
     {
