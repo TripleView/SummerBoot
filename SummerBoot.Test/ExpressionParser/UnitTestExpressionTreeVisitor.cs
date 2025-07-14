@@ -172,7 +172,7 @@ namespace ExpressionParser.Test
     }
 
     /// <summary>
-    /// ÊµãËØïnew datetimeËøôÁßçÊÉÖÂÜµ
+    /// ≤‚ ‘new datetime’‚÷÷«Èøˆ
     /// </summary>
     public class TestWhereNewDatetime
     {
@@ -272,9 +272,9 @@ namespace ExpressionParser.Test
         public void TestSelect3()
         {
             var personRepository = new PersonRepository();
-            var r3 = personRepository.Select(it => new { it.Name, Address = "Á¶èÂª∫ÁúÅ" }).ToList();
+            var r3 = personRepository.Select(it => new { it.Name, Address = "∏£Ω® °" }).ToList();
             var r3MiddleResult = personRepository.GetParsingResult();
-            Assert.Equal("select [p0].[Name] as Name, 'Á¶èÂª∫ÁúÅ' as Address from [Person] as [p0]", r3MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as Name, '∏£Ω® °' as Address from [Person] as [p0]", r3MiddleResult.Sql);
             Assert.Empty(r3MiddleResult.Parameters.GetParamInfos);
         }
 
@@ -438,11 +438,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.StartsWith("hzp")).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] like @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp%", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] like @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp%", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -452,11 +450,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.StartsWith(pet.Name)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] like @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp%", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] like @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp%", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -465,11 +461,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.EndsWith("hzp")).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] like @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("%hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] like @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("%hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -479,11 +473,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.EndsWith(pet.Name)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] like @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("%hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] like @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("%hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestWhere19()
@@ -491,11 +483,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.Trim() == "hzp").ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (TRIM([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(trim([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -505,11 +495,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.Trim() == pet.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (TRIM([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(trim([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestWhere21()
@@ -517,11 +505,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.TrimStart() == "hzp").ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (LTRIM([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(ltrim([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -531,11 +517,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.TrimStart() == pet.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (LTRIM([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(ltrim([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestWhere23()
@@ -543,11 +527,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.TrimEnd() == "hzp").ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (RTRIM([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(rtrim([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -557,11 +539,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.TrimEnd() == pet.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (RTRIM([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(rtrim([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestWhere25()
@@ -569,11 +549,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.Equals("hzp")).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -583,25 +561,21 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.Equals(pet.Name)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
         public void TestWhere27()
         {
             var personRepository = new PersonRepository();
-            var pet = new Pet() { Address = "ND" };
+            var pet = new Pet() { Address = "hzp" };
             var r1 = personRepository.Where(it => it.Name.Equals(pet.Address)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("ND", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where([p0].[Name] = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
 
@@ -612,11 +586,9 @@ namespace ExpressionParser.Test
             var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.ToLower() == pet.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (LOWER([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(lower([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestWhere30()
@@ -624,25 +596,21 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.ToLower() == "hzp").ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (LOWER([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(lower([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
         public void TestWhere31()
         {
             var personRepository = new PersonRepository();
-            var pet = new Pet() { Name = "HZP" };
+            var pet = new Pet() { Name = "hzp" };
             var r1 = personRepository.Where(it => it.Name.ToUpper() == pet.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (UPPER([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("HZP", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(upper([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestWhere32()
@@ -650,11 +618,9 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.Where(it => it.Name.ToUpper() == "hzp").ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  (UPPER([p0].[Name]) = @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where(upper([p0].[Name]) = @y0)", r1MiddleResult.Sql);
+            Assert.Single(r1MiddleResult.Parameters.GetParamInfos);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         /// <summary>
@@ -667,11 +633,10 @@ namespace ExpressionParser.Test
             var nameList = new List<string>() { "hzp", "qy" };
             var r1 = personRepository.Where(it => nameList.Contains(it.Name)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] in @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(nameList, r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where [p0].[Name] in(@y0,@y1)", r1MiddleResult.Sql);
+            Assert.Equal(2,r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal("qy", r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         /// <summary>
@@ -684,11 +649,10 @@ namespace ExpressionParser.Test
             var nameList = new string[] { "hzp", "qy" };
             var r1 = personRepository.Where(it => nameList.Contains(it.Name)).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren] FROM [Person] [p0] WHERE  ([p0].[Name] in @y0 )", r1MiddleResult.Sql);
-            //Assert.Single(r1MiddleResult.Parameters);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(nameList, r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select * from [Person] as [p0] where [p0].[Name] in(@y0,@y1)", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal("qy", r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         /// <summary>
@@ -821,11 +785,11 @@ namespace ExpressionParser.Test
         public void TestCombineSelectAndWhere2()
         {
             var personRepository = new PersonRepository();
-            var r1 = personRepository.Where(it => it.Name == "hzp").Select(it => new { it.Age, Address = "ÔøΩÔøΩÔøΩÔøΩ" }).ToList();
+            var r1 = personRepository.Where(it => it.Name == "hzp").Select(it => new { it.Age, Address = "????" }).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
 
-            //Assert.Equal("SELECT [p0].[Age], 'ÔøΩÔøΩÔøΩÔøΩ' As [Address] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
+            //Assert.Equal("SELECT [p0].[Age], '????' As [Address] FROM [Person] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
             //Assert.Single(r1MiddleResult.Parameters);
 
             //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
@@ -1371,7 +1335,7 @@ namespace ExpressionParser.Test
         public void TestDelete()
         {
             var personRepository = new PersonRepository();
-            var persion = new Person() { Age = 5, HaveChildren = false, Name = "ÔøΩÔøΩÔøΩÔøΩ" };
+            var persion = new Person() { Age = 5, HaveChildren = false, Name = "????" };
             personRepository.InternalDelete(persion);
             var r1MiddleResult = personRepository.GetParsingResult();
 
@@ -1382,7 +1346,7 @@ namespace ExpressionParser.Test
         public void TestUpdate()
         {
             var employeeRepository = new EmployeeRepository();
-            var persion = new Employee() { Age = 5, HaveChildren = false, Name = "ÔøΩÔøΩÔøΩÔøΩ" };
+            var persion = new Employee() { Age = 5, HaveChildren = false, Name = "????" };
             employeeRepository.InternalUpdate(persion);
             var r1MiddleResult = employeeRepository.GetParsingResult();
 
@@ -1423,7 +1387,7 @@ namespace ExpressionParser.Test
         public void TestInsert()
         {
             var personRepository = new PersonRepository();
-            var persion = new Person() { Age = 5, HaveChildren = false, Name = "ÔøΩÔøΩÔøΩÔøΩ" };
+            var persion = new Person() { Age = 5, HaveChildren = false, Name = "????" };
             personRepository.InternalInsert(persion);
             var r1MiddleResult = personRepository.GetParsingResult();
 

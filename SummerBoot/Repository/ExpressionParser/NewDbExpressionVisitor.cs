@@ -477,29 +477,42 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (stringMethodLikeInfoList.Contains(node.Method))
             {
                 var objectExpression = this.Visit(node.Object);
+                var likeLeft = "";
+                var likeRight = "";
+                if (node.Method == containsMethod)
+                {
+                    likeLeft = "%";
+                    likeRight = "%";
+                }
+                else if (node.Method == startsWithMethod)
+                {
+                    likeLeft = "";
+                    likeRight = "%";
+                }
+                else if (node.Method == endsWithMethod)
+                {
+                    likeLeft = "%";
+                    likeRight = "";
+                }
                 var leftSqlExpression = GetSqlExpression(objectExpression);
                 if (node.Arguments.Count > 0)
                 {
-                    var c = LastMethodName;
                     Expression sqlConstExpression = null;
                     //it.Name.Contains("hzp")
                     if (node.Arguments[0] is ConstantExpression constantExpression)
                     {
                         sqlConstExpression = GetConstExpression(constantExpression);
-                        AddLikeWildcards(sqlConstExpression, "%", "%");
                     }
                     //it.Name.Contains(pet.Name)
                     else if (node.Arguments[0] is MemberExpression memberExpression)
                     {
                         sqlConstExpression = this.Visit(memberExpression);
-                        AddLikeWildcards(sqlConstExpression, "%", "%");
                     }
                     else
                     {
                         sqlConstExpression = this.Visit(node.Arguments[0]);
-                        AddLikeWildcards(sqlConstExpression, "%", "%");
                     }
-
+                    AddLikeWildcards(sqlConstExpression, likeLeft, likeRight);
                     var rightSqlExpression = GetSqlExpression(sqlConstExpression);
                     var binaryExpression = new SqlBinaryExpression()
                     {
@@ -522,6 +535,45 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             else if (stringMethodTrimUpperLowerInfoList.Contains(node.Method))
             {
                 var objectExpression = this.Visit(node.Object);
+
+                var sqlExpression = GetSqlExpression(objectExpression);
+                var tempMethodName= "";
+                if (node.Method == trimMethod)
+                {
+                    tempMethodName = "trim";
+                }
+                else if (node.Method == trimLeftMethod)
+                {
+                    tempMethodName = "ltrim";
+                }
+                else if (node.Method == trimRightMethod)
+                {
+                    tempMethodName = "rtrim";
+                }
+                else if (node.Method == toUpperMethod)
+                {
+                    tempMethodName = "upper";
+                }
+                else if (node.Method == toLowerMethod)
+                {
+                    tempMethodName = "lower";
+                }
+                var result = new SqlFunctionCallExpression()
+                {
+                    Name = new SqlIdentifierExpression()
+                    {
+                        Value = tempMethodName
+                    },
+                    Arguments = new List<SqlExpression>()
+                    {
+                        sqlExpression
+                    }
+                };
+                return new WrapperExpression()
+                {
+                    SqlExpression = result
+                };
+
                 if (objectExpression is ColumnExpression columnExpression)
                 {
                     if (node.Method == trimMethod)
@@ -585,6 +637,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             else if (methodName == "Equals" && node.Arguments.Count == 1)
             {
                 var objectExpression = this.Visit(node.Object);
+                var left = GetSqlExpression(objectExpression);
+                var constExpression = this.Visit(node.Arguments[0]);
+                var right = GetSqlExpression(constExpression);
+                var binaryExpression = new SqlBinaryExpression()
+                {
+                    Left = left,
+                    Operator = SqlBinaryOperator.EqualTo,
+                    Right = right
+                };
+                return new WrapperExpression()
+                {
+                    SqlExpression = binaryExpression
+                };
                 if (objectExpression is ColumnExpression columnExpression)
                 {
                     if (node.Arguments[0] is ConstantExpression constantExpression)
@@ -652,54 +717,72 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
                 var values = (IEnumerable)GetValue(collection);
                 var propertyExpression = this.Visit(property);
-                if (propertyExpression is ColumnExpression columnExpression)
+                var body = GetSqlExpression(propertyExpression);
+                var count = 0;
+                foreach (var value in values)
                 {
-                    var count = 0;
-                    foreach (var value in values)
+                    count++;
+                }
+                
+                var i = 1;
+                var sqlInExpressions = new List<SqlInExpression>();
+                var parameterNames = new List<string>();
+                foreach (var value in values)
+                {
+                    var parameterName = GetParameterAlias();
+                    parameterNames.Add(parameterName);
+                    this.parameters.Add(parameterName,value);
+                    if ((i != 1 && i % 500 == 0) || i == count)
                     {
-                        count++;
-                    }
-                    //判断是否需要每500次进行拆分
-                    if (count > 500)
-                    {
-                        var tempResult = new List<object>();
-                        var conditionExpressions = new List<WhereConditionExpression>();
-                        var i = 1;
-
-                        foreach (var value in values)
+                        var targetList = new List<SqlExpression>();
+                        foreach (var name in parameterNames)
                         {
-                            tempResult.Add(value);
-                            if ((i != 1 && i % 500 == 0) || i == count)
+                            targetList.Add(new SqlVariableExpression()
                             {
-                                var newValue = new List<object>(tempResult);
-
-                                var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", newValue)
-                                {
-                                    ValueType = method.DeclaringType
-                                };
-                                conditionExpressions.Add(whereConditionExpression2);
-                                tempResult.Clear();
-                            }
-
-                            i++;
+                                Prefix = prefix,
+                                Name = name
+                            });
                         }
-
-                        var result = FoldWhereExpression(conditionExpressions);
-                        return result;
-                    }
-                    else
-                    {
-                        var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "in", values)
+                        var result = new SqlInExpression()
                         {
-                            ValueType = method.DeclaringType
+                            Body = body,
+                            TargetList = targetList
                         };
-                        return whereConditionExpression2;
+                        sqlInExpressions.Add(result);
+
+                        parameterNames.Clear();
                     }
 
+                    i++;
+                }
+
+                if (sqlInExpressions.Count>1)
+                {
+                    SqlExpression first = sqlInExpressions.First();
+                    sqlInExpressions.RemoveAt(0);
+                    foreach (var sqlInExpression in sqlInExpressions)
+                    {
+                        first = new SqlBinaryExpression()
+                        {
+                            Left = first,
+                            Right = sqlInExpression,
+                            Operator = SqlBinaryOperator.And
+                        };
+                    }
+                    
+
+                    return new WrapperExpression()
+                    {
+                        SqlExpression = sqlInExpressions.First()
+                    };
                 }
                 else
                 {
-                    throw new NotSupportedException(methodName);
+                    
+                    return new WrapperExpression()
+                    {
+                        SqlExpression = sqlInExpressions.First()
+                    };
                 }
 
             }
