@@ -766,14 +766,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         {
                             Left = first,
                             Right = sqlInExpression,
-                            Operator = SqlBinaryOperator.And
+                            Operator = SqlBinaryOperator.Or
                         };
                     }
                     
 
                     return new WrapperExpression()
                     {
-                        SqlExpression = sqlInExpressions.First()
+                        SqlExpression = first
                     };
                 }
                 else
@@ -1904,16 +1904,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             //如果是匿名类
             else if (memberExpression.Expression is NewExpression newExpression && newExpression.Arguments.Any() && newExpression.Arguments[0] is ConstantExpression)
             {
-                var value = GetValue(memberExpression);
-                return Expression.Constant(value);
-                //return constantExpression;
+                var value = GetConstExpression(memberExpression);
+                return value;
             }
-            //如果是new一个实例，如new TestWhereNewDatetime().Time
+            //如果是new一个实例，如it.Time == new TestWhereNewDatetime().Time
             else if (memberExpression.Expression is NewExpression newExpression2)
             {
-                var value = GetValue(memberExpression);
-                return Expression.Constant(value);
-                //return constantExpression;
+                var value = GetConstExpression(memberExpression);
+                return value;
             }
         }
 
@@ -2097,10 +2095,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitNew(NewExpression newExpression)
     {
+        //it.Time == new DateTime(2024, 7, 23)
         if (newExpression.Members == null)
         {
-            var value = GetValue(newExpression);
-            return Expression.Constant(value);
+            var value = GetConstExpression(newExpression);
+            return value;
         }
 
         for (int i = 0; i < newExpression.Members.Count; i++)
