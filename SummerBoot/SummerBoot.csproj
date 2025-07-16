@@ -52,7 +52,7 @@
 		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="3.1.27" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Polly" Version="7.2.3" />
-		<PackageReference Include="SqlParser.Net" Version="1.1.9" />
+		<!--<PackageReference Include="SqlParser.Net" Version="1.1.9" />-->
 		<PackageReference Include="YamlDotNet" Version="12.0.0" />
 	</ItemGroup>
 
@@ -61,6 +61,10 @@
 		<Folder Include="Repository\TypeHandler\Dialect\Mysql" />
 		<Folder Include="Repository\TypeHandler\Dialect\Pgsql\" />
 		<Folder Include="Repository\TypeHandler\Dialect\SqlServer\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="D:\code\SqlParser.Net\SqlParser.Net\SqlParser.Net.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

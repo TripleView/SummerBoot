@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApiExample", "WebApiExam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{E361F52B-0B06-40F9-9548-C2FD3D45B7E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.Performance.Test", "SummerBoot.Performance.Test\SummerBoot.Performance.Test.csproj", "{08C67473-E370-45B8-AB11-C3D46E7619B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Performance.Test", "SummerBoot.Performance.Test\SummerBoot.Performance.Test.csproj", "{08C67473-E370-45B8-AB11-C3D46E7619B2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlParser.Net", "D:\code\SqlParser.Net\SqlParser.Net\SqlParser.Net.csproj", "{D9619CF5-D544-4DD1-AA29-20BDEADD90C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08C67473-E370-45B8-AB11-C3D46E7619B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9619CF5-D544-4DD1-AA29-20BDEADD90C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9619CF5-D544-4DD1-AA29-20BDEADD90C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9619CF5-D544-4DD1-AA29-20BDEADD90C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9619CF5-D544-4DD1-AA29-20BDEADD90C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

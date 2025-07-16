@@ -51,16 +51,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
-        public virtual Task<Page<TResult>> InternalQueryPageAsync<TResult>(DbQueryResult param)
-        {
-            return default;
-        }
-
-        public virtual Page<TResult> InternalQueryPage<TResult>(DbQueryResult param)
-        {
-            return default;
-        }
-
         public virtual TResult QueryFirstOrDefault<TResult>(string sql, object param = null)
         {
             return default;

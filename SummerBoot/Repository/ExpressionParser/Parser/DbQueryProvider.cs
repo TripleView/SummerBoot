@@ -62,19 +62,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public ExpressionTreeParsingResult GetDbQueryResultByExpression(Expression expression)
         {
-            //这一步将expression转化成我们自己的expression
-            var dbExpressionVisitor = new DbExpressionVisitor();
             newDbExpressionVisitor = new NewDbExpressionVisitor(databaseUnit);
-            var middleResult = dbExpressionVisitor.Visit(expression);
             newDbExpressionVisitor.Visit(expression);
             var parsingResult = newDbExpressionVisitor.GetParsingResult();
-            //var cc=dbExpressionVisitor.Visit(joinItems.)
-            //将我们自己的expression转换成sql
-            queryFormatter.Format(middleResult);
-            var param = queryFormatter.GetDbQueryDetail();
             return parsingResult;
         }
-
 
         public DbQueryResult GetJoinQueryResultByExpression<T>(IRepository<T> repository, IPageable pageable = null)
         {
@@ -249,25 +241,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public TResult Execute<TResult>(Expression expression)
         {
-            //这一步将expression转化成我们自己的expression
-            var dbExpressionVisitor = new DbExpressionVisitor();
-            var middleResult = dbExpressionVisitor.Visit(expression);
-            //将我们自己的expression转换成sql
-            queryFormatter.Format(middleResult);
-            var param = queryFormatter.GetDbQueryDetail();
-
-            return linkRepository.QueryFirstOrDefault<TResult>(param.Sql,param.GetDynamicParameters());
+            var parsingResult = GetDbQueryResultByExpression(expression);
+            return linkRepository.QueryFirstOrDefault<TResult>(parsingResult.Sql, parsingResult.Parameters);
         }
 
         public async Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
         {
-            var dbExpressionVisitor = new DbExpressionVisitor();
-            var middleResult = dbExpressionVisitor.Visit(expression);
-            //将我们自己的expression转换成sql
-            queryFormatter.Format(middleResult);
-            var param = queryFormatter.GetDbQueryDetail();
-
-            return await linkRepository.QueryFirstOrDefaultAsync<TResult>(param.Sql,param.GetDynamicParameters());
+            var parsingResult = GetDbQueryResultByExpression(expression);
+            return await linkRepository.QueryFirstOrDefaultAsync<TResult>(parsingResult.Sql, parsingResult.Parameters);
         }
     }
 }
