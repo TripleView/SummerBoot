@@ -365,9 +365,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 var lastMethodCallName4 = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName4);
                 return result4;
-            case nameof(Queryable.Distinct):
             case nameof(Queryable.First):
             case nameof(Queryable.FirstOrDefault):
+                methodCallStack.Push(methodName);
+                var result6 = this.VisitFirstOrDefault(node);
+                var lastMethodCallName6 = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName6);
+                break;
+            case nameof(Queryable.Distinct):
             case nameof(Queryable.Count):
                 //针对group by里的count单独处理
                 if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
@@ -1117,6 +1122,82 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
 
         throw new NotSupportedException(nameof(expression));
+    }
+
+
+    public virtual Expression VisitFirstOrDefault(MethodCallExpression firstOrDefaultCall)
+    {
+        var methodName = firstOrDefaultCall.Method.Name;
+        var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
+        WhereExpression where = null;
+        if (firstOrDefaultCall.Arguments.Count == 2)
+        {
+            var lambda = (LambdaExpression)this.StripQuotes(firstOrDefaultCall.Arguments[1]);
+            where = this.Visit(lambda.Body) as WhereExpression;
+        }
+
+
+
+        if (sourceExpression is TableExpression table)
+        {
+            var result = new SelectExpression(null, "", table.Columns, table);
+            if (methodName == nameof(Queryable.FirstOrDefault) || methodName == nameof(Queryable.First))
+            {
+                result.Take = 1;
+            }
+            else if (methodName == nameof(Queryable.Distinct))
+            {
+                result.ColumnsPrefix = "DISTINCT";
+            }
+            else if (methodName == nameof(Queryable.Count))
+            {
+                result.Columns.Clear();
+                result.Columns.Add(new ColumnExpression(null, "", null, 0, "", "Count"));
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(firstOrDefaultCall));
+            }
+
+            if (where != null)
+            {
+                result.Where = where;
+            }
+
+            return result;
+        }
+        else if (sourceExpression is SelectExpression selectExpression)
+        {
+            if (!selectExpression.HasGroupBy)
+            {
+                selectExpression = NestSelectExpression(selectExpression);
+            }
+
+
+            if (methodName == nameof(Queryable.FirstOrDefault) || methodName == nameof(Queryable.First))
+            {
+                selectExpression.Take = 1;
+            }
+            else if (methodName == nameof(Queryable.Distinct))
+            {
+                selectExpression.ColumnsPrefix = "DISTINCT";
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(firstOrDefaultCall));
+            }
+
+            if (where != null)
+            {
+                selectExpression.Where = where;
+            }
+
+            return selectExpression;
+        }
+        else
+        {
+            throw new NotSupportedException(nameof(firstOrDefaultCall));
+        }
     }
 
     public virtual Expression VisitFirstOrDefaultDistinctCall(MethodCallExpression firstOrDefaultCall)
