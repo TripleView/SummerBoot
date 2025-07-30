@@ -958,7 +958,7 @@ namespace ExpressionParser.Test
         public async Task TestFirstOrDefault()
         {
             var personRepository = new PersonRepository();
-            var r12 =await personRepository.FirstOrDefaultAsync();
+            //var r12 =await personRepository.FirstOrDefaultAsync();
             var r1 = personRepository.FirstOrDefault();
 
             var r1MiddleResult = personRepository.GetParsingResult();
