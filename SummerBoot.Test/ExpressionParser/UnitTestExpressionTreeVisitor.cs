@@ -134,7 +134,7 @@ namespace ExpressionParser.Test
 
     public class PersonRepository : Repository<Person>, IPersonRepository
     {
-        public PersonRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), ""))
+        public PersonRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), "") { SqlServerVersion = 10 })
         {
 
         }
@@ -143,6 +143,18 @@ namespace ExpressionParser.Test
 
         }
     }
+    public class SqlServer14PersonRepository : Repository<Person>, IPersonRepository
+    {
+        public SqlServer14PersonRepository() : base(new DatabaseUnit(typeof(UnitOfWork), typeof(SqlConnection), "") { SqlServerVersion = 14 })
+        {
+
+        }
+        public void ExecuteDelete()
+        {
+
+        }
+    }
+
 
     public class MysqlPersonRepository : Repository<Person>, IPersonRepository
     {

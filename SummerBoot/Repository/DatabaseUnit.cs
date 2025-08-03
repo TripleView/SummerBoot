@@ -1,4 +1,4 @@
-ï»¿using SummerBoot.Repository.Core;
+using SummerBoot.Repository.Core;
 using SummerBoot.Repository.DataMigrate;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using SummerBoot.Core;
@@ -19,28 +20,28 @@ namespace SummerBoot.Repository
 
     public delegate string RepositoryReplaceSqlEvent(string sql);
     /// <summary>
-    /// æ•°æ®åº“å•å…ƒ
+    /// Êı¾İ¿âµ¥Ôª
     /// </summary>
     public class DatabaseUnit
     {
         /// <summary>
-        /// Sets column name mapping at database unit scope;è®¾ç½®æ•°æ®åº“å•å…ƒèŒƒå›´å†…çš„åˆ—åæ˜ å°„
+        /// Sets column name mapping at database unit scope;ÉèÖÃÊı¾İ¿âµ¥Ôª·¶Î§ÄÚµÄÁĞÃûÓ³Éä
         /// </summary>
         public Func<string, string> ColumnNameMapping { get; set; }
         /// <summary>
-        /// Set Table name mapping at database unit scope;è®¾ç½®æ•°æ®åº“å•å…ƒèŒƒå›´å†…çš„è¡¨åæ˜ å°„
+        /// Set Table name mapping at database unit scope;ÉèÖÃÊı¾İ¿âµ¥Ôª·¶Î§ÄÚµÄ±íÃûÓ³Éä
         /// </summary>
         public Func<string, string> TableNameMapping { get; set; }
         public Dictionary<Type, DbType> ParameterTypeMaps { get; }
         /// <summary>
         /// Is it data migration mode? If yes, ignore id auto-increment when inserting data
-        /// æ˜¯å¦ä¸ºæ•°æ®è¿ç§»æ¨¡å¼,å¦‚æœæ˜¯ï¼Œåˆ™æ’å…¥æ•°æ®æ—¶å¿½ç•¥idè‡ªå¢
+        /// ÊÇ·ñÎªÊı¾İÇ¨ÒÆÄ£Ê½,Èç¹ûÊÇ£¬Ôò²åÈëÊı¾İÊ±ºöÂÔid×ÔÔö
         /// </summary>
         internal bool IsDataMigrateMode { get; private set; }
 
         internal Type DataMigrateRepositoryType { get; private set; }
         /// <summary>
-        /// æ·»åŠ æ•°æ®è¿ç§»åŠŸèƒ½
+        /// Ìí¼ÓÊı¾İÇ¨ÒÆ¹¦ÄÜ
         /// Add data migration function
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -56,22 +57,22 @@ namespace SummerBoot.Repository
         #region events
 
         /// <summary>
-        /// æ’å…¥å‰äº‹ä»¶
+        /// ²åÈëÇ°ÊÂ¼ş
         /// </summary>
         public event RepositoryEvent BeforeInsert;
         /// <summary>
         ///log Event
-        /// æ‰“å°äº‹ä»¶
+        /// ´òÓ¡ÊÂ¼ş
         /// </summary>
         public event RepositoryLogEvent LogSql;
         /// <summary>
-        /// æ›´æ–°å‰äº‹ä»¶
+        /// ¸üĞÂÇ°ÊÂ¼ş
         /// </summary>
         public event RepositoryEvent BeforeUpdate;
 
         /// <summary>
         /// ReplaceSql event
-        /// å…è®¸æ›¿æ¢sqläº‹ä»¶
+        /// ÔÊĞíÌæ»»sqlÊÂ¼ş
         /// </summary>
         public event RepositoryReplaceSqlEvent ReplaceSql;
 
@@ -113,21 +114,21 @@ namespace SummerBoot.Repository
         #endregion
 
         /// <summary>
-        /// Query timeout;æŸ¥è¯¢è¶…æ—¶æ—¶é—´
+        /// Query timeout;²éÑ¯³¬Ê±Ê±¼ä
         /// </summary>
         public int CommandTimeout { get; set; } = 3000;
         /// <summary>
         ///Database Generator Class;
-        /// æ•°æ®åº“ç”Ÿæˆå™¨ç±»
+        /// Êı¾İ¿âÉú³ÉÆ÷Àà
         /// </summary>
         public Type IDbGeneratorType { get; private set; }
         /// <summary>
         ///Entity Class Handler
-        ///å®ä½“ç±»å¤„ç†ç¨‹åº
+        ///ÊµÌåÀà´¦Àí³ÌĞò
         /// </summary>
         public Type EntityClassHandlerType { get; private set; }
         /// <summary>
-        /// Database unit id;æ•°æ®åº“å•å…ƒid
+        /// Database unit id;Êı¾İ¿âµ¥Ôªid
         /// </summary>
         public Guid Id { private set; get; }
 
@@ -142,21 +143,21 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// Unit of Work Type;å·¥ä½œå•å…ƒç±»å‹
+        /// Unit of Work Type;¹¤×÷µ¥ÔªÀàĞÍ
         /// </summary>
         public Type IUnitOfWorkType { get; }
         /// <summary>
-        /// Automatically generated list of storage types;è‡ªåŠ¨ç”Ÿæˆçš„ä»“å‚¨ç±»å‹åˆ—è¡¨
+        /// Automatically generated list of storage types;×Ô¶¯Éú³ÉµÄ²Ö´¢ÀàĞÍÁĞ±í
         /// </summary>
         public List<Type> BindRepositoryTypes { get; private set; } = new List<Type>();
 
         /// <summary>
-        /// Manually generated list of storage types;æ‰‹åŠ¨ç”Ÿæˆçš„ä»“å‚¨ç±»å‹åˆ—è¡¨
+        /// Manually generated list of storage types;ÊÖ¶¯Éú³ÉµÄ²Ö´¢ÀàĞÍÁĞ±í
         /// </summary>
         //public Dictionary<Type, Type> BindManualRepositoryTypes { get; private set; } = new Dictionary<Type, Type>();
 
         /// <summary>
-        /// Binding a single repository;ç»‘å®šå•ä¸ªä»“å‚¨
+        /// Binding a single repository;°ó¶¨µ¥¸ö²Ö´¢
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="TEntity"></typeparam>
@@ -166,7 +167,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// Automatic storage interface through feature binding;é€šè¿‡ç‰¹æ€§ç»‘å®šè‡ªåŠ¨ä»“å‚¨æ¥å£
+        /// Automatic storage interface through feature binding;Í¨¹ıÌØĞÔ°ó¶¨×Ô¶¯²Ö´¢½Ó¿Ú
         /// </summary>
         /// <typeparam name="TAttribute"></typeparam>
         public void BindRepositoriesWithAttribute<TAttribute>() where TAttribute : AutoRepositoryAttribute
@@ -181,7 +182,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// Manual repository interface through feature binding;é€šè¿‡ç‰¹æ€§ç»‘å®šæ‰‹åŠ¨ä»“å‚¨æ¥å£
+        /// Manual repository interface through feature binding;Í¨¹ıÌØĞÔ°ó¶¨ÊÖ¶¯²Ö´¢½Ó¿Ú
         /// </summary>
         /// <typeparam name="TAttribute"></typeparam>
         public void BindManualRepositoriesWithAttribute<TAttribute>() where TAttribute : ManualRepositoryAttribute
@@ -196,7 +197,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// ç»‘å®šæ•°æ®åº“ç”Ÿæˆå™¨
+        /// °ó¶¨Êı¾İ¿âÉú³ÉÆ÷
         /// </summary>
         /// <param name="iDbGeneratorType"></param>
         public void BindDbGeneratorType(Type iDbGeneratorType)
@@ -205,7 +206,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// ç»‘å®šæ•°æ®åº“ç”Ÿæˆå™¨
+        /// °ó¶¨Êı¾İ¿âÉú³ÉÆ÷
         /// </summary>
         public void BindDbGeneratorType<T>() where T : IDbGenerator
         {
@@ -214,7 +215,7 @@ namespace SummerBoot.Repository
 
         /// <summary>
         /// Binding entity class handler
-        /// ç»‘å®šå®ä½“ç±»å¤„ç†ç¨‹åº
+        /// °ó¶¨ÊµÌåÀà´¦Àí³ÌĞò
         /// </summary>
         /// <param name="entityClassHandlerType"></param>
         public void BindEntityClassHandlerType(Type entityClassHandlerType)
@@ -232,7 +233,7 @@ namespace SummerBoot.Repository
         }
         /// <summary>
         /// Binding entity class handler
-        /// ç»‘å®šå®ä½“ç±»å¤„ç†ç¨‹åº
+        /// °ó¶¨ÊµÌåÀà´¦Àí³ÌĞò
         /// </summary>
         public void BindEntityClassHandlerType<T>() where T : IEntityClassHandler
         {
@@ -246,7 +247,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// è®¾ç½®å‚æ•°ç±»å‹æ˜ å°„
+        /// ÉèÖÃ²ÎÊıÀàĞÍÓ³Éä
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dbType"></param>
@@ -256,7 +257,7 @@ namespace SummerBoot.Repository
             {
                 this.ParameterTypeMaps[type] = dbType;
 
-                //æ·»åŠ å¯ç©ºå’Œéç©ºç±»å‹
+                //Ìí¼Ó¿É¿ÕºÍ·Ç¿ÕÀàĞÍ
                 var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
                 if (nullableUnderlyingType == null)
                 {
@@ -267,7 +268,7 @@ namespace SummerBoot.Repository
             else
             {
                 this.ParameterTypeMaps.Add(type, dbType);
-                //æ·»åŠ å¯ç©ºå’Œéç©ºç±»å‹
+                //Ìí¼Ó¿É¿ÕºÍ·Ç¿ÕÀàĞÍ
                 var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
                 if (nullableUnderlyingType == null)
                 {
@@ -278,7 +279,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// è®¾ç½®è‡ªå®šä¹‰çš„å°†å€¼è½¬æ¢ä¸ºæ•°æ®åº“å‚æ•°å’Œå°†æ•°æ®åº“è¿”å›çš„å€¼è§£æä¸ºç›®æ ‡å€¼çš„æ˜ å°„å…³ç³»
+        /// ÉèÖÃ×Ô¶¨ÒåµÄ½«Öµ×ª»»ÎªÊı¾İ¿â²ÎÊıºÍ½«Êı¾İ¿â·µ»ØµÄÖµ½âÎöÎªÄ¿±êÖµµÄÓ³Éä¹ØÏµ
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="type"></param>
@@ -287,7 +288,7 @@ namespace SummerBoot.Repository
         {
             this.InternalSetTypeHandler(type, t);
             //return;
-            //æ·»åŠ å¯ç©ºå’Œéç©ºç±»å‹
+            //Ìí¼Ó¿É¿ÕºÍ·Ç¿ÕÀàĞÍ
             var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
             if (nullableUnderlyingType != null)
             {
@@ -309,7 +310,7 @@ namespace SummerBoot.Repository
 
 
         /// <summary>
-        /// æ•°æ®åº“è¿æ¥å™¨ç±»å‹
+        /// Êı¾İ¿âÁ¬½ÓÆ÷ÀàĞÍ
         /// </summary>
         public Type DbConnectionType
         {
@@ -346,6 +347,32 @@ namespace SummerBoot.Repository
                        || (dbName.ToLower().IndexOf("sqlconnection") > -1 && dbName.ToLower().IndexOf("system") > -1);
             }
         }
+
+        private int? sqlServerVersion;
+
+        public int SqlServerVersion
+        {
+            get
+            {
+                if (sqlServerVersion.HasValue)
+                {
+                    return sqlServerVersion.Value;
+                }
+
+                var dbConnection = (DbConnection)DbConnectionType.CreateInstance(new object[] { this.ConnectionString });
+                dbConnection.Open();
+                var version = dbConnection.QueryFirstOrDefault<int>(this,
+                    "  select CAST(PARSENAME(CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128)), 4) AS INT)");
+                dbConnection.Close();
+                this.sqlServerVersion = version;
+                return version;
+            }
+            set
+            {
+                this.sqlServerVersion = value;
+            }
+        }
+
         public bool IsOracle
         {
             get
@@ -365,7 +392,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æ•°æ®åº“ç±»å‹
+        /// Êı¾İ¿âÀàĞÍ
         /// </summary>
         public DatabaseType DatabaseType
         {
