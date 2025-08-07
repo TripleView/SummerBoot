@@ -373,7 +373,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     break;
                 }
                 methodCallStack.Push(methodName);
-                var result5 = this.VisitFirstOrDefaultDistinctCall(node);
+                var result5 = this.VisitDistinctCall(node);
                 var lastMethodCallName5 = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName5);
                 return result5;
@@ -1104,23 +1104,35 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
         var sqlExpression = GetSqlExpression(sourceExpression);
         AddDefaultColumn(sqlExpression);
-        ParsingPage(sqlExpression, 1, 1);
+        ParsingPage(sourceExpression, 1, 1);
 
         return GetWrapperExpression(sqlExpression);
     }
 
 
-    public virtual Expression ParsingPage(SqlExpression sqlExpression, int pageNo, int pageSize)
+    public virtual Expression ParsingPage(Expression sourceExpression, int pageNo, int pageSize)
     {
-        if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression }
-            )
+        var sqlExpression = GetSqlExpression(sourceExpression);
+        var isNeedReset= databaseUnit.IsSqlServer && databaseUnit.SqlServerVersion < 11;
+
+        if (isNeedReset)
+        {
+            sqlExpression = new SqlSelectExpression()
+            {
+                Query = new SqlSelectQueryExpression()
+                {
+                    From = sqlExpression
+                }
+            };
+        }
+
+        if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
             if (databaseUnit.IsSqlServer)
             {
                 var version = databaseUnit.SqlServerVersion;
                 if (version < 11)
                 {
-
                     var orderBy = new SqlOrderByExpression();
                     if (sqlSelectQueryExpression.OrderBy.Items.Any())
                     {
@@ -1128,7 +1140,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     }
                     else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameAliasMapping.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
                     {
-                        var orderByColumn = sqlInfo.ColumnInfos.FirstOrDefault(x => x.IsKey) ?? sqlInfo.ColumnInfos.FirstOrDefault();
+                        var orderByColumn = sqlInfo.ColumnInfos.FirstOrDefault(x => x.IsKey) ?? sqlInfo.ColumnInfos.First();
                         orderBy = new SqlOrderByExpression()
                         {
                             Items = new List<SqlOrderByItemExpression>()
@@ -1177,17 +1189,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         }
                     }
 
-                    result.Alias = new SqlIdentifierExpression()
+                    sqlSelectExpression.Alias = new SqlIdentifierExpression()
                     {
                         Value = tableAlias
                     };
                     var pageColumnExpression = GetSqlPropertyExpression(tableAlias, "sbRowNo");
-                    result = new SqlSelectExpression()
+                    sqlSelectExpression = new SqlSelectExpression()
                     {
                         Query = new SqlSelectQueryExpression()
                         {
                             Columns = columns,
-                            From = result,
+                            From = sqlSelectExpression,
                             Where = new SqlBinaryExpression()
                             {
                                 Left = new SqlBinaryExpression()
@@ -1213,7 +1225,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         }
 
                     };
-                    return GetWrapperExpression(result);
+                    return GetWrapperExpression(sqlSelectExpression);
                 }
             }
             sqlSelectQueryExpression.Limit = new SqlLimitExpression()
@@ -1259,74 +1271,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             Value = value
         });
     }
-    public virtual Expression VisitFirstOrDefaultDistinctCall(MethodCallExpression firstOrDefaultCall)
+    public virtual Expression VisitDistinctCall(MethodCallExpression firstOrDefaultCall)
     {
         var methodName = firstOrDefaultCall.Method.Name;
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
+        var sqlSourceExpression = GetSqlExpression(sourceExpression);
         WhereExpression where = null;
-        if (firstOrDefaultCall.Arguments.Count == 2)
+        
+        if (sqlSourceExpression is SqlSelectExpression{Query:SqlSelectQueryExpression sqlSelectQueryExpression} sqlSelectExpression)
         {
-            var lambda = (LambdaExpression)this.StripQuotes(firstOrDefaultCall.Arguments[1]);
-            where = this.Visit(lambda.Body) as WhereExpression;
-        }
+            sqlSelectQueryExpression.ResultSetReturnOption = SqlResultSetReturnOption.Distinct;
 
-
-
-        if (sourceExpression is TableExpression table)
-        {
-            var result = new SelectExpression(null, "", table.Columns, table);
-            if (methodName == nameof(Queryable.FirstOrDefault) || methodName == nameof(Queryable.First))
-            {
-                result.Take = 1;
-            }
-            else if (methodName == nameof(Queryable.Distinct))
-            {
-                result.ColumnsPrefix = "DISTINCT";
-            }
-            else if (methodName == nameof(Queryable.Count))
-            {
-                result.Columns.Clear();
-                result.Columns.Add(new ColumnExpression(null, "", null, 0, "", "Count"));
-            }
-            else
-            {
-                throw new NotSupportedException(nameof(firstOrDefaultCall));
-            }
-
-            if (where != null)
-            {
-                result.Where = where;
-            }
-
-            return result;
-        }
-        else if (sourceExpression is SelectExpression selectExpression)
-        {
-            if (!selectExpression.HasGroupBy)
-            {
-                selectExpression = NestSelectExpression(selectExpression);
-            }
-
-
-            if (methodName == nameof(Queryable.FirstOrDefault) || methodName == nameof(Queryable.First))
-            {
-                selectExpression.Take = 1;
-            }
-            else if (methodName == nameof(Queryable.Distinct))
-            {
-                selectExpression.ColumnsPrefix = "DISTINCT";
-            }
-            else
-            {
-                throw new NotSupportedException(nameof(firstOrDefaultCall));
-            }
-
-            if (where != null)
-            {
-                selectExpression.Where = where;
-            }
-
-            return selectExpression;
+            return sourceExpression;
         }
         else
         {

@@ -1,4 +1,4 @@
-ï»¿using FreeSql.DataAnnotations;
+using FreeSql.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using SqlSugar;
 using SqlSugarClient_Demo;
@@ -15,23 +15,24 @@ public class Program
     {
         using (var db = new BloggingContext())
         {
-            // åˆ›å»ºæ•°æ®åº“å’Œè¡¨
+            // ´´½¨Êı¾İ¿âºÍ±í
             db.Database.EnsureCreated();
 
-            // æ–°å¢
-            db.Blogs.Add(new Blog { Name = "EF Core å…¥é—¨" });
+            // ĞÂÔö
+            db.Blogs.Add(new Blog { Name = "EF Core ÈëÃÅ" });
             db.SaveChanges();
 
-            // æŸ¥è¯¢
+            // ²éÑ¯
             var blog = db.Blogs.FirstOrDefault();
-            Console.WriteLine($"æŸ¥è¯¢åˆ°åšå®¢ï¼š{blog?.Name}");
+            Console.WriteLine($"²éÑ¯µ½²©¿Í£º{blog?.Name}");
 
-            // æŸ¥è¯¢æ‰€æœ‰
+            // ²éÑ¯ËùÓĞ
             var blogs = db.Blogs.ToList();
-            Console.WriteLine($"å½“å‰åšå®¢æ•°é‡ï¼š{blogs.Count}");
+            Console.WriteLine($"µ±Ç°²©¿ÍÊıÁ¿£º{blogs.Count}");
             var sss = db.Blogs.Skip(1).Take(100).Where(x => x.Name == "abc").ToQueryString();
             var s1 = db.Blogs.Skip(1).Where(x => x.Name == "abc").ToQueryString();
             var s2 = db.Blogs.Take(100).Where(x => x.Name == "abc").ToQueryString();
+            var s3 = db.Blogs.Skip(1).Take(100).Distinct().Where(x => x.Name == "abc").FirstOrDefault();
         }
     }
 
@@ -48,15 +49,15 @@ public class Program
                 var fdsf = y.CommandText;
 
             })
-            .UseAutoSyncStructure(true) //è‡ªåŠ¨åŒæ­¥å®ä½“ç»“æ„åˆ°æ•°æ®åº“
-            .Build(); //è¯·åŠ¡å¿…å®šä¹‰æˆ Singleton å•ä¾‹æ¨¡å¼
+            .UseAutoSyncStructure(true) //×Ô¶¯Í¬²½ÊµÌå½á¹¹µ½Êı¾İ¿â
+            .Build(); //ÇëÎñ±Ø¶¨Òå³É Singleton µ¥ÀıÄ£Ê½
 
-        var c = fsql.Select<Tag>().Skip(1).Take(100).Where(a => a.Name == "ç²¤è¯­").ToList();
+        var c = fsql.Select<Tag>().Skip(1).Take(100).Where(a => a.Name == "ÔÁÓï").ToList();
     }
 
     public static async Task TestSqlSugar()
     {
-        //åˆ›å»ºæ•°æ®åº“å¯¹è±¡ (ç”¨æ³•å’ŒEF Dappperä¸€æ ·é€šè¿‡newä¿è¯çº¿ç¨‹å®‰å…¨)
+        //´´½¨Êı¾İ¿â¶ÔÏó (ÓÃ·¨ºÍEF DappperÒ»ÑùÍ¨¹ınew±£Ö¤Ïß³Ì°²È«)
         SqlSugarClient Db = new SqlSugarClient(new ConnectionConfig()
             {
                 ConnectionString = "datasource=demo.db",
@@ -68,52 +69,52 @@ public class Program
                 db.Aop.OnLogExecuting = (sql, pars) =>
                 {
 
-                    //è·å–åŸç”ŸSQLæ¨è 5.1.4.63  æ€§èƒ½OK
+                    //»ñÈ¡Ô­ÉúSQLÍÆ¼ö 5.1.4.63  ĞÔÄÜOK
                     Console.WriteLine(UtilMethods.GetNativeSql(sql, pars));
 
-                    //è·å–æ— å‚æ•°åŒ–SQL å¯¹æ€§èƒ½æœ‰å½±å“ï¼Œç‰¹åˆ«å¤§çš„SQLå‚æ•°å¤šçš„ï¼Œè°ƒè¯•ä½¿ç”¨
+                    //»ñÈ¡ÎŞ²ÎÊı»¯SQL ¶ÔĞÔÄÜÓĞÓ°Ïì£¬ÌØ±ğ´óµÄSQL²ÎÊı¶àµÄ£¬µ÷ÊÔÊ¹ÓÃ
                     //Console.WriteLine(UtilMethods.GetSqlString(DbType.SqlServer,sql,pars))
 
 
                 };
 
-                //æ³¨æ„å¤šç§Ÿæˆ· æœ‰å‡ ä¸ªè®¾ç½®å‡ ä¸ª
+                //×¢Òâ¶à×â»§ ÓĞ¼¸¸öÉèÖÃ¼¸¸ö
                 //db.GetConnection(i).Aop
 
             });
 
-        //å»ºåº“
-        Db.DbMaintenance.CreateDatabase();//è¾¾æ¢¦å’ŒOracleä¸æ”¯æŒå»ºåº“
+        //½¨¿â
+        Db.DbMaintenance.CreateDatabase();//´ïÃÎºÍOracle²»Ö§³Ö½¨¿â
 
-        //å»ºè¡¨ï¼ˆçœ‹æ–‡æ¡£è¿ç§»ï¼‰
-        Db.CodeFirst.InitTables<Student>(); //æ‰€æœ‰åº“éƒ½æ”¯æŒ     
+        //½¨±í£¨¿´ÎÄµµÇ¨ÒÆ£©
+        Db.CodeFirst.InitTables<Student>(); //ËùÓĞ¿â¶¼Ö§³Ö     
 
-        //æŸ¥è¯¢è¡¨çš„æ‰€æœ‰
+        //²éÑ¯±íµÄËùÓĞ
         var list = Db.Queryable<Student>().ToList();
 
-        //æ’å…¥
+        //²åÈë
         Db.Insertable(new Student() { SchoolId = 1, Name = "jack" }).ExecuteCommand();
 
-        //æ›´æ–°
+        //¸üĞÂ
         Db.Updateable(new Student() { Id = 1, SchoolId = 2, Name = "jack2" }).ExecuteCommand();
 
-        //åˆ é™¤
+        //É¾³ı
         Db.Deleteable<Student>().Where(it => it.Id == 1).ExecuteCommand();
 
         var list2 = Db.Queryable<Student>().Skip(2).Take(3).Where(x => x.Name == "a").OrderBy(x => x.Name).ToList();
 
-        Console.WriteLine("æ­å–œä½ å·²ç»å…¥é—¨äº†,åé¢åªéœ€è¦ç”¨åˆ°ä»€ä¹ˆæŸ¥æ–‡æ¡£å°±å¯ä»¥äº†ã€‚");
+        Console.WriteLine("¹§Ï²ÄãÒÑ¾­ÈëÃÅÁË,ºóÃæÖ»ĞèÒªÓÃµ½Ê²Ã´²éÎÄµµ¾Í¿ÉÒÔÁË¡£");
         Console.ReadKey();
     }
 }
 
 
-//å®ä½“ä¸æ•°æ®åº“ç»“æ„ä¸€æ ·
+//ÊµÌåÓëÊı¾İ¿â½á¹¹Ò»Ñù
 public class Student
 {
-    //æ•°æ®æ˜¯è‡ªå¢éœ€è¦åŠ ä¸ŠIsIdentity 
-    //æ•°æ®åº“æ˜¯ä¸»é”®éœ€è¦åŠ ä¸ŠIsPrimaryKey 
-    //æ³¨æ„ï¼šè¦å®Œå…¨å’Œæ•°æ®åº“ä¸€è‡´2ä¸ªå±æ€§
+    //Êı¾İÊÇ×ÔÔöĞèÒª¼ÓÉÏIsIdentity 
+    //Êı¾İ¿âÊÇÖ÷¼üĞèÒª¼ÓÉÏIsPrimaryKey 
+    //×¢Òâ£ºÒªÍêÈ«ºÍÊı¾İ¿âÒ»ÖÂ2¸öÊôĞÔ
     [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public int Id { get; set; }
     public int? SchoolId { get; set; }
