@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using SqlParser.Net;
+using SqlParser.Net.Ast;
 using SqlParser.Net.Ast.Expression;
 using SummerBoot.Core;
 using SummerBoot.Repository.Core;
@@ -1099,17 +1100,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public virtual Expression VisitFirstOrDefault(MethodCallExpression firstOrDefaultCall)
     {
-       
+
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
         var sqlExpression = GetSqlExpression(sourceExpression);
         AddDefaultColumn(sqlExpression);
-        ParsingPage(sqlExpression,1,1);
+        ParsingPage(sqlExpression, 1, 1);
 
         return GetWrapperExpression(sqlExpression);
     }
 
 
-    public virtual Expression ParsingPage(SqlExpression sqlExpression,int pageNo,int pageSize)
+    public virtual Expression ParsingPage(SqlExpression sqlExpression, int pageNo, int pageSize)
     {
         if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression }
             )
@@ -1119,15 +1120,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 var version = databaseUnit.SqlServerVersion;
                 if (version < 11)
                 {
-                    
+
                     var orderBy = new SqlOrderByExpression();
                     if (sqlSelectQueryExpression.OrderBy.Items.Any())
                     {
                         orderBy = sqlSelectQueryExpression.OrderBy;
                     }
-                    else if(sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameAliasMapping.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
+                    else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameAliasMapping.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
                     {
-                        var orderByColumn= sqlInfo.ColumnInfos.FirstOrDefault(x => x.IsKey) ?? sqlInfo.ColumnInfos.FirstOrDefault();
+                        var orderByColumn = sqlInfo.ColumnInfos.FirstOrDefault(x => x.IsKey) ?? sqlInfo.ColumnInfos.FirstOrDefault();
                         orderBy = new SqlOrderByExpression()
                         {
                             Items = new List<SqlOrderByItemExpression>()
@@ -1139,7 +1140,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                             },
                         };
                     }
-
+                    var columns = sqlSelectQueryExpression.Columns.Select(x => x.Clone()).ToList();
                     sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
                     {
                         Body = new SqlFunctionCallExpression()
@@ -1159,21 +1160,21 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         }
                     });
                     var tableAlias = GetTableAlias();
-                    // 使用方式
-                    var settings = new JsonSerializerSettings
-                    {
-                        ContractResolver = new IgnorePropertiesResolver(new List<string> { "Parent" }) // 忽略 Password
-                    };
 
-         
-                    var columns =JsonConvert.DeserializeObject<List<SqlSelectItemExpression>>( JsonConvert.SerializeObject(sqlSelectQueryExpression.Columns, settings));
-                    
                     foreach (var sqlSelectItemExpression in columns)
                     {
-                        sqlSelectItemExpression.Alias = new SqlIdentifierExpression()
+                        if (sqlSelectItemExpression.Body is SqlPropertyExpression sqlPropertyExpression)
                         {
-                            Value = tableAlias
-                        };
+                            sqlPropertyExpression.Table = GetSqlIdentifierExpression(tableAlias);
+                        }
+                        else if (sqlSelectItemExpression.Body is SqlIdentifierExpression sqlIdentifierExpression)
+                        {
+                            sqlSelectItemExpression.Body = new SqlPropertyExpression()
+                            {
+                                Name = sqlIdentifierExpression.Clone(),
+                                Table = GetSqlIdentifierExpression(tableAlias)
+                            };
+                        }
                     }
 
                     result.Alias = new SqlIdentifierExpression()
@@ -1192,25 +1193,25 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                                 Left = new SqlBinaryExpression()
                                 {
                                     Left = pageColumnExpression,
-                                    Operator = SqlBinaryOperator.GreaterThenOrEqualTo,
+                                    Operator = SqlBinaryOperator.GreaterThen,
                                     Right = new SqlNumberExpression()
                                     {
-                                        Value = pageNo
+                                        Value = (pageNo - 1) * pageSize
                                     }
                                 },
                                 Operator = SqlBinaryOperator.And,
                                 Right = new SqlBinaryExpression()
                                 {
                                     Left = pageColumnExpression,
-                                    Operator = SqlBinaryOperator.LessThen,
+                                    Operator = SqlBinaryOperator.LessThenOrEqualTo,
                                     Right = new SqlNumberExpression()
                                     {
-                                        Value = (pageNo-1)*pageSize
+                                        Value = pageNo * pageSize
                                     }
                                 },
                             }
                         }
-                        
+
                     };
                     return GetWrapperExpression(result);
                 }
@@ -1229,13 +1230,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         }
 
-       
+
 
         return GetWrapperExpression(sqlExpression);
     }
 
 
-    private SqlPropertyExpression GetSqlPropertyExpression(string tableName,string propertyName)
+    private SqlPropertyExpression GetSqlPropertyExpression(string tableName, string propertyName)
     {
         return new SqlPropertyExpression()
         {
@@ -1660,10 +1661,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             var tableName = DbQueryUtil.GetTableName(queryable.ElementType);
             var tableAlias = GetTableAlias();
-           var tableInfo = new TableDetailInfo(queryable.ElementType)
-           {
-               TableAlias = tableAlias
-           };
+            var tableInfo = new TableDetailInfo(queryable.ElementType)
+            {
+                TableAlias = tableAlias
+            };
             tableNameAliasMapping.TryAdd(tableName, tableInfo);
             if (databaseUnit.TableNameMapping != null)
             {
@@ -1986,7 +1987,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 if (table is WrapperExpression { SqlExpression: SqlIdentifierExpression tableIdentifierExpression } wrapperExpression)
                 {
                     body = GetSqlPropertyExpression(tableNameAliasMapping[tableIdentifierExpression.Value].TableAlias,
-                        columnName); 
+                        columnName);
                 }
                 else
                 {
@@ -2261,12 +2262,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
                     {
-                        Body =GetSqlPropertyExpression(sqlInfo.TableAlias, sqlInfoColumnInfo.ColumnName),
+                        Body = GetSqlPropertyExpression(sqlInfo.TableAlias, sqlInfoColumnInfo.ColumnName),
                         Alias = GetSqlIdentifierExpression(sqlInfoColumnInfo.PropertyName)
                     });
-                    
+
                 }
-               
+
             }
         }
     }
