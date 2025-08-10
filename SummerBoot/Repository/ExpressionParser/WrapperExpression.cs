@@ -1,4 +1,5 @@
-ï»¿using System;
+using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using SqlParser.Net.Ast.Expression;
 
@@ -8,13 +9,15 @@ public class WrapperExpression : Expression
 {
     /// <summary>
     /// Is the processing completed
-    /// æ˜¯å¦å¤„ç†å®Œæ¯•
+    /// ÊÇ·ñ´¦ÀíÍê±Ï
     /// </summary>
     public bool IsHandled { get; set; }
     public SqlExpression SqlExpression { get; set; }
+
+    public List<SqlSelectItemExpression> SqlSelectItemExpressions { get; set; }
     /// <summary>
     /// Property Type
-    /// å±æ€§ç±»å‹
+    /// ÊôĞÔÀàĞÍ
     /// </summary>
     public Type PropertyType { get; set; }
 }

@@ -742,7 +742,7 @@ namespace ExpressionParser.Test
             var p0 = new DateTime();
             var result = testWhereNewDatetimeRepository.Where(it => it.Time == new TestWhereNewDatetime().Time).ToList();
             var r1MiddleResult = testWhereNewDatetimeRepository.GetParsingResult();
-            Assert.Equal("select * from [TestWhereNewDatetime] as [p0] where([p0].[Time] = @y0)", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Time] as [Time] from [TestWhereNewDatetime] as [p0] where([p0].[Time] = @y0)", r1MiddleResult.Sql);
             Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
             Assert.Equal(p0, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
@@ -803,7 +803,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.Where(it => it.Name == "hzp" && true && it.HaveChildren).Select(it => new { it.Age, it.HaveChildren }).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select [p0].[Age] as Age, [p0].[HaveChildren] as HaveChildren from [Person] as [p0] where((([p0].[Name] = @y0) and(1 = 1)) and([p0].[HaveChildren] = 1))", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] where((([p0].[Name] = @y0) and(1 = 1)) and([p0].[HaveChildren] = 1))", r1MiddleResult.Sql);
             Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
             Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
 
@@ -815,7 +815,7 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.OrderBy(it => it.Age).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            Assert.Equal("select * from [Person] as [p0] order by [p0].[Age] asc", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Age] asc", r1MiddleResult.Sql);
             Assert.Equal(0,r1MiddleResult.Parameters.GetParamInfos.Count);
         }
 
@@ -826,7 +826,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.OrderByDescending(it => it.Age).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select * from [Person] as [p0] order by [p0].[Age] desc", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Age] desc", r1MiddleResult.Sql);
             Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
         }
         [Fact]
@@ -836,7 +836,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.OrderBy(it => it.Age).ThenBy(it => it.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select * from [Person] as [p0] order by [p0].[Age] asc, [p0].[Name] asc", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Age] asc, [p0].[Name] asc", r1MiddleResult.Sql);
             Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
         }
 
@@ -846,7 +846,7 @@ namespace ExpressionParser.Test
             var personRepository = new PersonRepository();
             var r1 = personRepository.OrderBy(it => it.Age).ThenByDescending(it => it.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
-            Assert.Equal("select * from [Person] as [p0] order by [p0].[Age] asc, [p0].[Name] desc", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Age] asc, [p0].[Name] desc", r1MiddleResult.Sql);
             Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
         }
 
@@ -857,7 +857,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.OrderByDescending(it => it.Age).ThenByDescending(it => it.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select * from [Person] as [p0] order by [p0].[Age] desc, [p0].[Name] desc", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Age] desc, [p0].[Name] desc", r1MiddleResult.Sql);
             Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
         }
 
@@ -868,7 +868,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.OrderByDescending(it => it.Age).ThenBy(it => it.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select * from [Person] as [p0] order by [p0].[Age] desc, [p0].[Name] asc", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Age] desc, [p0].[Name] asc", r1MiddleResult.Sql);
             Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
         }
 
@@ -880,7 +880,7 @@ namespace ExpressionParser.Test
             var r1 = personRepository.GroupBy(it => it.Name).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select * from [Person] as [p0] group by [p0].[Name]", r1MiddleResult.Sql);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren] from [Person] as [p0] order by [p0].[Name]", r1MiddleResult.Sql);
             Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
         }
 

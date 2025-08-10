@@ -33,6 +33,8 @@ public class Program
             var s1 = db.Blogs.Skip(1).Where(x => x.Name == "abc").ToQueryString();
             var s2 = db.Blogs.Take(100).Where(x => x.Name == "abc").ToQueryString();
             var s3 = db.Blogs.Skip(1).Take(100).Distinct().Where(x => x.Name == "abc").FirstOrDefault();
+
+            var s4 = db.Blogs.GroupBy(x => x.Name).ToList();
         }
     }
 
