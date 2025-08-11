@@ -1087,9 +1087,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
         var sqlExpression = GetSqlExpression(sourceExpression);
         AddDefaultColumn(sqlExpression);
-        var result = ParsingPage(sourceExpression, 1, 1);
+        var r1 = ParsingPage(sourceExpression, 1, 1);
 
-        return result;
+        return r1;
     }
 
     private AddParentSqlSelectExpressionResult AddParentSqlSelectExpression(SqlSelectExpression sqlSelectExpression, List<SqlSelectItemExpression> newColumns)
