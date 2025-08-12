@@ -975,8 +975,10 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > 0) and([p1].[sbRowNo] <= 1))", r1MiddleResult.Sql);
-            Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > @y0) and([p1].[sbRowNo] <= @y1))", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]
@@ -988,8 +990,10 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > 0) and([p1].[sbRowNo] <= 1))", r1MiddleResult.Sql);
-            Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > @y0) and([p1].[sbRowNo] <= @y1))", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]
@@ -1001,8 +1005,10 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select distinct [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > 0) and([p1].[sbRowNo] <= 1))", r1MiddleResult.Sql);
-            Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select distinct [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > @y0) and([p1].[sbRowNo] <= @y1))", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal(0, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]
@@ -1083,14 +1089,10 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            //Assert.Equal("SELECT [p1].[Name], [p1].[Age], [p1].[HaveChildren] FROM (SELECT [p0].[Name], [p0].[Age], [p0].[HaveChildren],ROW_NUMBER() OVER( ORDER BY (SELECT 1)) AS [ROW] FROM [Person] [p0]) [p1] WHERE [p1].[ROW]>@y0 AND [p1].[ROW]<=@y1", r1MiddleResult.Sql);
-            //Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
-
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
-
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(2, r1MiddleResult.Parameters[1].Value);
+            Assert.Equal("select [p1].[Name] as [Name], [p1].[Age] as [Age], [p1].[HaveChildren] as [HaveChildren] from(select [p0].[Name] as [Name], [p0].[Age] as [Age], [p0].[HaveChildren] as [HaveChildren], ROW_NUMBER()over(order by [p0].[Age]) as sbRowNo from [Person] as [p0]) as p1 where(([p1].[sbRowNo] > @y0) and([p1].[sbRowNo] <= @y1))", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]

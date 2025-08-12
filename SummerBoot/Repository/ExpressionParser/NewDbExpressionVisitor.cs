@@ -181,7 +181,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         //If no fields are selected, all fields are defaulted
         //在没有选择字段的情况下，默认所有字段
-        AddDefaultColumn(result);
+        AddDefaultColumns(result);
         expressionTreeParsingResult = new ExpressionTreeParsingResult()
         {
             Sql = result.ToSql(dbType).Trim(),
@@ -1086,13 +1086,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
         var sqlExpression = GetSqlExpression(sourceExpression);
-        AddDefaultColumn(sqlExpression);
-        var r1 = ParsingPage(sourceExpression, 1, 1);
+        AddDefaultColumns(sqlExpression);
+        var r1 = ParsingPage(sourceExpression, 0, 1);
 
         return r1;
     }
 
-    private AddParentSqlSelectExpressionResult AddParentSqlSelectExpression(SqlSelectExpression sqlSelectExpression, List<SqlSelectItemExpression> newColumns)
+    private AddParentSqlSelectExpressionResult AddParentSqlSelectExpression(SqlSelectExpression sqlSelectExpression, Action<SqlSelectQueryExpression> childrenSqlSelectExpression)
     {
         if (sqlSelectExpression.Query is SqlSelectQueryExpression sqlSelectQueryExpression)
         {
@@ -1114,9 +1114,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 }
             }
 
-            if (newColumns.HasValue())
+            if (childrenSqlSelectExpression != null)
             {
-                sqlSelectQueryExpression.Columns.AddRange(newColumns);
+                childrenSqlSelectExpression(sqlSelectQueryExpression);
             }
             sqlSelectExpression.Alias = new SqlIdentifierExpression()
             {
@@ -1144,7 +1144,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     }
 
 
-    public virtual Expression ParsingPage(Expression sourceExpression, int pageNo, int pageSize)
+    public virtual Expression ParsingPage(Expression sourceExpression, int offset, int pageSize)
     {
         var sqlExpression = GetSqlExpression(sourceExpression);
         var isNeedReset = databaseUnit.IsSqlServer && databaseUnit.SqlServerVersion < 11;
@@ -1189,9 +1189,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
 
                     var tempResult = AddParentSqlSelectExpression(sqlSelectExpression,
-                        new List<SqlSelectItemExpression>()
+                        x =>
                         {
-                            new SqlSelectItemExpression()
+                            x.Columns.Add(new SqlSelectItemExpression()
                             {
                                 Body = new SqlFunctionCallExpression()
                                 {
@@ -1208,7 +1208,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                                 {
                                     Value = "sbRowNo"
                                 }
-                            }
+                            });
                         });
 
                     sqlSelectExpression = tempResult.SqlSelectExpression;
@@ -1219,20 +1219,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         {
                             Left = pageColumnExpression,
                             Operator = SqlBinaryOperator.GreaterThen,
-                            Right = new SqlNumberExpression()
-                            {
-                                Value = (pageNo - 1) * pageSize
-                            }
+                            Right = GetSqlVariableExpression(offset)
                         },
                         Operator = SqlBinaryOperator.And,
                         Right = new SqlBinaryExpression()
                         {
                             Left = pageColumnExpression,
                             Operator = SqlBinaryOperator.LessThenOrEqualTo,
-                            Right = new SqlNumberExpression()
-                            {
-                                Value = pageNo * pageSize
-                            }
+                            Right = GetSqlVariableExpression(offset + pageSize)
                         },
                     };
                     if (sqlSelectExpression.Query is SqlSelectQueryExpression tempSqlSelectQueryExpression)
@@ -1244,14 +1238,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
             sqlSelectQueryExpression.Limit = new SqlLimitExpression()
             {
-                Offset = new SqlNumberExpression()
-                {
-                    Value = pageNo
-                },
-                RowCount = new SqlNumberExpression()
-                {
-                    Value = 1
-                },
+                Offset = GetSqlVariableExpression(offset),
+                RowCount = GetSqlVariableExpression(pageSize)
             };
 
         }
@@ -1285,6 +1273,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             Value = value
         });
     }
+
+    private SqlVariableExpression GetSqlVariableExpression(object value)
+    {
+        var parameterAlias = GetParameterAlias();
+        this.parameters.Add(parameterAlias, value);
+        return new SqlVariableExpression()
+        {
+            Name = parameterAlias,
+            Prefix = prefix
+        };
+    }
+
     public virtual Expression VisitDistinctCall(MethodCallExpression firstOrDefaultCall)
     {
         var methodName = firstOrDefaultCall.Method.Name;
@@ -1363,61 +1363,40 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return selectExpression;
     }
 
-    public virtual Expression VisitSkipTakeCall(MethodCallExpression skipTakExpression)
+    public virtual Expression VisitSkipTakeCall(MethodCallExpression skipTakeExpression)
     {
-        var methodName = skipTakExpression.Method.Name;
-        var sourceExpression = this.Visit(skipTakExpression.Arguments[0]);
-        var countExpression = this.Visit(skipTakExpression.Arguments[1]);
-        if (!(countExpression is ConstantExpression constantExpression))
+        var methodName = skipTakeExpression.Method.Name;
+        var arg0 = skipTakeExpression.Arguments[0];
+        Expression sourceExpression = null;
+        var offset = 0;
+        var pageSize = -1;
+        if (methodName == nameof(Queryable.Take))
         {
-            throw new ArgumentNullException("count");
-        }
-
-        var count = (int)constantExpression.Value;
-
-        if (sourceExpression is TableExpression table)
-        {
-            var result = new SelectExpression(null, "", table.Columns, table);
-            if (methodName == nameof(Queryable.Skip))
+            var takeSqlExpression = this.Visit(skipTakeExpression.Arguments[1]);
+            var pageSizeSqlExpression = GetSqlNumberExpression(takeSqlExpression);
+            pageSize = (int)pageSizeSqlExpression.Value;
+            if (arg0 is MethodCallExpression { Method: { Name: nameof(Queryable.Skip) } } leftMethodCallExpression)
             {
-                result.Skip = count;
-            }
-            else if (methodName == nameof(Queryable.Take))
-            {
-                result.Take = count;
+                sourceExpression = this.Visit(leftMethodCallExpression.Arguments[0]);
+                var skipExpression = this.Visit(leftMethodCallExpression.Arguments[1]);
+                var offsetSqlNumberExpression = GetSqlNumberExpression(skipExpression);
+                offset = (int)offsetSqlNumberExpression.Value;
+
             }
             else
             {
-                throw new NotSupportedException(nameof(skipTakExpression));
+                sourceExpression = this.Visit(arg0);
             }
 
-            return result;
-        }
-        else if (sourceExpression is SelectExpression selectExpression)
-        {
-            if (!selectExpression.HasGroupBy)
-            {
-                selectExpression = NestSelectExpression(selectExpression);
-            }
-
-            if (methodName == nameof(Queryable.Skip))
-            {
-                selectExpression.Skip = count;
-            }
-            else if (methodName == nameof(Queryable.Take))
-            {
-                selectExpression.Take = count;
-            }
-            else
-            {
-                throw new NotSupportedException(nameof(skipTakExpression));
-            }
-            return selectExpression;
         }
         else
         {
-            throw new NotSupportedException(nameof(skipTakExpression));
+            sourceExpression = this.Visit(arg0);
         }
+        AddDefaultColumns(sourceExpression);
+        var r1 = ParsingPage(sourceExpression, offset, pageSize);
+
+        return r1;
     }
 
     public virtual Expression VisitWhereCall(MethodCallExpression whereCall)
@@ -1651,14 +1630,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 }),
             };
 
-            result.Query = new SqlSelectQueryExpression()
+            var r1 = new SqlSelectExpression()
             {
-                Columns = new List<SqlSelectItemExpression>(),
-                From = table,
-                OrderBy = new SqlOrderByExpression(),
-                GroupBy = new SqlGroupByExpression()
+                Query = new SqlSelectQueryExpression()
+                {
+                    Columns = new List<SqlSelectItemExpression>(),
+                    From = table,
+                    OrderBy = new SqlOrderByExpression(),
+                    GroupBy = new SqlGroupByExpression()
+                }
             };
-            return GetWrapperExpression(result);
+
+            return GetWrapperExpression(r1);
         }
         else if (constant.Value is string strValue)
         {
@@ -1675,13 +1658,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
             else if (MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
-                var parameterAlias = GetParameterAlias();
-                this.parameters.Add(parameterAlias, strValue);
-                return GetWrapperExpression(new SqlVariableExpression()
-                {
-                    Name = parameterAlias,
-                    Prefix = prefix
-                });
+                var r1 = GetSqlVariableExpression(strValue);
+
+                return GetWrapperExpression(r1);
 
             }
         }
@@ -2220,10 +2199,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return new WrapperExpression() { IsHandled = true };
     }
 
+    private void AddDefaultColumns(Expression expression)
+    {
+        var sqlExpression = GetSqlExpression(expression);
+        AddDefaultColumns(sqlExpression);
+    }
     /// <summary>
     /// 增加默认列
     /// </summary>
-    private void AddDefaultColumn(SqlExpression sqlExpression)
+    private void AddDefaultColumns(SqlExpression sqlExpression)
     {
         if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
@@ -2276,6 +2260,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         if (expression is WrapperExpression { SqlExpression: SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression } wrapperExpression)
         {
             return sqlSelectQueryExpression;
+        }
+        throw new NotSupportedException(nameof(expression));
+    }
+
+    private SqlNumberExpression GetSqlNumberExpression(Expression expression)
+    {
+        if (expression is WrapperExpression { SqlExpression: SqlNumberExpression sqlNumberExpression } wrapperExpression)
+        {
+            return sqlNumberExpression;
         }
         throw new NotSupportedException(nameof(expression));
     }
