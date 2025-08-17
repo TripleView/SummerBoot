@@ -14,7 +14,7 @@ public class WrapperExpression : Expression
     public bool IsHandled { get; set; }
     public SqlExpression SqlExpression { get; set; }
 
-    public List<SqlSelectItemExpression> SqlSelectItemExpressions { get; set; }
+    public List<SqlExpression> SqlExpressions { get; set; }
     /// <summary>
     /// Property Type
     ///  Ù–‘¿‡–Õ

@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics.X86;
 using FreeSql.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using SqlSugar;
@@ -33,8 +34,9 @@ public class Program
             var s1 = db.Blogs.Skip(1).Where(x => x.Name == "abc").ToQueryString();
             var s2 = db.Blogs.Take(100).Where(x => x.Name == "abc").ToQueryString();
             var s3 = db.Blogs.Skip(1).Take(100).Distinct().Where(x => x.Name == "abc").FirstOrDefault();
-
             var s4 = db.Blogs.GroupBy(x => x.Name).ToList();
+            var s5 = db.Blogs.Select(it => new { it.Name, Address = "abc" }).ToList();
+            var s6=db.Blogs.Where(x => false).ToList();
         }
     }
 
