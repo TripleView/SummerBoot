@@ -1218,10 +1218,10 @@ namespace ExpressionParser.Test
             var r1 = personRepository.GroupBy(it => it.Name).Select(it => new { it.Key, Count = it.Sum(x => x.Age) }).Skip(1).Take(1).ToList();
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select `p0`.`Name` as `Name`, `p0`.`Age` as `Age`, `p0`.`HaveChildren` as `HaveChildren` from `Person` as `p0` limit @y0,@y1", r1MiddleResult.Sql);
+            Assert.Equal("select `p0`.`Name` as `Key`, Sum(`p0`.`Age`) as `Count` from `Person` as `p0` group by `p0`.`Name` limit @y0,@y1", r1MiddleResult.Sql);
             Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
-            Assert.Equal(5, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
-            Assert.Equal(int.MaxValue, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]
