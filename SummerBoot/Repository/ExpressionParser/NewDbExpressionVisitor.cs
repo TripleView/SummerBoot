@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -248,6 +249,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         return expressionResult;
     }
+
     public virtual Expression VisitMultiQueryOrderBy(MultiQueryOrderByAdapterExpression orderByAdapterExpression)
     {
         methodCallStack.Push(nameof(RepositoryMethod.MultiQueryOrderBy));
@@ -324,6 +326,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         throw new NotSupportedException(methodName);
     }
+
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         var method = node.Method;
@@ -348,6 +351,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     throw new NotSupportedException("get_Item");
                 }
+
                 break;
             case nameof(Queryable.Where):
             case nameof(QueryableMethodsExtension.OrWhere):
@@ -388,6 +392,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     break;
                 }
+
                 methodCallStack.Push(methodName);
                 var result5 = this.VisitDistinctCall(node);
                 var lastMethodCallName5 = methodCallStack.Pop();
@@ -410,6 +415,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     break;
                 }
+
                 methodCallStack.Push(methodName);
                 var result8 = this.VisitMaxMinSumAvgCall(node);
                 var lastMethodCallName8 = methodCallStack.Pop();
@@ -457,250 +463,47 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             return GetWrapperExpression(sqlFunctionCallExpression);
         }
 
-
-
-        var containsMethod = typeof(string).GetMethod("Contains", new Type[] { typeof(string) });
-        var startsWithMethod = typeof(string).GetMethod("StartsWith", new Type[] { typeof(string) });
-        var endsWithMethod = typeof(string).GetMethod("EndsWith", new Type[] { typeof(string) });
-
-        var stringMethodLikeInfoList = new List<MethodInfo>
-            {
-                containsMethod,
-                startsWithMethod,
-                endsWithMethod
-            };
-
-        var trimMethod = typeof(string).GetMethod("Trim", new Type[] { });
-        var trimLeftMethod = typeof(string).GetMethod("TrimStart", new Type[] { });
-        var trimRightMethod = typeof(string).GetMethod("TrimEnd", new Type[] { });
-        var toUpperMethod = typeof(string).GetMethod("ToUpper", new Type[] { });
-        var toLowerMethod = typeof(string).GetMethod("ToLower", new Type[] { });
-
-        var stringMethodTrimUpperLowerInfoList = new List<MethodInfo>
-            {
-                trimMethod,
-                trimLeftMethod,
-                trimRightMethod,
-                toUpperMethod,
-                toLowerMethod
-            };
-
         if (method.DeclaringType == null)
         {
             throw new NotSupportedException(methodName);
         }
 
-        //处理string
-        if (method.DeclaringType == typeof(string))
+        var d = DefaultFunctionCall.Contains == method;
+        if (databaseUnit.SqlFunctionMappings.TryGetValue(method, out var callbackFunc))
         {
-            if (stringMethodLikeInfoList.Contains(node.Method))
+            var methodBodyExpression = this.Visit(node.Object);
+            var methodBody = GetSqlExpression(methodBodyExpression);
+            var parameterSqlExpressions = new List<SqlExpression>();
+            if (node.Arguments.Count > 0)
             {
-                var objectExpression = this.Visit(node.Object);
-                var likeLeft = "";
-                var likeRight = "";
-                if (node.Method == containsMethod)
+                foreach (var nodeArgument in node.Arguments)
                 {
-                    likeLeft = "%";
-                    likeRight = "%";
-                }
-                else if (node.Method == startsWithMethod)
-                {
-                    likeLeft = "";
-                    likeRight = "%";
-                }
-                else if (node.Method == endsWithMethod)
-                {
-                    likeLeft = "%";
-                    likeRight = "";
-                }
-                var leftSqlExpression = GetSqlExpression(objectExpression);
-                if (node.Arguments.Count > 0)
-                {
-                    Expression sqlConstExpression = null;
-                    //it.Name.Contains("hzp")
-                    if (node.Arguments[0] is ConstantExpression constantExpression)
+                    var nodeArgumentExpression = this.Visit(nodeArgument);
+                    var parameterSqlExpression = GetSqlExpression(nodeArgumentExpression);
+                    if (parameterSqlExpression is SqlStringExpression sqlStringExpression)
                     {
-                        sqlConstExpression = GetConstExpression(constantExpression);
-                    }
-                    //it.Name.Contains(pet.Name)
-                    else if (node.Arguments[0] is MemberExpression memberExpression)
-                    {
-                        sqlConstExpression = this.Visit(memberExpression);
-                    }
-                    else
-                    {
-                        sqlConstExpression = this.Visit(node.Arguments[0]);
-                    }
-                    AddLikeWildcards(sqlConstExpression, likeLeft, likeRight);
-                    var rightSqlExpression = GetSqlExpression(sqlConstExpression);
-                    var binaryExpression = new SqlBinaryExpression()
-                    {
-                        Left = leftSqlExpression,
-                        Operator = SqlBinaryOperator.Like,
-                        Right = rightSqlExpression
-                    };
-
-                    return GetWrapperExpression(binaryExpression);
-                }
-                else
-                {
-                    throw new NotSupportedException(methodName);
-                }
-
-            }
-            else if (stringMethodTrimUpperLowerInfoList.Contains(node.Method))
-            {
-                var objectExpression = this.Visit(node.Object);
-
-                var sqlExpression = GetSqlExpression(objectExpression);
-                var tempMethodName = "";
-                if (node.Method == trimMethod)
-                {
-                    tempMethodName = "trim";
-                }
-                else if (node.Method == trimLeftMethod)
-                {
-                    tempMethodName = "ltrim";
-                }
-                else if (node.Method == trimRightMethod)
-                {
-                    tempMethodName = "rtrim";
-                }
-                else if (node.Method == toUpperMethod)
-                {
-                    tempMethodName = "upper";
-                }
-                else if (node.Method == toLowerMethod)
-                {
-                    tempMethodName = "lower";
-                }
-                var result = new SqlFunctionCallExpression()
-                {
-                    Name = new SqlIdentifierExpression()
-                    {
-                        Value = tempMethodName
-                    },
-                    Arguments = new List<SqlExpression>()
-                    {
-                        sqlExpression
-                    }
-                };
-
-                return GetWrapperExpression(result);
-                if (objectExpression is ColumnExpression columnExpression)
-                {
-                    if (node.Method == trimMethod)
-                    {
-                        columnExpression.FunctionName = "TRIM";
-                    }
-                    else if (node.Method == trimLeftMethod)
-                    {
-                        columnExpression.FunctionName = "LTRIM";
-                    }
-                    else if (node.Method == trimRightMethod)
-                    {
-                        columnExpression.FunctionName = "RTRIM";
-                    }
-                    else if (node.Method == toUpperMethod)
-                    {
-                        columnExpression.FunctionName = "UPPER";
-                    }
-                    else if (node.Method == toLowerMethod)
-                    {
-                        columnExpression.FunctionName = "LOWER";
-                    }
-                    return columnExpression;
-
-                }
-
-                else if (objectExpression is ConstantExpression constantExpression && (constantExpression.Type == typeof(string) || constantExpression.Value is null))
-                {
-                    if (constantExpression.Value is null)
-                    {
-                        return constantExpression;
-                    }
-                    if (node.Method == trimMethod)
-                    {
-                        return Expression.Constant(constantExpression.Value.ToString().Trim());
-                    }
-                    else if (node.Method == trimLeftMethod)
-                    {
-                        return Expression.Constant(constantExpression.Value.ToString().TrimStart());
-                    }
-                    else if (node.Method == trimRightMethod)
-                    {
-                        return Expression.Constant(constantExpression.Value.ToString().TrimEnd());
-                    }
-                    else if (node.Method == toUpperMethod)
-                    {
-                        return Expression.Constant(constantExpression.Value.ToString().ToUpper());
-                    }
-                    else if (node.Method == toLowerMethod)
-                    {
-                        return Expression.Constant(constantExpression.Value.ToString().ToLower());
-                    }
-                    return constantExpression;
-                }
-                else
-                {
-                    throw new NotSupportedException($"not support method name:{methodName}");
-                }
-
-            }
-            else if (methodName == "Equals" && node.Arguments.Count == 1)
-            {
-                var objectExpression = this.Visit(node.Object);
-                var left = GetSqlExpression(objectExpression);
-                var constExpression = this.Visit(node.Arguments[0]);
-                var right = GetSqlExpression(constExpression);
-                var binaryExpression = new SqlBinaryExpression()
-                {
-                    Left = left,
-                    Operator = SqlBinaryOperator.EqualTo,
-                    Right = right
-                };
-
-                return GetWrapperExpression(binaryExpression);
-                if (objectExpression is ColumnExpression columnExpression)
-                {
-                    if (node.Arguments[0] is ConstantExpression constantExpression)
-                    {
-                        var whereConditionExpression = new WhereConditionExpression(columnExpression, "=", constantExpression.Value);
-                        return whereConditionExpression;
-                    }
-                    else if (node.Arguments[0] is MemberExpression memberExpression)
-                    {
-                        var memberResultExpression = this.Visit(memberExpression);
-                        if (memberResultExpression is ConstantExpression constantExpression2)
-                        {
-                            var whereConditionExpression2 = new WhereConditionExpression(columnExpression, "=", constantExpression2.Value);
-                            return whereConditionExpression2;
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(methodName);
-                        }
-                    }
-                    else
-                    {
-                        throw new NotSupportedException(methodName);
+                        parameterSqlExpression = GetSqlVariableExpression(sqlStringExpression.Value);
                     }
 
-                }
-                else
-                {
-                    throw new NotSupportedException(methodName);
+                    parameterSqlExpressions.Add(parameterSqlExpression);
                 }
             }
-            else
+
+            var callResult = callbackFunc(new FunctionCallInfo()
             {
-                throw new NotSupportedException(methodName);
-            }
+                Body = methodBody,
+                DynamicParameters = this.parameters,
+                FunctionParameters = parameterSqlExpressions,
+                AddParameter = this.GetSqlVariableExpression
+            });
+
+            return GetWrapperExpression(callResult);
         }
         else if (method.DeclaringType == typeof(DateTime))
         {
             var date = this.GetValue(node);
-            return ConstantExpression.Constant(date);
+            var r1 = GetSqlVariableExpression(date);
+            return GetWrapperExpression(r1);
         }
         else
         {
@@ -737,23 +540,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
                 var i = 1;
                 var sqlInExpressions = new List<SqlInExpression>();
-                var parameterNames = new List<string>();
+                var sqlVariableExpressions = new List<SqlVariableExpression>();
                 foreach (var value in values)
                 {
-                    var parameterName = GetParameterAlias();
-                    parameterNames.Add(parameterName);
-                    this.parameters.Add(parameterName, value);
-                    if ((i != 1 && i % 500 == 0) || i == count)
+                    var sqlVariableExpression = GetSqlVariableExpression(value);
+
+                    sqlVariableExpressions.Add(sqlVariableExpression);
+                    if ((i >= 500 && i % 500 == 0) || i == count)
                     {
                         var targetList = new List<SqlExpression>();
-                        foreach (var name in parameterNames)
-                        {
-                            targetList.Add(new SqlVariableExpression()
-                            {
-                                Prefix = prefix,
-                                Name = name
-                            });
-                        }
+                        targetList.AddRange(sqlVariableExpressions);
+
                         var result = new SqlInExpression()
                         {
                             Body = body,
@@ -761,7 +558,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         };
                         sqlInExpressions.Add(result);
 
-                        parameterNames.Clear();
+                        sqlVariableExpressions.Clear();
                     }
 
                     i++;
@@ -783,20 +580,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
                     return GetWrapperExpression(first);
                 }
-                else
-                {
-                    return GetWrapperExpression(sqlInExpressions.First());
-                }
-
-            }
-            else
-            {
-                var date = this.GetValue(node);
-                return ConstantExpression.Constant(date);
+                return GetWrapperExpression(sqlInExpressions.First());
             }
         }
 
-        return node;
+        throw new NotSupportedException(
+            $"not support method {methodName},You can call the function AddSqlFunctionMapping in DatabaseUnit to add mapping");
     }
 
     /// <summary>
@@ -812,6 +601,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             e = ((UnaryExpression)e).Operand;
         }
         return e;
+    }
+
+    private SqlExpression ChangeSqlStringExpressionToSqlVariableExpression(SqlExpression sqlExpression)
+    {
+        if (sqlExpression is SqlStringExpression sqlStringExpression)
+        {
+            return GetSqlVariableExpression(sqlStringExpression.Value);
+        }
+
+        return sqlExpression;
     }
 
     protected override Expression VisitBinary(BinaryExpression binaryExpression)
@@ -832,7 +631,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             AdaptingBooleanProperties(leftExpression, rightExpression);
             var left = GetSqlExpression(leftExpression);
             var right = GetSqlExpression(rightExpression);
-
+            left = ChangeSqlStringExpressionToSqlVariableExpression(left);
+            right = ChangeSqlStringExpressionToSqlVariableExpression(right);
             var result = new SqlBinaryExpression()
             {
                 Left = left,
@@ -1086,11 +886,36 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
 
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
+
         var sqlExpression = GetSqlExpression(sourceExpression);
+        if (firstOrDefaultCall.Arguments.Count == 2)
+        {
+            var lambda = (LambdaExpression)this.StripQuotes(firstOrDefaultCall.Arguments[1]);
+            var where = GetSqlExpression(this.Visit(lambda.Body));
+            MergeWhereExpression(sourceExpression, where);
+        }
         AddDefaultColumns(sqlExpression);
         var r1 = ParsingPage(sourceExpression, 0, 1);
 
         return r1;
+    }
+
+    private void MergeWhereExpression(Expression sourceExpression, SqlExpression where)
+    {
+        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sourceExpression);
+        if (sqlSelectQueryExpression.Where != null)
+        {
+            sqlSelectQueryExpression.Where = new SqlBinaryExpression()
+            {
+                Left = sqlSelectQueryExpression.Where,
+                Operator = SqlBinaryOperator.And,
+                Right = where
+            };
+        }
+        else
+        {
+            sqlSelectQueryExpression.Where = where;
+        }
     }
 
     private AddParentSqlSelectExpressionResult AddParentSqlSelectExpression(SqlSelectExpression sqlSelectExpression, Action<SqlSelectQueryExpression> childrenSqlSelectExpression)
@@ -1514,7 +1339,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         else if (bodyResult is WrapperExpression { SqlExpressions: List<SqlExpression> list })
         {
-            sqlSelectItemExpressions.AddRange(list.Select(x=>(SqlSelectItemExpression)x).ToList());
+            sqlSelectItemExpressions.AddRange(list.Select(x => (SqlSelectItemExpression)x).ToList());
         }
         else
         {
@@ -1551,14 +1376,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 var bodySqlExpression = GetSqlExpression(bodyExpression);
                 _lastGroupByExpressions.Add(bodySqlExpression);
                 sourceSqlExpression?.GroupBy.Items.Add(bodySqlExpression);
-            } else if (wrapperExpression.SqlExpressions.HasValue())
+            }
+            else if (wrapperExpression.SqlExpressions.HasValue())
             {
                 _lastGroupByExpressions.AddRange(wrapperExpression.SqlExpressions);
                 sourceSqlExpression?.GroupBy.Items.AddRange(wrapperExpression.SqlExpressions);
             }
         }
 
-       
+
 
         return sourceExpression;
     }
@@ -1720,8 +1546,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var objectMember = Expression.Convert(member, typeof(object));
         var getterLambda = Expression.Lambda<Func<object>>(objectMember);
         var getter = getterLambda.Compile();
-        var result = getter();
-        return result;
+        var r = getter();
+        return r;
     }
 
     private Expression GetConstExpression(Expression member)
@@ -1742,7 +1568,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 Value = boolValue
             };
         }
-        else if (MethodName == nameof(Queryable.Select) && result is string str)
+        else if (result is string str)
         {
             tempR = new SqlStringExpression()
             {
@@ -1751,33 +1577,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else
         {
-            var parameterName = GetParameterAlias();
-            tempR = new SqlVariableExpression()
-            {
-                Prefix = prefix,
-                Name = parameterName
-            };
-
-            this.parameters.Add(parameterName, result);
+            tempR = GetSqlVariableExpression(result);
         }
 
         return GetWrapperExpression(tempR);
 
     }
 
-    /// <summary>
-    /// Add a wildcard like
-    /// 添加like的通配符
-    /// </summary>
-    /// <returns></returns>
-    private void AddLikeWildcards(Expression expression, string likeLeft = "", string likeRight = "")
-    {
-        var sqlExpression = GetSqlExpression(expression);
-        if (sqlExpression is SqlVariableExpression sqlVariableExpression && this.parameters.GetParamInfos[sqlVariableExpression.Name].Value is string str && (likeLeft.HasText() || likeRight.HasText()))
-        {
-            this.parameters.GetParamInfos[sqlVariableExpression.Name].Value = likeLeft + str + likeRight;
-        }
-    }
+
 
     private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null)
     {
@@ -2194,7 +2001,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     };
                 }
 
-                sqlSelectItemExpression.Alias =GetSqlIdentifierExpression(DbQueryUtil.GetColumnName(memberInfo));
+                sqlSelectItemExpression.Alias = GetSqlIdentifierExpression(DbQueryUtil.GetColumnName(memberInfo));
                 list.Add(sqlSelectItemExpression);
             }
             else if (MethodName == nameof(Queryable.GroupBy))

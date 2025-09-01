@@ -26,7 +26,10 @@ public class Program
             // 查询
             var blog = db.Blogs.FirstOrDefault();
             Console.WriteLine($"查询到博客：{blog?.Name}");
-
+            var newBlog = new Blog()
+            {
+                Name = "abc"
+            };
             // 查询所有
             var blogs = db.Blogs.ToList();
             Console.WriteLine($"当前博客数量：{blogs.Count}");
@@ -37,6 +40,7 @@ public class Program
             var s4 = db.Blogs.GroupBy(x => x.Name).ToList();
             var s5 = db.Blogs.Select(it => new { it.Name, Address = "abc" }).ToList();
             var s6=db.Blogs.Where(x => false).ToList();
+            var s7 = db.Blogs.Where(x => x.Name.StartsWith( newBlog.Name.Trim())).ToList();
         }
     }
 

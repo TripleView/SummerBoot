@@ -7,10 +7,15 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Reflection;
 using SummerBoot.Core;
 using System.Security.Claims;
+using System.ComponentModel;
+using System.Linq.Expressions;
+using SqlParser.Net.Ast.Expression;
+using SummerBoot.Repository.ExpressionParser;
 
 namespace SummerBoot.Repository
 {
@@ -19,6 +24,7 @@ namespace SummerBoot.Repository
     public delegate void RepositoryLogEvent(DbQueryResult dbQueryResult);
 
     public delegate string RepositoryReplaceSqlEvent(string sql);
+
     /// <summary>
     /// 数据库单元
     /// </summary>
@@ -40,6 +46,12 @@ namespace SummerBoot.Repository
         internal bool IsDataMigrateMode { get; private set; }
 
         internal Type DataMigrateRepositoryType { get; private set; }
+
+        /// <summary>
+        /// 数据库函数映射
+        /// </summary>
+        public Dictionary<MethodInfo, Func<FunctionCallInfo, SqlExpression>> SqlFunctionMappings { get; set; } =
+            new Dictionary<MethodInfo, Func<FunctionCallInfo, SqlExpression>>();
         /// <summary>
         /// 添加数据迁移功能
         /// Add data migration function
@@ -94,6 +106,11 @@ namespace SummerBoot.Repository
             }
         }
 
+        public void AddSqlFunctionMapping(MethodInfo methodInfo, Func<FunctionCallInfo, SqlExpression> callBackFunc)
+        {
+            CheckHelper.NotNull(methodInfo, nameof(methodInfo));
+            this.SqlFunctionMappings[methodInfo] = callBackFunc;
+        }
         public void OnBeforeInsert(object entity)
         {
             if (BeforeInsert != null)
@@ -140,6 +157,103 @@ namespace SummerBoot.Repository
             this.ParameterTypeMaps = SbUtil.CsharpTypeToDbTypeMap.DeepClone();
             this.Id = Guid.NewGuid();
             TypeHandlers.TryAdd(Id, new Dictionary<Type, Type>());
+            InitDefaultFunctionCall();
+        }
+
+        private SqlExpression StringBinaryMethodHandler(FunctionCallInfo x, SqlBinaryOperator sqlBinaryOperator, string likeLeft = "", string likeRight = "")
+        {
+            var p = x.FunctionParameters.First();
+
+            if (sqlBinaryOperator.Equals( SqlBinaryOperator.Like))
+            {
+                AddLikeWildcards(p, x.DynamicParameters, likeLeft, likeRight);
+            }
+            
+            return new SqlBinaryExpression()
+            {
+                Left = x.Body,
+                Operator = sqlBinaryOperator,
+                Right = p
+            };
+        }
+
+        private SqlExpression StringOtherMethodHandler(FunctionCallInfo x, string databaseFunctionName, Func<string, string> methodCallBack)
+        {
+            if (x.Body is SqlStringExpression str)
+            {
+                str.Value = methodCallBack(str.Value);
+                return str;
+            }
+            return GetSqlFunctionCallExpression(databaseFunctionName, new List<SqlExpression>() { x.Body });
+        }
+
+        private void InitDefaultFunctionCall()
+        {
+            var stringLikeMethodMappings = new List<KeyValuePair<MethodInfo, KeyValuePair<string, string>>>()
+            {
+                new KeyValuePair<MethodInfo, KeyValuePair<string, string>>(DefaultFunctionCall.Contains,
+                    new KeyValuePair<string, string>("%", "%")),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, string>>(DefaultFunctionCall.StartsWith,
+                    new KeyValuePair<string, string>("", "%")),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, string>>(DefaultFunctionCall.EndsWith,
+                    new KeyValuePair<string, string>("%", "")),
+            };
+            foreach (var stringLikeMethodDic in stringLikeMethodMappings)
+            {
+                this.AddSqlFunctionMapping(stringLikeMethodDic.Key, x =>
+                {
+                    return StringBinaryMethodHandler(x, SqlBinaryOperator.Like, stringLikeMethodDic.Value.Key, stringLikeMethodDic.Value.Value);
+                });
+            }
+
+            var stringOtherMethodMappings = new List<KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>>()
+            {
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.Trim,new KeyValuePair<string, Func<string, string>>("trim",p => p.Trim())),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.TrimStart,new KeyValuePair<string, Func<string, string>>("ltrim",p => p.TrimStart())),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.TrimEnd,new KeyValuePair<string, Func<string, string>>("rtrim",p => p.TrimEnd())),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.ToLower,new KeyValuePair<string, Func<string, string>>("lower",p => p.ToLower())),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.ToLowerInvariant,new KeyValuePair<string, Func<string, string>>("lower",p => p.ToLowerInvariant())),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.ToUpper,new KeyValuePair<string, Func<string, string>>("upper",p => p.ToUpper())),
+                new KeyValuePair<MethodInfo, KeyValuePair<string, Func<string, string>>>(DefaultFunctionCall.ToUpperInvariant,new KeyValuePair<string, Func<string, string>>("upper",p => p.ToUpperInvariant())),
+            };
+
+            foreach (var allMethodDic in stringOtherMethodMappings)
+            {
+                this.AddSqlFunctionMapping(allMethodDic.Key, x =>
+                {
+                    return StringOtherMethodHandler(x, allMethodDic.Value.Key, allMethodDic.Value.Value);
+                });
+            }
+
+            this.AddSqlFunctionMapping(DefaultFunctionCall.Equals, x =>
+            {
+                return StringBinaryMethodHandler(x, SqlBinaryOperator.EqualTo);
+            });
+        }
+
+        private SqlFunctionCallExpression GetSqlFunctionCallExpression(string functionName, List<SqlExpression> arguments)
+        {
+            return new SqlFunctionCallExpression()
+            {
+                Name = new SqlIdentifierExpression()
+                {
+                    Value = functionName
+                },
+                Arguments = arguments
+            };
+        }
+
+        /// <summary>
+        /// Add a wildcard like
+        /// 添加like的通配符
+        /// </summary>
+        /// <returns></returns>
+        private void AddLikeWildcards(SqlExpression sqlExpression, DynamicParameters parameters, string likeLeft = "", string likeRight = "")
+        {
+            if (sqlExpression is SqlVariableExpression sqlVariableExpression && parameters.GetParamInfos[sqlVariableExpression.Name].Value is string str && (likeLeft.HasText() || likeRight.HasText()))
+            {
+                parameters.GetParamInfos[sqlVariableExpression.Name].Value = likeLeft + str + likeRight;
+            }
         }
 
         /// <summary>
