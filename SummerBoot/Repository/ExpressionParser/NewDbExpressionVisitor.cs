@@ -480,10 +480,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     var nodeArgumentExpression = this.Visit(nodeArgument);
                     var parameterSqlExpression = GetSqlExpression(nodeArgumentExpression);
-                    if (parameterSqlExpression is SqlStringExpression sqlStringExpression)
-                    {
-                        parameterSqlExpression = GetSqlVariableExpression(sqlStringExpression.Value);
-                    }
+                    parameterSqlExpression = ChangeSqlStringExpressionToSqlVariableExpression(parameterSqlExpression);
 
                     parameterSqlExpressions.Add(parameterSqlExpression);
                 }
@@ -629,18 +626,38 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var rightExpression = this.Visit(binaryExpression.Right);
             var leftExpression = this.Visit(binaryExpression.Left);
             AdaptingBooleanProperties(leftExpression, rightExpression);
+
             var left = GetSqlExpression(leftExpression);
             var right = GetSqlExpression(rightExpression);
             left = ChangeSqlStringExpressionToSqlVariableExpression(left);
             right = ChangeSqlStringExpressionToSqlVariableExpression(right);
-            var result = new SqlBinaryExpression()
+
+            var leftIsNull = left is SqlNullExpression;
+            var rightIsNull = right is SqlNullExpression;
+            if (leftIsNull || rightIsNull)
+            {
+                if (sqlBinaryOperator.Equals(SqlBinaryOperator.EqualTo))
+                {
+                    sqlBinaryOperator = SqlBinaryOperator.Is;
+                }
+                if (sqlBinaryOperator.Equals(SqlBinaryOperator.NotEqualTo))
+                {
+                    sqlBinaryOperator = SqlBinaryOperator.IsNot;
+                }
+
+                if (leftIsNull)
+                {
+                    (left, right) = (right, left);
+                }
+            }
+            var tempResult = new SqlBinaryExpression()
             {
                 Left = left,
                 Right = right,
                 Operator = sqlBinaryOperator
             };
 
-            return GetWrapperExpression(result);
+            return GetWrapperExpression(tempResult);
         }
         else if (MethodName == nameof(RepositoryMethod.MultiQueryWhere))
         {
@@ -2066,6 +2083,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         if (expression is WrapperExpression wrapperExpression)
         {
             return wrapperExpression.SqlExpression;
+        }
+        else if (expression is ConstantExpression { Value: null } constantExpression)
+        {
+            return new SqlNullExpression();
         }
 
         throw new NotSupportedException(nameof(expression));
