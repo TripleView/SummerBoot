@@ -1,7 +1,8 @@
-ï»¿using System;
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using SummerBoot.Core;
 
 namespace SummerBoot.Repository.ExpressionParser.Util
 {
@@ -9,21 +10,35 @@ namespace SummerBoot.Repository.ExpressionParser.Util
     {
         /// <summary>
         /// Get table name
-        /// è·å–è¡¨å
+        /// »ñÈ¡±íÃû
         /// </summary>
         /// <param name="tableType"></param>
         /// <returns></returns>
-        public static string GetTableName(Type tableType)
+        public static string GetTableName(Type tableType, string leftQualifiers = "", string rightQualifiers = "")
         {
-            //æŸ¥æ‰¾tableAttributeç‰¹æ€§,çœ‹ä¸‹æœ‰æ²¡æœ‰è‡ªå®šä¹‰è¡¨å
+
+            //²éÕÒtableAttributeÌØĞÔ,¿´ÏÂÓĞÃ»ÓĞ×Ô¶¨Òå±íÃû
             var tableAttribute = tableType.GetCustomAttribute<TableAttribute>();
-            //å¦‚æœæ²¡æœ‰è¯¥ç‰¹æ€§ï¼Œç›´æ¥ä½¿ç”¨ç±»åä½œä¸ºè¡¨å
+            //Èç¹ûÃ»ÓĞ¸ÃÌØĞÔ£¬Ö±½ÓÊ¹ÓÃÀàÃû×÷Îª±íÃû
             var tableName = tableAttribute == null ? tableType.Name : tableAttribute.Name;
-            return tableName;
+            var schemaName = tableAttribute == null ? "" : tableAttribute.Schema;
+            var result = "";
+            if (schemaName.HasText())
+            {
+                result += GetQualifiersName(schemaName) + ".";
+            }
+
+            result += GetQualifiersName(tableName);
+            return result;
+        }
+
+        private static string GetQualifiersName(string name)
+        {
+            return  name ;
         }
         /// <summary>
         /// Get column names
-        /// è·å–åˆ—å
+        /// »ñÈ¡ÁĞÃû
         /// </summary>
         /// <param name="memberInfo"></param>
         /// <returns></returns>
@@ -36,7 +51,7 @@ namespace SummerBoot.Repository.ExpressionParser.Util
             var columnAttribute = memberInfo.GetCustomAttribute<ColumnAttribute>();
 
             var columnName = columnAttribute?.Name ?? memberInfo.Name;
-            return columnName;
+            return GetQualifiersName(columnName);
         }
 
     }

@@ -210,10 +210,9 @@ namespace ExpressionParser.Test
             var dogRepository = new DogRepository();
             var r1 = dogRepository.Count(it => it.Name == "sb");
             var r1MiddleResult = dogRepository.GetParsingResult();
-            //Assert.Equal("SELECT Count(*) FROM [Dog] [p0] WHERE  ([p0].[Name] = @y0 )", r1MiddleResult.Sql);
-            //Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal("sb", r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select count(*) from [Dog] as [p0] where([p0].[Name] = @y0)", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("sb", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
 
         [Fact]
@@ -222,10 +221,8 @@ namespace ExpressionParser.Test
             var dogRepository = new DogRepository();
             var r1 = dogRepository.Where(it => it.Active == 1).ToList();
             var r1MiddleResult = dogRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ([p0].[Active] = @y0 )", r1MiddleResult.Sql);
-            //Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Active] as [Active] from [Dog] as [p0] where([p0].[Active] = 1)", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
 
         [Fact]
@@ -235,7 +232,7 @@ namespace ExpressionParser.Test
             var r1 = dogRepository.Where(it => it.Name == null).ToList();
             var r1MiddleResult = dogRepository.GetParsingResult();
             Assert.Equal("select [p0].[Name] as [Name], [p0].[Active] as [Active] from [Dog] as [p0] where([p0].[Name] is null)", r1MiddleResult.Sql);
-
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
 
         [Fact]
@@ -245,7 +242,7 @@ namespace ExpressionParser.Test
             var r1 = dogRepository.Where(it => null == it.Name).ToList();
             var r1MiddleResult = dogRepository.GetParsingResult();
             Assert.Equal("select [p0].[Name] as [Name], [p0].[Active] as [Active] from [Dog] as [p0] where([p0].[Name] is null)", r1MiddleResult.Sql);
-
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
         [Fact]
         public void TestIsNotNull()
@@ -254,6 +251,7 @@ namespace ExpressionParser.Test
             var r1 = dogRepository.Where(it => it.Name != null).ToList();
             var r1MiddleResult = dogRepository.GetParsingResult();
             Assert.Equal("select [p0].[Name] as [Name], [p0].[Active] as [Active] from [Dog] as [p0] where([p0].[Name] is not null)", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
         [Fact]
         public void TestIsNotNull2()
@@ -262,6 +260,7 @@ namespace ExpressionParser.Test
             var r1 = dogRepository.Where(it => null != it.Name).ToList();
             var r1MiddleResult = dogRepository.GetParsingResult();
             Assert.Equal("select [p0].[Name] as [Name], [p0].[Active] as [Active] from [Dog] as [p0] where([p0].[Name] is not null)", r1MiddleResult.Sql);
+            Assert.Empty(r1MiddleResult.Parameters.GetParamInfos);
         }
         [Fact]
         public void TestNullable2()
@@ -269,12 +268,9 @@ namespace ExpressionParser.Test
             var dogRepository = new DogRepository();
             var r1 = dogRepository.Where(it => it.Active == 1 && it.Name == "hzp").ToList();
             var r1MiddleResult = dogRepository.GetParsingResult();
-            //Assert.Equal("SELECT [p0].[Name], [p0].[Active] FROM [Dog] [p0] WHERE  ( ([p0].[Active] = @y0 ) AND  ([p0].[Name] = @y1 )  )", r1MiddleResult.Sql);
-            //Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal("hzp", r1MiddleResult.Parameters[1].Value);
+            Assert.Equal("select [p0].[Name] as [Name], [p0].[Active] as [Active] from [Dog] as [p0] where(([p0].[Active] = 1) and([p0].[Name] = @y0))", r1MiddleResult.Sql);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("hzp", r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
         }
         [Fact]
         public void TestSelect()
@@ -1249,14 +1245,11 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            //Assert.Equal("SELECT DISTINCT `p0`.`Name` As `Key`, SUM(`p0`.`Age`) As `Count` FROM `Person` `p0` GROUP BY `p0`.`Name` LIMIT @y0,@y1", r1MiddleResult.Sql);
-            //Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("select distinct `p0`.`Name` as `Key`, Sum(`p0`.`Age`) as `Count` from `Person` as `p0` group by `p0`.`Name` limit @y0,@y1", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
 
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
-
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[1].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]
@@ -1268,14 +1261,11 @@ namespace ExpressionParser.Test
 
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            //Assert.Equal("SELECT DISTINCT `p0`.`Name` As `Key`, SUM(`p0`.`Age`) As `Count` FROM `Person` `p0` GROUP BY `p0`.`Name` LIMIT @y0,@y1", r1MiddleResult.Sql);
-            //Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
+            Assert.Equal("select distinct `p0`.`Name` as `Key`, Sum(`p0`.`Age`) as `Count` from `Person` as `p0` group by `p0`.`Name` limit @y0,@y1", r1MiddleResult.Sql);
+            Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
 
-            //Assert.Equal("@y0", r1MiddleResult.Parameters[0].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[0].Value);
-
-            //Assert.Equal("@y1", r1MiddleResult.Parameters[1].ParameterName);
-            //Assert.Equal(1, r1MiddleResult.Parameters[1].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
+            Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
         }
 
         [Fact]
@@ -1335,7 +1325,7 @@ namespace ExpressionParser.Test
         {
             var personRepository = new PersonRepository();
             var persion = new Person() { Age = 5, HaveChildren = false, Name = "????" };
-            personRepository.InternalInsert(persion);
+            personRepository.QueryPageAsync<>(persion);
             var r1MiddleResult = personRepository.GetParsingResult();
 
             //Assert.Equal("insert into [Person] ([Name],[Age],[HaveChildren]) values (@Name,@Age,@HaveChildren)", r1MiddleResult.Sql);

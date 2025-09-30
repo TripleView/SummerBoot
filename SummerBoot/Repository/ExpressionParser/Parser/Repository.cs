@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +15,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public Repository(DatabaseUnit databaseUnit)
         {
             Provider = new DbQueryProvider(databaseUnit, this);
-            //æœ€åä¸€ä¸ªè¡¨è¾¾å¼å°†æ˜¯ç¬¬ä¸€ä¸ªIQueryableå¯¹è±¡çš„å¼•ç”¨ã€‚ 
+            //×îºóÒ»¸ö±í´ïÊ½½«ÊÇµÚÒ»¸öIQueryable¶ÔÏóµÄÒıÓÃ¡£ 
             Expression = Expression.Constant(this);
         }
 
@@ -27,7 +27,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public void Init(DatabaseUnit databaseUnit)
         {
             Provider = new DbQueryProvider(databaseUnit, this);
-            //æœ€åä¸€ä¸ªè¡¨è¾¾å¼å°†æ˜¯ç¬¬ä¸€ä¸ªIQueryableå¯¹è±¡çš„å¼•ç”¨ã€‚ 
+            //×îºóÒ»¸ö±í´ïÊ½½«ÊÇµÚÒ»¸öIQueryable¶ÔÏóµÄÒıÓÃ¡£ 
             Expression = Expression.Constant(this);
         }
 
@@ -117,7 +117,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return null;
         }
 
-        public DbQueryResult InternalInsert(T insertEntity)
+        protected DbQueryResult InternalInsert(T insertEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
@@ -128,11 +128,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
         /// <summary>
-        /// å¿«é€Ÿæ‰¹é‡æ’å…¥
+        /// ¿ìËÙÅúÁ¿²åÈë
         /// </summary>
         /// <param name="insertEntity"></param>
         /// <returns></returns>
-        public DbQueryResult InternalFastInsert(List<T> insertEntitys)
+        protected DbQueryResult InternalFastInsert(List<T> insertEntitys)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
@@ -142,7 +142,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return null;
         }
 
-        public DbQueryResult InternalUpdate(T updateEntity)
+        protected DbQueryResult InternalUpdate(T updateEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
@@ -151,7 +151,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return null;
         }
 
-        public DbQueryResult InternalDelete(T deleteEntity)
+        protected DbQueryResult InternalDelete(T deleteEntity)
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {

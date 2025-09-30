@@ -1,4 +1,4 @@
-锘縰sing System.Reflection;
+using System.Reflection;
 
 namespace SummerBoot.Repository.ExpressionParser.Base
 {
@@ -19,8 +19,13 @@ namespace SummerBoot.Repository.ExpressionParser.Base
         /// </summary>
         public PropertyInfo Property { get; set; }
         /// <summary>
-        /// 鍒ゆ柇鏄惁鍙┖
+        /// 判断是否可空
         /// </summary>
         public bool IsNullable { get; set; }
+        /// <summary>
+        /// Ignore during update
+        /// 更新中忽略
+        /// </summary>
+        public bool IsIgnoreWhenUpdate { get; set; }
     }
 }

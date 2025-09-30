@@ -386,7 +386,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 lastMethodCalls.Add(lastMethodCallName6);
                 return result6;
             case nameof(Queryable.Distinct):
-            case nameof(Queryable.Count):
                 //针对group by里的count单独处理
                 if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
                 {
@@ -398,6 +397,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 var lastMethodCallName5 = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName5);
                 return result5;
+            case nameof(Queryable.Count):
+                //针对group by里的count单独处理
+                if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
+                {
+                    break;
+                }
+                methodCallStack.Push(methodName);
+                var result9 = this.VisitCount(node);
+                var lastMethodCallName9 = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName9);
+                return result9;
             case nameof(Queryable.Skip):
             case nameof(Queryable.Take):
                 methodCallStack.Push(methodName);
@@ -1148,6 +1158,43 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else
         {
             throw new NotSupportedException(nameof(firstOrDefaultCall));
+        }
+    }
+
+    public virtual Expression VisitCount(MethodCallExpression countCall)
+    {
+        var sourceExpression = this.Visit(countCall.Arguments[0]);
+        var sqlSourceExpression = GetSqlExpression(sourceExpression);
+        SqlExpression where = null;
+        if (countCall.Arguments.Count == 2)
+        {
+            var lambda = (LambdaExpression)this.StripQuotes(countCall.Arguments[1]);
+            var whereExpression = this.Visit(lambda.Body);
+            where = GetSqlExpression(whereExpression);
+        }
+        if (sqlSourceExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
+        {
+            sqlSelectQueryExpression.Columns.Clear();
+            sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
+            {
+                Body = new SqlFunctionCallExpression()
+                {
+                    Name = new SqlIdentifierExpression()
+                    {
+                        Value = "count"
+                    },
+                    Arguments = new List<SqlExpression>()
+                   {
+                       new SqlAllColumnExpression()
+                   }
+                }
+            });
+            sqlSelectQueryExpression.Where = where;
+            return sourceExpression;
+        }
+        else
+        {
+            throw new NotSupportedException(nameof(countCall));
         }
     }
 
@@ -2017,7 +2064,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         Body = bodySqlExpression,
                     };
                 }
-
+                //todo 重构
                 sqlSelectItemExpression.Alias = GetSqlIdentifierExpression(DbQueryUtil.GetColumnName(memberInfo));
                 list.Add(sqlSelectItemExpression);
             }
@@ -2119,4 +2166,101 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         throw new NotSupportedException(nameof(expression));
     }
+
+    public ExpressionTreeParsingResult Update<T>(T updateEntity)
+    {
+        this.parameters.AddEntity(updateEntity);
+        var table = this.GetTableDetailInfo(typeof(T));
+        var columns = table.ColumnInfos.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
+
+        var keyColumnExpression = table.ColumnInfos.Where(it => it.IsKey).ToList();
+
+        if (!keyColumnExpression.Any())
+        {
+            throw new Exception("Please set the primary key");
+        }
+        
+        var tempR = new SqlUpdateExpression();
+
+        foreach (var column in columns)
+        {
+            tempR.Items.Add(new SqlBinaryExpression()
+            {
+                Left = new SqlIdentifierExpression()
+                {
+                    Value = column.ColumnName
+                },
+                Operator = SqlBinaryOperator.EqualTo,
+                Right = new SqlVariableExpression()
+                {
+                    Name = column.ColumnName,
+                    Prefix = prefix
+                }
+            });
+        }
+
+        SqlBinaryExpression where = null;
+        foreach (var column in keyColumnExpression)
+        {
+            if (where == null)
+            {
+                where = new SqlBinaryExpression()
+                {
+                    Left = new SqlIdentifierExpression()
+                    {
+                        Value = column.ColumnName
+                    },
+                    Operator = SqlBinaryOperator.EqualTo,
+                    Right = new SqlVariableExpression()
+                    {
+                        Name = column.ColumnName,
+                        Prefix = prefix
+                    }
+                };
+            }
+            else
+            {
+                where = new SqlBinaryExpression()
+                {
+                    Left = where.Clone(),
+                    Operator = SqlBinaryOperator.EqualTo,
+                    Right = new SqlBinaryExpression()
+                    {
+                        Left = new SqlIdentifierExpression()
+                        {
+                            Value = column.ColumnName
+                        },
+                        Operator = SqlBinaryOperator.EqualTo,
+                        Right = new SqlVariableExpression()
+                        {
+                            Name = column.ColumnName,
+                            Prefix = prefix
+                        }
+                    }
+                };
+            }
+        }
+
+        tempR.Where = where;
+
+        return new ExpressionTreeParsingResult()
+        {
+            Sql = tempR.ToSql(this.dbType),
+            Parameters = this.parameters
+        };
+    }
+
+    protected TableDetailInfo GetTableDetailInfo(Type type)
+    {
+        var key = "GetTableDetailInfo:" + type.FullName;
+        if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
+        {
+            return (TableDetailInfo)cacheValue;
+        }
+
+        var r1 = new TableDetailInfo(type);
+        SbUtil.CacheDictionary.TryAdd(key, r1);
+        return r1;
+    }
+
 }

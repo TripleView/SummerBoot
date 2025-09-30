@@ -6,10 +6,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using SummerBoot.Core;
+using SummerBoot.Repository.Attributes;
 
 namespace SummerBoot.Repository.ExpressionParser.Base
 {
-    public class TableDetailInfo  
+    public class TableDetailInfo
     {
         public string TableName { get; }
 
@@ -20,12 +21,6 @@ namespace SummerBoot.Repository.ExpressionParser.Base
         /// </summary>
         public string TableAlias { get; set; }
 
-        public string GetSqlSnippetByPropertyName(string propertyName)
-        {
-         
-           var columnName= ColumnInfos.First(it => it.PropertyName == propertyName).ColumnName;
-           return TableName + "." + columnName;
-        }
         public TableDetailInfo(Type type)
         {
 
@@ -41,16 +36,17 @@ namespace SummerBoot.Repository.ExpressionParser.Base
 
             foreach (var propertyInfo in properties)
             {
-                var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
                 var keyAttribute = propertyInfo.GetCustomAttribute<KeyAttribute>();
+                var ignoreWhenUpdateAttribute = propertyInfo.GetCustomAttribute<IgnoreWhenUpdateAttribute>();
 
                 var ci = new ColumnInfo
                 {
-                    ColumnName = columnAttribute?.Name ?? propertyInfo.Name,
+                    ColumnName = DbQueryUtil.GetColumnName(propertyInfo),
                     IsKey = keyAttribute != null,
                     Property = propertyInfo,
                     PropertyName = propertyInfo.Name,
-                    IsNullable = propertyInfo.PropertyType.IsNullable()
+                    IsNullable = propertyInfo.PropertyType.IsNullable(),
+                    IsIgnoreWhenUpdate = ignoreWhenUpdateAttribute != null
                 };
 
                 ColumnInfos.Add(ci);

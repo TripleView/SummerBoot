@@ -1,4 +1,4 @@
-锘縰sing System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -71,7 +71,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public DbQueryResult GetJoinQueryResultByExpression<T>(IRepository<T> repository, IPageable pageable = null)
         {
             var expression = repository.Expression;
-            //杩欎竴姝ュ皢expression杞寲鎴愭垜浠嚜宸辩殑expression
+            //这一步将expression转化成我们自己的expression
 
             //join
             var dbExpressionVisitor = new DbExpressionVisitor();
@@ -187,9 +187,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
                 }
 
-
-
-
             }
 
             if (queryBody is TableExpression tableExpression)
@@ -201,7 +198,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     result.Skip = (pageable.PageNumber - 1) * pageable.PageSize;
                     result.Take = pageable.PageSize;
                 }
-                //灏嗘垜浠嚜宸辩殑expression杞崲鎴恠ql
+                //将我们自己的expression转换成sql
                 queryFormatter.Format(result);
                 var param = queryFormatter.GetDbQueryDetail();
                 return param;
@@ -212,7 +209,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public DbQueryResult GetDbPageQueryResultByExpression(Expression expression)
         {
-            //杩欎竴姝ュ皢expression杞寲鎴愭垜浠嚜宸辩殑expression
+            //这一步将expression转化成我们自己的expression
             var dbExpressionVisitor = new DbExpressionVisitor();
             var middleResult = dbExpressionVisitor.Visit(expression);
             if (middleResult is SelectExpression selectExpression)
@@ -223,7 +220,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                     selectExpression.Take = int.MaxValue;
                 }
             }
-            //灏嗘垜浠嚜宸辩殑expression杞崲鎴恠ql
+            //将我们自己的expression转换成sql
             queryFormatter.Format(middleResult);
             var param = queryFormatter.GetDbQueryDetail();
             return param;

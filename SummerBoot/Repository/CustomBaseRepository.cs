@@ -1,4 +1,4 @@
-ï»¿using SummerBoot.Core;
+using SummerBoot.Core;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -15,7 +15,7 @@ using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository
 {
-    public class CustomBaseRepository<T> : ExpressionParser.Parser.Repository<T>, IBaseRepository<T> where T : class
+    public class CustomBaseRepository<T> : Repository<T>, IBaseRepository<T> where T : class
     {
         public CustomBaseRepository(IUnitOfWork uow)
         {
@@ -65,7 +65,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æŸ¥è¯¢åˆ—è¡¨
+        /// ²éÑ¯ÁĞ±í
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="sql"></param>
@@ -81,7 +81,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æŸ¥è¯¢åˆ—è¡¨
+        /// ²éÑ¯ÁĞ±í
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="sql"></param>
@@ -96,7 +96,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æŸ¥è¯¢å•ä¸ªç»“æœ
+        /// ²éÑ¯µ¥¸ö½á¹û
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="sql"></param>
@@ -113,7 +113,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æŸ¥è¯¢å•ä¸ªç»“æœ
+        /// ²éÑ¯µ¥¸ö½á¹û
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="sql"></param>
@@ -130,7 +130,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æ‰§è¡Œè¯­å¥
+        /// Ö´ĞĞÓï¾ä
         /// </summary>
         /// <param name="sql"></param>
         /// <param name="param"></param>
@@ -144,7 +144,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æ‰§è¡Œè¯­å¥
+        /// Ö´ĞĞÓï¾ä
         /// </summary>
         /// <param name="sql"></param>
         /// <param name="param"></param>
@@ -356,7 +356,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// å¿«é€Ÿæ‰¹é‡æ’å…¥
+        /// ¿ìËÙÅúÁ¿²åÈë
         /// </summary>
         /// <param name="list"></param>
         public void FastBatchInsert(List<T> list)
