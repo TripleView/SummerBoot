@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -18,18 +18,158 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         int ExecuteUpdate();
 
         /// <summary>
-        /// ç”Ÿæˆç»è¿‡åˆ†é¡µçš„ç»“æœ
+        /// Éú³É¾­¹ı·ÖÒ³µÄ½á¹û
         /// </summary>
         /// <returns></returns>
         Page<T> ToPage();
 
         /// <summary>
-        /// ç”Ÿæˆç»è¿‡åˆ†é¡µçš„ç»“æœ
+        /// Éú³É¾­¹ı·ÖÒ³µÄ½á¹û
         /// </summary>
         /// <returns></returns>
         Page<T> ToPage(IPageable pageable);
 
-        //IQueryable<T> OrWhere(Expression<Predicate<T>> predicate);
+        #region sync
+        /// <summary>
+        /// Get entity by id
+        /// Í¨¹ıid»ñµÃÊµÌå
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        T Get(object id);
+        /// <summary>
+        /// Get all entities
+        /// »ñÈ¡ËùÓĞÊµÌå
+        /// </summary>
+        /// <returns></returns>
+        List<T> GetAll();
+        /// <summary>
+        /// Update Entity
+        /// ¸üĞÂÊµÌå
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        int Update(T t);
+        /// <summary>
+        /// Update entity list
+        /// ¸üĞÂÊµÌåÁĞ±í
+        /// </summary>
+        /// <param name="list"></param>
+        void Update(List<T> list);
+        /// <summary>
+        /// Delete Entity
+        /// É¾³ıÊµÌå
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        int Delete(T t);
+        /// <summary>
+        /// Delete Entity list
+        /// É¾³ıÊµÌåÁĞ±í
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        void Delete(List<T> list);
+        /// <summary>
+        /// Deleting entities by condition
+        /// Í¨¹ıÌõ¼şÉ¾³ıÊµÌå
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        int Delete(Expression<Func<T, bool>> predicate);
+        /// <summary>
+        /// Insert Entity
+        /// ²åÈëÊµÌå
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        T Insert(T t);
+        /// <summary>
+        /// Insert entity list
+        /// ²åÈëÊµÌåÁĞ±í
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        List<T> Insert(List<T> list);
+        /// <summary>
+        /// Fast bulk insert
+        /// ¿ìËÙÅúÁ¿²åÈë
+        /// </summary>
+        /// <param name="list"></param>
+        void FastBatchInsert(List<T> list);
+
+        #endregion sync
+
+        #region async
+        /// <summary>
+        /// Get entity by id
+        /// Í¨¹ıid»ñµÃÊµÌå
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<T> GetAsync(object id);
+        /// <summary>
+        /// Get all entities
+        /// »ñÈ¡ËùÓĞÊµÌå
+        /// </summary>
+        /// <returns></returns>
+        Task<List<T>> GetAllAsync();
+        /// <summary>
+        /// Update Entity
+        /// ¸üĞÂÊµÌå
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        Task<int> UpdateAsync(T t);
+        /// <summary>
+        /// Update entity list
+        /// ¸üĞÂÊµÌåÁĞ±í
+        /// </summary>
+        /// <param name="list"></param>
+        Task UpdateAsync(List<T> list);
+        /// <summary>
+        /// Delete Entity
+        /// É¾³ıÊµÌå
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        Task<int> DeleteAsync(T t);
+        /// <summary>
+        /// Deleting entities by condition
+        /// Í¨¹ıÌõ¼şÉ¾³ıÊµÌå
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        Task<int> DeleteAsync(Expression<Func<T, bool>> predicate);
+        /// <summary>
+        /// Delete Entity list
+        /// É¾³ıÊµÌåÁĞ±í
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        Task DeleteAsync(List<T> list);
+        /// <summary>
+        /// Insert Entity
+        /// ²åÈëÊµÌå
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        Task<T> InsertAsync(T t);
+        /// <summary>
+        /// Insert entity list
+        /// ²åÈëÊµÌåÁĞ±í
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        Task<List<T>> InsertAsync(List<T> list);
+        /// <summary>
+        /// Fast bulk insert
+        /// ¿ìËÙÅúÁ¿²åÈë
+        /// </summary>
+        /// <param name="list"></param>
+        Task FastBatchInsertAsync(List<T> list);
+
+        #endregion async
 
     }
 }

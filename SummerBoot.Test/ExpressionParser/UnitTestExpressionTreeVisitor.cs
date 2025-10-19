@@ -1273,7 +1273,7 @@ namespace ExpressionParser.Test
         {
             var personRepository = new PersonRepository();
             var persion = new Person() { Age = 5, HaveChildren = false, Name = "????" };
-            personRepository.InternalDelete(persion);
+            personRepository.Delete(persion);
             var r1MiddleResult = personRepository.GetParsingResult();
 
             //Assert.Equal("delete from [Person] where [Name]=@Name and [Age]=@Age and [HaveChildren]=@HaveChildren", r1MiddleResult.Sql);
@@ -1284,7 +1284,7 @@ namespace ExpressionParser.Test
         {
             var employeeRepository = new EmployeeRepository();
             var persion = new Employee() { Age = 5, HaveChildren = false, Name = "????" };
-            employeeRepository.InternalUpdate(persion);
+            employeeRepository.Update(persion);
             var r1MiddleResult = employeeRepository.GetParsingResult();
 
             //Assert.Equal("update [Employee] set [Name]=@Name,[Age]=@Age,[HaveChildren]=@HaveChildren where [Id]=@Id", r1MiddleResult.Sql);
@@ -1295,7 +1295,7 @@ namespace ExpressionParser.Test
         {
             var hrRepository = new HrRepository();
             var persion = new Hr() { Age = 5, HaveChildren = false, Name = "test", EmployeNo = "666" };
-            hrRepository.InternalUpdate(persion);
+            hrRepository.Update(persion);
             var r1MiddleResult = hrRepository.GetParsingResult();
 
             //Assert.Equal("update [Hr2] set [Age]=@Age,[HaveChildren]=@HaveChildren where [hrEmployeeNo]=@hrEmployeeNo and [Name]=@Name", r1MiddleResult.Sql);
@@ -1307,13 +1307,13 @@ namespace ExpressionParser.Test
             var hrRepository = new HrRepository();
             var persion = new Hr() { Age = 5, HaveChildren = false, Name = "test", EmployeNo = "666", CreateOn = DateTime.Now };
 
-            hrRepository.InternalInsert(persion);
+            hrRepository.Insert(persion);
 
             var r1MiddleResult = hrRepository.GetParsingResult();
 
             //Assert.Equal("insert into [Hr2] ([hrEmployeeNo],[Name],[Age],[HaveChildren],[CreateOn]) values (@hrEmployeeNo,@Name,@Age,@HaveChildren,@CreateOn)", r1MiddleResult.Sql);
 
-            hrRepository.InternalUpdate(persion);
+            hrRepository.Update(persion);
 
             var r2MiddleResult = hrRepository.GetParsingResult();
 
@@ -1325,7 +1325,7 @@ namespace ExpressionParser.Test
         {
             var personRepository = new PersonRepository();
             var persion = new Person() { Age = 5, HaveChildren = false, Name = "????" };
-            personRepository.QueryPageAsync<>(persion);
+            personRepository.Insert(persion);
             var r1MiddleResult = personRepository.GetParsingResult();
 
             //Assert.Equal("insert into [Person] ([Name],[Age],[HaveChildren]) values (@Name,@Age,@HaveChildren)", r1MiddleResult.Sql);

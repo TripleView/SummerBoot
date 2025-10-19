@@ -174,7 +174,7 @@ namespace SummerBoot.Repository
 
         #region sync
 
-        public void Update(List<T> list)
+        public override void Update(List<T> list)
         {
             this.uow.BeginTransaction();
             OpenDb();
@@ -186,7 +186,7 @@ namespace SummerBoot.Repository
             this.uow.Commit();
         }
 
-        public void Delete(List<T> list)
+        public override void Delete(List<T> list)
         {
             this.uow.BeginTransaction();
             OpenDb();
@@ -198,7 +198,7 @@ namespace SummerBoot.Repository
             this.uow.Commit();
         }
 
-        public T Insert(T t)
+        public override T Insert(T t)
         {
             databaseUnit.OnBeforeInsert(t);
             if (t is IBaseEntity baseEntity)
@@ -273,7 +273,7 @@ namespace SummerBoot.Repository
             return t;
         }
 
-        public List<T> Insert(List<T> list)
+        public override List<T> Insert(List<T> list)
         {
             this.uow.BeginTransaction();
             OpenDb();
@@ -287,7 +287,7 @@ namespace SummerBoot.Repository
             return list;
         }
 
-        public List<T> GetAll()
+        public override List<T> GetAll()
         {
             var internalResult = InternalGetAll();
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -299,7 +299,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public int Update(T t)
+        public override int Update(T t)
         {
             if (t is IBaseEntity baseEntity)
             {
@@ -314,7 +314,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public int Delete(T t)
+        public override int Delete(T t)
         {
             //if (t is BaseEntity baseEntity && databaseUnit.IsUseSoftDelete)
             //{
@@ -330,7 +330,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public int Delete(Expression<Func<T, bool>> predicate)
+        public override int Delete(Expression<Func<T, bool>> predicate)
         {
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
@@ -343,7 +343,7 @@ namespace SummerBoot.Repository
         }
 
 
-        public T Get(object id)
+        public override T Get(object id)
         {
             DbQueryResult internalResult = InternalGet(id);
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -359,7 +359,7 @@ namespace SummerBoot.Repository
         /// 快速批量插入
         /// </summary>
         /// <param name="list"></param>
-        public void FastBatchInsert(List<T> list)
+        public override void FastBatchInsert(List<T> list)
         {
             if (list.Count == 0)
             {
@@ -492,7 +492,7 @@ namespace SummerBoot.Repository
 
         #region async
 
-        public async Task UpdateAsync(List<T> list)
+        public override async Task UpdateAsync(List<T> list)
         {
             this.uow.BeginTransaction();
             OpenDb();
@@ -505,7 +505,7 @@ namespace SummerBoot.Repository
 
         }
 
-        public async Task DeleteAsync(List<T> list)
+        public override async Task DeleteAsync(List<T> list)
         {
             this.uow.BeginTransaction();
             OpenDb();
@@ -517,7 +517,7 @@ namespace SummerBoot.Repository
             this.uow.Commit();
         }
 
-        public async Task<T> InsertAsync(T t)
+        public override async Task<T> InsertAsync(T t)
         {
             if (t is IBaseEntity baseEntity)
             {
@@ -637,7 +637,7 @@ namespace SummerBoot.Repository
             return t;
         }
 
-        public async Task<List<T>> InsertAsync(List<T> list)
+        public override async Task<List<T>> InsertAsync(List<T> list)
         {
             this.uow.BeginTransaction();
             OpenDb();
@@ -651,7 +651,7 @@ namespace SummerBoot.Repository
             return list;
         }
 
-        public async Task<List<T>> GetAllAsync()
+        public override async Task<List<T>> GetAllAsync()
         {
             var internalResult = InternalGetAll();
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -663,7 +663,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task<int> UpdateAsync(T t)
+        public override async Task<int> UpdateAsync(T t)
         {
             if (t is IBaseEntity baseEntity)
             {
@@ -678,7 +678,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
+        public override async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
         {
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
@@ -690,7 +690,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task<int> DeleteAsync(T t)
+        public override async Task<int> DeleteAsync(T t)
         {
             //if (t is BaseEntity baseEntity && databaseUnit.IsUseSoftDelete)
             //{
@@ -706,7 +706,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task<T> GetAsync(object id)
+        public override async Task<T> GetAsync(object id)
         {
             DbQueryResult internalResult = InternalGet(id);
             databaseUnit.OnLogSqlInfo(internalResult);
@@ -737,7 +737,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public async Task FastBatchInsertAsync(List<T> list)
+        public override async Task FastBatchInsertAsync(List<T> list)
         {
             if (list.Count == 0)
             {

@@ -24,7 +24,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
-        public void Init(DatabaseUnit databaseUnit)
+        protected void Init(DatabaseUnit databaseUnit)
         {
             Provider = new DbQueryProvider(databaseUnit, this);
             //最后一个表达式将是第一个IQueryable对象的引用。 
@@ -272,6 +272,107 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 return result;
             }
             return default;
+        }
+
+        public virtual T Get(object id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual List<T> GetAll()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual int Update(T t)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void Update(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual int Delete(T t)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void Delete(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual int Delete(Expression<Func<T, bool>> predicate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual T Insert(T t)
+        {
+            var r= InternalInsert(t);
+            return default;
+        }
+
+        public virtual List<T> Insert(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void FastBatchInsert(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<T> GetAsync(object id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<List<T>> GetAllAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<int> UpdateAsync(T t)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task UpdateAsync(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<int> DeleteAsync(T t)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task DeleteAsync(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<T> InsertAsync(T t)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<List<T>> InsertAsync(List<T> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task FastBatchInsertAsync(List<T> list)
+        {
+            throw new NotImplementedException();
         }
 
 
