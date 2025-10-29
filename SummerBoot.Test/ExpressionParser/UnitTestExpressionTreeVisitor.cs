@@ -1100,11 +1100,11 @@ namespace ExpressionParser.Test
         public void OracleTestSkipAndTake()
         {
             var personRepository = new OraclePersonRepository(new DatabaseUnit(typeof(UnitOfWork), typeof(OracleConnection), ""));
+            
             var r1 = personRepository.Skip(1).Take(1).ToList();
-
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            Assert.Equal("select \"p1\".\"Name\", \"p1\".\"Age\", \"p1\".\"HaveChildren\" from(select \"p0\".\"NAME\" as \"Name\", \"p0\".\"AGE\" as \"Age\", \"p0\".\"HAVECHILDREN\" as \"HaveChildren\", ROW_NUMBER()over(order by \"p0\".\"AGE\") as \"sbRowNo\" from \"PERSON\" \"p0\") \"p1\" where((\"p1\".\"sbRowNo\" > :y0) and(\"p1\".\"sbRowNo\" <= :y1))", r1MiddleResult.Sql);
+            Assert.Equal("select \"p1\".\"Name\", \"p1\".\"Age\", \"p1\".\"HaveChildren\" from (select \"p0\".\"NAME\" as \"Name\", \"p0\".\"AGE\" as \"Age\", \"p0\".\"HAVECHILDREN\" as \"HaveChildren\", ROW_NUMBER()over(order by \"p0\".\"AGE\") as \"sbRowNo\" from \"PERSON\" \"p0\") \"p1\" where((\"p1\".\"sbRowNo\" > :y0) and(\"p1\".\"sbRowNo\" <= :y1))", r1MiddleResult.Sql);
             Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos.Count);
             Assert.Equal(1, r1MiddleResult.Parameters.GetParamInfos["y0"].Value);
             Assert.Equal(2, r1MiddleResult.Parameters.GetParamInfos["y1"].Value);
@@ -1324,18 +1324,18 @@ namespace ExpressionParser.Test
         public void TestInsert()
         {
             var personRepository = new PersonRepository();
-            var persion = new Person() { Age = 5, HaveChildren = false, Name = "????" };
+            var persion = new Person() { Age = 5, HaveChildren = false, Name = "hzp" };
             personRepository.Insert(persion);
             var r1MiddleResult = personRepository.GetParsingResult();
 
-            //Assert.Equal("insert into [Person] ([Name],[Age],[HaveChildren]) values (@Name,@Age,@HaveChildren)", r1MiddleResult.Sql);
+            Assert.Equal("insert into [Person]([Name], [Age], [HaveChildren]) values(@Name, @Age, @HaveChildren)", r1MiddleResult.Sql);
         }
 
         [Fact]
         public void TestGet()
         {
             var employeeRepository = new EmployeeRepository();
-            employeeRepository.InternalGet(1);
+            employeeRepository.Get(1);
             var r1MiddleResult = employeeRepository.GetParsingResult();
 
             //Assert.Equal("select [Id],[Name],[Age],[HaveChildren] from [Employee] where [Id]=@y0", r1MiddleResult.Sql);
@@ -1349,7 +1349,7 @@ namespace ExpressionParser.Test
         public void TestGetAll()
         {
             var employeeRepository = new EmployeeRepository();
-            employeeRepository.InternalGetAll();
+            employeeRepository.GetAll();
             var r1MiddleResult = employeeRepository.GetParsingResult();
 
             //Assert.Equal("select [Id],[Name],[Age],[HaveChildren] from [Employee]", r1MiddleResult.Sql);

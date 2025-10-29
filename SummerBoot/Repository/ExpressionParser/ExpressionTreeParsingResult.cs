@@ -1,13 +1,15 @@
-锘縰sing SummerBoot.Repository.Core;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
 /// <summary>
 /// Expression tree parsing results
-/// 琛ㄨ揪寮忔爲瑙ｆ瀽缁撴灉
+/// 表达式树解析结果
 /// </summary>
 public class ExpressionTreeParsingResult
 {
     public string Sql { get; set; }
+
+    public string CountSql { get; set; }
     public DynamicParameters Parameters { get; set; }
 }

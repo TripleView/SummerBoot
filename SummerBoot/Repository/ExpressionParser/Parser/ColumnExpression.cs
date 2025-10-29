@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
@@ -10,7 +10,7 @@ using SummerBoot.Repository.ExpressionParser.Util;
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
     /// <summary>
-    /// åˆ—è¡¨è¾¾å¼
+    /// ÁĞ±í´ïÊ½
     /// </summary>
      public class ColumnExpression : DbBaseExpression
     {
@@ -45,24 +45,24 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public TableExpression Table { get; set; }
         /// <summary>
-        /// æ–¹æ³•å…ƒä¿¡æ¯
+        /// ·½·¨ÔªĞÅÏ¢
         /// </summary>
         public MemberInfo MemberInfo { get; }
         /// <summary>
-        /// åŒ…å›´åˆ—çš„å‡½æ•°ï¼Œlen
+        /// °üÎ§ÁĞµÄº¯Êı£¬len
         /// </summary>
         public string FunctionName { get; set; }
-        #region å±æ€§
+        #region ÊôĞÔ
         /// <summary>
-        /// å›ºå®šå€¼
+        /// ¹Ì¶¨Öµ
         /// </summary>
         public object Value { get; set; }
         /// <summary>
-        /// å€¼çš„ç±»å‹
+        /// ÖµµÄÀàĞÍ
         /// </summary>
         public Type ValueType { get; set; }
         /// <summary>
-        /// åˆ¤æ–­æ˜¯å¦ä¸ºä¸»é”®
+        /// ÅĞ¶ÏÊÇ·ñÎªÖ÷¼ü
         /// </summary>
         public bool IsKey
         {
@@ -78,7 +78,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
         /// <summary>
-        /// åˆ¤æ–­updateæ—¶æ˜¯å¦å¿½ç•¥
+        /// Determine whether to ignore during update
+        /// ÅĞ¶ÏupdateÊ±ÊÇ·ñºöÂÔ
         /// </summary>
         public bool IsIgnoreWhenUpdate
         {
@@ -94,7 +95,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
         /// <summary>
-        /// åˆ¤æ–­æ˜¯å¦ä¸ºæ•°æ®åº“è‡ªå¢
+        /// ÅĞ¶ÏÊÇ·ñÎªÊı¾İ¿â×ÔÔö
         /// </summary>
         public bool IsDatabaseGeneratedIdentity
         {
@@ -119,30 +120,30 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
         /// <summary>
-        /// åˆ¤æ–­æ˜¯å¦ä¸ºå¯ç©ºç±»å‹
+        /// ÅĞ¶ÏÊÇ·ñÎª¿É¿ÕÀàĞÍ
         /// </summary>
         public bool IsNullable => this.MemberInfo.IsNullable();
 
         /// <summary>
-        /// è¡¨çš„åˆ«å
+        /// ±íµÄ±ğÃû
         /// </summary>
         public string TableAlias { get; set; }
         /// <summary>
-        /// åˆ—çš„åˆ«å
+        /// ÁĞµÄ±ğÃû
         /// </summary>
         public string ColumnAlias { get; set; }
         /// <summary>
-        /// åˆ—å
+        /// ÁĞÃû
         /// </summary>
         public string ColumnName => DbQueryUtil.GetColumnName(MemberInfo);
 
         /// <summary>
-        /// æ’åº
+        /// ÅÅĞò
         /// </summary>
         public int Index { get; set; }
 
         /// <summary>
-        /// æ·±åº¦å…‹éš†æœ¬èº«
+        /// Éî¶È¿ËÂ¡±¾Éí
         /// </summary>
         /// <returns></returns>
         public ColumnExpression DeepClone()

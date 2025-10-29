@@ -77,6 +77,9 @@ namespace SummerBoot.Repository
         /// 打印事件
         /// </summary>
         public event RepositoryLogEvent LogSql;
+
+        public Action<string, DynamicParameters> TestFunc { set; get; }
+
         /// <summary>
         /// 更新前事件
         /// </summary>

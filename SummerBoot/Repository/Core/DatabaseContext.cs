@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,13 +32,13 @@ using YamlDotNet.Core.Tokens;
 namespace SummerBoot.Repository.Core
 {
     /// <summary>
-    /// æ•°æ®åº“ä¸Šä¸‹æ–‡
+    /// Êı¾İ¿âÉÏÏÂÎÄ
     /// </summary>
     public static class DatabaseContext
     {
         private static ConcurrentDictionary<string, object> ChangeTypeToOtherTypeCache = new ConcurrentDictionary<string, object>();
         /// <summary>
-        /// æŸ¥è¯¢çš„æ—¶å€™ç”¨çš„behavioræ ‡å¿—
+        /// ²éÑ¯µÄÊ±ºòÓÃµÄbehavior±êÖ¾
         /// </summary>
         private static CommandBehavior queryBehavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
 
@@ -128,13 +128,18 @@ namespace SummerBoot.Repository.Core
                 cmd.Transaction = transaction;
             }
 
-            //è®¾ç½®å‚æ•°
+            //ÉèÖÃ²ÎÊı
+            DynamicParameters? dbParameters = null;
             if (param != null)
             {
-                var dbParameters = new DynamicParameters(param);
+                dbParameters = new DynamicParameters(param);
                 cmd.SetUpParameter(dbParameters, databaseUnit, ref sql);
             }
 
+            if (databaseUnit.TestFunc != null)
+            {
+                databaseUnit.TestFunc(sql, dbParameters);
+            }
             cmd.CommandText = databaseUnit.OnReplaceSql(sql);
 
             return cmd;
@@ -237,7 +242,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// è·å–æ‰§è¡Œè¡Œä¸ºï¼Œå¦‚æœæ˜¯åœ¨äº‹åŠ¡ä¸­ï¼Œåˆ™æ˜¯ä¸éœ€è¦è‡ªåŠ¨å…³é—­é“¾æ¥çš„
+        /// »ñÈ¡Ö´ĞĞĞĞÎª£¬Èç¹ûÊÇÔÚÊÂÎñÖĞ£¬ÔòÊÇ²»ĞèÒª×Ô¶¯¹Ø±ÕÁ´½ÓµÄ
         /// 
         /// </summary>
         /// <param name="wasClosed"></param>
@@ -477,7 +482,7 @@ namespace SummerBoot.Repository.Core
 
         private static void Init(this IDbCommand cmd)
         {
-            //åˆå§‹åŒ–command
+            //³õÊ¼»¯command
             var cmdFunc = GetInit(cmd.GetType());
             if (cmdFunc != null)
             {
@@ -497,7 +502,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// //é’ˆå¯¹oracleæ•°æ®åº“ï¼Œä¸€å®šè¦è®¾ç½®bindByNameï¼Œå¦åˆ™æ— æ³•æ­£ç¡®è®¾ç½®å‚æ•°
+        /// //Õë¶ÔoracleÊı¾İ¿â£¬Ò»¶¨ÒªÉèÖÃbindByName£¬·ñÔòÎŞ·¨ÕıÈ·ÉèÖÃ²ÎÊı
         /// </summary>
         /// <param name="commandType"></param>
         /// <returns></returns>
@@ -610,7 +615,7 @@ namespace SummerBoot.Repository.Core
 
         /// <summary>
         /// set up parameter
-        /// è®¾ç½®å‚æ•°
+        /// ÉèÖÃ²ÎÊı
         /// </summary>
         /// <param name="dbCommand"></param>
         /// <param name="dynamicParameters"></param>
@@ -622,7 +627,7 @@ namespace SummerBoot.Repository.Core
             foreach (var info in parameters)
             {
                 var paramInfo = info.Value;
-                //åˆ¤æ–­å‚æ•°æ˜¯å¦ä¸ºåˆ—è¡¨
+                //ÅĞ¶Ï²ÎÊıÊÇ·ñÎªÁĞ±í
                 if (paramInfo.ValueType != null && paramInfo.ValueType.IsEnumerable() && !paramInfo.ValueType.IsString())
                 {
                     var tempValues = paramInfo.Value as IEnumerable;
@@ -659,7 +664,7 @@ namespace SummerBoot.Repository.Core
                     sql = GetInListSql(sql, paramInfo.Name, count, databaseUnit);
 
                 }
-                //å‚æ•°ä¸ºå•ä¸ªç±»å‹
+                //²ÎÊıÎªµ¥¸öÀàĞÍ
                 else
                 {
                     SetUpSingleParameter(dbCommand, info.Key, info.Value, databaseUnit);
@@ -785,7 +790,7 @@ namespace SummerBoot.Repository.Core
             return result;
         }
 
-        //é€šè¿‡ç´¢å¼•è·å–å€¼
+        //Í¨¹ıË÷Òı»ñÈ¡Öµ
         private static readonly MethodInfo GetItem = typeof(IDataRecord).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .FirstOrDefault(it =>
                 it.Name == "get_Item" && it.GetParameters().Length == 1 &&
@@ -810,7 +815,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// åˆ¤æ–­æ˜¯å¦ä¸ºåŸç”Ÿå€¼ç±»å‹æˆ–è€…å­—ç¬¦ä¸²ç±»å‹æˆ–è€…æšä¸¾
+        /// ÅĞ¶ÏÊÇ·ñÎªÔ­ÉúÖµÀàĞÍ»òÕß×Ö·û´®ÀàĞÍ»òÕßÃ¶¾Ù
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
@@ -824,7 +829,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// è¯»å–dataReaderè½¬åŒ–ä¸ºtypeç±»å‹
+        /// ¶ÁÈ¡dataReader×ª»¯ÎªtypeÀàĞÍ
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dr"></param>
@@ -839,7 +844,7 @@ namespace SummerBoot.Repository.Core
             var returnValueLocal = il.DeclareLocal(type);
 
             var queryMemberCacheInfos = GetQueryMemberCacheInfos(dr, type);
-            //æ•°æ®åº“è¿”å›çš„ç»“æœé›†é‡Œéƒ½æ‰¾ä¸åˆ°è¦æŸ¥è¯¢çš„å±æ€§ï¼Œç›´æ¥è¿”å›
+            //Êı¾İ¿â·µ»ØµÄ½á¹û¼¯Àï¶¼ÕÒ²»µ½Òª²éÑ¯µÄÊôĞÔ£¬Ö±½Ó·µ»Ø
             if (queryMemberCacheInfos.Count == 0)
             {
                 if (type.IsValueType)
@@ -865,11 +870,11 @@ namespace SummerBoot.Repository.Core
                 return tempResult;
                 //throw new Exception("The column to query could not be found");
             }
-            //åˆ¤æ–­æ˜¯å¦ä¸ºå€¼ç±»å‹
+            //ÅĞ¶ÏÊÇ·ñÎªÖµÀàĞÍ
             var isValueType = type.IsValueType;
             //try
             var tyrLabel = il.BeginExceptionBlock();
-            //å®šä¹‰è¿”å›å€¼
+            //¶¨Òå·µ»ØÖµ
             if (isValueType)
             {
                 il.Emit(OpCodes.Ldloca, returnValueLocal);
@@ -888,7 +893,7 @@ namespace SummerBoot.Repository.Core
                 il.Emit(OpCodes.Ldloc, returnValueLocal);
             }
 
-            //å †æ ˆç”¨[]è¡¨ç¤ºï¼Œåˆ™å½“å‰ä¸ºtypeçš„å®ä¾‹ï¼Œå³[target]
+            //¶ÑÕ»ÓÃ[]±íÊ¾£¬Ôòµ±Ç°ÎªtypeµÄÊµÀı£¬¼´[target]
 
             var backUpObject = il.DeclareLocal(typeof(object));
             var endLabel = il.DefineLabel();
@@ -900,7 +905,7 @@ namespace SummerBoot.Repository.Core
                 var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
                 var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
                 var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
-                //å®é™…ç±»å‹
+                //Êµ¼ÊÀàĞÍ
                 var realType = nullableEntityFieldType ?? entityFieldType;
 
                 var dbNullLabel = il.DefineLabel();
@@ -908,25 +913,25 @@ namespace SummerBoot.Repository.Core
                 il.Emit(OpCodes.Dup);// [target,target]
                 il.EmitInt32(i);// [target,target,i]
                 il.SteadOfLocal(errorIndexLocal);//[target,target]
-                //é€šè¿‡ç´¢å¼•ä»dataReaderé‡Œè¯»å–æ•°æ®ï¼Œæ­¤æ—¶è¯»å–å›æ¥çš„æ˜¯objectç±»å‹
+                //Í¨¹ıË÷Òı´ÓdataReaderÀï¶ÁÈ¡Êı¾İ£¬´ËÊ±¶ÁÈ¡»ØÀ´µÄÊÇobjectÀàĞÍ
                 il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
                 il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[target, target,dataReader,i]
                 il.Emit( OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
-                //åˆ¤æ–­è¿”å›å€¼æ˜¯å¦ä¸ºdbnullï¼Œå¦‚æœæ˜¯ï¼Œåˆ™è·³è½¬åˆ°ç»“æŸ
+                //ÅĞ¶Ï·µ»ØÖµÊÇ·ñÎªdbnull£¬Èç¹ûÊÇ£¬ÔòÌø×ªµ½½áÊø
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.Emit(OpCodes.Isinst, typeof(DBNull));// [target, target, getItemValue, bool]
                 il.Emit(OpCodes.Brtrue_S, dbNullLabel);// [target, target, getItemValue]
                 //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
-                //å¯¹è·å–åˆ°çš„å€¼è¿›è¡Œå¤‡ä»½,å­˜åˆ°å­—æ®µbackUpObjecté‡Œ
+                //¶Ô»ñÈ¡µ½µÄÖµ½øĞĞ±¸·İ,´æµ½×Ö¶ÎbackUpObjectÀï
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.SteadOfLocal(backUpObject);// [target, target, getItemValue]
 
                 if (DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(realType))
                 {
-                    //è¿™é‡Œæ˜¯ä¸€ä¸ªé™æ€ç±»ï¼Œå¯ä»¥ç›´æ¥è°ƒç”¨ã€‚
+                    //ÕâÀïÊÇÒ»¸ö¾²Ì¬Àà£¬¿ÉÒÔÖ±½Óµ÷ÓÃ¡£
                     var typeHandlerCacheType = DatabaseUnit.TypeHandlers[databaseUnit.Id][realType];
                     il.Emit(OpCodes.Call, typeHandlerCacheType.GetMethod("Parse"));
-                    //åˆ¤æ–­æ˜¯å¦ä¸ºå¯ç©ºç±»å‹
+                    //ÅĞ¶ÏÊÇ·ñÎª¿É¿ÕÀàĞÍ
                     if (nullableEntityFieldType != null)
                     {
                         il.Emit(OpCodes.Newobj, entityFieldType.GetConstructor(new[] { realType }));
@@ -955,7 +960,7 @@ namespace SummerBoot.Repository.Core
             il.MarkLabel(endLabel);
             if (isValueType)
             {
-                //å› ä¸ºvalueTypeæ˜¯Ldlocaæ–¹å¼åŠ è½½çš„ï¼Œå³æŒ‡é’ˆæ–¹å¼ï¼Œæ‰€ä»¥æ— éœ€æ›¿æ¢ç»™returnValueLocal
+                //ÒòÎªvalueTypeÊÇLdloca·½Ê½¼ÓÔØµÄ£¬¼´Ö¸Õë·½Ê½£¬ËùÒÔÎŞĞèÌæ»»¸øreturnValueLocal
                 il.Emit(OpCodes.Pop);// []
             }
             else
@@ -965,7 +970,7 @@ namespace SummerBoot.Repository.Core
             
 
             il.BeginCatchBlock(typeof(Exception));
-            //æ­¤æ—¶æ ˆé¡¶å…ƒç´ ä¸º[exception]
+            //´ËÊ±Õ»¶¥ÔªËØÎª[exception]
             il.Emit(OpCodes.Ldloc, backUpObject);
             il.Emit(OpCodes.Ldloc, errorIndexLocal);
             il.Emit(OpCodes.Ldarg_0);
@@ -975,7 +980,7 @@ namespace SummerBoot.Repository.Core
             il.Emit(OpCodes.Ldloc, returnValueLocal);
             if (isValueType)
             {
-                //å€¼ç±»å‹è¿”å›ç»™objectï¼Œéœ€è¦è£…ç®±
+                //ÖµÀàĞÍ·µ»Ø¸øobject£¬ĞèÒª×°Ïä
                 il.Emit(OpCodes.Box, type);
             }
             il.Emit(OpCodes.Ret);
@@ -1000,7 +1005,7 @@ namespace SummerBoot.Repository.Core
 
             var queryMemberCacheInfos = GetQueryMemberCacheInfos(dr, type);
 
-            //å †æ ˆç”¨[]è¡¨ç¤ºï¼Œåˆ™å½“å‰ä¸º[]
+            //¶ÑÕ»ÓÃ[]±íÊ¾£¬Ôòµ±Ç°Îª[]
             //try
             var tyrLabel = il.BeginExceptionBlock();
             var backUpObject = il.DeclareLocal(typeof(object));
@@ -1008,7 +1013,7 @@ namespace SummerBoot.Repository.Core
             var ctor = type.GetConstructors().FirstOrDefault();
             queryMemberCacheInfos = queryMemberCacheInfos.OrderBy(it => it.DataReaderIndex).ToList();
             var localArgs = new List<LocalBuilder>();
-            // forå¾ªç¯ä¸­çš„å˜é‡ï¼Œåœ¨å¾ªç¯ç»“æŸåï¼Œå †æ ˆé‡Œçš„å˜é‡éƒ½ä¼šè¢«æ¸…ç©º
+            // forÑ­»·ÖĞµÄ±äÁ¿£¬ÔÚÑ­»·½áÊøºó£¬¶ÑÕ»ÀïµÄ±äÁ¿¶¼»á±»Çå¿Õ
             for (var i = 0; i < queryMemberCacheInfos.Count; i++)
             {
 
@@ -1016,7 +1021,7 @@ namespace SummerBoot.Repository.Core
                 var drFieldType = dr.GetFieldType(queryMemberCacheInfo.DataReaderIndex);
                 var entityFieldType = queryMemberCacheInfo.PropertyInfo.PropertyType;
                 var nullableEntityFieldType = Nullable.GetUnderlyingType(entityFieldType);
-                //å®é™…ç±»å‹
+                //Êµ¼ÊÀàĞÍ
                 var realType = nullableEntityFieldType ?? entityFieldType;
                 var localArg = il.DeclareLocal(entityFieldType);
                 //var localArg = il.DeclareLocal(realType);
@@ -1027,17 +1032,17 @@ namespace SummerBoot.Repository.Core
                 il.Emit(OpCodes.Ldloc, propertyValuesLocal);// [list]
                 il.EmitInt32(i);// [list,i]
                 il.SteadOfLocal(errorIndexLocal);//[list]
-                //é€šè¿‡ç´¢å¼•ä»dataReaderé‡Œè¯»å–æ•°æ®ï¼Œæ­¤æ—¶è¯»å–å›æ¥çš„æ˜¯objectç±»å‹
+                //Í¨¹ıË÷Òı´ÓdataReaderÀï¶ÁÈ¡Êı¾İ£¬´ËÊ±¶ÁÈ¡»ØÀ´µÄÊÇobjectÀàĞÍ
                 il.Emit(OpCodes.Ldarg_0); //[list,dataReader]
                 il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[list,dataReader,i]
                 il.Emit(OpCodes.Callvirt, GetItem);// [list, getItemValue]
 
-                //åˆ¤æ–­è¿”å›å€¼æ˜¯å¦ä¸ºdbnullï¼Œå¦‚æœæ˜¯ï¼Œåˆ™è·³è½¬åˆ°ç»“æŸ
+                //ÅĞ¶Ï·µ»ØÖµÊÇ·ñÎªdbnull£¬Èç¹ûÊÇ£¬ÔòÌø×ªµ½½áÊø
                 il.Emit(OpCodes.Dup);// [list, getItemValue,getItemValue]
                 il.Emit(OpCodes.Isinst, typeof(DBNull));// [list, getItemValue, bool]
                 il.Emit(OpCodes.Brtrue_S, dbNullLabel);// [list, getItemValue]
                 //il.Emit(OpCodes.Call, typeof(DatabaseContext).GetMethod(nameof(DebugObj)));
-                //å¯¹è·å–åˆ°çš„å€¼è¿›è¡Œå¤‡ä»½,å­˜åˆ°å­—æ®µbackUpObjecté‡Œ
+                //¶Ô»ñÈ¡µ½µÄÖµ½øĞĞ±¸·İ,´æµ½×Ö¶ÎbackUpObjectÀï
                 il.Emit(OpCodes.Dup);// [list, getItemValue,getItemValue]
                 il.SteadOfLocal(backUpObject);// [list, getItemValue]
 
@@ -1045,10 +1050,10 @@ namespace SummerBoot.Repository.Core
 
                 if (DatabaseUnit.TypeHandlers[databaseUnit.Id].ContainsKey(realType))
                 {
-                    //è¿™é‡Œæ˜¯ä¸€ä¸ªé™æ€ç±»ï¼Œå¯ä»¥ç›´æ¥è°ƒç”¨ã€‚
+                    //ÕâÀïÊÇÒ»¸ö¾²Ì¬Àà£¬¿ÉÒÔÖ±½Óµ÷ÓÃ¡£
                     var typeHandlerCacheType = DatabaseUnit.TypeHandlers[databaseUnit.Id][realType];
                     il.Emit(OpCodes.Call, typeHandlerCacheType.GetMethod("Parse"));
-                    //åˆ¤æ–­æ˜¯å¦ä¸ºå¯ç©ºç±»å‹
+                    //ÅĞ¶ÏÊÇ·ñÎª¿É¿ÕÀàĞÍ
                     if (nullableEntityFieldType != null)
                     {
                         il.Emit(OpCodes.Newobj, entityFieldType.GetConstructor(new[] { realType }));
@@ -1089,7 +1094,7 @@ namespace SummerBoot.Repository.Core
             }
             il.MarkLabel(endLabel);
             il.BeginCatchBlock(typeof(Exception));
-            //æ­¤æ—¶æ ˆé¡¶å…ƒç´ ä¸º[exception]
+            //´ËÊ±Õ»¶¥ÔªËØÎª[exception]
             il.Emit(OpCodes.Ldloc, backUpObject);
             il.Emit(OpCodes.Ldloc, errorIndexLocal);
             il.Emit(OpCodes.Ldarg_0);
@@ -1136,7 +1141,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// è¯»å–datareaderè½¬ä¸ºstructç±»å‹
+        /// ¶ÁÈ¡datareader×ªÎªstructÀàĞÍ
         /// </summary>
         /// <param name="type"></param>
         /// <param name="effectiveType"></param>
@@ -1159,7 +1164,7 @@ namespace SummerBoot.Repository.Core
                     return result;
                 };
             }
-            //æœ€æ™®é€šçš„å€¼ç±»å‹
+            //×îÆÕÍ¨µÄÖµÀàĞÍ
             return r =>
             {
 
@@ -1168,19 +1173,6 @@ namespace SummerBoot.Repository.Core
             };
         }
 
-        public static void DebugBreakPoint()
-        {
-            var st = new StackTrace();
-        }
-        public static void DebugObj(Exception ex)
-        {
-
-        }
-
-        public static void DebugObj2(string obj)
-        {
-
-        }
         public static void ThrowRepositoryException(Exception ex, object value, int index, IDataReader reader)
         {
             Exception toThrow;
@@ -1218,7 +1210,7 @@ namespace SummerBoot.Repository.Core
 
 
         /// <summary>
-        /// è·å–è¦æŸ¥è¯¢çš„å±æ€§åˆ—è¡¨
+        /// »ñÈ¡Òª²éÑ¯µÄÊôĞÔÁĞ±í
         /// </summary>
         /// <param name="dr"></param>
         /// <param name="type"></param>
@@ -1245,7 +1237,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// è·å–æ•°æ®åº“ç±»å‹
+        /// »ñÈ¡Êı¾İ¿âÀàĞÍ
         /// </summary>
         /// <param name="dbConnection"></param>
         /// <returns></returns>
@@ -1278,7 +1270,7 @@ namespace SummerBoot.Repository.Core
         }
 
         /// <summary>
-        /// åŠ¨æ€ç”ŸæˆTypeHandlerCacheç±»
+        /// ¶¯Ì¬Éú³ÉTypeHandlerCacheÀà
         /// </summary>
         /// <returns></returns>
         public static Type GenerateTypeHandlerCacheClass(Type defineType)
@@ -1291,18 +1283,18 @@ namespace SummerBoot.Repository.Core
             AssemblyName assyName = new AssemblyName(assemblyName);
             AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
             ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public | TypeAttributes.Abstract |
                                               TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit |
                                               TypeAttributes.Class;
 
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = Type.EmptyTypes;
             parentType = null;
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("GenerateTypeHandlerCacheClass", newTypeAttribute, parentType, interfaceTypes);
 
             var typeParams = typeBuilder.DefineGenericParameters("T");
@@ -1315,7 +1307,7 @@ namespace SummerBoot.Repository.Core
             var staticTypeHandlerField = typeBuilder.DefineField("handler", typeHandlerType,
                 FieldAttributes.Public | FieldAttributes.Static);
 
-            //SetValueæ–¹æ³•
+            //SetValue·½·¨
             var staticSetValueMethod = typeBuilder.DefineMethod("SetValue", MethodAttributes.Static | MethodAttributes.Public,
                 CallingConventions.Standard, null, new Type[] { typeof(IDbDataParameter), typeof(object) });
             var ilGenerator = staticSetValueMethod.GetILGenerator();
@@ -1325,7 +1317,7 @@ namespace SummerBoot.Repository.Core
             ilGenerator.Emit(OpCodes.Callvirt, typeHandlerType.GetMethod("SetValue"));
             ilGenerator.Emit(OpCodes.Ret);
 
-            //SetHandleræ–¹æ³•
+            //SetHandler·½·¨
             var staticSetMethod = typeBuilder.DefineMethod("SetHandler", MethodAttributes.Static | MethodAttributes.Public,
                 CallingConventions.Standard, null, new Type[] { typeHandlerType });
             var ilG2 = staticSetMethod.GetILGenerator();
@@ -1333,7 +1325,7 @@ namespace SummerBoot.Repository.Core
             ilG2.Emit(OpCodes.Stsfld, staticTypeHandlerField);
             ilG2.Emit(OpCodes.Ret);
 
-            //Parseæ–¹æ³•
+            //Parse·½·¨
             var staticParseMethod = typeBuilder.DefineMethod("Parse", MethodAttributes.Static | MethodAttributes.Public,
                 CallingConventions.Standard, first, new Type[] { typeof(object) });
 

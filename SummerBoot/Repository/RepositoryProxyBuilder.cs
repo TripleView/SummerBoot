@@ -1,4 +1,4 @@
-ï»¿using SummerBoot.Core;
+using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using System;
@@ -23,9 +23,37 @@ namespace SummerBoot.Repository
         private static ConcurrentDictionary<string, Type> TargetTypeCache { set; get; } =
             new ConcurrentDictionary<string, Type>();
 
-        //IRepositoryæ¥å£é‡Œçš„å›ºå®šæ–¹æ³•å
-        private string[] solidMethodNames = new string[] { "FastBatchInsertAsync","FastBatchInsert", "ToListAsync","ToPage","ToPageAsync", "InternalQueryListAsync", "InternalQueryPage", "InternalQueryPageAsync", "InternalExecute", "InternalExecuteAsync", "InternalQuery", "InternalQueryAsync", "InternalQueryList", "ExecuteUpdateAsync","ExecuteUpdate", "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator", "GetAll", "Get", "Insert", "BatchInsert", "Update", "BatchUpdate", "Delete", "BatchDelete", "GetAllAsync", "GetAsync", "InsertAsync", "BatchInsertAsync",
-            "UpdateAsync", "BatchUpdateAsync", "DeleteAsync", "BatchDeleteAsync", "FirstOrDefaultAsync",
+        //IRepository½Ó¿ÚÀïµÄ¹Ì¶¨·½·¨Ãû
+        private string[] solidMethodNames = new string[] {
+            nameof(IRepository<BaseEntity>.FastBatchInsertAsync),
+            nameof( IRepository<BaseEntity>.FastBatchInsert),
+            nameof( IRepository<BaseEntity>.ToListAsync),
+            nameof( IRepository<BaseEntity>.ToPage),
+            nameof(IRepository<BaseEntity>.ToPageAsync),
+            nameof( IRepository<BaseEntity>.QueryListAsync),
+            nameof( IRepository<BaseEntity>.QueryList),
+            nameof( IRepository<BaseEntity>.QueryPage),
+            nameof( IRepository<BaseEntity>.QueryPageAsync),
+            nameof(IRepository<BaseEntity>.Execute),
+            nameof( IRepository<BaseEntity>.ExecuteAsync),
+            nameof( IRepository<BaseEntity>.ExecuteUpdate),
+            nameof( IRepository<BaseEntity>.ExecuteUpdateAsync),
+            nameof(IRepository<BaseEntity>.Execute),
+            nameof( IRepository<BaseEntity>.ExecuteAsync),
+            nameof( IRepository<BaseEntity>.UpdateAsync),
+            nameof( IRepository<BaseEntity>.Update),
+            nameof( IRepository<BaseEntity>.Delete),
+            nameof( IRepository<BaseEntity>.DeleteAsync),
+            nameof( IRepository<BaseEntity>.FirstOrDefaultAsync),
+            nameof( IRepository<BaseEntity>.Insert),
+            nameof( IRepository<BaseEntity>.InsertAsync),
+            nameof( IRepository<BaseEntity>.Get),
+            nameof( IRepository<BaseEntity>.GetAsync),
+            nameof( IRepository<BaseEntity>.GetAll),
+            nameof( IRepository<BaseEntity>.GetAllAsync),
+            nameof( IRepository<BaseEntity>.QueryFirstOrDefault),
+            nameof( IRepository<BaseEntity>.QueryFirstOrDefaultAsync),
+            "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator",
             nameof(IRepository<BaseEntity>.FirstAsync),
             nameof(IRepository<BaseEntity>.MaxAsync),
             nameof(IRepository<BaseEntity>.MinAsync),
@@ -70,7 +98,7 @@ namespace SummerBoot.Repository
             return cacheKey;
         }
         /// <summary>
-        /// åŠ¨æ€ç”Ÿæˆæ¥å£çš„å®ç°ç±»
+        /// ¶¯Ì¬Éú³É½Ó¿ÚµÄÊµÏÖÀà
         /// </summary>
         /// <param name="interfaceType"></param>
         /// <param name="constructor"></param>
@@ -86,11 +114,11 @@ namespace SummerBoot.Repository
             AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
             ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
 
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes;
 
             if (targetType.IsInterface)
@@ -103,7 +131,7 @@ namespace SummerBoot.Repository
                 parentType = targetType;
                 interfaceTypes = Type.EmptyTypes;
             }
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType(typeName, newTypeAttribute, parentType, interfaceTypes);
 
             var allInterfaces = targetType.GetInterfaces();
@@ -140,65 +168,65 @@ namespace SummerBoot.Repository
             FieldBuilder baseRepositoryField = null;
             if (isRepository)
             {
-                //å®šä¹‰ä¸€ä¸ªå­—æ®µå­˜æ”¾baseRepository
+                //¶¨ÒåÒ»¸ö×Ö¶Î´æ·ÅbaseRepository
                 baseRepositoryField = typeBuilder.DefineField("baseRepository",
                 baseRepositoryType, FieldAttributes.Public);
             }
 
-            //å®šä¹‰ä¸€ä¸ªå­—æ®µå­˜æ”¾repositoryService
+            //¶¨ÒåÒ»¸ö×Ö¶Î´æ·ÅrepositoryService
             var repositoryType = repositoryServiceType;
             FieldBuilder repositoryServiceField = typeBuilder.DefineField("repositoryService",
                 repositoryType, FieldAttributes.Public);
 
-            //å®šä¹‰ä¸€ä¸ªå­—æ®µå­˜æ”¾IServiceProvider
+            //¶¨ÒåÒ»¸ö×Ö¶Î´æ·ÅIServiceProvider
             var iServiceProviderType = typeof(IServiceProvider);
             FieldBuilder serviceProviderField = typeBuilder.DefineField("iServiceProvider",
                 iServiceProviderType, FieldAttributes.Public);
 
-            //å®šä¹‰ä¸€ä¸ªé›†åˆå­˜æ”¾å‚æ•°é›†åˆ
+            //¶¨ÒåÒ»¸ö¼¯ºÏ´æ·Å²ÎÊı¼¯ºÏ
             FieldBuilder paramterArrField = typeBuilder.DefineField("paramterArr",
                 typeof(List<object>), FieldAttributes.Public);
 
             var ctorParameterTypes = isRepository ? new Type[] { repositoryType, iServiceProviderType, baseRepositoryType } : new Type[] { repositoryType, iServiceProviderType };
-            //åˆ›å»ºæ„é€ å‡½æ•°
+            //´´½¨¹¹Ôìº¯Êı
             ConstructorBuilder constructorBuilder =
                 typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, ctorParameterTypes);
 
-            //ilåˆ›å»ºæ„é€ å‡½æ•°ï¼Œå¯¹httpServiceå’ŒIServiceProviderä¸¤ä¸ªå­—æ®µè¿›è¡Œèµ‹å€¼ï¼ŒåŒæ—¶åˆå§‹åŒ–å­˜æ”¾å‚æ•°çš„é›†åˆ
+            //il´´½¨¹¹Ôìº¯Êı£¬¶ÔhttpServiceºÍIServiceProviderÁ½¸ö×Ö¶Î½øĞĞ¸³Öµ£¬Í¬Ê±³õÊ¼»¯´æ·Å²ÎÊıµÄ¼¯ºÏ
             ILGenerator ilgCtor = constructorBuilder.GetILGenerator();
-            ilgCtor.Emit(OpCodes.Ldarg_0); //åŠ è½½å½“å‰ç±»
+            ilgCtor.Emit(OpCodes.Ldarg_0); //¼ÓÔØµ±Ç°Àà
             ilgCtor.Emit(OpCodes.Ldarg_1);
             ilgCtor.Emit(OpCodes.Stfld, repositoryServiceField);
 
-            ilgCtor.Emit(OpCodes.Ldarg_0); //åŠ è½½å½“å‰ç±»
+            ilgCtor.Emit(OpCodes.Ldarg_0); //¼ÓÔØµ±Ç°Àà
             ilgCtor.Emit(OpCodes.Ldarg_2);
             ilgCtor.Emit(OpCodes.Stfld, serviceProviderField);
 
             if (isRepository)
             {
-                ilgCtor.Emit(OpCodes.Ldarg_0); //åŠ è½½å½“å‰ç±»
+                ilgCtor.Emit(OpCodes.Ldarg_0); //¼ÓÔØµ±Ç°Àà
                 ilgCtor.Emit(OpCodes.Ldarg_3);
                 ilgCtor.Emit(OpCodes.Stfld, baseRepositoryField);
             }
 
-            ilgCtor.Emit(OpCodes.Ldarg_0); //åŠ è½½å½“å‰ç±»
+            ilgCtor.Emit(OpCodes.Ldarg_0); //¼ÓÔØµ±Ç°Àà
             ilgCtor.Emit(OpCodes.Newobj, typeof(List<object>).GetConstructors().First());
             ilgCtor.Emit(OpCodes.Stfld, paramterArrField);
-            ilgCtor.Emit(OpCodes.Ret); //è¿”å›
+            ilgCtor.Emit(OpCodes.Ret); //·µ»Ø
 
             var solidMethods = typeof(IBaseRepository<>).GetMethods();
 
             foreach (MethodInfo targetMethod in targetMethods)
             {
-                //åªæŒ‘å‡ºvirtualçš„æ–¹æ³•
+                //Ö»Ìô³övirtualµÄ·½·¨
                 if (targetMethod.IsVirtual)
                 {
                     var methodName = targetMethod.Name;
-                    //ç¼“å­˜æ¥å£çš„æ–¹æ³•ä½“ï¼Œä¾¿äºåç»­å°†æ–¹æ³•ä½“ä¼ é€’ç»™httpService
+                    //»º´æ½Ó¿ÚµÄ·½·¨Ìå£¬±ãÓÚºóĞø½«·½·¨Ìå´«µİ¸øhttpService
                     string methodKey = Guid.NewGuid().ToString();
                     MethodsCache[methodKey] = targetMethod;
 
-                    //å¾—åˆ°æ–¹æ³•çš„å„ä¸ªå‚æ•°çš„ç±»å‹å’Œå‚æ•°
+                    //µÃµ½·½·¨µÄ¸÷¸ö²ÎÊıµÄÀàĞÍºÍ²ÎÊı
                     var paramInfo = targetMethod.GetParameters();
                     var parameterType = paramInfo.Select(it => it.ParameterType).ToArray();
                     var returnType = targetMethod.ReturnType;
@@ -206,12 +234,12 @@ namespace SummerBoot.Repository
                     var underType = returnType.IsGenericType ? returnType.GetGenericArguments().First() : returnType;
                     var isInterface = underType.IsInterface;
                     if (isInterface && returnType.IsGenericType) throw new Exception("return type no support interface");
-                    //é€šè¿‡emitç”Ÿæˆæ–¹æ³•ä½“
+                    //Í¨¹ıemitÉú³É·½·¨Ìå
 
                     var methodAttributes = MethodAttributes.Public | MethodAttributes.Virtual;
 
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(targetMethod.Name, methodAttributes, targetMethod.ReturnType, parameterType);
-                    //å¦‚æœæ˜¯æ³›å‹æ–¹æ³•ï¼Œè¿˜éœ€è¦æ·»åŠ æ³›å‹å‚æ•°
+                    //Èç¹ûÊÇ·ºĞÍ·½·¨£¬»¹ĞèÒªÌí¼Ó·ºĞÍ²ÎÊı
                     if (targetMethod.IsGenericMethod)
                     {
                         var genericArgumentNames = targetMethod.GetGenericArguments().Select(it => it.Name).ToArray();
@@ -219,32 +247,35 @@ namespace SummerBoot.Repository
                     }
 
                     ILGenerator ilGen = methodBuilder.GetILGenerator();
-
+                    var isSolidMethod = false;
                     if (isRepository && solidMethodNames.Any(it => it == methodName))
                     {
-                        //å…ˆåŠ è½½ç±»ï¼Œå†åŠ è½½å­—æ®µï¼Œå†åŠ è½½æ–¹æ³•å‚æ•°ï¼Œæœ€åè°ƒç”¨æ–¹æ³•
-                        ilGen.Emit(OpCodes.Ldarg_0);
-                        ilGen.Emit(OpCodes.Ldfld, baseRepositoryField);
-                        for (int i = 0; i < parameterType.Length; i++)
-                        {
-                            ilGen.Emit(OpCodes.Ldarg, i + 1);
-                        }
-
-                        var selectSolidMethods = baseRepositoryType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
-                            CompareTwoMethod(it, targetMethod)).ToList();
-
-                        //it.ReturnType?.Name == targetMethod.ReturnType?.Name &&
+                        var selectSolidMethods = baseRepositoryType
+                            .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
+                                CompareTwoMethod(it, targetMethod)).ToList();
 
                         if (selectSolidMethods.Count > 1)
                         {
                             throw new Exception("find two methods:" + targetMethod.Name);
                         }
 
-                        var selectMethod = selectSolidMethods.First();
+                        if (selectSolidMethods.Count == 1)
+                        {
+                            //ÏÈ¼ÓÔØÀà£¬ÔÙ¼ÓÔØ×Ö¶Î£¬ÔÙ¼ÓÔØ·½·¨²ÎÊı£¬×îºóµ÷ÓÃ·½·¨
+                            ilGen.Emit(OpCodes.Ldarg_0);
+                            ilGen.Emit(OpCodes.Ldfld, baseRepositoryField);
+                            for (int i = 0; i < parameterType.Length; i++)
+                            {
+                                ilGen.Emit(OpCodes.Ldarg, i + 1);
+                            }
 
-                        ilGen.Emit(OpCodes.Call, selectMethod);
+                            var selectMethod = selectSolidMethods.First();
+
+                            ilGen.Emit(OpCodes.Call, selectMethod);
+                            isSolidMethod = true;
+                        }
                     }
-                    else
+                    if (!isSolidMethod)
                     {
                         var isTask = typeof(Task) == returnType;
                         var isVoid = typeof(void) == returnType;
@@ -261,24 +292,24 @@ namespace SummerBoot.Repository
                         var deleteAttribute = targetMethod.GetCustomAttribute<DeleteAttribute>();
                         var updateAttribute = targetMethod.GetCustomAttribute<UpdateAttribute>();
                         if ((deleteAttribute != null || updateAttribute != null) && (!isInt && !isVoid && !isTask && !isTaskInt)) throw new Exception(interfaceMethodName + ":The method marked by updateAttribute or deleteAttribute must return int or task<int> or void or task");
-                        //åªèƒ½æœ‰ä¸€ä¸ªæ³¨è§£
+                        //Ö»ÄÜÓĞÒ»¸ö×¢½â
                         var attributeNumber = 0;
                         if (selectAttribute != null) attributeNumber++;
                         if (deleteAttribute != null) attributeNumber++;
                         if (updateAttribute != null) attributeNumber++;
                         if (attributeNumber == 0) throw new Exception(interfaceMethodName + ":need selectAttribute or updateAttribute or deleteAttribute");
                         if (attributeNumber > 1) throw new Exception(interfaceMethodName + ":selectAttribute or updateAttribute or deleteAttribute There can only be one");
-                        //è¿”å›ç±»å‹ä¸åŒï¼Œåˆ™å¤„ç†æ–¹æ³•ä¹Ÿä¸åŒ
-                        //è¿”å›ç±»å‹ä¸åŒï¼Œåˆ™å¤„ç†æ–¹æ³•ä¹Ÿä¸åŒ
-                        //å¦‚æœæ²¡æœ‰è¿”å›å€¼ï¼Œå³ä¸ºtaskæˆ–è€…voidç±»å‹
+                        //·µ»ØÀàĞÍ²»Í¬£¬Ôò´¦Àí·½·¨Ò²²»Í¬
+                        //·µ»ØÀàĞÍ²»Í¬£¬Ôò´¦Àí·½·¨Ò²²»Í¬
+                        //Èç¹ûÃ»ÓĞ·µ»ØÖµ£¬¼´Îªtask»òÕßvoidÀàĞÍ
                         if (!hasReturnValue)
                         {
                             excuteMethodName = isTask ? "ExecuteNoReturnAsync" : "ExecuteNoReturn";
                             var methodTmp = repositoryType.GetMethod(excuteMethodName);
-                            if (methodTmp == null) throw new Exception("æ‰¾ä¸åˆ°æ‰§è¡Œæ–¹æ³•");
+                            if (methodTmp == null) throw new Exception("ÕÒ²»µ½Ö´ĞĞ·½·¨");
                             executeMethod = methodTmp;
                         }
-                        //å…¶ä»–ç±»å‹
+                        //ÆäËûÀàĞÍ
                         else
                         {
                             if (selectAttribute != null)
@@ -300,7 +331,7 @@ namespace SummerBoot.Repository
 
                                 var methodTmp = repositoryType.GetMethod(excuteMethodName);
 
-                                if (methodTmp == null) throw new Exception("æ‰¾ä¸åˆ°æ‰§è¡Œæ–¹æ³•");
+                                if (methodTmp == null) throw new Exception("ÕÒ²»µ½Ö´ĞĞ·½·¨");
 
                                 executeMethod = isPage ? methodTmp.MakeGenericMethod(baseGenericType) : methodTmp.MakeGenericMethod(genericType, baseGenericType);
                             }
@@ -308,16 +339,16 @@ namespace SummerBoot.Repository
                             {
                                 excuteMethodName = isTaskInt ? "ExecuteReturnCountAsync" : "ExecuteReturnCount";
                                 var methodTmp = repositoryType.GetMethod(excuteMethodName);
-                                if (methodTmp == null) throw new Exception("æ‰¾ä¸åˆ°æ‰§è¡Œæ–¹æ³•");
+                                if (methodTmp == null) throw new Exception("ÕÒ²»µ½Ö´ĞĞ·½·¨");
                                 executeMethod = methodTmp;
                             }
                         }
 
-                        // æ ˆåº•æ”¾è¿™ç©æ„ï¼ŒåŠ è½½å­—æ®µå‰è¦åŠ è½½ç±»å®ä¾‹ï¼Œå³Ldarg_0
+                        // Õ»µ×·ÅÕâÍæÒâ£¬¼ÓÔØ×Ö¶ÎÇ°Òª¼ÓÔØÀàÊµÀı£¬¼´Ldarg_0
                         ilGen.Emit(OpCodes.Ldarg_0);
                         ilGen.Emit(OpCodes.Ldfld, repositoryServiceField);
 
-                        //æŠŠæ‰€æœ‰å‚æ•°éƒ½æ”¾åˆ°list<object>é‡Œ
+                        //°ÑËùÓĞ²ÎÊı¶¼·Åµ½list<object>Àï
                         ilGen.Emit(OpCodes.Ldarg_0);
                         ilGen.Emit(OpCodes.Ldfld, paramterArrField);
                         for (int i = 0; i < parameterType.Length; i++)
@@ -331,8 +362,8 @@ namespace SummerBoot.Repository
                             ilGen.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Add"));
                         }
 
-                        // å½“å‰æ ˆ[httpServiceField paramterArrField]
-                        //ä»ç¼“å­˜é‡Œå–å‡ºæ–¹æ³•ä½“
+                        // µ±Ç°Õ»[httpServiceField paramterArrField]
+                        //´Ó»º´æÀïÈ¡³ö·½·¨Ìå
                         ilGen.Emit(OpCodes.Call,
                             typeof(RepositoryProxyBuilder).GetMethod("get_MethodsCache", BindingFlags.Static | BindingFlags.Public));
                         ilGen.Emit(OpCodes.Ldstr, methodKey);
@@ -342,7 +373,7 @@ namespace SummerBoot.Repository
                         ilGen.Emit(OpCodes.Ldfld, serviceProviderField);
 
                         ilGen.Emit(OpCodes.Callvirt, executeMethod);
-                        //æ¸…ç©ºlisté‡Œçš„å‚æ•°
+                        //Çå¿ÕlistÀïµÄ²ÎÊı
                         ilGen.Emit(OpCodes.Ldarg_0);
                         ilGen.Emit(OpCodes.Ldfld, paramterArrField);
                         ilGen.Emit(OpCodes.Callvirt, typeof(List<object>).GetMethod("Clear"));
@@ -365,14 +396,14 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æ¯”è¾ƒ2ä¸ªæ–¹æ³•
+        /// ±È½Ï2¸ö·½·¨
         /// </summary>
         /// <param name="first"></param>
         /// <param name="second"></param>
         /// <returns></returns>
         private bool CompareTwoMethod(MethodInfo first, MethodInfo second)
         {
-            if (first.Name.Contains("MaxAsync") && second.Name.Contains("MaxAsync"))
+            if (first.Name.Contains("QueryListAsync") && second.Name.Contains("QueryListAsync"))
             {
                 var c = 123;
             }
@@ -389,7 +420,7 @@ namespace SummerBoot.Repository
             {
                 return false;
             }
-            //åˆ¤æ–­æ˜¯å¦ä¸ºæ³›å‹
+            //ÅĞ¶ÏÊÇ·ñÎª·ºĞÍ
             if (first.IsGenericMethod && !second.IsGenericMethod || (!first.IsGenericMethod && second.IsGenericMethod))
             {
                 return false;

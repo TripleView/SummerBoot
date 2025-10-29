@@ -1,42 +1,53 @@
-ï»¿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Reflection;
+using SqlParser.Net.Ast.Expression;
 using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
     public class DbQueryResult
     {
+        public SqlExpression ExecuteSqlExpression { get; set; } 
         /// <summary>
-        /// æ‰§è¡Œçš„sql
+        /// Ö´ĞĞµÄsql
         /// </summary>
-        public string Sql { get; set; }
+        public string Sql
+        {
+            get => ExecuteSqlExpression.ToSql();
+            set
+            {
+
+            }
+        }
         /// <summary>
-        /// è®¡ç®—æ€»æ•°çš„sql
+        /// ¼ÆËã×ÜÊıµÄsql
         /// </summary>
         public string CountSql { get; set; }
+
+        public DynamicParameters DynamicParameters { get; set; }
         /// <summary>
-        /// å‚æ•°
+        /// ²ÎÊı
         /// </summary>
         public List<SqlParameter> SqlParameters { get; set; }
         /// <summary>
-        /// æ’å…¥æ•°æ®åº“åè·å–IDçš„sql
+        /// ²åÈëÊı¾İ¿âºó»ñÈ¡IDµÄsql
         /// </summary>
         public string LastInsertIdSql { get; set; }
         /// <summary>
-        /// Id å­—æ®µçš„åå°„å±æ€§ä¿¡æ¯
+        /// Id ×Ö¶ÎµÄ·´ÉäÊôĞÔĞÅÏ¢
         /// </summary>
         public PropertyInfo IdKeyPropertyInfo { get; set; }
         /// <summary>
-        /// idå­—æ®µçš„åç§°ï¼Œæœ‰äº›æ•°æ®åº“å¤§å°å†™æ•æ„Ÿ
+        /// id×Ö¶ÎµÄÃû³Æ£¬ÓĞĞ©Êı¾İ¿â´óĞ¡Ğ´Ãô¸Ğ
         /// </summary>
         public string IdName { get; set; }
         /// <summary>
-        /// åˆ—å­—æ®µçš„ä¿¡æ¯
+        /// ÁĞ×Ö¶ÎµÄĞÅÏ¢
         /// </summary>
         public List<DbQueryResultPropertyInfoMapping> PropertyInfoMappings { get; set; }
         /// <summary>
         /// Get dynamic parameters
-        /// è·å–åŠ¨æ€å‚æ•°
+        /// »ñÈ¡¶¯Ì¬²ÎÊı
         /// </summary>
         /// <returns></returns>
         public DynamicParameters GetDynamicParameters()
@@ -59,11 +70,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     public class DbQueryResultPropertyInfoMapping
     {
         /// <summary>
-        /// åˆ—å
+        /// ÁĞÃû
         /// </summary>
         public string ColumnName { get; set; }
         /// <summary>
-        /// å¯¹åº”çš„å±æ€§
+        /// ¶ÔÓ¦µÄÊôĞÔ
         /// </summary>
         public PropertyInfo PropertyInfo { get; set; }
     }
