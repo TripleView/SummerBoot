@@ -1,14 +1,11 @@
+using SqlParser.Net;
+using SummerBoot.Repository.ExpressionParser.Parser.Dialect;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
-using SqlParser.Net;
-using SummerBoot.Repository.ExpressionParser.Base;
-using SummerBoot.Repository.ExpressionParser.Parser.Dialect;
-using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -23,8 +20,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public IQueryProvider Provider { get; private set; }
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
-
-        public MultiQueryContext<T> MultiQueryContext { get; set; } = new MultiQueryContext<T>();
 
         public Repository(DatabaseUnit databaseUnit)
         {
@@ -119,9 +114,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var dbParam = this.GetDbQueryResultByExpression(this.Expression);
-                var result =  this.QueryList<T>(dbParam.Sql, dbParam.Parameters);
-                //var result = dbQueryProvider.linkRepository.QueryList<T>(dbParam.Sql, dbParam.Parameters);
+                var wrapperExpression = this.GetDbQueryResultByExpression(this.Expression);
+                var sql = wrapperExpression.SqlExpression.ToSql();
+                var parameters = wrapperExpression.Parameters;
+                var result = this.QueryList<T>(sql, parameters);
 
                 if (result == null)
                     yield break;
@@ -144,7 +140,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected DbQueryResult InternalInsert(T insertEntity)
         {
-            var result = QueryFormatter.Insert(insertEntity);
+            var result = new NewDbExpressionVisitor(databaseUnit).Insert(insertEntity);
             return result;
         }
 
@@ -160,7 +156,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected DbQueryResult InternalUpdate(T updateEntity)
         {
-            return QueryFormatter.Update(updateEntity); ;
+            var result = new NewDbExpressionVisitor(databaseUnit).Update(updateEntity);
+            return result;
         }
 
         protected DbQueryResult InternalDelete(T deleteEntity)
@@ -185,18 +182,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public int ExecuteUpdate()
         {
-            if (this.SelectItems?.Count == 0)
+
+            if (this.SelectItems == null || this.SelectItems.Count == 0)
             {
                 throw new Exception("set value first");
             }
 
-            if (Provider is DbQueryProvider dbQueryProvider)
-            {
-                var dbQueryResult = QueryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return dbQueryProvider.linkRepository.Execute(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
-            }
+            var dbQueryResult = new NewDbExpressionVisitor(databaseUnit).ExecuteUpdate(Expression, this.SelectItems);
+            return this.Execute(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
 
-            return 0;
         }
 
         public async Task<int> ExecuteUpdateAsync()
@@ -206,13 +200,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
                 throw new Exception("set value first");
             }
 
-            if (Provider is DbQueryProvider dbQueryProvider)
-            {
-                var dbQueryResult = QueryFormatter.ExecuteUpdate(Expression, this.SelectItems);
-                return await dbQueryProvider.linkRepository.ExecuteAsync(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
-            }
-
-            return 0;
+            var dbQueryResult = new NewDbExpressionVisitor(databaseUnit).ExecuteUpdate(Expression, this.SelectItems);
+            return await this.ExecuteAsync(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
         }
 
         public Page<T> ToPage()
@@ -230,12 +219,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         public async Task<Page<T>> ToPageAsync()
         {
             var newDbExpressionVisitor = new NewDbExpressionVisitor(databaseUnit);
-            newDbExpressionVisitor.Visit(Expression);
-            var parsingResult = newDbExpressionVisitor.GetParsingResult();
+            var exp = newDbExpressionVisitor.Visit(Expression);
+            if (exp is WrapperExpression wrapperExpression)
+            {
+                var sql = wrapperExpression.SqlExpression.ToSql();
+                var result = await this.QueryPageAsync<T>(sql, null, wrapperExpression.Parameters);
+                return result;
+            }
 
-            var result = await this.QueryPageAsync<T>(parsingResult.Sql, null, parsingResult.Parameters);
-            return result;
-
+            throw new NotSupportedException(Expression.ToString());
         }
 
         private void CheckPageable(IPageable pageable)
@@ -376,34 +368,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             if (Provider is DbQueryProvider dbQueryProvider)
             {
-                var dbParam = this.GetDbQueryResultByExpression(Expression);
-                var result = await dbQueryProvider.linkRepository.QueryListAsync<T>(dbParam.Sql, dbParam.Parameters);
-                return result;
-            }
-            return default;
-        }
-
-        public async Task<T> FirstOrDefaultAsync()
-        {
-
-            if (Provider is DbQueryProvider dbQueryProvider)
-            {
-                var result = await dbQueryProvider.ExecuteAsync<T>(Expression);
-                return result;
-            }
-            return default;
-        }
-
-        public async Task<T> FirstAsync()
-        {
-
-            if (Provider is DbQueryProvider dbQueryProvider)
-            {
-                var result = await dbQueryProvider.ExecuteAsync<T>(Expression);
-                if (result == null)
-                {
-                    throw new Exception("can not find any element");
-                }
+                var wrapperExpression = this.GetDbQueryResultByExpression(Expression);
+                var sql = wrapperExpression.SqlExpression.ToSql();
+                var parameters = wrapperExpression.Parameters;
+                var result = await dbQueryProvider.linkRepository.QueryListAsync<T>(sql, parameters);
                 return result;
             }
             return default;
@@ -508,6 +476,34 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
+        public async Task<T> FirstOrDefaultAsync()
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.FirstOrDefault), true, 1, 1);
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression });
+                var result = await dbQueryProvider.ExecuteAsync<T>(callExpression);
+                return result;
+            }
+            return default;
+        }
+
+        public async Task<T> FirstAsync()
+        {
+
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var methodInfo = QueryableMethodsExtension.GetMethodInfoWithSelector(nameof(Queryable.First), true, 1, 1);
+                methodInfo = methodInfo.MakeGenericMethod(new Type[] { typeof(T) });
+                var callExpression = Expression.Call(null, methodInfo, new[] { this.Expression });
+                var result = await dbQueryProvider.ExecuteAsync<T>(callExpression);
+                return result;
+            }
+            return default;
+        }
+
+
         private async Task<TResult> InternalExecuteWithSelectorAsync<TResult>(
             string methodName, Expression<Func<T, TResult>> selector)
         {
@@ -542,12 +538,16 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
-        private ExpressionTreeParsingResult GetDbQueryResultByExpression(Expression expression)
+        private WrapperExpression GetDbQueryResultByExpression(Expression expression)
         {
             var newDbExpressionVisitor = new NewDbExpressionVisitor(databaseUnit);
-            newDbExpressionVisitor.Visit(expression);
-            var result = newDbExpressionVisitor.GetParsingResult();
-            return result;
+            var exp = newDbExpressionVisitor.Visit(expression);
+            if (exp is WrapperExpression wrapperExpression)
+            {
+                return wrapperExpression;
+            }
+
+            throw new NotSupportedException(Expression.ToString());
         }
     }
 

@@ -1,15 +1,17 @@
-ï»¿using System;
+using System;
 
 namespace SummerBoot.Repository.Attributes
 {
     /// <summary>
-    /// è‡ªå®šä¹‰Decimalç±»å‹çš„ç²¾åº¦å±æ€§
+    /// Custom precision properties for Decimal type
+    /// ×Ô¶¨ÒåDecimalÀàĞÍµÄ¾«¶ÈÊôĞÔ
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public class DecimalPrecisionAttribute : Attribute
     {
         /// <summary>
-        /// è‡ªå®šä¹‰Decimalç±»å‹çš„ç²¾åº¦å±æ€§
+        /// Custom precision properties for Decimal type
+        /// ×Ô¶¨ÒåDecimalÀàĞÍµÄ¾«¶ÈÊôĞÔ
         /// </summary>
         /// <param name="precision"></param>
         /// <param name="scale"></param>
@@ -19,11 +21,13 @@ namespace SummerBoot.Repository.Attributes
             Scale = scale;
         }
         /// <summary>
-        /// ç²¾ç¡®åº¦ï¼ˆé»˜è®¤18ï¼‰
+        /// Accuracy (default 18)
+        /// ¾«È·¶È£¨Ä¬ÈÏ18£©
         /// </summary>
         public int Precision { get; set; }
         /// <summary>
-        /// ä¿ç•™ä½æ•°ï¼ˆé»˜è®¤2ï¼‰
+        /// Number of bits to retain (default 2)
+        /// ±£ÁôÎ»Êı£¨Ä¬ÈÏ2£©
         /// </summary>
         public int Scale { get; set; }
       

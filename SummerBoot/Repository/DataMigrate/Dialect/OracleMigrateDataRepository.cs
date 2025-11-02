@@ -1,9 +1,10 @@
-锘縰sing System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using SummerBoot.Core;
+using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser;
 
 namespace SummerBoot.Repository.DataMigrate.Dialect;
@@ -18,7 +19,7 @@ public class OracleMigrateDataRepository: BaseMigrateDataRepository
     }
 
     /// <summary>
-    /// Get the fully qualified name锛涜幏鍙栧畬鏁撮檺瀹氬悕
+    /// Get the fully qualified name；获取完整限定名
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
@@ -79,8 +80,8 @@ public class OracleMigrateDataRepository: BaseMigrateDataRepository
         var newKeyName = "";
         if (selectKey.Body is UnaryExpression unaryExpression && unaryExpression.Operand is MemberExpression memberExpression)
         {
-            var table = new TableExpression(memberExpression.Expression.Type);
-            var column = table.Columns.FirstOrDefault(it => it.MemberInfo.Name == memberExpression.Member.Name);
+            var table = new TableInfo(memberExpression.Expression.Type);
+            var column = table.Columns.FirstOrDefault(it => it.PropertyName == memberExpression.Member.Name);
             if (column != null)
             {
                 if (column.IsKey && column.IsDatabaseGeneratedIdentity)
@@ -92,7 +93,7 @@ public class OracleMigrateDataRepository: BaseMigrateDataRepository
                     }
 
                     tableName =GetTheFullyQualifiedName(tableName);
-                    keyName = column.ColumnName;
+                    keyName = column.Name;
                     if (databaseUnit.ColumnNameMapping != null)
                     {
                         keyName = databaseUnit.ColumnNameMapping(keyName);

@@ -1,13 +1,14 @@
-ï»¿using System;
+using System;
 
 namespace SummerBoot.Repository.Attributes
 {
     /// <summary>
-    /// æ›´æ–°æ—¶å¿½ç•¥è¯¥åˆ—
+    /// Ignore this column during update
+    /// ¸üÐÂÊ±ºöÂÔ¸ÃÁÐ
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, Inherited = true)]
-    public class IgnoreWhenUpdateAttribute:Attribute
+    public class IgnoreWhenUpdateAttribute : Attribute
     {
-        
+
     }
 }

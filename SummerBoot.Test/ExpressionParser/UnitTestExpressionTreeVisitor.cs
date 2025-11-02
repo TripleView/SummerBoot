@@ -1,6 +1,10 @@
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Debug;
+using MySqlConnector;
+using Oracle.ManagedDataAccess.Client;
+using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.ExpressionParser.Parser;
@@ -13,13 +17,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
-using Oracle.ManagedDataAccess.Client;
-using SummerBoot.Core;
 using Xunit;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit.Priority;
 
 namespace ExpressionParser.Test
 {

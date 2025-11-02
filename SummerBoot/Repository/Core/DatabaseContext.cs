@@ -136,9 +136,9 @@ namespace SummerBoot.Repository.Core
                 cmd.SetUpParameter(dbParameters, databaseUnit, ref sql);
             }
 
-            if (databaseUnit.TestFunc != null)
+            if (databaseUnit.DebugSqlAction != null)
             {
-                databaseUnit.TestFunc(sql, dbParameters);
+                databaseUnit.DebugSqlAction(sql, dbParameters);
             }
             cmd.CommandText = databaseUnit.OnReplaceSql(sql);
 

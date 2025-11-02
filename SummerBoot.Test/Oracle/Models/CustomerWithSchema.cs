@@ -1,4 +1,4 @@
-ï»¿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using SummerBoot.Repository;
 
 namespace SummerBoot.Test.Oracle.Models
@@ -11,31 +11,31 @@ namespace SummerBoot.Test.Oracle.Models
         [Column("AGE")]
         public int Age { set; get; } = 0;
         /// <summary>
-        /// ä¼šå‘˜å·
+        /// »áÔ±ºÅ
         /// </summary>
         [Column("CUSTOMERNO")]
         public string CustomerNo { set; get; }
         /// <summary>
-        /// æ€»æ¶ˆè´¹é‡‘é¢
+        /// ×ÜÏû·Ñ½ğ¶î
         /// </summary>
         [Column("TOTALCONSUMPTIONAMOUNT")]
         public decimal TotalConsumptionAmount { set; get; }
     }
 
     [Table("CUSTOMERWITHSCHEMA", Schema = "TEST1")]
-    public class CustomerWithSchema2 : OracleBaseEntity
+    public class CustomerWithSchema2 : BaseEntity
     {
         [Column("NAME")]
         public string Name { set; get; }
         [Column("AGE")]
         public int Age { set; get; } = 0;
         /// <summary>
-        /// ä¼šå‘˜å·
+        /// »áÔ±ºÅ
         /// </summary>
         [Column("CUSTOMERNO")]
         public string CustomerNo { set; get; }
         /// <summary>
-        /// æ€»æ¶ˆè´¹é‡‘é¢
+        /// ×ÜÏû·Ñ½ğ¶î
         /// </summary>
         [Column("TOTALCONSUMPTIONAMOUNT")]
         public decimal TotalConsumptionAmount { set; get; }

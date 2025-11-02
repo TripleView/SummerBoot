@@ -51,7 +51,7 @@ namespace SummerBoot.Repository.ExpressionParser.Util
             var columnAttribute = memberInfo.GetCustomAttribute<ColumnAttribute>();
 
             var columnName = columnAttribute?.Name ?? memberInfo.Name;
-            return GetQualifiersName(columnName);
+            return columnName;
         }
 
     }

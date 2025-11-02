@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using SqlParser.Net.Ast.Expression;
+using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
@@ -20,4 +21,9 @@ public class WrapperExpression : Expression
     /// 属性类型
     /// </summary>
     public Type PropertyType { get; set; }
+    /// <summary>
+    /// Parameters
+    /// 参数
+    /// </summary>
+    public DynamicParameters Parameters { get; set; }
 }

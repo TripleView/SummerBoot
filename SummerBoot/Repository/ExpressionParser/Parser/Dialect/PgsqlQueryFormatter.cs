@@ -11,17 +11,17 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             
         }
 
-        public override DbQueryResult Insert<T>(T insertEntity)
-        {
-            var result = base.Insert(insertEntity);
-            if (result.IdKeyPropertyInfo != null)
-            {
+        //public override DbQueryResult Insert<T>(T insertEntity)
+        //{
+        //    var result = base.Insert(insertEntity);
+        //    if (result.IdKeyPropertyInfo != null)
+        //    {
 
-                result.Sql += $" RETURNING {BoxColumnName(result.IdName)}";
-            }
+        //        result.Sql += $" RETURNING {BoxColumnName(result.IdName)}";
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
         protected override string GetFunctionAlias(string functionName)
         {

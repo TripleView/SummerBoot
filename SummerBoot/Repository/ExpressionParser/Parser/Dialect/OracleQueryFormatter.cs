@@ -24,21 +24,21 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             return base.GetFunctionAlias(functionName);
         }
 
-        public override DbQueryResult Insert<T>(T insertEntity)
-        {
-            var result = base.Insert(insertEntity);
-            if (result.IdKeyPropertyInfo != null)
-            {
+        //public override DbQueryResult Insert<T>(T insertEntity)
+        //{
+        //    var result = base.Insert(insertEntity);
+        //    if (result.IdKeyPropertyInfo != null)
+        //    {
 
-                result.Sql += $" RETURNING {BoxColumnName(result.IdName)} INTO {parameterPrefix}{result.IdName}";
-            }
+        //        result.Sql += $" RETURNING {BoxColumnName(result.IdName)} INTO {parameterPrefix}{result.IdName}";
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
         public override DbQueryResult FastBatchInsert<T>(List<T> insertEntitys)
         {
-            var table = this.GetTableExpression(typeof(T));
+            var table = this.GetTableInfo(typeof(T));
             var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var parameterNameList = new List<string>();
@@ -55,10 +55,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
                     continue;
                 }
 
-                propertyNames.Add(column.MemberInfo.Name);
-                var type = (column.MemberInfo as PropertyInfo)!.PropertyType;
+                propertyNames.Add(column.Property.Name);
+                var type = column.Property.PropertyType;
                 propertyTypes.Add(type);
-                var columnName = BoxColumnName(column.ColumnName);
+                var columnName = BoxColumnName(column.Name);
                 columnNameList.Add(columnName);
                 var parameterName = this.parameterPrefix + j;
                 j++;

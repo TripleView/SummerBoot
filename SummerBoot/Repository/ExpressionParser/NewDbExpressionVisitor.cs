@@ -1,14 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.Common;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Xml.Linq;
-using Newtonsoft.Json;
 using SqlParser.Net;
 using SqlParser.Net.Ast;
 using SqlParser.Net.Ast.Expression;
@@ -17,7 +6,13 @@ using SummerBoot.Repository.Core;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.ExpressionParser.Util;
-using YamlDotNet.Core.Tokens;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
@@ -68,8 +63,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
         }
     }
-    private Dictionary<string, ColumnExpression> _lastColumns =
-        new Dictionary<string, ColumnExpression>();
+
 
     private List<SqlExpression> _lastGroupByExpressions = new List<SqlExpression>();
 
@@ -127,14 +121,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     #region 本次新增
 
     private SqlSelectExpression result = new SqlSelectExpression();
-    private SqlExpression finalResult = new SqlExpression();
     protected DatabaseUnit databaseUnit;
     private readonly DynamicParameters parameters = new DynamicParameters();
     /// <summary>
     /// Mapping between table names and aliases
     /// 表名与别名的映射
     /// </summary>
-    private Dictionary<string, TableDetailInfo> tableNameAliasMapping = new Dictionary<string, TableDetailInfo>();
+    private Dictionary<string, TableInfo> tableNameAliasMapping = new Dictionary<string, TableInfo>();
 
     /// <summary>
     /// Qualifiers for identifiers
@@ -162,35 +155,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// </summary>
     private string LastMethodName => lastMethodCalls.LastOrDefault();
 
-    private int index = 0;
+    private int index = -1;
 
     #region 表名参数名生成管理
 
     private int tableIndex = -1;
     private int parameterIndex = -1;
 
-    private ExpressionTreeParsingResult expressionTreeParsingResult = null;
-    /// <summary>
-    /// Get the expression tree parsing result
-    /// 获取表达式树解析结果
-    /// </summary>
-    /// <returns></returns>
-    public ExpressionTreeParsingResult GetParsingResult()
-    {
-        if (expressionTreeParsingResult != null)
-        {
-            return expressionTreeParsingResult;
-        }
-        //If no fields are selected, all fields are defaulted
-        //在没有选择字段的情况下，默认所有字段
-        AddDefaultColumns(result);
-        expressionTreeParsingResult = new ExpressionTreeParsingResult()
-        {
-            Sql = result.ToSql(dbType).Trim(),
-            Parameters = parameters
-        };
-        return expressionTreeParsingResult;
-    }
     /// <summary>
     /// Get table alias
     /// 获取表别名
@@ -215,116 +186,28 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public override Expression Visit(Expression exp)
     {
-        var tempIndex = index;
         index++;
-        if (exp == null) return null;
-        Expression expressionResult = null;
-        switch ((DbExpressionType)exp.NodeType)
-        {
-            case DbExpressionType.Select:
-            case DbExpressionType.Join:
-            case DbExpressionType.Query:
-                expressionResult = this.VisitQuery((QueryExpression)exp);
-                break;
-            case DbExpressionType.MultiSelect:
-                expressionResult = this.VisitMultiSelect((MultiSelectExpression)exp);
-                break;
-            case DbExpressionType.MultiSelectAutoFill:
-                expressionResult = this.VisitMultiSelectAutoFill((MultiSelectAutoFillExpression)exp);
-                break;
-            case DbExpressionType.MultiQueryWhere:
-                expressionResult = this.VisitMultiQueryWhere((MultiQueryWhereAdapterExpression)exp);
-                break;
-            case DbExpressionType.MultiQueryOrderBy:
-                expressionResult = this.VisitMultiQueryOrderBy((MultiQueryOrderByAdapterExpression)exp);
-                break;
+        var tempIndex = index;
+        var result = base.Visit(exp);
 
-        }
-
-
-        expressionResult = base.Visit(exp);
         if (tempIndex == 0)
         {
-            result = GetSqlSelectExpression(expressionResult);
+            if (result is WrapperExpression wrapperExpression)
+            {
+                //在没有选择字段的情况下，默认所有字段
+                AddDefaultColumns(result);
+                wrapperExpression.Parameters = this.parameters;
+            }
         }
-        return expressionResult;
-    }
 
-    public virtual Expression VisitMultiQueryOrderBy(MultiQueryOrderByAdapterExpression orderByAdapterExpression)
-    {
-        methodCallStack.Push(nameof(RepositoryMethod.MultiQueryOrderBy));
-        var result = Visit(orderByAdapterExpression.OnExpression);
-        methodCallStack.Pop();
         return result;
-
-
     }
 
-    public virtual Expression VisitMultiSelect(MultiSelectExpression multiSelectExpression)
+    protected override Expression VisitLambda<T>(Expression<T> node)
     {
-        if (multiSelectExpression.Expression is NewExpression newExpression)
-        {
-            var result = VisitMultiSelectNew(newExpression);
-            return result;
-        }
-        else if (multiSelectExpression.Expression is MemberInitExpression memberInitExpression)
-        {
-            var result = VisitMultiSelectMemberInit(memberInitExpression);
-            return result;
-        }
-        else
-        {
-            methodCallStack.Push(nameof(RepositoryMethod.MultiSelect));
-            var result = Visit(multiSelectExpression.Expression);
-            methodCallStack.Pop();
-            return result;
-        }
-
-        throw new NotSupportedException(nameof(multiSelectExpression.Expression));
-    }
-
-    public virtual Expression VisitMultiSelectAutoFill(MultiSelectAutoFillExpression multiSelectAutoFillExpression)
-    {
-        if (multiSelectAutoFillExpression.Expression is MemberExpression memberExpression)
-        {
-            var tableAlias = memberExpression.Member.Name;
-            var table = new TableExpression(multiSelectAutoFillExpression.Expression.Type, tableAlias);
-            return new ColumnsExpression(table.Columns, memberExpression.Type);
-        }
-
-        throw new NotSupportedException(nameof(multiSelectAutoFillExpression));
-    }
-
-    public virtual Expression VisitMultiQueryWhere(MultiQueryWhereAdapterExpression multiQueryWhereAdapterExpression)
-    {
-        methodCallStack.Push(nameof(RepositoryMethod.MultiQueryWhere));
-        var result = Visit(multiQueryWhereAdapterExpression.OnExpression);
-        methodCallStack.Pop();
-        return result;
-
-    }
-
-    public virtual Expression VisitQuery(QueryExpression queryExpression)
-    {
-        return queryExpression;
-    }
-
-    private string BoxMethodLikeParameter(object parameter, string methodName)
-    {
-        switch (methodName)
-        {
-            case "Contains":
-                return $"%{parameter}%";
-                break;
-            case "StartsWith":
-                return $"{parameter}%";
-                break;
-            case "EndsWith":
-                return $"%{parameter}";
-                break;
-        }
-
-        throw new NotSupportedException(methodName);
+        // 仅访问 lambda 的体（Body），不访问参数（Parameters）
+        var newBody = Visit(node.Body);
+        return newBody; // 保留原参数
     }
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -669,127 +552,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
             return GetWrapperExpression(tempResult);
         }
-        else if (MethodName == nameof(RepositoryMethod.MultiQueryWhere))
-        {
-            var @operator = nodeTypeMappings[binaryExpression.NodeType];
-            var result = new WhereExpression(@operator);
-            if (string.IsNullOrWhiteSpace(@operator))
-            {
-                throw new NotSupportedException(nameof(binaryExpression.NodeType));
-            }
 
-            Expression rightExpression;
-            if (binaryExpression.Right is UnaryExpression rightEx)
-            {
-                rightExpression = this.Visit(rightEx.Operand);
-            }
-            else
-            {
-                rightExpression = this.Visit(binaryExpression.Right);
-            }
-
-            Expression leftExpression;
-            if (binaryExpression.Left is UnaryExpression leftEx)
-            {
-                leftExpression = this.Visit(leftEx.Operand);
-            }
-            else
-            {
-                leftExpression = this.Visit(binaryExpression.Left);
-            }
-
-            if (leftExpression is ColumnExpression leftColumnExpression && rightExpression is ConstantExpression rightConstantExpression)
-            {
-                return new WhereConditionExpression(leftColumnExpression, @operator,
-                    rightConstantExpression.Value)
-                {
-                    ValueType = leftColumnExpression.ValueType
-                };
-            }
-            else if (rightExpression is ColumnExpression rightColumnExpression && leftExpression is ConstantExpression leftConstantExpression)
-            {
-                return new WhereConditionExpression(rightColumnExpression, @operator,
-                    leftConstantExpression.Value)
-                {
-                    ValueType = rightColumnExpression.ValueType
-                };
-            }
-
-            else if (leftExpression is ColumnExpression leftColumnExpression2 && leftColumnExpression2.Type == typeof(bool) && rightExpression is WhereExpression rightWhereExpression2)
-            {
-                //如果是column类型的bool值，默认为true
-                var left = new WhereConditionExpression(leftColumnExpression2, "=", 1)
-                {
-                    ValueType = leftColumnExpression2.ValueType
-                };
-                result.Left = left;
-                result.Right = rightWhereExpression2;
-                return result;
-            }
-            else if (rightExpression is ColumnExpression rightColumnExpression2 && rightExpression.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression2)
-            {
-                //如果是column类型的bool值，默认为true
-                var right = new WhereConditionExpression(rightColumnExpression2, "=", 1) { ValueType = rightColumnExpression2.ValueType };
-                result.Left = leftWhereExpression2;
-                result.Right = right;
-                return result;
-            }
-            else if (rightExpression is ColumnExpression rightColumnExpression3 && rightExpression.Type == typeof(bool) && leftExpression is ColumnExpression leftColumnExpression3 && leftColumnExpression3.Type == typeof(bool))
-            {
-                //如果是column类型的bool值，默认为true
-                var right = new WhereConditionExpression(rightColumnExpression3, "=", 1) { ValueType = rightColumnExpression3.ValueType };
-                var left = new WhereConditionExpression(leftColumnExpression3, "=", 1) { ValueType = leftColumnExpression3.ValueType };
-                result.Left = left;
-                result.Right = right;
-                return result;
-            }
-            else if (leftExpression is WhereExpression leftWhereExpression &&
-               rightExpression is WhereExpression rightWhereExpression)
-            {
-                result.Left = leftWhereExpression;
-                result.Right = rightWhereExpression;
-                return result;
-
-            }
-            //兼容It=>true这种
-            else if (leftExpression is ConstantExpression constantExpression && constantExpression.Type == typeof(bool) && rightExpression is WhereExpression whereExpression)
-            {
-                var value = (bool)constantExpression.Value;
-                var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value)
-                {
-                    ValueType = typeof(bool)
-                };
-                result.Left = whereTrueFalseValueCondition;
-                result.Right = whereExpression;
-                return result;
-            }
-            //兼容It=>true这种
-            else if (rightExpression is ConstantExpression rightConstantExpression3 && rightConstantExpression3.Type == typeof(bool) && leftExpression is WhereExpression leftWhereExpression3)
-            {
-                var value = (bool)rightConstantExpression3.Value;
-                var whereTrueFalseValueCondition = new WhereTrueFalseValueConditionExpression(value)
-                {
-                    ValueType = typeof(bool)
-                };
-                result.Left = leftWhereExpression3;
-                result.Right = whereTrueFalseValueCondition;
-                return result;
-            }
-            else if (rightExpression is ColumnExpression rightColumnExpression4 && leftExpression is ColumnExpression leftColumnExpression4)
-            {
-
-                var whereTrueFalseValueCondition =
-                    new WhereTwoColumnExpression(leftColumnExpression4, @operator, rightColumnExpression4);
-
-                return whereTrueFalseValueCondition;
-            }
-            else
-            {
-                throw new NotSupportedException(MethodName);
-            }
-
-
-        }
         //throw new NotSupportedException(MethodName);
         return base.VisitBinary(binaryExpression);
     }
@@ -982,6 +745,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             sqlSelectExpression.Alias = tableAliasSqlIdentifierExpression;
             var sqlExpression = new SqlSelectExpression()
             {
+                DbType = dbType,
                 Query = new SqlSelectQueryExpression()
                 {
                     Columns = columns,
@@ -1007,42 +771,30 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sqlExpression = GetSqlExpression(sourceExpression);
         var isRowNumber = databaseUnit.IsSqlServer && databaseUnit.SqlServerVersion < 11 || databaseUnit.IsOracle;
 
-        //if (isNeedReset)
-        //{
-        //    sqlExpression = new SqlSelectExpression()
-        //    {
-        //        Query = new SqlSelectQueryExpression()
-        //        {
-        //            From = sqlExpression
-        //        }
-        //    };
-        //}
-
         if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
             if (isRowNumber)
             {
                 var orderBy = new SqlOrderByExpression();
-                if (sqlSelectQueryExpression.OrderBy.Items.Any())
+                if (sqlSelectQueryExpression.OrderBy?.Items.Any() == true)
                 {
                     orderBy = sqlSelectQueryExpression.OrderBy.Clone();
                     sqlSelectQueryExpression.OrderBy = null;
                 }
                 else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameAliasMapping.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
                 {
-                    var orderByColumn = sqlInfo.ColumnInfos.FirstOrDefault(x => x.IsKey) ?? sqlInfo.ColumnInfos.First();
+                    var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First();
                     orderBy = new SqlOrderByExpression()
                     {
                         Items = new List<SqlOrderByItemExpression>()
                             {
                                 new SqlOrderByItemExpression()
                                 {
-                                    Body = GetSqlPropertyExpression(sqlInfo.TableAlias, orderByColumn.ColumnName)
+                                    Body = GetSqlPropertyExpression(sqlInfo.TableAlias, orderByColumn.Name)
                                 },
                             },
                     };
                 }
-
 
                 var tempResult = AddParentSqlSelectExpression(sqlSelectExpression,
                     x =>
@@ -1066,6 +818,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
                 sqlSelectExpression = tempResult.SqlSelectExpression;
                 var pageColumnExpression = GetSqlPropertyExpression(tempResult.TableAlias, "sbRowNo");
+
                 var where = new SqlBinaryExpression()
                 {
                     Left = new SqlBinaryExpression()
@@ -1093,6 +846,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 pageSize = int.MaxValue;
             }
+
             sqlSelectQueryExpression.Limit = new SqlLimitExpression()
             {
                 Offset = GetSqlVariableExpression(offset),
@@ -1100,8 +854,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             };
 
         }
-
-
 
         return GetWrapperExpression(sqlExpression);
     }
@@ -1147,8 +899,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var methodName = firstOrDefaultCall.Method.Name;
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
         var sqlSourceExpression = GetSqlExpression(sourceExpression);
-        WhereExpression where = null;
-
         if (sqlSourceExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
             sqlSelectQueryExpression.ResultSetReturnOption = SqlResultSetReturnOption.Distinct;
@@ -1200,61 +950,47 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression maxMinCall)
     {
-        var methodName = maxMinCall.Method.Name;
+        return null;
+        //var methodName = maxMinCall.Method.Name;
 
-        var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
-        ColumnExpression column = null;
-        if (maxMinCall.Arguments.Count == 2)
-        {
-            var lambda = (LambdaExpression)this.StripQuotes(maxMinCall.Arguments[1]);
-            column = this.Visit(lambda.Body) as ColumnExpression;
-        }
-        else
-        {
-            throw new NotSupportedException(methodName);
-        }
+        //var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
+        //ColumnExpression column = null;
+        //if (maxMinCall.Arguments.Count == 2)
+        //{
+        //    var lambda = (LambdaExpression)this.StripQuotes(maxMinCall.Arguments[1]);
+        //    column = this.Visit(lambda.Body) as ColumnExpression;
+        //}
+        //else
+        //{
+        //    throw new NotSupportedException(methodName);
+        //}
 
-        column.FunctionName = methodName;
-        if (methodName == nameof(Queryable.Average))
-        {
-            column.FunctionName = "AVG";
-        }
+        //column.FunctionName = methodName;
+        //if (methodName == nameof(Queryable.Average))
+        //{
+        //    column.FunctionName = "AVG";
+        //}
 
-        if (sourceExpression is TableExpression table)
-        {
-            var result = new SelectExpression(null, "", table.Columns, table);
+        //if (sourceExpression is TableExpression table)
+        //{
+        //    var result = new SelectExpression(null, "", table.Columns, table);
 
-            result.Columns.Clear();
+        //    result.Columns.Clear();
 
-            result.Columns.Add(column);
+        //    result.Columns.Add(column);
 
-            return result;
-        }
-        else if (sourceExpression is SelectExpression selectExpression)
-        {
-            selectExpression.Columns.Clear();
-            selectExpression.Columns.Add(column);
-            return selectExpression;
-        }
-        else
-        {
-            throw new NotSupportedException(methodName);
-        }
-    }
-
-
-    protected SelectExpression NestSelectExpression(SelectExpression selectExpression)
-    {
-        //如果是distinct，需要终结小查询，并作为子查询提供给下一个环节，比例原始数据为1,1,2，
-        //如果先分页，再distinct，结果可能是11，但如果先distinct再分页，结果可能是1,2
-        if (selectExpression.ColumnsPrefix == "DISTINCT")
-        {
-            var newSelectExpression = new SelectExpression(null, selectExpression.Alias, selectExpression.Columns,
-                selectExpression);
-            selectExpression = newSelectExpression;
-        }
-
-        return selectExpression;
+        //    return result;
+        //}
+        //else if (sourceExpression is SelectExpression selectExpression)
+        //{
+        //    selectExpression.Columns.Clear();
+        //    selectExpression.Columns.Add(column);
+        //    return selectExpression;
+        //}
+        //else
+        //{
+        //    throw new NotSupportedException(methodName);
+        //}
     }
 
     public virtual Expression VisitSkipTakeCall(MethodCallExpression skipTakeExpression)
@@ -1317,30 +1053,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             return tempResult;
         }
 
-    }
-
-    private SelectExpression CombineSelectExpression(TableExpression source, WhereExpression whereExpression, SelectExpression selectExpression, string @operator)
-    {
-        if (selectExpression == null)
-        {
-            var result = new SelectExpression(null, "", source.Columns, source, whereExpression);
-            return result;
-        }
-
-        if (selectExpression.Where != null)
-        {
-            var tempWhereExpression = new WhereExpression(@operator)
-            {
-                Left = selectExpression.Where,
-                Right = whereExpression
-            };
-            selectExpression.Where = tempWhereExpression;
-        }
-        else
-        {
-            selectExpression.Where = whereExpression;
-        }
-        return selectExpression;
     }
 
     public virtual Expression VisitOrderByCall(MethodCallExpression whereCall)
@@ -1413,14 +1125,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sourceExpression);
         sqlSelectQueryExpression?.Columns.AddRange(sqlSelectItemExpressions);
         return sourceExpression;
-    }
-
-    private void AppendSqlSelectItem(SqlSelectItemExpression sqlSelectItemExpression)
-    {
-        if (result.Query is SqlSelectQueryExpression sqlSelectQueryExpression)
-        {
-            sqlSelectQueryExpression.Columns.Add(sqlSelectItemExpression);
-        }
     }
 
     public virtual Expression VisitGroupByCall(MethodCallExpression groupByCall)
@@ -1522,12 +1226,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (constant.Value is IQueryable queryable)
         {
-            var tableName = DbQueryUtil.GetTableName(queryable.ElementType);
             var tableAlias = GetTableAlias();
-            var tableInfo = new TableDetailInfo(queryable.ElementType)
+            var tableInfo = new TableInfo(queryable.ElementType)
             {
                 TableAlias = tableAlias
             };
+            var tableName = tableInfo.Name;
             tableNameAliasMapping.TryAdd(tableName, tableInfo);
             if (databaseUnit.TableNameMapping != null)
             {
@@ -1535,24 +1239,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
             var table = new SqlTableExpression()
             {
-                Name = AppendQualifier(new SqlIdentifierExpression()
-                {
-                    Value = tableName
-                }),
-                Alias = AppendQualifier(new SqlIdentifierExpression()
-                {
-                    Value = tableAlias
-                }),
+                DbType = dbType,
+                Name = GetSqlIdentifierExpression(tableName),
+                Alias = GetSqlIdentifierExpression(tableAlias)
             };
 
             var r1 = new SqlSelectExpression()
             {
+                DbType = dbType,
                 Query = new SqlSelectQueryExpression()
                 {
+                    DbType = dbType,
                     Columns = new List<SqlSelectItemExpression>(),
                     From = table,
-                    OrderBy = new SqlOrderByExpression(),
-                    GroupBy = new SqlGroupByExpression()
                 }
             };
 
@@ -1737,23 +1436,25 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             //解析类似于it.T1.Name这种
             else if (GetNumberOfMemberExpressionLayers(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
             {
-                var table = new TableExpression(memberExpression.Member.ReflectedType);
-                var tableAlias = rightSecondMemberExpression.Member.Name;
-                var column = new ColumnExpression(propertyInfo.PropertyType, tableAlias, propertyInfo, 0);
-                column.Table = table;
-                return column;
+                //var table = new TableExpression(memberExpression.Member.ReflectedType);
+                //var tableAlias = rightSecondMemberExpression.Member.Name;
+                //var column = new ColumnExpression(propertyInfo.PropertyType, tableAlias, propertyInfo, 0);
+
+                //return column;
+                return null;
             }
             else if (GetNumberOfMemberExpressionLayers(memberExpression) == 3 && memberExpression.Member.Name == "Length" && memberExpression.Member.DeclaringType == typeof(string))
             {
-                var firstLayer = GetNestedMemberExpression(memberExpression, 3);
-                var secondLayer = GetNestedMemberExpression(memberExpression, 2);
-                var table = new TableExpression(memberExpression.Member.ReflectedType);
-                var tableAlias = firstLayer.Member.Name;
-                var secondLayerPropertyInfo = secondLayer.Member as PropertyInfo;
-                var column = new ColumnExpression(secondLayerPropertyInfo.PropertyType, tableAlias, secondLayerPropertyInfo, 0);
-                column.FunctionName = "LEN";
-                column.Table = table;
-                return column;
+                return null;
+                //var firstLayer = GetNestedMemberExpression(memberExpression, 3);
+                //var secondLayer = GetNestedMemberExpression(memberExpression, 2);
+                //var table = new TableExpression(memberExpression.Member.ReflectedType);
+                //var tableAlias = firstLayer.Member.Name;
+                //var secondLayerPropertyInfo = secondLayer.Member as PropertyInfo;
+                //var column = new ColumnExpression(secondLayerPropertyInfo.PropertyType, tableAlias, secondLayerPropertyInfo, 0);
+                //column.FunctionName = "LEN";
+
+                //return column;
             }
             //如果是匿名类
             else if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is NewExpression newExpression && newExpression.Arguments.Any() && newExpression.Arguments[0] is ConstantExpression)
@@ -1766,9 +1467,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                      && memberExpression.Expression.Type != null
                      && memberExpression.Expression.Type.Name.Contains("JoinCondition"))
             {
-                var tableAlias = memberExpression.Member.Name;
-                var table = new TableExpression(memberExpression.Type, tableAlias);
-                return new ColumnsExpression(table.Columns, memberExpression.Type);
+                return null;
+                //var tableAlias = memberExpression.Member.Name;
+                //var table = new TableExpression(memberExpression.Type, tableAlias);
+                //return new ColumnsExpression(table.Columns, memberExpression.Type);
             }
             else if (IsNullableGetValue(memberExpression))
             {
@@ -1833,8 +1535,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 SqlExpression body = null;
                 if (table is WrapperExpression { SqlExpression: SqlIdentifierExpression tableIdentifierExpression } wrapperExpression)
                 {
-                    body = GetSqlPropertyExpression(tableNameAliasMapping[tableIdentifierExpression.Value].TableAlias,
-                        columnName);
+                    tableNameAliasMapping.TryGetValue(tableIdentifierExpression.Value, out var tempTableInfo);
+                    if (tempTableInfo != null)
+                    {
+                        body = GetSqlPropertyExpression(tempTableInfo.TableAlias,
+                            columnName);
+                    }
+                    else
+                    {
+                        body = GetSqlIdentifierExpression(columnName);
+                    }
                 }
                 else
                 {
@@ -1950,88 +1660,35 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
     }
 
-    private Expression VisitMultiSelectNew(NewExpression newExpression)
-    {
-        var newColumns = new List<ColumnExpression>();
-        for (int i = 0; i < newExpression.Members.Count; i++)
-        {
-            var memberInfo = newExpression.Members[i];
-            if (!(memberInfo is PropertyInfo))
-            {
-                throw new NotSupportedException("only support T1,T2 etc");
-            }
-            var argument = newExpression.Arguments[i];
-            if (argument is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
-            {
-                var tempColumnExpression = new ColumnExpression((firstMemberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
-                    firstMemberExpression.Member, 0);
-                tempColumnExpression.ColumnAlias = memberInfo.Name;
-                newColumns.Add(tempColumnExpression);
-            }
-        }
-
-        var result = new ColumnsExpression(newColumns, newExpression.Type);
-        return result;
-    }
-
-    private Expression VisitMultiSelectMemberInit(MemberInitExpression memberInitExpression)
-    {
-        var newColumns = new List<ColumnExpression>();
-
-        for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
-        {
-            var binding = memberInitExpression.Bindings[i];
-            var memberInfo = binding.Member;
-            if (!(memberInfo is PropertyInfo))
-            {
-                throw new NotSupportedException("only support T1,T2 etc");
-            }
-
-            if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression firstMemberExpression && firstMemberExpression.Expression is MemberExpression memberExpression)
-            {
-                var tempColumnExpression = new ColumnExpression((firstMemberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
-                    firstMemberExpression.Member, 0);
-                tempColumnExpression.ColumnAlias = DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
-                newColumns.Add(tempColumnExpression);
-            }
-            else
-            {
-                throw new NotSupportedException("argument can not parse");
-            }
-        }
-
-        var result = new ColumnsExpression(newColumns, memberInitExpression.Type);
-        return result;
-    }
-
     protected override Expression VisitMemberInit(MemberInitExpression memberInitExpression)
     {
-        var newColumns = new List<ColumnExpression>();
+        return null;
+        //var newColumns = new List<ColumnExpression>();
 
-        for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
-        {
-            var binding = memberInitExpression.Bindings[i];
-            var memberInfo = binding.Member;
-            if (!(memberInfo is PropertyInfo))
-            {
-                throw new NotSupportedException(memberInfo.ToString());
-            }
+        //for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
+        //{
+        //    var binding = memberInitExpression.Bindings[i];
+        //    var memberInfo = binding.Member;
+        //    if (!(memberInfo is PropertyInfo))
+        //    {
+        //        throw new NotSupportedException(memberInfo.ToString());
+        //    }
 
-            if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression memberExpression)
-            {
-                var tempColumnExpression = new ColumnExpression((memberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
-                    memberExpression.Member, 0);
-                tempColumnExpression.ColumnAlias = DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
-                newColumns.Add(tempColumnExpression);
-            }
-            else
-            {
-                throw new NotSupportedException("argument can not parse");
-            }
-        }
+        //    if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression memberExpression)
+        //    {
+        //        var tempColumnExpression = new ColumnExpression((memberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
+        //            memberExpression.Member, 0);
+        //        tempColumnExpression.ColumnAlias = DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
+        //        newColumns.Add(tempColumnExpression);
+        //    }
+        //    else
+        //    {
+        //        throw new NotSupportedException("argument can not parse");
+        //    }
+        //}
 
-        var result = new ColumnsExpression(newColumns, memberInitExpression.Type);
-        return result;
+        //var result = new ColumnsExpression(newColumns, memberInitExpression.Type);
+        //return result;
     }
 
     protected override Expression VisitNew(NewExpression newExpression)
@@ -2112,11 +1769,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     sqlSelectQueryExpression.GroupBy = null;
                 }
 
-                foreach (var sqlInfoColumnInfo in sqlInfo.ColumnInfos)
+                foreach (var sqlInfoColumnInfo in sqlInfo.Columns)
                 {
                     sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
                     {
-                        Body = GetSqlPropertyExpression(sqlInfo.TableAlias, sqlInfoColumnInfo.ColumnName),
+                        Body = GetSqlPropertyExpression(sqlInfo.TableAlias, sqlInfoColumnInfo.Name),
                         Alias = GetSqlIdentifierExpression(sqlInfoColumnInfo.PropertyName)
                     });
 
@@ -2129,6 +1786,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (expression is WrapperExpression wrapperExpression)
         {
+            wrapperExpression.SqlExpression.DbType = dbType;
             return wrapperExpression.SqlExpression;
         }
         else if (expression is ConstantExpression { Value: null } constantExpression)
@@ -2167,100 +1825,336 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         throw new NotSupportedException(nameof(expression));
     }
 
-    public ExpressionTreeParsingResult Update<T>(T updateEntity)
+    protected TableInfo GetTableInfo(Type type)
     {
-        this.parameters.AddEntity(updateEntity);
-        var table = this.GetTableDetailInfo(typeof(T));
-        var columns = table.ColumnInfos.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
-
-        var keyColumnExpression = table.ColumnInfos.Where(it => it.IsKey).ToList();
-
-        if (!keyColumnExpression.Any())
+        var key = "GetTableInfo:" + type.FullName;
+        if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
         {
-            throw new Exception("Please set the primary key");
+            return (TableInfo)cacheValue;
         }
-        
-        var tempR = new SqlUpdateExpression();
 
-        foreach (var column in columns)
+        var r1 = new TableInfo(type);
+        SbUtil.CacheDictionary.TryAdd(key, r1);
+        return r1;
+    }
+
+    public virtual DbQueryResult Insert<T>(T insertEntity)
+    {
+        var key = "GetSqlInsertExpression:" + typeof(T).FullName;
+        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
         {
-            tempR.Items.Add(new SqlBinaryExpression()
+            var table = this.GetTableInfo(typeof(T));
+            var dbType = this.dbType;
+            var tableExpression = new SqlTableExpression()
             {
-                Left = new SqlIdentifierExpression()
+                Name = GetSqlIdentifierExpression(table.Name),
+            };
+            if (table.Schema.HasText())
+            {
+                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
+            }
+            var insertExpression = new SqlInsertExpression()
+            {
+                DbType = dbType,
+                Table = tableExpression
+            };
+            var valueExpressions = new List<SqlExpression>();
+            foreach (var column in table.Columns)
+            {
+                var columnName = column.Name;
+                if (column.IsKey && column.IsDatabaseGeneratedIdentity && !databaseUnit.IsDataMigrateMode)
                 {
-                    Value = column.ColumnName
-                },
-                Operator = SqlBinaryOperator.EqualTo,
-                Right = new SqlVariableExpression()
-                {
-                    Name = column.ColumnName,
-                    Prefix = prefix
+                    continue;
                 }
-            });
-        }
+                insertExpression.Columns.Add(GetSqlIdentifierExpression(columnName));
 
-        SqlBinaryExpression where = null;
-        foreach (var column in keyColumnExpression)
-        {
-            if (where == null)
-            {
-                where = new SqlBinaryExpression()
+                valueExpressions.Add(new SqlVariableExpression()
                 {
-                    Left = new SqlIdentifierExpression()
-                    {
-                        Value = column.ColumnName
-                    },
+                    DbType = dbType,
+                    Prefix = this.prefix,
+                    Name = columnName
+                });
+            }
+            insertExpression.ValuesList.Add(valueExpressions);
+
+            var result = new DbQueryResult()
+            {
+                ExecuteSqlExpression = insertExpression,
+            };
+
+            var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.IsDatabaseGeneratedIdentity && it.Name.ToLower() == "id");
+            if (keyColumn != null)
+            {
+                if (dbType == DbType.SqlServer)
+                {
+                    result.LastInsertIdSql = "select SCOPE_IDENTITY() id";
+                }
+
+                result.LastInsertIdSql = "";
+                result.IdKeyPropertyInfo = keyColumn.Property;
+                result.IdName = keyColumn.Name;
+            }
+
+            return result;
+        });
+
+        cacheResult.DynamicParameters = new DynamicParameters(insertEntity);
+
+        return cacheResult;
+    }
+
+    public DbQueryResult Update<T>(T updateEntity)
+    {
+        var key = "GetSqlUpdateExpression" + typeof(T).FullName;
+        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        {
+            var table = this.GetTableInfo(typeof(T));
+            var dbType = this.dbType;
+
+            var keyColumns = table.Columns.Where(it => it.IsKey).ToList();
+
+            if (!keyColumns.Any())
+            {
+                throw new Exception("Please set the primary key");
+            }
+
+            var tableExpression = new SqlTableExpression()
+            {
+                Name = GetSqlIdentifierExpression(table.Name)
+            };
+            if (table.Schema.HasText())
+            {
+                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
+            }
+            var updateExpression = new SqlUpdateExpression()
+            {
+                DbType = dbType,
+                Table = tableExpression
+            };
+
+            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
+
+
+            foreach (var column in columns)
+            {
+                var columnName = column.Name;
+
+                updateExpression.Items.Add(new SqlBinaryExpression()
+                {
+                    Left = GetSqlIdentifierExpression(columnName),
                     Operator = SqlBinaryOperator.EqualTo,
                     Right = new SqlVariableExpression()
                     {
-                        Name = column.ColumnName,
-                        Prefix = prefix
+                        DbType = dbType,
+                        Prefix = this.prefix,
+                        Name = columnName
                     }
-                };
+                });
             }
-            else
+
+            var keyList = new List<string>();
+            foreach (var column in keyColumns)
             {
-                where = new SqlBinaryExpression()
+                var columnName = column.Name;
+                if (column.Property.GetValue(updateEntity) is null)
                 {
-                    Left = where.Clone(),
-                    Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlBinaryExpression()
+                    var condition = new SqlBinaryExpression()
                     {
-                        Left = new SqlIdentifierExpression()
+                        Left = GetSqlIdentifierExpression(columnName),
+                        Operator = SqlBinaryOperator.Is,
+                        Right = new SqlNullExpression()
                         {
-                            Value = column.ColumnName
-                        },
+                            DbType = dbType
+                        }
+                    };
+                    if (updateExpression.Where == null)
+                    {
+                        updateExpression.Where = condition;
+                    }
+                    else
+                    {
+                        updateExpression.Where =
+                            new SqlBinaryExpression()
+                            {
+                                Left = updateExpression.Where,
+                                Operator = SqlBinaryOperator.And,
+                                Right = condition
+                            };
+                    }
+                }
+                else
+                {
+                    var condition = new SqlBinaryExpression()
+                    {
+                        Left = GetSqlIdentifierExpression(columnName),
                         Operator = SqlBinaryOperator.EqualTo,
                         Right = new SqlVariableExpression()
                         {
-                            Name = column.ColumnName,
-                            Prefix = prefix
+                            DbType = dbType,
+                            Prefix = this.prefix,
+                            Name = columnName
                         }
+                    };
+                    if (updateExpression.Where == null)
+                    {
+                        updateExpression.Where = condition;
                     }
-                };
+                    else
+                    {
+                        updateExpression.Where =
+                            new SqlBinaryExpression()
+                            {
+                                Left = updateExpression.Where,
+                                Operator = SqlBinaryOperator.And,
+                                Right = condition
+                            };
+                    }
+                }
             }
-        }
 
-        tempR.Where = where;
+            var result = new DbQueryResult()
+            {
+                ExecuteSqlExpression = updateExpression
+            };
 
-        return new ExpressionTreeParsingResult()
-        {
-            Sql = tempR.ToSql(this.dbType),
-            Parameters = this.parameters
-        };
+            return result;
+        });
+
+        cacheResult.DynamicParameters = new DynamicParameters(updateEntity);
+        return cacheResult;
     }
 
-    protected TableDetailInfo GetTableDetailInfo(Type type)
+    public DbQueryResult ExecuteUpdate<T>(Expression expression, List<SelectItem<T>> updateItems)
     {
-        var key = "GetTableDetailInfo:" + type.FullName;
-        if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
+        if (updateItems == null || updateItems.Count == 0)
         {
-            return (TableDetailInfo)cacheValue;
+            throw new ArgumentNullException(nameof(updateItems));
         }
 
-        var r1 = new TableDetailInfo(type);
-        SbUtil.CacheDictionary.TryAdd(key, r1);
-        return r1;
+        foreach (var updateItem in updateItems)
+        {
+            var tempR = this.Visit(updateItem.Select);
+            var columnPro = GetSqlExpression(tempR);
+        }
+
+        var key = "GetExecuteUpdateSqlUpdateExpression" + typeof(T).FullName;
+        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        {
+            var table = this.GetTableInfo(typeof(T));
+            var dbType = this.dbType;
+
+            var keyColumns = table.Columns.Where(it => it.IsKey).ToList();
+
+            if (!keyColumns.Any())
+            {
+                throw new Exception("Please set the primary key");
+            }
+
+            var tableExpression = new SqlTableExpression()
+            {
+                Name = GetSqlIdentifierExpression(table.Name)
+            };
+            if (table.Schema.HasText())
+            {
+                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
+            }
+            var updateExpression = new SqlUpdateExpression()
+            {
+                DbType = dbType,
+                Table = tableExpression
+            };
+
+            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
+
+
+            foreach (var column in columns)
+            {
+                var columnName = column.Name;
+
+                updateExpression.Items.Add(new SqlBinaryExpression()
+                {
+                    Left = GetSqlIdentifierExpression(columnName),
+                    Operator = SqlBinaryOperator.EqualTo,
+                    Right = new SqlVariableExpression()
+                    {
+                        DbType = dbType,
+                        Prefix = this.prefix,
+                        Name = columnName
+                    }
+                });
+            }
+
+
+
+            var result = new DbQueryResult()
+            {
+                ExecuteSqlExpression = updateExpression
+            };
+
+            return result;
+        });
+
+        return cacheResult;
+        //Clear();
+        //var table = this.getTableExpression(typeof(T));
+        //var tableName = GetSchemaTableName(table.Schema, table.Name);
+
+        //var middleResult = this.Visit(expression);
+        //this.FormatWhere(middleResult);
+        //var whereSql = _sb.ToString();
+        //_sb.Clear();
+
+        //var columnSetValueClauses = new List<string>();
+
+        //foreach (var selectItem in selectItems)
+        //{
+        //    if (selectItem.Select.Body is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
+        //    {
+        //        var body = unaryExpression.Operand;
+        //        var bodyResultExpression = this.Visit(body);
+        //        if (bodyResultExpression is ColumnExpression columnExpression)
+        //        {
+        //            this.VisitColumn(columnExpression);
+        //            _sb.Append("=");
+        //            _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
+        //            var columnSetValueClause = _sb.ToString();
+        //            columnSetValueClauses.Add(columnSetValueClause);
+        //            _sb.Clear();
+        //        }
+        //    }
+        //    else if (selectItem.Select.Body is MemberExpression memberExpression)
+        //    {
+        //        var bodyResultExpression = this.Visit(memberExpression);
+        //        if (bodyResultExpression is ColumnExpression columnExpression)
+        //        {
+        //            this.VisitColumn(columnExpression);
+        //            _sb.Append("=");
+        //            _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
+        //            var columnSetValueClause = _sb.ToString();
+        //            columnSetValueClauses.Add(columnSetValueClause);
+        //            _sb.Clear();
+        //        }
+        //    }
+        //    else
+        //    {
+        //        throw new NotSupportedException("setValue only support one property,like it=>it.name");
+        //    }
+        //}
+        //var setValues = string.Join(",", columnSetValueClauses);
+
+        //var deleteSql = $"update {tableName} set {setValues} where 1=1";
+        //if (!string.IsNullOrWhiteSpace(whereSql))
+        //{
+        //    deleteSql += $" and {whereSql}";
+        //}
+
+        //var result = new DbQueryResult()
+        //{
+        //    Sql = deleteSql.Trim(),
+        //    SqlParameters = this.sqlParameters
+        //};
+        //return result;
+
     }
 
 }

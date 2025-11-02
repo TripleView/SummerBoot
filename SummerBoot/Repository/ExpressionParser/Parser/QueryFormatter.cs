@@ -1,8 +1,7 @@
 using SqlParser.Net.Ast.Expression;
 using SummerBoot.Core;
 using SummerBoot.Repository.Core;
-using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
-using SummerBoot.Repository.ExpressionParser.Util;
+using SummerBoot.Repository.ExpressionParser.Base;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -10,8 +9,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Threading;
-using YamlDotNet.Core.Tokens;
 using DbType = SqlParser.Net.DbType;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
@@ -81,15 +78,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return functionName;
         }
 
-        protected TableExpression GetTableExpression(Type type)
+        protected TableInfo GetTableInfo(Type type)
         {
-            var key = "getTableExpression" + type.FullName;
+            var key = "getTableInfo" + type.FullName;
             if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
             {
-                return (TableExpression)cacheValue;
+                return (TableInfo)cacheValue;
             }
 
-            var result = new TableExpression(type);
+            var result = new TableInfo(type);
             SbUtil.CacheDictionary.TryAdd(key, result);
             return result;
         }
@@ -121,80 +118,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
         }
 
-        public virtual DbQueryResult Insert<T>(T insertEntity)
+        private T AppendQualifier<T>(T t) where T : IQualifierExpression
         {
-            var key = "GetSqlInsertExpression" + typeof(T).FullName;
-            var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
-             {
-                 var table = this.GetTableExpression(typeof(T));
-                 var dbType = GetDbType();
-                 var tableExpression = new SqlTableExpression()
-                 {
-                     Name = new SqlIdentifierExpression()
-                     {
-                         Value = BoxTableName(table.Name)
-                     }
-                 };
-                 if (table.Schema.HasText())
-                 {
-                     tableExpression.Schema = new SqlIdentifierExpression()
-                     {
-                         Value = BoxTableName(table.Schema)
-                     };
-                 }
-                 var insertExpression = new SqlInsertExpression()
-                 {
-                     DbType = dbType,
-                     Table = tableExpression
-                 };
-                 var valueeExpressions = new List<SqlExpression>();
-                 foreach (var column in table.Columns)
-                 {
-                     var columnName = column.ColumnName;
-                     if (column.IsKey && column.IsDatabaseGeneratedIdentity && !databaseUnit.IsDataMigrateMode)
-                     {
-                         continue;
-                     }
-                     insertExpression.Columns.Add(new SqlIdentifierExpression()
-                     {
-                         DbType = dbType,
-                         LeftQualifiers = this.leftQuote,
-                         Value = columnName,
-                         RightQualifiers = this.rightQuote
-                     });
-
-                     valueeExpressions.Add(new SqlVariableExpression()
-                     {
-                         DbType = dbType,
-                         Prefix = this.parameterPrefix,
-                         Name = columnName
-                     });
-                 }
-                 insertExpression.ValuesList.Add(valueeExpressions);
-
-                 var result = new DbQueryResult()
-                 {
-                     ExecuteSqlExpression = insertExpression,
-                 };
-
-                 var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.IsDatabaseGeneratedIdentity && it.ColumnName.ToLower() == "id" && it.MemberInfo is PropertyInfo);
-                 if (keyColumn != null)
-                 {
-                     if (dbType == DbType.SqlServer)
-                     {
-                         result.LastInsertIdSql = "select SCOPE_IDENTITY() id";
-                     }
-                     result.LastInsertIdSql = GetLastInsertIdSql();
-                     result.IdKeyPropertyInfo = keyColumn.MemberInfo as PropertyInfo;
-                     result.IdName = keyColumn.ColumnName;
-                 }
-
-                 return result;
-             });
-
-            cacheResult.DynamicParameters = new DynamicParameters(insertEntity);
-
-            return cacheResult;
+            t.LeftQualifiers = leftQuote;
+            t.RightQualifiers = rightQuote;
+            return t;
         }
 
         /// <summary>
@@ -209,185 +137,36 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             throw new NotSupportedException("not support this database");
         }
 
-        public DbQueryResult Update<T>(T updateEntity)
-        {
-            var key = "GetSqlUpdateExpression" + typeof(T).FullName;
-            var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
-            {
-                var table = this.GetTableExpression(typeof(T));
-                var dbType = GetDbType();
-
-                var keyColumns = table.Columns.Where(it => it.IsKey).ToList();
-
-                if (!keyColumns.Any())
-                {
-                    throw new Exception("Please set the primary key");
-                }
-
-                var tableExpression = new SqlTableExpression()
-                {
-                    Name = new SqlIdentifierExpression()
-                    {
-                        Value = BoxTableName(table.Name)
-                    }
-                };
-                if (table.Schema.HasText())
-                {
-                    tableExpression.Schema = new SqlIdentifierExpression()
-                    {
-                        Value = BoxTableName(table.Schema)
-                    };
-                }
-                var updateExpression = new SqlUpdateExpression()
-                {
-                    DbType = dbType,
-                    Table = tableExpression
-                };
-
-                var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
-
-
-                foreach (var column in columns)
-                {
-                    var columnName = column.ColumnName;
-
-                    updateExpression.Items.Add(new SqlBinaryExpression()
-                    {
-                        Left = new SqlIdentifierExpression()
-                        {
-                            DbType = dbType,
-                            LeftQualifiers = this.leftQuote,
-                            Value = columnName,
-                            RightQualifiers = this.rightQuote
-                        },
-                        Operator = SqlBinaryOperator.EqualTo,
-                        Right = new SqlVariableExpression()
-                        {
-                            DbType = dbType,
-                            Prefix = this.parameterPrefix,
-                            Name = columnName
-                        }
-                    });
-                }
-
-                var keyList = new List<string>();
-                foreach (var column in keyColumns)
-                {
-                    if (column.MemberInfo is PropertyInfo propertyInfo)
-                    {
-                        var columnName = column.ColumnName;
-                        if (propertyInfo.GetValue(updateEntity) is null)
-                        {
-                            var condition = new SqlBinaryExpression()
-                            {
-                                Left = new SqlIdentifierExpression()
-                                {
-                                    DbType = dbType,
-                                    LeftQualifiers = this.leftQuote,
-                                    Value = columnName,
-                                    RightQualifiers = this.rightQuote
-                                },
-                                Operator = SqlBinaryOperator.Is,
-                                Right = new SqlNullExpression()
-                                {
-                                    DbType = dbType
-                                }
-                            };
-                            if (updateExpression.Where == null)
-                            {
-                                updateExpression.Where = condition;
-                            }
-                            else
-                            {
-                                updateExpression.Where =
-                                    new SqlBinaryExpression()
-                                    {
-                                        Left = updateExpression.Where,
-                                        Operator = SqlBinaryOperator.And,
-                                        Right = condition
-                                    };
-                            }
-                        }
-                        else
-                        {
-                            var condition = new SqlBinaryExpression()
-                            {
-                                Left = new SqlIdentifierExpression()
-                                {
-                                    DbType = dbType,
-                                    LeftQualifiers = this.leftQuote,
-                                    Value = columnName,
-                                    RightQualifiers = this.rightQuote
-                                },
-                                Operator = SqlBinaryOperator.EqualTo,
-                                Right = new SqlVariableExpression()
-                                {
-                                    DbType = dbType,
-                                    Prefix = this.parameterPrefix,
-                                    Name = columnName
-                                }
-                            };
-                            if (updateExpression.Where == null)
-                            {
-                                updateExpression.Where = condition;
-                            }
-                            else
-                            {
-                                updateExpression.Where =
-                                    new SqlBinaryExpression()
-                                    {
-                                        Left = updateExpression.Where,
-                                        Operator = SqlBinaryOperator.And,
-                                        Right = condition
-                                    };
-                            }
-
-                        }
-                    }
-
-                }
-
-                var result = new DbQueryResult()
-                {
-                    ExecuteSqlExpression = updateExpression
-                };
-
-                return result;
-            });
-
-            cacheResult.DynamicParameters = new DynamicParameters(updateEntity);
-            return cacheResult;
-        }
-
         public DbQueryResult Delete<T>(T deleteEntity)
         {
-            var table = this.GetTableExpression(typeof(T));
-            var tableName = GetSchemaTableName(table.Schema, table.Name);
+            return null;
+            //var table = this.GetTableExpression(typeof(T));
+            //var tableName = GetSchemaTableName(table.Schema, table.Name);
 
-            var middleList = new List<string>();
-            foreach (var column in table.Columns)
-            {
-                var columnName = BoxColumnName(column.ColumnName);
-                var parameterName = this.parameterPrefix + column.MemberInfo.Name;
-                if (column.MemberInfo is PropertyInfo propertyInfo)
-                {
-                    if (propertyInfo.GetValue(deleteEntity) is null)
-                    {
-                        middleList.Add(columnName + " is null ");
-                        continue;
-                    }
-                }
-                middleList.Add(columnName + "=" + parameterName);
-            }
+            //var middleList = new List<string>();
+            //foreach (var column in table.Columns)
+            //{
+            //    var columnName = BoxColumnName(column.ColumnName);
+            //    var parameterName = this.parameterPrefix + column.MemberInfo.Name;
+            //    if (column.MemberInfo is PropertyInfo propertyInfo)
+            //    {
+            //        if (propertyInfo.GetValue(deleteEntity) is null)
+            //        {
+            //            middleList.Add(columnName + " is null ");
+            //            continue;
+            //        }
+            //    }
+            //    middleList.Add(columnName + "=" + parameterName);
+            //}
 
-            _sb.Append($"delete from {tableName} where {string.Join(" and ", middleList)}");
+            //_sb.Append($"delete from {tableName} where {string.Join(" and ", middleList)}");
 
-            var result = new DbQueryResult()
-            {
-                Sql = this._sb.ToString().Trim(),
-                DynamicParameters = this.dynamicParameters,
-            };
-            return result;
+            //var result = new DbQueryResult()
+            //{
+            //    Sql = this._sb.ToString().Trim(),
+            //    DynamicParameters = this.dynamicParameters,
+            //};
+            //return result;
         }
 
         public DbQueryResult DeleteByExpression<T>(Expression exp)
@@ -436,72 +215,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
             //return result;
         }
-
-        public DbQueryResult ExecuteUpdate<T>(Expression expression, List<SelectItem<T>> selectItems)
-        {
-            return null;
-            //Clear();
-            //var table = this.getTableExpression(typeof(T));
-            //var tableName = GetSchemaTableName(table.Schema, table.Name);
-
-            //var middleResult = this.Visit(expression);
-            //this.FormatWhere(middleResult);
-            //var whereSql = _sb.ToString();
-            //_sb.Clear();
-
-            //var columnSetValueClauses = new List<string>();
-
-            //foreach (var selectItem in selectItems)
-            //{
-            //    if (selectItem.Select.Body is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
-            //    {
-            //        var body = unaryExpression.Operand;
-            //        var bodyResultExpression = this.Visit(body);
-            //        if (bodyResultExpression is ColumnExpression columnExpression)
-            //        {
-            //            this.VisitColumn(columnExpression);
-            //            _sb.Append("=");
-            //            _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
-            //            var columnSetValueClause = _sb.ToString();
-            //            columnSetValueClauses.Add(columnSetValueClause);
-            //            _sb.Clear();
-            //        }
-            //    }
-            //    else if (selectItem.Select.Body is MemberExpression memberExpression)
-            //    {
-            //        var bodyResultExpression = this.Visit(memberExpression);
-            //        if (bodyResultExpression is ColumnExpression columnExpression)
-            //        {
-            //            this.VisitColumn(columnExpression);
-            //            _sb.Append("=");
-            //            _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
-            //            var columnSetValueClause = _sb.ToString();
-            //            columnSetValueClauses.Add(columnSetValueClause);
-            //            _sb.Clear();
-            //        }
-            //    }
-            //    else
-            //    {
-            //        throw new NotSupportedException("setValue only support one property,like it=>it.name");
-            //    }
-            //}
-            //var setValues = string.Join(",", columnSetValueClauses);
-
-            //var deleteSql = $"update {tableName} set {setValues} where 1=1";
-            //if (!string.IsNullOrWhiteSpace(whereSql))
-            //{
-            //    deleteSql += $" and {whereSql}";
-            //}
-
-            //var result = new DbQueryResult()
-            //{
-            //    Sql = deleteSql.Trim(),
-            //    SqlParameters = this.sqlParameters
-            //};
-            //return result;
-
-        }
-
 
         public DbQueryResult GetAll<T>()
         {

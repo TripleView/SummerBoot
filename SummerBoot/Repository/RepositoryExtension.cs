@@ -1,20 +1,17 @@
-ï»¿using System;
+using SummerBoot.Repository.ExpressionParser.Parser;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using SummerBoot.Repository.ExpressionParser.Parser;
-using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository
 {
     public static partial class RepositoryExtension
     {
         /// <summary>
-        /// å¯¹ä»“å‚¨æŸ¥å‡ºçš„ç»“æœè¿›è¡Œèµ‹å€¼
+        /// ¶Ô²Ö´¢²é³öµÄ½á¹û½øĞĞ¸³Öµ
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source"></param>
@@ -23,7 +20,7 @@ namespace SummerBoot.Repository
         /// <returns></returns>
         public static IRepository<T> SetValue<T>(this IQueryable<T> source, Expression<Func<T, object>> select, object value)
         {
-            if (!(source is IRepository<T> repository))
+            if (!(source is Repository<T> repository))
             {
                 throw new Exception("only support IRepository");
             }
@@ -39,7 +36,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// åˆ†é¡µ
+        /// ·ÖÒ³
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source2"></param>
@@ -58,7 +55,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// å¼‚æ­¥åˆ†é¡µ
+        /// Òì²½·ÖÒ³
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source2"></param>
@@ -77,7 +74,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// åˆ†é¡µ
+        /// ·ÖÒ³
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source"></param>
@@ -96,7 +93,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// å¼‚æ­¥åˆ†é¡µ
+        /// Òì²½·ÖÒ³
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source2"></param>
@@ -115,7 +112,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// å¼‚æ­¥è·å–åˆ—è¡¨
+        /// Òì²½»ñÈ¡ÁĞ±í
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source2"></param>

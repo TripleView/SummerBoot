@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -40,9 +40,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public static MethodInfo GetMethodInfoWithSelector(string methodName, bool isGenericMethod = true, int? genericTypeParameterCount = 2, int? parameterCount = null, Type type = null)
         {
-            var d = QueryMethodInfos.Where(it => it.Name == nameof(Queryable.Count)).ToList();
-            var c = d.Select(it => it.GetGenericArguments().Length).ToList();
-            var b = d.Select(it => it.GetParameters().Length).ToList();
+            var cff = QueryMethodInfos.Where(x => x.Name == nameof(Queryable.FirstOrDefault)).ToList();
             var query = QueryCondition.True<MethodInfo>();
             query = query.And(it => it.Name == methodName);
             if (isGenericMethod)

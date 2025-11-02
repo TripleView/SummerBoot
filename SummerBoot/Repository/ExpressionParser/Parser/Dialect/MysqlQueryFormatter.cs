@@ -32,14 +32,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
         public override DbQueryResult FastBatchInsert<T>(List<T> insertEntitys)
         {
            
-            var table = this.GetTableExpression(typeof(T));
+            var table = this.GetTableInfo(typeof(T));
             var tableName = GetSchemaTableName(table.Schema, table.Name);
 
             var result = new DbQueryResult()
             {
                 Sql = tableName,
                 DynamicParameters = this.dynamicParameters,
-                PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it => new DbQueryResultPropertyInfoMapping() { ColumnName = it.ColumnName, PropertyInfo = it.MemberInfo as PropertyInfo }).ToList()
+                PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it => new DbQueryResultPropertyInfoMapping() { ColumnName = it.Name, PropertyInfo = it.Property }).ToList()
             };
 
             return result;

@@ -5,16 +5,15 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
     public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery, IAsyncQueryable<T>
     {
+        //[EditorBrowsable(EditorBrowsableState.Never)]
+        //List<SelectItem<T>> SelectItems { set; get; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        List<SelectItem<T>> SelectItems { set; get; }
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        MultiQueryContext<T> MultiQueryContext { set; get; }
+
         int ExecuteUpdate();
 
         /// <summary>
