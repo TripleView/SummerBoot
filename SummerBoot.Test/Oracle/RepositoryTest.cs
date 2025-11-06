@@ -3194,7 +3194,6 @@ namespace SummerBoot.Test.Oracle
             var customer = new Customer() { Name = "testCustomer" };
             customerRepository.Insert(customer);
 
-
             customerRepository.Where(it => it.Name == "testCustomer")
                 .SetValue(it => it.Age, 5)
                 .SetValue(it => it.TotalConsumptionAmount, 100)

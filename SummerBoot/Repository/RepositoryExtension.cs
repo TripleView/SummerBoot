@@ -22,7 +22,7 @@ namespace SummerBoot.Repository
         {
             if (!(source is Repository<T> repository))
             {
-                throw new Exception("only support IRepository");
+                throw new Exception("only support Repository");
             }
             if (repository == null) throw new ArgumentNullException("source");
             if (select == null) throw new ArgumentNullException("select");

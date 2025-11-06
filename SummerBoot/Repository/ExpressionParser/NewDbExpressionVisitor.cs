@@ -575,19 +575,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     Left = right.SqlExpression,
                     Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlNumberExpression()
-                    {
-                        Value = 1m
-                    }
+                    Right = GetSqlNumberExpression(1)
                 };
                 left.SqlExpression = new SqlBinaryExpression()
                 {
                     Left = left.SqlExpression,
                     Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlNumberExpression()
-                    {
-                        Value = 1m
-                    }
+                    Right = GetSqlNumberExpression(1)
                 };
             }
             //it.HaveChildren && it.Name == "hzp"
@@ -597,10 +591,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     Left = left.SqlExpression,
                     Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlNumberExpression()
-                    {
-                        Value = 1m
-                    }
+                    Right = GetSqlNumberExpression(1)
                 };
             }
             //it.Name == "hzp" && it.HaveChildren 
@@ -610,27 +601,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     Left = right.SqlExpression,
                     Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlNumberExpression()
-                    {
-                        Value = 1m
-                    }
+                    Right = GetSqlNumberExpression(1)
                 };
             }
             //false ==  it.HaveChildren 
             else if (right.PropertyType == typeof(bool) && left.SqlExpression is SqlBoolExpression sqlBoolExpression)
             {
-                left.SqlExpression = new SqlNumberExpression()
-                {
-                    Value = sqlBoolExpression.Value ? 1 : 0
-                };
+                left.SqlExpression = GetSqlNumberExpression(sqlBoolExpression.Value ? 1 : 0);
             }
             //it.HaveChildren == false 
             else if (left.PropertyType == typeof(bool) && right.SqlExpression is SqlBoolExpression sqlBoolExpression2)
             {
-                right.SqlExpression = new SqlNumberExpression()
-                {
-                    Value = sqlBoolExpression2.Value ? 1 : 0
-                };
+                right.SqlExpression = GetSqlNumberExpression(sqlBoolExpression2.Value ? 1 : 0);
             }
             //it.Name == "hzp" && true
             else if (left.PropertyType == null && right.SqlExpression is SqlBoolExpression sqlBoolExpression3)
@@ -657,15 +639,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             wrapperExpression.SqlExpression = new SqlBinaryExpression()
             {
-                Left = new SqlNumberExpression()
-                {
-                    Value = 1
-                },
+                Left = GetSqlNumberExpression(1),
                 Operator = SqlBinaryOperator.EqualTo,
-                Right = new SqlNumberExpression()
-                {
-                    Value = sqlBoolExpression4.Value ? 1 : 0
-                },
+                Right = GetSqlNumberExpression(sqlBoolExpression4.Value ? 1 : 0),
             };
         }
     }
@@ -863,15 +839,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         return new SqlPropertyExpression()
         {
-            Name = AppendQualifier(new SqlIdentifierExpression()
-            {
-
-                Value = propertyName
-            }),
-            Table = AppendQualifier(new SqlIdentifierExpression()
-            {
-                Value = tableName
-            })
+            Name = GetSqlIdentifierExpression(propertyName),
+            Table = GetSqlIdentifierExpression(tableName),
+            DbType = dbType
         };
     }
 
@@ -879,7 +849,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         return AppendQualifier(new SqlIdentifierExpression()
         {
-            Value = value
+            Value = value,
+            DbType = dbType
         });
     }
 
@@ -890,7 +861,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return new SqlVariableExpression()
         {
             Name = parameterAlias,
-            Prefix = prefix
+            Prefix = prefix,
+            DbType = dbType
         };
     }
 
@@ -1197,10 +1169,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     {
                         Left = wrapperExpression.SqlExpression,
                         Operator = SqlBinaryOperator.EqualTo,
-                        Right = new SqlNumberExpression()
-                        {
-                            Value = 1m
-                        }
+                        Right = GetSqlNumberExpression(1)
                     };
                 }
 
@@ -1280,10 +1249,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else if (constant.Value.IsNumeric())
         {
-            return GetWrapperExpression(new SqlNumberExpression()
-            {
-                Value = Convert.ToDecimal(constant.Value)
-            });
+            return GetWrapperExpression(GetSqlNumberExpression(Convert.ToDecimal(constant.Value)));
 
         }
         else if (constant.Value is bool boolValue)
@@ -1319,10 +1285,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var tempR = new SqlExpression();
         if (result.IsNumeric())
         {
-            tempR = new SqlNumberExpression()
-            {
-                Value = (decimal)result
-            };
+            tempR = GetSqlNumberExpression((decimal)result);
         }
         else if (result is bool boolValue)
         {
@@ -1825,6 +1788,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         throw new NotSupportedException(nameof(expression));
     }
 
+    private SqlNumberExpression GetSqlNumberExpression(decimal value)
+    {
+        return new SqlNumberExpression()
+        {
+            Value = value,
+            DbType = dbType
+        };
+    }
+
     protected TableInfo GetTableInfo(Type type)
     {
         var key = "GetTableInfo:" + type.FullName;
@@ -2030,25 +2002,35 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             throw new ArgumentNullException(nameof(updateItems));
         }
+        
+        var body = this.Visit(expression);
+        var sqlSelectQueryExpression= GetSqlSelectQueryExpression(body);
+        var where = sqlSelectQueryExpression.Where;
+        if (where != null)
+        {
 
+        }
+
+        var updateColumns = new List<SqlIdentifierExpression>();
         foreach (var updateItem in updateItems)
         {
             var tempR = this.Visit(updateItem.Select);
-            var columnPro = GetSqlExpression(tempR);
+            var column = GetSqlExpression(tempR);
+            if (column is SqlIdentifierExpression sqlIdentifierExpression)
+            {
+                updateColumns.Add(sqlIdentifierExpression);
+            }
         }
 
-        var key = "GetExecuteUpdateSqlUpdateExpression" + typeof(T).FullName;
+        var updateColumnKeys = updateColumns.Select(x => x.Value).OrderBy(x => x).StringJoin(";");
+
+        var key = "GetExecuteUpdateSqlUpdateExpression" + typeof(T).FullName + updateColumnKeys;
         var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
 
-            var keyColumns = table.Columns.Where(it => it.IsKey).ToList();
-
-            if (!keyColumns.Any())
-            {
-                throw new Exception("Please set the primary key");
-            }
+           
 
             var tableExpression = new SqlTableExpression()
             {
@@ -2064,22 +2046,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 Table = tableExpression
             };
 
-            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
-
-
-            foreach (var column in columns)
+            foreach (var column in updateColumns)
             {
-                var columnName = column.Name;
-
                 updateExpression.Items.Add(new SqlBinaryExpression()
                 {
-                    Left = GetSqlIdentifierExpression(columnName),
+                    Left = column,
                     Operator = SqlBinaryOperator.EqualTo,
                     Right = new SqlVariableExpression()
                     {
                         DbType = dbType,
                         Prefix = this.prefix,
-                        Name = columnName
+                        Name = column.Value
                     }
                 });
             }
