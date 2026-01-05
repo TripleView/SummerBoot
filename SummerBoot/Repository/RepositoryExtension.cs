@@ -18,7 +18,7 @@ namespace SummerBoot.Repository
         /// <param name="select"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static IRepository<T> SetValue<T>(this IQueryable<T> source, Expression<Func<T, object>> select, object value)
+        public static IRepository<T> SetValue<T>(this IQueryable<T> source, Expression<Func<T, object>> select, object value) 
         {
             if (!(source is Repository<T> repository))
             {

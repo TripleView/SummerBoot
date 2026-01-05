@@ -9,16 +9,16 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
-    public class Repository<T> : IRepository<T>
+    public class Repository<T> : IRepository<T> 
     {
         protected DatabaseUnit databaseUnit;
         private DbType dbType;
         public Type ElementType => typeof(T);
         protected QueryFormatter QueryFormatter;
 
-        public Expression Expression { get; private set; }
+        public Expression Expression {get; protected set; }
 
-        public IQueryProvider Provider { get; private set; }
+        public IQueryProvider Provider { get; protected set; }
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
 
         public Repository(DatabaseUnit databaseUnit)
@@ -108,29 +108,30 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             return default;
         }
-
-
-        public IEnumerator<T> GetEnumerator()
+        
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            if (Provider is DbQueryProvider dbQueryProvider)
-            {
-                var wrapperExpression = this.GetDbQueryResultByExpression(this.Expression);
-                var sql = wrapperExpression.SqlExpression.ToSql();
-                var parameters = wrapperExpression.Parameters;
-                var result = this.QueryList<T>(sql, parameters);
+            //if (Provider is DbQueryProvider dbQueryProvider)
+            //{
+            //    var wrapperExpression = this.GetDbQueryResultByExpression(this.Expression);
+            //    var sql = wrapperExpression.SqlExpression.ToSql();
+            //    var parameters = wrapperExpression.Parameters;
+            //    var result = this.QueryList<T>(sql, parameters);
 
-                if (result == null)
-                    yield break;
-                foreach (var item in result)
-                {
-                    yield return item;
-                }
-            }
+            //    if (result == null)
+            //        yield break;
+            //    foreach (var item in result)
+            //    {
+            //        yield return item;
+            //    }
+            //}
+            return default;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable)this.Provider.Execute(this.Expression)).GetEnumerator();
+            return default;
+            //return ((IEnumerable)this.Provider.Execute(this.Expression)).GetEnumerator();
         }
 
         public ExpressionTreeParsingResult GetParsingResult()
@@ -538,7 +539,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return default;
         }
 
-        private WrapperExpression GetDbQueryResultByExpression(Expression expression)
+        protected WrapperExpression GetDbQueryResultByExpression(Expression expression)
         {
             var newDbExpressionVisitor = new NewDbExpressionVisitor(databaseUnit);
             var exp = newDbExpressionVisitor.Visit(expression);

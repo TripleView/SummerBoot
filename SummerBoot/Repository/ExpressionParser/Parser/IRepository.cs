@@ -10,9 +10,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 {
     public interface IRepository<T> : IOrderedQueryable<T>, IDbExecuteAndQuery, IAsyncQueryable<T>
     {
-        //[EditorBrowsable(EditorBrowsableState.Never)]
-        //List<SelectItem<T>> SelectItems { set; get; }
-        [EditorBrowsable(EditorBrowsableState.Never)]
 
         int ExecuteUpdate();
 

@@ -25,7 +25,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
 
-        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+        public IQueryable<TElement> CreateQuery<TElement>(Expression expression) 
         {
             var result = new Repository<TElement>(expression, this);
             return result;

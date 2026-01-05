@@ -97,6 +97,92 @@ namespace SummerBoot.Repository
             var cacheKey = interfaceType.FullName + ":" + customBaseRepositoryType.FullName + ":" + repositoryServiceType.FullName;
             return cacheKey;
         }
+
+        /// <summary>
+        /// 递归获取接口及其所有父接口的所有方法（去重）
+        /// </summary>
+        /// <param name="interfaceType">目标接口类型</param>
+        /// <returns>所有唯一方法的集合</returns>
+        public List<MethodInfo> GetAllInterfaceMethods(Type interfaceType)
+        {
+            // 验证输入：必须是接口类型
+            if (!interfaceType.IsInterface)
+            {
+                throw new ArgumentException("输入类型必须是接口！", nameof(interfaceType));
+            }
+            var list = new List<MethodInfo>();
+
+            var originMethods = interfaceType.GetMethods();
+            foreach (var methodInfo in originMethods)
+            {
+                if (list.All(x => IsDifferenceMethods(x, methodInfo)))
+                {
+                    list.Add(methodInfo);
+                }
+            }
+            
+            var allInterfaces = interfaceType.GetInterfaces();
+            // 递归处理当前接口和父接口
+            foreach (var allInterface in allInterfaces)
+            {
+                var methods = allInterface.GetMethods();
+                foreach (var methodInfo in methods)
+                {
+                    if (list.All(x => IsDifferenceMethods(x, methodInfo)))
+                    {
+                        list.Add(methodInfo);
+                    }
+                }
+
+            }
+
+            return list;
+        }
+
+        public bool IsDifferenceMethods(MethodInfo method1, MethodInfo method2)
+        {
+            // 空值校验
+            if (method1 == null || method2 == null)
+                return method1 != method2;
+
+            // 1. 所属类型不同 → 方法不同
+            if (method1.DeclaringType != method2.DeclaringType)
+                return true;
+
+            // 2. 方法名不同 → 方法不同
+            if (method1.Name != method2.Name)
+                return true;
+
+            // 3. 实例/静态属性不同 → 方法不同
+            if (method1.IsStatic != method2.IsStatic)
+                return true;
+
+            // 4. 参数列表不同（类型+数量+顺序）→ 方法不同
+            var params1 = method1.GetParameters();
+            var params2 = method2.GetParameters();
+            if (params1.Length != params2.Length)
+                return true;
+
+            for (int i = 0; i < params1.Length; i++)
+            {
+                // 区分 ref/out 参数（参数类型的IsByRef属性）
+                if (params1[i].ParameterType != params2[i].ParameterType)
+                    return true;
+            }
+
+            // 5. 泛型方法判断：类型参数数量不同 → 方法不同
+            if (method1.IsGenericMethodDefinition != method2.IsGenericMethodDefinition)
+                return true;
+            if (method1.IsGenericMethodDefinition)
+            {
+                if (method1.GetGenericArguments().Length != method2.GetGenericArguments().Length)
+                    return true;
+            }
+
+            // 所有核心特征相同 → 是同一个方法
+            return false;
+        }
+
         /// <summary>
         /// 动态生成接口的实现类
         /// </summary>
@@ -135,7 +221,7 @@ namespace SummerBoot.Repository
             TypeBuilder typeBuilder = modBuilder.DefineType(typeName, newTypeAttribute, parentType, interfaceTypes);
 
             var allInterfaces = targetType.GetInterfaces();
-
+            var newTargetMethods = GetAllInterfaceMethods(targetType);
             List<MethodInfo> targetMethods = new List<MethodInfo>() { };
             targetMethods.AddRange(targetType.GetMethods());
 
@@ -154,8 +240,8 @@ namespace SummerBoot.Repository
                         baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
-                        targetMethods.AddRange(typeof(IQueryable).GetMethods());
-                        var c = typeof(IRepository<>).MakeGenericType(genericType).GetMethods();
+                        //targetMethods.AddRange(typeof(IQueryable).GetMethods());
+                        //var c = typeof(IRepository<>).MakeGenericType(genericType).GetMethods();
                         targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
                         targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());
@@ -214,14 +300,19 @@ namespace SummerBoot.Repository
             ilgCtor.Emit(OpCodes.Stfld, paramterArrField);
             ilgCtor.Emit(OpCodes.Ret); //返回
 
-            var solidMethods = typeof(IBaseRepository<>).GetMethods();
-
-            foreach (MethodInfo targetMethod in targetMethods)
+            //var solidMethods = typeof(IBaseRepository<>).GetMethods();
+            var names = targetMethods.Select(x => x.Name).ToList();
+            var name2s = newTargetMethods.Select(x => x.Name).ToList();
+            foreach (MethodInfo targetMethod in newTargetMethods)
             {
                 //只挑出virtual的方法
                 if (targetMethod.IsVirtual)
                 {
                     var methodName = targetMethod.Name;
+                    if (methodName == "QueryListAsync")
+                    {
+
+                    }
                     //缓存接口的方法体，便于后续将方法体传递给httpService
                     string methodKey = Guid.NewGuid().ToString();
                     MethodsCache[methodKey] = targetMethod;
@@ -250,13 +341,20 @@ namespace SummerBoot.Repository
                     var isSolidMethod = false;
                     if (isRepository && solidMethodNames.Any(it => it == methodName))
                     {
+                        //var selectSolidMethod1s = baseRepositoryType
+                        //    .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
+                        //        it?.DeclaringType?.IsGenericType==true&& it?.DeclaringType?.GetGenericTypeDefinition()==typeof(CustomBaseRepository<>)).ToList();
+
                         var selectSolidMethods = baseRepositoryType
                             .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(it =>
                                 CompareTwoMethod(it, targetMethod)).ToList();
 
                         if (selectSolidMethods.Count > 1)
                         {
-                            throw new Exception("find two methods:" + targetMethod.Name);
+                            selectSolidMethods = selectSolidMethods.Where(x =>
+                                    x?.DeclaringType?.IsGenericType == true &&
+                                    x?.DeclaringType?.GetGenericTypeDefinition() == typeof(CustomBaseRepository<>))
+                                .ToList();
                         }
 
                         if (selectSolidMethods.Count == 1)
@@ -274,6 +372,7 @@ namespace SummerBoot.Repository
                             ilGen.Emit(OpCodes.Call, selectMethod);
                             isSolidMethod = true;
                         }
+
                     }
                     if (!isSolidMethod)
                     {
@@ -403,10 +502,6 @@ namespace SummerBoot.Repository
         /// <returns></returns>
         private bool CompareTwoMethod(MethodInfo first, MethodInfo second)
         {
-            if (first.Name.Contains("QueryListAsync") && second.Name.Contains("QueryListAsync"))
-            {
-                var c = 123;
-            }
             if (!first.Name.Split(".").Any(x => x == second.Name))
             {
                 return false;
@@ -526,4 +621,6 @@ namespace SummerBoot.Repository
             return (T)this.Build(typeof(T), constructor);
         }
     }
+
+
 }

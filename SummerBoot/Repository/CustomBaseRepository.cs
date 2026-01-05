@@ -1,16 +1,17 @@
 using SummerBoot.Core;
+using SummerBoot.Repository.Core;
+using SummerBoot.Repository.ExpressionParser.Parser;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
-using System;
-using SummerBoot.Repository.ExpressionParser.Parser;
-using SummerBoot.Repository.Core;
 using System.Data.Common;
+using System.Diagnostics;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository
@@ -35,6 +36,29 @@ namespace SummerBoot.Repository
         protected int cmdTimeOut = 1200;
         protected DatabaseUnit databaseUnit;
         protected IEntityClassHandler entityClassHandler;
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            if (Provider is DbQueryProvider dbQueryProvider)
+            {
+                var wrapperExpression = this.GetDbQueryResultByExpression(this.Expression);
+                var sql = wrapperExpression.SqlExpression.ToSql();
+                var parameters = wrapperExpression.Parameters;
+                var result = this.QueryList<T>(sql, parameters);
+
+                if (result == null)
+                    yield break;
+                foreach (var item in result)
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)this.Provider.Execute(this.Expression)).GetEnumerator();
+        }
 
         public override Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null)
         {

@@ -104,8 +104,8 @@ namespace SummerBoot.Test.Mysql
         [Fact, Priority(124)]
         public async Task TestWhereConditionContainOtherMethod()
         {
-            InitDatabase();
-
+            //InitDatabase();
+            InitService();
             var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
             var nullableTableList = new List<NullableTable>();
             var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
