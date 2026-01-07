@@ -702,7 +702,17 @@ namespace SummerBoot.Test.Mysql
             return date1.Year == date2.Year && date1.Month == date2.Month && date1.Day == date2.Day &&
                    date1.Hour == date2.Hour && date1.Minute == date2.Minute && date1.Second == date2.Second;
         }
-
+        [Fact, Priority(120)]
+        public async Task TestJoinAsync()
+        {
+            InitDatabase();
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+            var orderCustomerPages = orderHeaderRepository
+                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        }
         /// <summary>
         /// 测试3张表联查
         /// </summary>

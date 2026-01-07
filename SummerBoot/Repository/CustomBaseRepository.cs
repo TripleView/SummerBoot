@@ -37,29 +37,6 @@ namespace SummerBoot.Repository
         protected DatabaseUnit databaseUnit;
         protected IEntityClassHandler entityClassHandler;
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            if (Provider is DbQueryProvider dbQueryProvider)
-            {
-                var wrapperExpression = this.GetDbQueryResultByExpression(this.Expression);
-                var sql = wrapperExpression.SqlExpression.ToSql();
-                var parameters = wrapperExpression.Parameters;
-                var result = this.QueryList<T>(sql, parameters);
-
-                if (result == null)
-                    yield break;
-                foreach (var item in result)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable)this.Provider.Execute(this.Expression)).GetEnumerator();
-        }
-
         public override Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null)
         {
             OpenDb();

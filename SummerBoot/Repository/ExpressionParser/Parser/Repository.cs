@@ -17,8 +17,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         protected QueryFormatter QueryFormatter;
 
         public Expression Expression {get; protected set; }
-
-        public IQueryProvider Provider { get; protected set; }
+        private DbQueryProvider provider { set; get; }
+        public IQueryProvider Provider => provider;
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
 
         public Repository(DatabaseUnit databaseUnit)
@@ -31,16 +31,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         }
 
-        public Repository(Expression expression, DbQueryProvider provider) : this(provider.DatabaseUnit)
-        {
-            Provider = provider;
-            Expression = expression;
-        }
-
-
         protected void Init(DatabaseUnit databaseUnit)
         {
-            Provider = new DbQueryProvider(databaseUnit, this, GetDbQueryResultByExpression);
+            provider = new DbQueryProvider(databaseUnit, this, GetDbQueryResultByExpression);
             //最后一个表达式将是第一个IQueryable对象的引用。 
             Expression = Expression.Constant(this);
             var databaseType = databaseUnit.DatabaseType;
@@ -108,30 +101,15 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         {
             return default;
         }
-        
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            //if (Provider is DbQueryProvider dbQueryProvider)
-            //{
-            //    var wrapperExpression = this.GetDbQueryResultByExpression(this.Expression);
-            //    var sql = wrapperExpression.SqlExpression.ToSql();
-            //    var parameters = wrapperExpression.Parameters;
-            //    var result = this.QueryList<T>(sql, parameters);
 
-            //    if (result == null)
-            //        yield break;
-            //    foreach (var item in result)
-            //    {
-            //        yield return item;
-            //    }
-            //}
-            return default;
+        public IEnumerator<T> GetEnumerator()
+        {
+            return provider.QueryList<T>(Expression).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return default;
-            //return ((IEnumerable)this.Provider.Execute(this.Expression)).GetEnumerator();
+            return GetEnumerator();
         }
 
         public ExpressionTreeParsingResult GetParsingResult()
