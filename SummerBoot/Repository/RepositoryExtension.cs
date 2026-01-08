@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using SummerBoot.Repository.MultiQuery;
 
 namespace SummerBoot.Repository
 {
@@ -249,6 +250,30 @@ namespace SummerBoot.Repository
             }
 
             return source;
+        }
+
+        public static IQueryable<JoinTuple<T1, T2>> LeftJoin<T1, T2>(
+            this IRepository<T1> source,
+            IRepository<T2> joinTable,
+            Expression<Func<JoinTuple<T1, T2>, bool>> on) where T1 : new() where T2 : new()
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
+            if (on == null) throw new ArgumentNullException(nameof(on));
+
+            // 构造 LeftJoin 的表达式树
+            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            var callExpr = Expression.Call(
+                null,
+                leftJoinMethod,
+                source.Expression,
+                joinTable.Expression,
+                Expression.Quote(on)
+            );
+
+            // 让 source.Provider 创建新的 IQueryable<JoinTuple<T1, T2>>
+            return source.Provider.CreateQuery<JoinTuple<T1, T2>>(callExpr);
+
         }
     }
 }

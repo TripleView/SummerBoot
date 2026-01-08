@@ -22,6 +22,7 @@ using Xunit.Priority;
 using System.Diagnostics;
 using System.Reflection;
 using MySqlConnector;
+using SummerBoot.Repository.MultiQuery;
 using SummerBoot.Test.Common;
 using SummerBoot.Test.Common.Dto;
 using SummerBoot.Test.Mysql.Dto;
@@ -705,13 +706,18 @@ namespace SummerBoot.Test.Mysql
         [Fact, Priority(120)]
         public async Task TestJoinAsync()
         {
-            InitDatabase();
+            //InitDatabase();
+            InitService();
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
-            var orderCustomerPages = orderHeaderRepository
-                .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+            //var orderCustomerPages = orderHeaderRepository
+            //    .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId).OrderBy(x=>x.T2.Id).Select(x => x.T1.OrderNo);
+
+            var orderCustomerPages2 = orderHeaderRepository
+                .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId).ToList();
+                //.OrderBy(x => x.T2.Id).ToList();
         }
         /// <summary>
         /// 测试3张表联查

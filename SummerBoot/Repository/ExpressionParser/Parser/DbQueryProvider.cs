@@ -91,14 +91,14 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public SummerbootQueryable(DbQueryProvider provider)
         {
-            provider = provider;
-            expression = Expression.Constant(this);
+            this.provider = provider;
+            this.expression = Expression.Constant(this);
         }
 
         public SummerbootQueryable(Expression expression,DbQueryProvider provider)
         {
-            provider = provider;
-            expression = expression;
+            this.provider = provider;
+            this.expression = expression;
         }
 
         public Type ElementType => typeof(T);

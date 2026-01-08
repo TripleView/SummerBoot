@@ -314,6 +314,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 var lastMethodCallName8 = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName8);
                 return result8;
+            case nameof(RepositoryExtension.LeftJoin):
+                methodCallStack.Push(methodName);
+
+                var result10 = this.VisitJoinCall(node);
+                var lastMethodCallName10 = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName10);
+                return result10;
+                break;
 
         }
 
@@ -965,6 +973,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         //}
     }
 
+    public virtual Expression VisitJoinCall(MethodCallExpression joinExpression)
+    {
+        var methodName = joinExpression.Method.Name;
+        var arg0 = this.Visit(joinExpression.Arguments[0]);
+        var arg1 = this.Visit(joinExpression.Arguments[1]);
+        var lambda = (LambdaExpression)this.StripQuotes(joinExpression.Arguments[2]);
+        var arg2 = this.Visit(lambda.Body);
+        return joinExpression;
+    }
+
     public virtual Expression VisitSkipTakeCall(MethodCallExpression skipTakeExpression)
     {
         var methodName = skipTakeExpression.Method.Name;
@@ -1388,7 +1406,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
             }
         }
-        else if (MethodName == nameof(RepositoryMethod.JoinOn) || MethodName == nameof(RepositoryMethod.MultiQueryWhere) || MethodName == nameof(RepositoryMethod.MultiQueryOrderBy) || MethodName == nameof(RepositoryMethod.MultiSelect))
+        else if (MethodName == nameof(RepositoryExtension.LeftJoin) )
         {
             //解析静态值,例如dto里的参数，dto.Name
             if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is ConstantExpression constantExpression)
