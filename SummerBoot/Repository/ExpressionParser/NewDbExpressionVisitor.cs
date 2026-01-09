@@ -8,6 +8,7 @@ using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.ExpressionParser.Util;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -19,7 +20,7 @@ namespace SummerBoot.Repository.ExpressionParser;
 public class NewDbExpressionVisitor : ExpressionVisitor
 {
     private DbType dbType;
-
+    private static ConcurrentDictionary<Type, TableInfo> tableInfos = new ConcurrentDictionary<Type, TableInfo>();
     public NewDbExpressionVisitor(DatabaseUnit databaseUnit)
     {
         this.databaseUnit = databaseUnit;
@@ -1214,6 +1215,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         if (constant.Value is IQueryable queryable)
         {
             var tableAlias = GetTableAlias();
+            //tableInfos
             var tableInfo = new TableInfo(queryable.ElementType)
             {
                 TableAlias = tableAlias
@@ -1792,6 +1794,20 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (expression is WrapperExpression { SqlExpression: SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression } wrapperExpression)
         {
+            return sqlSelectQueryExpression;
+        }
+        else if (expression is WrapperExpression { SqlExpression: SqlTableExpression sqlTableExpression } wrapperExpression2)
+        {
+            var r1 = new SqlSelectExpression()
+            {
+                DbType = dbType,
+                Query = new SqlSelectQueryExpression()
+                {
+                    DbType = dbType,
+                    Columns = new List<SqlSelectItemExpression>(),
+                    From = table,
+                }
+            };
             return sqlSelectQueryExpression;
         }
         throw new NotSupportedException(nameof(expression));

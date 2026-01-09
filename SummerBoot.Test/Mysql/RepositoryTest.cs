@@ -714,7 +714,7 @@ namespace SummerBoot.Test.Mysql
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
             //var orderCustomerPages = orderHeaderRepository
             //    .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId).OrderBy(x=>x.T2.Id).Select(x => x.T1.OrderNo);
-
+            var d = orderHeaderRepository.Where(x => x.OrderNo == "aaa").ToList();
             var orderCustomerPages2 = orderHeaderRepository
                 .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId).ToList();
                 //.OrderBy(x => x.T2.Id).ToList();
