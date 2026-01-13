@@ -19,7 +19,7 @@ namespace SummerBoot.Repository
         /// <param name="select"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static IRepository<T> SetValue<T>(this IQueryable<T> source, Expression<Func<T, object>> select, object value) 
+        public static IRepository<T> SetValue<T>(this IQueryable<T> source, Expression<Func<T, object>> select, object value)
         {
             if (!(source is Repository<T> repository))
             {
@@ -255,7 +255,8 @@ namespace SummerBoot.Repository
         public static IQueryable<JoinTuple<T1, T2>> LeftJoin<T1, T2>(
             this IRepository<T1> source,
             IRepository<T2> joinTable,
-            Expression<Func<JoinTuple<T1, T2>, bool>> on) where T1 : new() where T2 : new()
+            Expression<Func<JoinTuple<T1, T2>, bool>> on)
+        //where T1 : new() where T2 : new()
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
@@ -275,5 +276,32 @@ namespace SummerBoot.Repository
             return source.Provider.CreateQuery<JoinTuple<T1, T2>>(callExpr);
 
         }
+
+        public static IQueryable<JoinTuple<T1, T2>> LeftJoin1<T1, T2, T3>(
+                this IRepository<JoinTuple<T1, T2>> source,
+                IRepository<T3> joinTable,
+                Expression<Func<JoinTuple<JoinTuple<T1, T2>, T3>, bool>> on)
+        //where T1 : new() where T2 : new()
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
+            if (on == null) throw new ArgumentNullException(nameof(on));
+
+            // 构造 LeftJoin 的表达式树
+            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            var callExpr = Expression.Call(
+                null,
+                leftJoinMethod,
+                source.Expression,
+                joinTable.Expression,
+                Expression.Quote(on)
+            );
+
+            // 让 source.Provider 创建新的 IQueryable<JoinTuple<T1, T2>>
+            return source.Provider.CreateQuery<JoinTuple<T1, T2>>(callExpr);
+
+        }
+
+
     }
 }

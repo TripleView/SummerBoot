@@ -1798,17 +1798,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else if (expression is WrapperExpression { SqlExpression: SqlTableExpression sqlTableExpression } wrapperExpression2)
         {
-            var r1 = new SqlSelectExpression()
-            {
-                DbType = dbType,
-                Query = new SqlSelectQueryExpression()
-                {
-                    DbType = dbType,
-                    Columns = new List<SqlSelectItemExpression>(),
-                    From = table,
-                }
-            };
-            return sqlSelectQueryExpression;
+            //var r1 = new SqlSelectExpression()
+            //{
+            //    DbType = dbType,
+            //    Query = new SqlSelectQueryExpression()
+            //    {
+            //        DbType = dbType,
+            //        Columns = new List<SqlSelectItemExpression>(),
+            //        From = table,
+            //    }
+            //};
+            //return sqlSelectQueryExpression;
         }
         throw new NotSupportedException(nameof(expression));
     }

@@ -21,6 +21,7 @@ using Xunit;
 using Xunit.Priority;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Internal;
 using MySqlConnector;
 using SummerBoot.Repository.MultiQuery;
 using SummerBoot.Test.Common;
@@ -66,7 +67,7 @@ namespace SummerBoot.Test.Mysql
         //    var result = await propNullTestRepository.InnerJoin(new PropNullTestItem(), it => it.T1.Id == it.T2.MapId&&it.T2.Name==test.Name.Trim())
         //        .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
         //    Assert.Empty(result);
-     
+
         //}
 
 
@@ -134,7 +135,7 @@ namespace SummerBoot.Test.Mysql
             }
 
             await nullableTableRepository.InsertAsync(nullableTableList);
-      
+
             var result = nullableTableRepository.Where(it => it.DateTime2 >= dateNow.AddMinutes(3)).ToList();
             Assert.Equal(2, result.Count);
 
@@ -698,7 +699,7 @@ namespace SummerBoot.Test.Mysql
             Assert.Equal("A", addressList[0].City);
         }
 
-        private bool CompareTwoDate(DateTime date1,DateTime date2)
+        private bool CompareTwoDate(DateTime date1, DateTime date2)
         {
             return date1.Year == date2.Year && date1.Month == date2.Month && date1.Day == date2.Day &&
                    date1.Hour == date2.Hour && date1.Minute == date2.Minute && date1.Second == date2.Second;
@@ -716,8 +717,12 @@ namespace SummerBoot.Test.Mysql
             //    .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId).OrderBy(x=>x.T2.Id).Select(x => x.T1.OrderNo);
             var d = orderHeaderRepository.Where(x => x.OrderNo == "aaa").ToList();
             var orderCustomerPages2 = orderHeaderRepository
-                .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId).ToList();
-                //.OrderBy(x => x.T2.Id).ToList();
+                .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId)
+            
+                //.LeftJoin(customerRepository,x=>x.T1.Id==x.T2.Id)
+                .ToList();
+                //.LeftJoin(customerRepository,x=>x.)
+                //.OrderBy(x => x.T2.Id).Select(x => new { x.T1.OrderNo, x.T2.Quantity }).ToList();
         }
         /// <summary>
         /// 测试3张表联查
@@ -1749,7 +1754,7 @@ namespace SummerBoot.Test.Mysql
             guidModel.Name = "ccd";
             await guidModelRepository.UpdateAsync(guidModel);
             Assert.Equal("ppp", guidModel.Address);
-            
+
             id = Guid.NewGuid();
             var guidModel2 = new GuidModel()
             {
@@ -2861,7 +2866,7 @@ namespace SummerBoot.Test.Mysql
             }
             InitService();
         }
-        
+
         private void InitService()
         {
             var build = new ConfigurationBuilder();
