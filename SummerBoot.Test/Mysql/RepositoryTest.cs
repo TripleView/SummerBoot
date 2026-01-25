@@ -718,8 +718,7 @@ namespace SummerBoot.Test.Mysql
             var d = orderHeaderRepository.Where(x => x.OrderNo == "aaa").ToList();
             var orderCustomerPages2 = orderHeaderRepository
                 .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId)
-            
-                //.LeftJoin(customerRepository,x=>x.T1.Id==x.T2.Id)
+                .LeftJoin(customerRepository, x=>x.T2.Id==x.T3.Id)
                 .ToList();
                 //.LeftJoin(customerRepository,x=>x.)
                 //.OrderBy(x => x.T2.Id).Select(x => new { x.T1.OrderNo, x.T2.Quantity }).ToList();
