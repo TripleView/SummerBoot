@@ -1,42 +1,42 @@
-ï»¿using System.Linq.Expressions;
-using System;
+//using System.Linq.Expressions;
+//using System;
 
-namespace SummerBoot.Repository.ExpressionParser.Parser.MultiQuery
-{
-    public class JoinBodyBase<T1>
-    {
-        /// <summary>
-        /// joinçš„ç±»å‹
-        /// </summary>
-        public JoinType JoinType { get; set; }
-        /// <summary>
-        /// æº
-        /// </summary>
-        public IRepository<T1> Repository { get; set; }
-        /// <summary>
-        /// joinçš„æ¡ä»¶
-        /// </summary>
-        public object  Condition { get; set; }
-        /// <summary>
-        /// joinè¡¨çš„ç±»
-        /// </summary>
-        public Type JoinTable { get; set; }
-       /// <summary>
-       /// joinè¡¨çš„åˆ«å
-       /// </summary>
-        public string JoinTableAlias { get; set; }
-    }
-    public class JoinBody2<T1, T2> : JoinBodyBase<T1>
-    {
+//namespace SummerBoot.Repository.ExpressionParser.Parser.MultiQuery
+//{
+//    public class JoinBodyBase<T1>
+//    {
+//        /// <summary>
+//        /// joinµÄÀàĞÍ
+//        /// </summary>
+//        public JoinType JoinType { get; set; }
+//        /// <summary>
+//        /// Ô´
+//        /// </summary>
+//        public IRepository<T1> Repository { get; set; }
+//        /// <summary>
+//        /// joinµÄÌõ¼ş
+//        /// </summary>
+//        public object  Condition { get; set; }
+//        /// <summary>
+//        /// join±íµÄÀà
+//        /// </summary>
+//        public Type JoinTable { get; set; }
+//       /// <summary>
+//       /// join±íµÄ±ğÃû
+//       /// </summary>
+//        public string JoinTableAlias { get; set; }
+//    }
+//    public class JoinBody2<T1, T2> : JoinBodyBase<T1>
+//    {
        
-    }
+//    }
 
-    public class JoinBody3<T1, T2, T3> : JoinBodyBase<T1>
-    {
+//    public class JoinBody3<T1, T2, T3> : JoinBodyBase<T1>
+//    {
       
-    }
+//    }
 
-    public class JoinBody4<T1, T2, T3, T4> : JoinBodyBase<T1>
-    {
-    }
-}
+//    public class JoinBody4<T1, T2, T3, T4> : JoinBodyBase<T1>
+//    {
+//    }
+//}

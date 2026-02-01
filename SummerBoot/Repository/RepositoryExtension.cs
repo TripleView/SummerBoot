@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Mvc;
 using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Repository.ExpressionParser.Parser.MultiQuery;
+using SummerBoot.Repository.MultiQuery;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
-using SummerBoot.Repository.MultiQuery;
 
 namespace SummerBoot.Repository
 {
@@ -252,11 +254,11 @@ namespace SummerBoot.Repository
             return source;
         }
 
-        public static IRepository<JoinTuple<T1, T2>> LeftJoin<T1, T2>(
-            this IRepository<T1> source,
-            IRepository<T2> joinTable,
-            Expression<Func<JoinTuple<T1, T2>, bool>> on)
-        where T1 : new() where T2 : new()
+        public static JoinResult<T1, T2> LeftJoin<T1, T2>(
+            this IQueryable<T1> source,
+            IQueryable<T2> joinTable,
+            Expression<Func<MultiQuery.JoinCondition<T1, T2>, bool>> on)
+        where T1 : class where T2 : class
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
@@ -272,18 +274,23 @@ namespace SummerBoot.Repository
                 Expression.Quote(on)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinTuple<T1, T2>>
-            var r= source.Provider.CreateQuery<JoinTuple<T1, T2>>(callExpr) ;
-            var r2=r as IRepository<JoinTuple<T1, T2>>;
-            return r2;
+            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
+            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2>>(callExpr);
+            var result = new JoinResult<T1, T2>()
+            {
+                Repository = r
+            };
+            return result;
         }
 
-        public static IRepository<JoinTuple<T1, T2, T3>> LeftJoin<T1, T2, T3>(
-                this IRepository<JoinTuple<T1, T2>> source,
-                IRepository<T3> joinTable,
-                Expression<Func<JoinTuple<T1, T2, T3>, bool>> on)
-            where T1 : new() where T2 : new() where T3 : new()
+        public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> joinResult,
+            IQueryable<T3> joinTable,
+            Expression<Func<MultiQuery.JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
         {
+            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+            var source = joinResult.Repository;
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
             if (on == null) throw new ArgumentNullException(nameof(on));
@@ -298,35 +305,69 @@ namespace SummerBoot.Repository
                 Expression.Quote(on)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinTuple<T1, T2>>
-            return source.Provider.CreateQuery<JoinTuple<T1, T2>>(callExpr) as IRepository<JoinTuple<T1, T2, T3>>;
+            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
+            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2, T3>>(callExpr);
+            var result = new JoinResult<T1, T2, T3>()
+            {
+                Repository = r
+            };
+            return result;
         }
 
-        public static IQueryable<JoinTuple<T1, T2>> LeftJoin1<T1, T2, T3>(
-                this IRepository<JoinTuple<T1, T2>> source,
-                IRepository<T3> joinTable,
-                Expression<Func<JoinTuple<JoinTuple<T1, T2>, T3>, bool>> on)
-        //where T1 : new() where T2 : new()
+        public static JoinResult<T1, T2> OrderBy<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
         {
+            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+            var source = joinResult.Repository;
             if (source == null) throw new ArgumentNullException(nameof(source));
-            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
-            if (on == null) throw new ArgumentNullException(nameof(on));
-
+            
             // 构造 LeftJoin 的表达式树
-            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
             var callExpr = Expression.Call(
                 null,
-                leftJoinMethod,
+                orderByMethod,
                 source.Expression,
-                joinTable.Expression,
-                Expression.Quote(on)
+                Expression.Quote(orderBy)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinTuple<T1, T2>>
-            return source.Provider.CreateQuery<JoinTuple<T1, T2>>(callExpr);
-
+            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
+            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2>>(callExpr);
+            var result = new JoinResult<T1, T2>()
+            {
+                Repository = r
+            };
+            return result;
         }
 
+
+        public static IEnumerable<TResult> Select<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+        {
+            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+            var source = joinResult.Repository;
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            // 构造 LeftJoin 的表达式树
+            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            var callExpr = Expression.Call(
+                null,
+                orderByMethod,
+                source.Expression,
+                Expression.Quote(selector)
+            );
+
+            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
+            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2>>(callExpr);
+            var d2 = r.Select(selector);
+            return d2;
+        }
+
+        public static List<TResult> ToList<T1, T2, TResult>(this JoinResult<T1, T2> joinResult)
+        {
+            if (joinResult.Repository!=null)
+            {
+                var c= joinResult.Repository.ToList();
+            }
+            return new List<TResult>();
+        }
 
     }
 }

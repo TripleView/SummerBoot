@@ -704,6 +704,12 @@ namespace SummerBoot.Test.Mysql
             return date1.Year == date2.Year && date1.Month == date2.Month && date1.Day == date2.Day &&
                    date1.Hour == date2.Hour && date1.Minute == date2.Minute && date1.Second == date2.Second;
         }
+
+        private Task Tef<T>(T t) where T : IQueryable
+        {
+            return Task.FromResult(t);
+        }
+
         [Fact, Priority(120)]
         public async Task TestJoinAsync()
         {
@@ -715,13 +721,37 @@ namespace SummerBoot.Test.Mysql
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
             //var orderCustomerPages = orderHeaderRepository
             //    .LeftJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId).OrderBy(x=>x.T2.Id).Select(x => x.T1.OrderNo);
-            var d = orderHeaderRepository.Where(x => x.OrderNo == "aaa").ToList();
-            var orderCustomerPages2 = orderHeaderRepository
-                .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId)
-                .LeftJoin(customerRepository, x=>x.T2.Id==x.T3.Id)
+            // var d = orderHeaderRepository.Where(x => x.OrderNo == "aaa").ToList();
+
+            //var d2 = new List<OrderHeader>().Select(x => new { Id = x.Id, OrderNo = x.OrderNo }).Join(new List<OrderDetail>(), x => x.Id, x => x.Id,
+            //     (x, y) => new { id = x.Id, name = y.ProductName }).Select(x=>x.id).ToList();
+
+
+
+            var orderCustomerPages3 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
+                .LeftJoin(orderDetailRepository, x => x.T1.id == x.T2.Id)
+                //.LeftJoin(customerRepository, x => x.T1.id == x.T3.Age)
+                .OrderBy(x => x.T1.id)
+                .Select(x => new { x.T1.id, x.T2.ProductName })
+                //.Select(x=>x.T2);
                 .ToList();
-                //.LeftJoin(customerRepository,x=>x.)
-                //.OrderBy(x => x.T2.Id).Select(x => new { x.T1.OrderNo, x.T2.Quantity }).ToList();
+
+
+            //await Tef(orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo }));
+
+            //var orderCustomerPages3 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
+            //    .LeftJoin3(orderDetailRepository, x => x.id, x => x.Id, (a, b) => new { a.id, b.ProductName })
+            //    .ToList();
+            //var orderCustomerPages4 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
+            //    .LeftJoin3(orderDetailRepository, x => x.id, x => x.Id, (a, b) => new { a.id, b.ProductName })
+            //    .ToList();
+            //    .ToList();
+            //var orderCustomerPages2 = orderHeaderRepository
+            //    .LeftJoin(orderDetailRepository, it => it.T1.Id == it.T2.OrderHeaderId)
+            //    .LeftJoin(customerRepository, x=>x.T1.T1.Id==x.T2.Id)
+            //    .ToList();
+            //.LeftJoin(customerRepository,x=>x.)
+            //.OrderBy(x => x.T2.Id).Select(x => new { x.T1.OrderNo, x.T2.Quantity }).ToList();
         }
         /// <summary>
         /// 测试3张表联查
