@@ -321,7 +321,7 @@ namespace SummerBoot.Repository
             if (source == null) throw new ArgumentNullException(nameof(source));
             
             // 构造 LeftJoin 的表达式树
-            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
             var callExpr = Expression.Call(
                 null,
                 orderByMethod,
@@ -346,7 +346,7 @@ namespace SummerBoot.Repository
             if (source == null) throw new ArgumentNullException(nameof(source));
 
             // 构造 LeftJoin 的表达式树
-            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
             var callExpr = Expression.Call(
                 null,
                 orderByMethod,
@@ -355,9 +355,9 @@ namespace SummerBoot.Repository
             );
 
             // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
-            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2>>(callExpr);
-            var d2 = r.Select(selector);
-            return d2;
+            var r = source.Provider.CreateQuery<TResult>(callExpr);
+            //var d2 = r.Select(selector);
+            return r;
         }
 
         public static List<TResult> ToList<T1, T2, TResult>(this JoinResult<T1, T2> joinResult)
