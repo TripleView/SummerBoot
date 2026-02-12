@@ -254,28 +254,32 @@ namespace SummerBoot.Repository
             return source;
         }
 
-        public static JoinResult<T1, T2> LeftJoin<T1, T2>(
-            this IQueryable<T1> source,
-            IQueryable<T2> joinTable,
-            Expression<Func<MultiQuery.JoinCondition<T1, T2>, bool>> on)
-        where T1 : class where T2 : class
+        public static async Task<List<T1>> ToListAsync<T1>(this IEnumerable<T1> source)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            return source.ToList();
+        }
+
+        #region Joint query of two tables
+        private static JoinResult<T1, T2> InternalJoin<T1, T2>(this IQueryable<T1> source,
+          IQueryable<T2> joinTable,
+          Expression<Func<JoinCondition<T1, T2>, bool>> on,
+          MethodInfo methodInfo
+      )
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
             if (on == null) throw new ArgumentNullException(nameof(on));
 
-            // 构造 LeftJoin 的表达式树
-            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
             var callExpr = Expression.Call(
                 null,
-                leftJoinMethod,
+                methodInfo,
                 source.Expression,
                 joinTable.Expression,
                 Expression.Quote(on)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
-            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2>>(callExpr);
+            var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
             var result = new JoinResult<T1, T2>()
             {
                 Repository = r
@@ -283,31 +287,95 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> joinResult,
-            IQueryable<T3> joinTable,
-            Expression<Func<MultiQuery.JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
+        public static JoinResult<T1, T2> LeftJoin<T1, T2>(
+            this IQueryable<T1> source,
+            IQueryable<T2> joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        where T1 : class where T2 : class
         {
-            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
-            var source = joinResult.Repository;
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
-            if (on == null) throw new ArgumentNullException(nameof(on));
+            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            return InternalJoin(source, joinTable, on, leftJoinMethod);
+        }
 
-            // 构造 LeftJoin 的表达式树
-            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+        public static JoinResult<T1, T2> InnerJoin<T1, T2>(
+            this IQueryable<T1> source,
+            IQueryable<T2> joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+            where T1 : class where T2 : class
+        {
+            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            return InternalJoin(source, joinTable, on, leftJoinMethod);
+        }
+
+        public static JoinResult<T1, T2> RightJoin<T1, T2>(
+            this IQueryable<T1> source,
+            IQueryable<T2> joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+            where T1 : class where T2 : class
+        {
+            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            return InternalJoin(source, joinTable, on, leftJoinMethod);
+        }
+
+        public static JoinResult<T1, T2> LeftJoin<T1, T2>(
+            this IQueryable<T1> source,
+            T2 joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+            where T1 : class where T2 : class
+        {
+            return source.LeftJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
+        }
+
+        public static JoinResult<T1, T2> RightJoin<T1, T2>(
+            this IQueryable<T1> source,
+            T2 joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+            where T1 : class where T2 : class
+        {
+            return source.RightJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
+        }
+
+        public static JoinResult<T1, T2> InnerJoin<T1, T2>(
+            this IQueryable<T1> source,
+            T2 joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+            where T1 : class where T2 : class
+        {
+            return source.InnerJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
+        }
+
+        public static JoinResult<T1, T2> WhereIf<T1, T2>(
+            this JoinResult<T1, T2> source,
+            bool value,
+            Expression<Func<JoinCondition<T1, T2>, bool>> where)
+            where T1 : class where T2 : class
+        {
+            if (value)
+            {
+                return source.Where(where);
+            }
+
+            return source;
+        }
+
+        public static JoinResult<T1, T2> Where<T1, T2>(
+            this JoinResult<T1, T2> source,
+            Expression<Func<JoinCondition<T1, T2>, bool>> where)
+            where T1 : class where T2 : class
+        {
+            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (where == null) throw new ArgumentNullException(nameof(where));
+            var sourceRepository = source.Repository;
             var callExpr = Expression.Call(
                 null,
-                leftJoinMethod,
-                source.Expression,
-                joinTable.Expression,
-                Expression.Quote(on)
+                methodInfo,
+                sourceRepository.Expression,
+                Expression.Quote(where)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
-            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2, T3>>(callExpr);
-            var result = new JoinResult<T1, T2, T3>()
+            var r = sourceRepository.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
+            var result = new JoinResult<T1, T2>()
             {
                 Repository = r
             };
@@ -319,8 +387,7 @@ namespace SummerBoot.Repository
             if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
             var source = joinResult.Repository;
             if (source == null) throw new ArgumentNullException(nameof(source));
-            
-            // 构造 LeftJoin 的表达式树
+
             var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
             var callExpr = Expression.Call(
                 null,
@@ -329,8 +396,7 @@ namespace SummerBoot.Repository
                 Expression.Quote(orderBy)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
-            var r = source.Provider.CreateQuery<MultiQuery.JoinCondition<T1, T2>>(callExpr);
+            var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
             var result = new JoinResult<T1, T2>()
             {
                 Repository = r
@@ -354,17 +420,183 @@ namespace SummerBoot.Repository
                 Expression.Quote(selector)
             );
 
-            // 让 source.Provider 创建新的 IQueryable<JoinCondition<T1, T2>>
             var r = source.Provider.CreateQuery<TResult>(callExpr);
-            //var d2 = r.Select(selector);
             return r;
         }
 
-        public static List<TResult> ToList<T1, T2, TResult>(this JoinResult<T1, T2> joinResult)
+
+
+        #endregion
+
+        #region Joint query of three tables
+        private static JoinResult<T1, T2, T3> InternalJoin<T1, T2, T3>(this JoinResult<T1, T2> source,
+          IQueryable<T3> joinTable,
+          Expression<Func<JoinCondition<T1, T2, T3>, bool>> on,
+          MethodInfo methodInfo
+      )
         {
-            if (joinResult.Repository!=null)
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
+            if (on == null) throw new ArgumentNullException(nameof(on));
+
+            var callExpr = Expression.Call(
+                null,
+                methodInfo,
+                source.Repository.Expression,
+                joinTable.Expression,
+                Expression.Quote(on)
+            );
+
+            var r = source.Repository.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+            var result = new JoinResult<T1, T2, T3>()
             {
-                var c= joinResult.Repository.ToList();
+                Repository = r
+            };
+            return result;
+        }
+
+        public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> source,
+            IQueryable<T3> joinTable,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
+        {
+            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+            return InternalJoin(source, joinTable, on, methodInfo);
+        }
+
+        public static JoinResult<T1, T2, T3> InnerJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> source,
+            IQueryable<T3> joinTable,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
+        {
+            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+            return InternalJoin(source, joinTable, on, methodInfo);
+        }
+
+        public static JoinResult<T1, T2, T3> RightJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> source,
+            IQueryable<T3> joinTable,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
+        {
+            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+            return InternalJoin(source, joinTable, on, methodInfo);
+        }
+
+        public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> source,
+            T3 joinTable,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
+        {
+            return source.LeftJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
+        }
+
+        public static JoinResult<T1, T2, T3> RightJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> source,
+            T3 joinTable,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
+        {
+            return source.RightJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
+        }
+        public static JoinResult<T1, T2, T3> InnerJoin<T1, T2, T3>(
+            this JoinResult<T1, T2> source,
+            T3 joinTable,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+            where T1 : class where T2 : class where T3 : class
+        {
+            return source.InnerJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
+        }
+
+        public static JoinResult<T1, T2, T3> WhereIf<T1, T2, T3>(
+            this JoinResult<T1, T2, T3> source,
+            bool value,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> where)
+            where T1 : class where T2 : class where T3 : class
+        {
+            if (value)
+            {
+                return source.Where(where);
+            }
+
+            return source;
+        }
+
+        public static JoinResult<T1, T2, T3> Where<T1, T2, T3>(
+            this JoinResult<T1, T2, T3> source,
+            Expression<Func<JoinCondition<T1, T2, T3>, bool>> where)
+            where T1 : class where T2 : class where T3 : class
+        {
+            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (where == null) throw new ArgumentNullException(nameof(where));
+            var sourceRepository = source.Repository;
+            var callExpr = Expression.Call(
+                null,
+                methodInfo,
+                sourceRepository.Expression,
+                Expression.Quote(where)
+            );
+
+            var r = sourceRepository.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+            var result = new JoinResult<T1, T2, T3>()
+            {
+                Repository = r
+            };
+            return result;
+        }
+
+        public static JoinResult<T1, T2, T3> OrderBy<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
+        {
+            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+            var source = joinResult.Repository;
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
+            var callExpr = Expression.Call(
+                null,
+                orderByMethod,
+                source.Expression,
+                Expression.Quote(orderBy)
+            );
+
+            var r = source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+            var result = new JoinResult<T1, T2, T3>()
+            {
+                Repository = r
+            };
+            return result;
+        }
+
+
+        public static IEnumerable<TResult> Select<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> selector)
+        {
+            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+            var source = joinResult.Repository;
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            // 构造 LeftJoin 的表达式树
+            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
+            var callExpr = Expression.Call(
+                null,
+                orderByMethod,
+                source.Expression,
+                Expression.Quote(selector)
+            );
+
+            var r = source.Provider.CreateQuery<TResult>(callExpr);
+            return r;
+        }
+        #endregion
+
+        public static List<TResult> ToList<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult)
+        {
+            if (joinResult.Repository != null)
+            {
+                var c = joinResult.Repository.ToList();
             }
             return new List<TResult>();
         }

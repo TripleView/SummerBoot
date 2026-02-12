@@ -36,7 +36,7 @@ namespace SummerBoot.Repository.ExpressionParser.Base
 
         /// <summary>
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; set; }
 
         /// <summary>
         /// </summary>

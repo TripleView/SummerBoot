@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Core
 {
@@ -57,6 +58,18 @@ namespace SummerBoot.Core
                 dictionary[pair.Key] = pair.Value;
             }
             
+            return true;
+        }
+
+        public static bool TryGetOrAdd<T1, T2>(this IDictionary<T1, T2> dictionary,T1 key,out T2 value,Func<T2> func)
+        {
+            if (dictionary.TryGetValue(key, out value))
+            {
+                return true;
+            }
+
+            value = func();
+            dictionary.TryAdd(key, value);
             return true;
         }
     }
