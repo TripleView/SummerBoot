@@ -382,7 +382,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public static JoinResult<T1, T2> OrderBy<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
+        public static JoinOrderByResult<T1, T2> OrderBy<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
         {
             if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
             var source = joinResult.Repository;
@@ -397,12 +397,35 @@ namespace SummerBoot.Repository
             );
 
             var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
-            var result = new JoinResult<T1, T2>()
+            var result = new JoinOrderByResult<T1, T2>()
             {
                 Repository = r
             };
             return result;
         }
+
+        //public static JoinOrderByResult<T1, T2> ThenBy<T1, T2, TResult>(this JoinOrderByResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
+        //{
+        //    if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+        //    var source = joinResult.Repository;
+        //    var source = joinResult.Repository;
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
+
+        //    var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        orderByMethod,
+        //        source.Expression,
+        //        Expression.Quote(orderBy)
+        //    );
+
+        //    var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
+        //    var result = new JoinOrderByResult<T1, T2>()
+        //    {
+        //        Repository = r
+        //    };
+        //    return result;
+        //}
 
 
         public static IEnumerable<TResult> Select<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
@@ -549,7 +572,7 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public static JoinResult<T1, T2, T3> OrderBy<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
+        public static JoinOrderByResult<T1, T2, T3> OrderBy<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
         {
             if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
             var source = joinResult.Repository;
@@ -564,12 +587,35 @@ namespace SummerBoot.Repository
             );
 
             var r = source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
-            var result = new JoinResult<T1, T2, T3>()
+            var result = new JoinOrderByResult<T1, T2, T3>()
             {
                 Repository = r
             };
             return result;
         }
+
+        //public static JoinResult<T1, T2, T3> ThenBy<T1, T2, T3, TResult>(this JoinOrderByResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
+        //{
+        //    if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+        //    var source = joinResult.Repository;
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
+
+        //    var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        orderByMethod,
+        //        source.Expression,
+        //        Expression.Quote(orderBy)
+        //    );
+
+        //    var r = source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+        //    var result = new JoinResult<T1, T2, T3>()
+        //    {
+        //        Repository = r
+        //    };
+        //    return result;
+        //}
+
 
 
         public static IEnumerable<TResult> Select<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> selector)

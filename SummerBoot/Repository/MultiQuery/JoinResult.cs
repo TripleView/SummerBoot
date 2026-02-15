@@ -18,6 +18,11 @@ public class JoinResult<T1, T2, T3>
     public IQueryable<JoinCondition<T1, T2, T3>> Repository { get; set; }
 }
 
+public class JoinOrderByResult<T1, T2, T3> : JoinResult<T1, T2, T3>
+{
+
+}
+
 public class JoinResult<T1, T2, T3, T4>
 {
 }
