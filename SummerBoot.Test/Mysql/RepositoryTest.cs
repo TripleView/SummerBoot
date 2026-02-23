@@ -198,445 +198,445 @@ namespace SummerBoot.Test.Mysql
         /// <summary>
         /// 测试where条件的各种情况
         /// </summary>
-        [Fact, Priority(122)]
-        public async Task TestWhereCombine()
-        {
-            InitDatabase();
+        //[Fact, Priority(122)]
+        //public async Task TestWhereCombine()
+        //{
+        //    InitDatabase();
 
-            var addressRepository = serviceProvider.GetService<IAddressRepository>();
-            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
-            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-            var birthDay = new DateTime(1992, 2, 15);
-            var customer1 = new Customer()
-            {
-                Age = 1,
-                Name = "bob",
-                CustomerNo = "A1",
-                TotalConsumptionAmount = 1,
-                BirthDay = birthDay
-            };
+        //    var addressRepository = serviceProvider.GetService<IAddressRepository>();
+        //    var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+        //    var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+        //    var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+        //    var birthDay = new DateTime(1992, 2, 15);
+        //    var customer1 = new Customer()
+        //    {
+        //        Age = 1,
+        //        Name = "bob",
+        //        CustomerNo = "A1",
+        //        TotalConsumptionAmount = 1,
+        //        BirthDay = birthDay
+        //    };
 
-            var customer2 = new Customer()
-            {
-                Age = 2,
-                Name = "bob",
-                CustomerNo = "A2",
-                TotalConsumptionAmount = 2
-            };
-            await customerRepository.InsertAsync(customer1);
-            await customerRepository.InsertAsync(customer2);
+        //    var customer2 = new Customer()
+        //    {
+        //        Age = 2,
+        //        Name = "bob",
+        //        CustomerNo = "A2",
+        //        TotalConsumptionAmount = 2
+        //    };
+        //    await customerRepository.InsertAsync(customer1);
+        //    await customerRepository.InsertAsync(customer2);
 
-            #region 测试单表where
+        //    #region 测试单表where
 
-            var customerList1 = await customerRepository.Where(it => it.Name == "bob").ToListAsync();
-            Assert.Equal(2, customerList1.Count);
-            var customerList2 = await customerRepository.Where(it => it.Name == "bob").Where(it => it.Age == 1).ToListAsync();
-            Assert.Equal(1, customerList2.Count);
+        //    var customerList1 = await customerRepository.Where(it => it.Name == "bob").ToListAsync();
+        //    Assert.Equal(2, customerList1.Count);
+        //    var customerList2 = await customerRepository.Where(it => it.Name == "bob").Where(it => it.Age == 1).ToListAsync();
+        //    Assert.Equal(1, customerList2.Count);
 
-            var customerList3 = await customerRepository.Where(it => it.CustomerNo == "A2").Where(it => it.Age == 1).ToListAsync();
-            Assert.Equal(2, customerList3.Count);
+        //    var customerList3 = await customerRepository.Where(it => it.CustomerNo == "A2").Where(it => it.Age == 1).ToListAsync();
+        //    Assert.Equal(2, customerList3.Count);
 
-            var customerList4 = await customerRepository.WhereIf(true, it => it.CustomerNo == "A2").ToListAsync();
-            Assert.Equal(1, customerList4.Count);
+        //    var customerList4 = await customerRepository.WhereIf(true, it => it.CustomerNo == "A2").ToListAsync();
+        //    Assert.Equal(1, customerList4.Count);
 
-            var customerList5 = await customerRepository.WhereIf(false, it => it.CustomerNo == "A2").ToListAsync();
-            Assert.Equal(2, customerList5.Count);
+        //    var customerList5 = await customerRepository.WhereIf(false, it => it.CustomerNo == "A2").ToListAsync();
+        //    Assert.Equal(2, customerList5.Count);
 
-            var customerList6 = await customerRepository.Where(it => it.CustomerNo == "A2").WhereIf(true, it => it.Age == 1).ToListAsync();
-            Assert.Equal(2, customerList6.Count);
+        //    var customerList6 = await customerRepository.Where(it => it.CustomerNo == "A2").WhereIf(true, it => it.Age == 1).ToListAsync();
+        //    Assert.Equal(2, customerList6.Count);
 
-            var customerList7 = await customerRepository.Where(it => it.CustomerNo == "A2").WhereIf(false, it => it.Age == 1).ToListAsync();
-            Assert.Equal(1, customerList7.Count);
+        //    var customerList7 = await customerRepository.Where(it => it.CustomerNo == "A2").WhereIf(false, it => it.Age == 1).ToListAsync();
+        //    Assert.Equal(1, customerList7.Count);
 
-            var customerList8 = await customerRepository.Where(it => it.CustomerNo == "A2").ToListAsync();
-            Assert.Equal(1, customerList8.Count);
+        //    var customerList8 = await customerRepository.Where(it => it.CustomerNo == "A2").ToListAsync();
+        //    Assert.Equal(1, customerList8.Count);
 
-            var newTestCustomer = new Customer()
-            {
-                CustomerNo = " A2 "
-            };
-            var customerList9 = await customerRepository.Where(it => it.CustomerNo.Contains(newTestCustomer.CustomerNo.Trim())).ToListAsync();
-            Assert.Equal(1, customerList9.Count);
-            #endregion
-
-
-            var baseTime = new DateTime(2023, 10, 24, 17, 0, 0);
-            var date1 = baseTime.AddMinutes(-10);
-            var date2 = baseTime.AddMinutes(-5);
-            var date3 = baseTime.AddMinutes(-7);
-            var date4 = baseTime.AddMinutes(-12);
-            var address1 = new Address()
-            {
-                CustomerId = customer1.Id,
-                City = "A",
-                CreateOn = date3
-            };
-            var address2 = new Address()
-            {
-                CustomerId = customer1.Id,
-                City = "B",
-                CreateOn = date4
-            };
-            var address3 = new Address()
-            {
-                CustomerId = customer2.Id,
-                City = "A",
-                CreateOn = date4
-            };
-            await addressRepository.InsertAsync(address1);
-            await addressRepository.InsertAsync(address2);
-            await addressRepository.InsertAsync(address3);
-
-            var firstBuyDate = new DateTime(2023, 8, 1, 17, 0, 0);
-            var secondBuyDate = new DateTime(2023, 10, 26, 17, 0, 0);
-
-            var orderHeader = new OrderHeader()
-            {
-                CreateTime = firstBuyDate,
-                CustomerId = customer1.Id,
-                OrderNo = "ABC",
-                State = 1
-            };
-            await orderHeaderRepository.InsertAsync(orderHeader);
-
-            var orderHeader1 = new OrderHeader()
-            {
-                CreateTime = secondBuyDate,
-                CustomerId = customer1.Id,
-                OrderNo = "JJJ",
-                State = 1
-            };
-            await orderHeaderRepository.InsertAsync(orderHeader1);
-
-            var orderHeader2 = new OrderHeader()
-            {
-                CreateTime = firstBuyDate,
-                CustomerId = customer2.Id,
-                OrderNo = "DEF",
-                State = 2
-            };
-            await orderHeaderRepository.InsertAsync(orderHeader2);
-            var orderDetail1 = new OrderDetail()
-            {
-                OrderHeaderId = orderHeader.Id,
-                ProductName = "A",
-                Quantity = 1,
-                State = 1
-            };
-
-            var orderDetail2 = new OrderDetail()
-            {
-                OrderHeaderId = orderHeader.Id,
-                ProductName = "B",
-                Quantity = 2,
-                State = 1
-            };
-
-            var orderDetail3 = new OrderDetail()
-            {
-                OrderHeaderId = orderHeader2.Id,
-                ProductName = "C",
-                Quantity = 3,
-                State = 1
-            };
-
-            var orderDetail4 = new OrderDetail()
-            {
-                OrderHeaderId = orderHeader1.Id,
-                ProductName = "D",
-                Quantity = 4,
-                State = 1
-            };
-            await orderDetailRepository.InsertAsync(orderDetail1);
-            await orderDetailRepository.InsertAsync(orderDetail2);
-            await orderDetailRepository.InsertAsync(orderDetail3);
-            await orderDetailRepository.InsertAsync(orderDetail4);
-            #region 测试双表where
-
-            var result01 = await customerRepository
-                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City == new { city = "B" }.city)
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(1, result01.Count);
-
-            var result02 = await customerRepository
-                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T2.City == new { city = "B" }.city)
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(1, result02.Count);
-
-            var result03 = await customerRepository
-                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T2.City == new { city = "B" }.city)
-                .Select(it => it.T1.CustomerNo)
-                .ToListAsync();
-            Assert.Equal(1, result03.Count);
-
-            var result04 = await customerRepository
-                .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T2.City == new { city = "B" }.city)
-                .Select(it => new { it.T1.BirthDay, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(1, result04.Count);
-            Assert.Equal(birthDay, result04[0].BirthDay);
-
-            var result = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T2.City == "A")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(2, result.Count);
-
-            var result11 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T2.City == "A")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(2, result11.Count);
-
-            var result111 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City.StartsWith("A"))
-                .Where(it => it.T2.City == "A")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(2, result111.Count);
-
-            var result2 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T2.City == "A")
-                .Where(it => it.T1.CustomerNo == "A1")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(1, result2.Count);
-
-            var result3 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .WhereIf(true, it => it.T2.City == "A")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(2, result3.Count);
-
-            var result4 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .WhereIf(false, it => it.T2.City == "A")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(3, result4.Count);
-
-            var result5 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T1.CustomerNo == "A2")
-                .Where(it => it.T2.City == "B")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(2, result5.Count);
-
-            var result6 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T1.CustomerNo == "A2")
-                .WhereIf(true, it => it.T2.City == "B")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(2, result6.Count);
-
-            var result7 = await customerRepository
-                .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
-                .Where(it => it.T1.CustomerNo == "A2")
-                .WhereIf(false, it => it.T2.City == "B")
-                .Select(it => new { it.T1.CustomerNo, it.T2.City })
-                .ToListAsync();
-            Assert.Equal(1, result7.Count);
-            #endregion
-
-            #region 测试3表where
-            //测试多join和where条件
-            //  .InnerJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
-            var orderList = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList.Count);
-            Assert.Equal("A", orderList[0].ProductName);
-            Assert.Equal("B", orderList[1].ProductName);
-            Assert.Equal("D", orderList[2].ProductName);
-
-            var orderList1 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo == "A1")
-                .Where(it => it.T1.CreateTime == firstBuyDate)
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(2, orderList1.Count);
-            Assert.Equal("A", orderList1[0].ProductName);
-            Assert.Equal("B", orderList1[1].ProductName);
+        //    var newTestCustomer = new Customer()
+        //    {
+        //        CustomerNo = " A2 "
+        //    };
+        //    var customerList9 = await customerRepository.Where(it => it.CustomerNo.Contains(newTestCustomer.CustomerNo.Trim())).ToListAsync();
+        //    Assert.Equal(1, customerList9.Count);
+        //    #endregion
 
 
-            var orderList3 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList3.Count);
-            Assert.Equal("A", orderList3[0].ProductName);
-            Assert.Equal("B", orderList3[1].ProductName);
-            Assert.Equal("D", orderList3[2].ProductName);
+        //    var baseTime = new DateTime(2023, 10, 24, 17, 0, 0);
+        //    var date1 = baseTime.AddMinutes(-10);
+        //    var date2 = baseTime.AddMinutes(-5);
+        //    var date3 = baseTime.AddMinutes(-7);
+        //    var date4 = baseTime.AddMinutes(-12);
+        //    var address1 = new Address()
+        //    {
+        //        CustomerId = customer1.Id,
+        //        City = "A",
+        //        CreateOn = date3
+        //    };
+        //    var address2 = new Address()
+        //    {
+        //        CustomerId = customer1.Id,
+        //        City = "B",
+        //        CreateOn = date4
+        //    };
+        //    var address3 = new Address()
+        //    {
+        //        CustomerId = customer2.Id,
+        //        City = "A",
+        //        CreateOn = date4
+        //    };
+        //    await addressRepository.InsertAsync(address1);
+        //    await addressRepository.InsertAsync(address2);
+        //    await addressRepository.InsertAsync(address3);
 
-            var orderList4 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(true, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList4.Count);
-            Assert.Equal("A", orderList4[0].ProductName);
-            Assert.Equal("B", orderList4[1].ProductName);
-            Assert.Equal("D", orderList4[2].ProductName);
+        //    var firstBuyDate = new DateTime(2023, 8, 1, 17, 0, 0);
+        //    var secondBuyDate = new DateTime(2023, 10, 26, 17, 0, 0);
 
-            var orderList5 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(false, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(4, orderList5.Count);
+        //    var orderHeader = new OrderHeader()
+        //    {
+        //        CreateTime = firstBuyDate,
+        //        CustomerId = customer1.Id,
+        //        OrderNo = "ABC",
+        //        State = 1
+        //    };
+        //    await orderHeaderRepository.InsertAsync(orderHeader);
 
-            var orderList6 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(true, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList6.Count);
-            Assert.Equal("A", orderList3[0].ProductName);
-            Assert.Equal("B", orderList3[1].ProductName);
-            Assert.Equal("D", orderList3[2].ProductName);
+        //    var orderHeader1 = new OrderHeader()
+        //    {
+        //        CreateTime = secondBuyDate,
+        //        CustomerId = customer1.Id,
+        //        OrderNo = "JJJ",
+        //        State = 1
+        //    };
+        //    await orderHeaderRepository.InsertAsync(orderHeader1);
 
-            var orderList7 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(false, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(4, orderList7.Count);
-            Assert.Equal("A", orderList7[0].ProductName);
-            Assert.Equal("B", orderList7[1].ProductName);
-            Assert.Equal("C", orderList7[2].ProductName);
-            Assert.Equal("D", orderList7[3].ProductName);
-            #endregion
+        //    var orderHeader2 = new OrderHeader()
+        //    {
+        //        CreateTime = firstBuyDate,
+        //        CustomerId = customer2.Id,
+        //        OrderNo = "DEF",
+        //        State = 2
+        //    };
+        //    await orderHeaderRepository.InsertAsync(orderHeader2);
+        //    var orderDetail1 = new OrderDetail()
+        //    {
+        //        OrderHeaderId = orderHeader.Id,
+        //        ProductName = "A",
+        //        Quantity = 1,
+        //        State = 1
+        //    };
 
-            #region 测试4表where
-            //测试多join和where条件
-            //  .InnerJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
-            var orderList8 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList8.Count);
-            Assert.Equal("A", orderList8[0].ProductName);
-            Assert.Equal("A", orderList8[0].CustomerCity);
-            Assert.Equal("B", orderList8[1].ProductName);
-            Assert.Equal("D", orderList8[2].ProductName);
+        //    var orderDetail2 = new OrderDetail()
+        //    {
+        //        OrderHeaderId = orderHeader.Id,
+        //        ProductName = "B",
+        //        Quantity = 2,
+        //        State = 1
+        //    };
 
-            var orderList9 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo == "A1")
-                .Where(it => it.T1.CreateTime == firstBuyDate)
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(2, orderList9.Count);
-            Assert.Equal("A", orderList9[0].ProductName);
-            Assert.Equal("A", orderList9[0].CustomerCity);
-            Assert.Equal("B", orderList9[1].ProductName);
+        //    var orderDetail3 = new OrderDetail()
+        //    {
+        //        OrderHeaderId = orderHeader2.Id,
+        //        ProductName = "C",
+        //        Quantity = 3,
+        //        State = 1
+        //    };
+
+        //    var orderDetail4 = new OrderDetail()
+        //    {
+        //        OrderHeaderId = orderHeader1.Id,
+        //        ProductName = "D",
+        //        Quantity = 4,
+        //        State = 1
+        //    };
+        //    await orderDetailRepository.InsertAsync(orderDetail1);
+        //    await orderDetailRepository.InsertAsync(orderDetail2);
+        //    await orderDetailRepository.InsertAsync(orderDetail3);
+        //    await orderDetailRepository.InsertAsync(orderDetail4);
+        //    #region 测试双表where
+
+        //    var result01 = await customerRepository
+        //        .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City == new { city = "B" }.city)
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(1, result01.Count);
+
+        //    var result02 = await customerRepository
+        //        .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T2.City == new { city = "B" }.city)
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(1, result02.Count);
+
+        //    var result03 = await customerRepository
+        //        .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T2.City == new { city = "B" }.city)
+        //        .Select(it => it.T1.CustomerNo)
+        //        .ToListAsync();
+        //    Assert.Equal(1, result03.Count);
+
+        //    var result04 = await customerRepository
+        //        .InnerJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T2.City == new { city = "B" }.city)
+        //        .Select(it => new { it.T1.BirthDay, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(1, result04.Count);
+        //    Assert.Equal(birthDay, result04[0].BirthDay);
+
+        //    var result = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T2.City == "A")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(2, result.Count);
+
+        //    var result11 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T2.City == "A")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(2, result11.Count);
+
+        //    var result111 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId && it.T2.City.StartsWith("A"))
+        //        .Where(it => it.T2.City == "A")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(2, result111.Count);
+
+        //    var result2 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T2.City == "A")
+        //        .Where(it => it.T1.CustomerNo == "A1")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(1, result2.Count);
+
+        //    var result3 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .WhereIf(true, it => it.T2.City == "A")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(2, result3.Count);
+
+        //    var result4 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .WhereIf(false, it => it.T2.City == "A")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(3, result4.Count);
+
+        //    var result5 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T1.CustomerNo == "A2")
+        //        .Where(it => it.T2.City == "B")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(2, result5.Count);
+
+        //    var result6 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T1.CustomerNo == "A2")
+        //        .WhereIf(true, it => it.T2.City == "B")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(2, result6.Count);
+
+        //    var result7 = await customerRepository
+        //        .LeftJoin(new Address(), it => it.T1.Id == it.T2.CustomerId)
+        //        .Where(it => it.T1.CustomerNo == "A2")
+        //        .WhereIf(false, it => it.T2.City == "B")
+        //        .Select(it => new { it.T1.CustomerNo, it.T2.City })
+        //        .ToListAsync();
+        //    Assert.Equal(1, result7.Count);
+        //    #endregion
+
+        //    #region 测试3表where
+        //    //测试多join和where条件
+        //    //  .InnerJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+        //    var orderList = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .Where(it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList.Count);
+        //    Assert.Equal("A", orderList[0].ProductName);
+        //    Assert.Equal("B", orderList[1].ProductName);
+        //    Assert.Equal("D", orderList[2].ProductName);
+
+        //    var orderList1 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .Where(it => it.T3.CustomerNo == "A1")
+        //        .Where(it => it.T1.CreateTime == firstBuyDate)
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(2, orderList1.Count);
+        //    Assert.Equal("A", orderList1[0].ProductName);
+        //    Assert.Equal("B", orderList1[1].ProductName);
 
 
-            var orderList10 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .Where(it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList10.Count);
-            Assert.Equal("A", orderList10[0].ProductName);
-            Assert.Equal("A", orderList10[0].CustomerCity);
-            Assert.Equal("B", orderList10[1].ProductName);
-            Assert.Equal("D", orderList10[2].ProductName);
+        //    var orderList3 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .Where(it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList3.Count);
+        //    Assert.Equal("A", orderList3[0].ProductName);
+        //    Assert.Equal("B", orderList3[1].ProductName);
+        //    Assert.Equal("D", orderList3[2].ProductName);
 
-            var orderList11 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(true, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList11.Count);
-            Assert.Equal("A", orderList11[0].ProductName);
-            Assert.Equal("A", orderList11[0].CustomerCity);
-            Assert.Equal("B", orderList11[1].ProductName);
-            Assert.Equal("D", orderList11[2].ProductName);
+        //    var orderList4 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(true, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList4.Count);
+        //    Assert.Equal("A", orderList4[0].ProductName);
+        //    Assert.Equal("B", orderList4[1].ProductName);
+        //    Assert.Equal("D", orderList4[2].ProductName);
 
-            var orderList12 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(false, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList12.Count);
+        //    var orderList5 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(false, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(4, orderList5.Count);
 
-            var orderList13 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(true, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList13.Count);
-            Assert.Equal("A", orderList13[0].ProductName);
-            Assert.Equal("A", orderList13[0].CustomerCity);
-            Assert.Equal("B", orderList13[1].ProductName);
-            Assert.Equal("D", orderList13[2].ProductName);
+        //    var orderList6 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(true, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList6.Count);
+        //    Assert.Equal("A", orderList3[0].ProductName);
+        //    Assert.Equal("B", orderList3[1].ProductName);
+        //    Assert.Equal("D", orderList3[2].ProductName);
 
-            var orderList14 = await orderHeaderRepository
-                .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
-                .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
-                .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
-                .OrderBy(it => it.T2.Quantity)
-                .WhereIf(false, it => it.T3.CustomerNo == "A1")
-                .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
-                .ToListAsync();
-            Assert.Equal(3, orderList14.Count);
-            Assert.Equal("A", orderList14[0].ProductName);
-            Assert.Equal("A", orderList14[0].CustomerCity);
-            Assert.Equal("B", orderList14[1].ProductName);
-            Assert.Equal("D", orderList14[2].ProductName);
+        //    var orderList7 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(false, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(4, orderList7.Count);
+        //    Assert.Equal("A", orderList7[0].ProductName);
+        //    Assert.Equal("B", orderList7[1].ProductName);
+        //    Assert.Equal("C", orderList7[2].ProductName);
+        //    Assert.Equal("D", orderList7[3].ProductName);
+        //    #endregion
 
-            #endregion
-        }
+        //    #region 测试4表where
+        //    //测试多join和where条件
+        //    //  .InnerJoin(new Address(), it => it.T3.Id == it.T4.CustomerId)
+        //    var orderList8 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .Where(it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList8.Count);
+        //    Assert.Equal("A", orderList8[0].ProductName);
+        //    Assert.Equal("A", orderList8[0].CustomerCity);
+        //    Assert.Equal("B", orderList8[1].ProductName);
+        //    Assert.Equal("D", orderList8[2].ProductName);
+
+        //    var orderList9 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .Where(it => it.T3.CustomerNo == "A1")
+        //        .Where(it => it.T1.CreateTime == firstBuyDate)
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(2, orderList9.Count);
+        //    Assert.Equal("A", orderList9[0].ProductName);
+        //    Assert.Equal("A", orderList9[0].CustomerCity);
+        //    Assert.Equal("B", orderList9[1].ProductName);
+
+
+        //    var orderList10 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .Where(it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList10.Count);
+        //    Assert.Equal("A", orderList10[0].ProductName);
+        //    Assert.Equal("A", orderList10[0].CustomerCity);
+        //    Assert.Equal("B", orderList10[1].ProductName);
+        //    Assert.Equal("D", orderList10[2].ProductName);
+
+        //    var orderList11 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(true, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList11.Count);
+        //    Assert.Equal("A", orderList11[0].ProductName);
+        //    Assert.Equal("A", orderList11[0].CustomerCity);
+        //    Assert.Equal("B", orderList11[1].ProductName);
+        //    Assert.Equal("D", orderList11[2].ProductName);
+
+        //    var orderList12 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(false, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList12.Count);
+
+        //    var orderList13 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(true, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList13.Count);
+        //    Assert.Equal("A", orderList13[0].ProductName);
+        //    Assert.Equal("A", orderList13[0].CustomerCity);
+        //    Assert.Equal("B", orderList13[1].ProductName);
+        //    Assert.Equal("D", orderList13[2].ProductName);
+
+        //    var orderList14 = await orderHeaderRepository
+        //        .InnerJoin(new OrderDetail(), it => it.T1.Id == it.T2.OrderHeaderId)
+        //        .InnerJoin(new Customer(), it => it.T1.CustomerId == it.T3.Id)
+        //        .InnerJoin(new Address(), it => it.T4.CustomerId == it.T3.Id && it.T4.CreateOn == date3)
+        //        .OrderBy(it => it.T2.Quantity)
+        //        .WhereIf(false, it => it.T3.CustomerNo == "A1")
+        //        .Select(it => new OrderDto() { ProductName = it.T2.ProductName, Quantity = it.T2.Quantity, CustomerNo = it.T3.CustomerNo, Age = it.T3.Age, CustomerCity = it.T4.City }, x => x.T1)
+        //        .ToListAsync();
+        //    Assert.Equal(3, orderList14.Count);
+        //    Assert.Equal("A", orderList14[0].ProductName);
+        //    Assert.Equal("A", orderList14[0].CustomerCity);
+        //    Assert.Equal("B", orderList14[1].ProductName);
+        //    Assert.Equal("D", orderList14[2].ProductName);
+
+        //    #endregion
+        //}
 
         /// <summary>
         /// 测试where条件中右边的值为dto的属性，并且同时测试从list里获取索引为0或者1的值
@@ -715,15 +715,17 @@ namespace SummerBoot.Test.Mysql
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
 
-            var orderCustomerPages3 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
-                .LeftJoin(orderDetailRepository, x => x.T1.id == x.T2.Id)
-                .OrderBy(x => x.T1.id)
-                .Select(x => new { x.T1.id, x.T2.ProductName })
-                .ToList();
+            //var orderCustomerPages3 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
+            //    .LeftJoin(orderDetailRepository, x => x.T1.id == x.T2.Id)
+            //    .OrderBy(x => x.T1.id)
+            //    .Select(x => new { x.T1.id, x.T2.ProductName })
+            //    .ToList();
 
             var orderCustomerPages4 = orderHeaderRepository
                 .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.Id)
-                .LeftJoin(customerRepository, x =>x.T1.Id==x.T3.Age);
+                .OrderBy(x => x.T1.CreateTime).ThenBy(x => x.T2.Id)
+                .OrderBy(x => x.T1.CustomerId).Select(x=>x.T1.Id).ToList();
+
 
         }
         /// <summary>

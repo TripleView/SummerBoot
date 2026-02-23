@@ -1,7 +1,8 @@
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Linq.Expressions;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace SummerBoot.Repository.MultiQuery;
@@ -21,10 +22,10 @@ public interface IJoinQueryable<T1, T2>
     IJoinQueryable<T1, T2, T3> RightJoin<T3>(IQueryable<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
     IJoinQueryable<T1, T2, T3> InnerJoin<T3>(IQueryable<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
     IJoinOrderQueryable<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
-    //IEnumerable<TResult> Select<TResult>(Func<(T1 T1, T2 T2), TResult> selector);
+    IEnumerable<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 }
 
-public interface IJoinOrderQueryable<T1, T2>
+public interface IJoinOrderQueryable<T1, T2>: IJoinQueryable<T1, T2>
 {
     IJoinOrderQueryable<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
 }
@@ -96,6 +97,23 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
     {
         var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
         return InternalJoin(second, on, methodInfo);
+    }
+
+    public IEnumerable<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        // 构造 LeftJoin 的表达式树
+        var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
+        var callExpr = Expression.Call(
+            null,
+            orderByMethod,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+
+        var r = Source.Provider.CreateQuery<TResult>(callExpr);
+        return r;
     }
 
     protected IJoinOrderQueryable<T1, T2> InternalOrderBy<TKey>(
