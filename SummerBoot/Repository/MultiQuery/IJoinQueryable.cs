@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System;
 using System.Linq.Expressions;
 using System.Linq;
@@ -29,7 +29,18 @@ public interface IJoinOrderQueryable<T1, T2>
     IJoinOrderQueryable<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
 }
 
-public class JoinOrderQueryable<T1, T2>
+public class JoinOrderQueryable<T1, T2> : JoinQueryable<T1, T2>, IJoinOrderQueryable<T1, T2>
+{
+    public JoinOrderQueryable( IQueryable<JoinCondition<T1, T2>> source) :base(source)
+    {
+    }
+    public IJoinOrderQueryable<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var result = InternalOrderBy(keySelector, methodInfo);
+        return result;
+    }
+}
 public interface IJoinQueryable<T1, T2, T3>
 {
     IQueryable<JoinCondition<T1, T2, T3>> Source { get; }
@@ -55,18 +66,18 @@ public class JoinQueryable<T1, T2, T3> : IJoinQueryable<T1, T2, T3>
 
 public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
 {
-    public IQueryable<T1> Source { get; }
-    public IQueryable<JoinCondition<T1, T2>> Body { get; }
+    public IQueryable<JoinCondition<T1, T2>> Source { get; }
 
-    public JoinQueryable(IQueryable<T1> source, IQueryable<JoinCondition<T1, T2>> body)
+    public JoinQueryable(IQueryable<JoinCondition<T1, T2>> source)
     {
         Source = source;
-        Body = body;
     }
 
     public IJoinOrderQueryable<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var result= InternalOrderBy(keySelector, methodInfo);
+        return result;
     }
 
     public IJoinQueryable<T1, T2, T3> LeftJoin<T3>(IQueryable<T3> second, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
@@ -87,7 +98,7 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         return InternalJoin(second, on, methodInfo);
     }
 
-    private IJoinOrderQueryable<T1, T2> InternalOrderBy<TKey>(
+    protected IJoinOrderQueryable<T1, T2> InternalOrderBy<TKey>(
         Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector,
         MethodInfo methodInfo
     )
@@ -102,12 +113,12 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         );
 
         var r = Source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
-        var result=new 
+        var result = new JoinOrderQueryable<T1, T2>(r);
         return result;
     }
 
 
-    private IJoinQueryable<T1, T2, T3> InternalJoin<T3>(
+    protected IJoinQueryable<T1, T2, T3> InternalJoin<T3>(
         IQueryable<T3> joinTable,
         Expression<Func<JoinCondition<T1, T2, T3>, bool>> on,
         MethodInfo methodInfo
@@ -124,7 +135,6 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
             joinTable.Expression,
             Expression.Quote(on)
         );
-        var r2 = Source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
         var r = Source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
         var result = new JoinQueryable<T1, T2, T3>(r);
         return result;
@@ -178,7 +188,7 @@ public class JoinQueryable<T1> : IJoinQueryable<T1>
         );
 
         var body = Source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
-        var result = new JoinQueryable<T1, T2>(this.Source, body);
+        var result = new JoinQueryable<T1, T2>(body);
 
         return result;
     }
