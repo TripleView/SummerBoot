@@ -287,6 +287,15 @@ namespace SummerBoot.Repository
             return result;
         }
 
+        public static IJoinQueryable<T1, T2> LeftJoin2<T1, T2>(
+            this IQueryable<T1> source,
+            IQueryable<T2> joinTable,
+            Expression<Func<JoinCondition<T1, T2>, bool>> on)
+            where T1 : class where T2 : class
+        {
+            return new JoinQueryable<T1>(source).LeftJoin(joinTable,on);
+        }
+
         public static JoinResult<T1, T2> LeftJoin<T1, T2>(
             this IQueryable<T1> source,
             IQueryable<T2> joinTable,

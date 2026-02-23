@@ -720,6 +720,11 @@ namespace SummerBoot.Test.Mysql
                 .OrderBy(x => x.T1.id)
                 .Select(x => new { x.T1.id, x.T2.ProductName })
                 .ToList();
+
+            var orderCustomerPages4 = orderHeaderRepository
+                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.Id)
+                .LeftJoin(customerRepository, x =>x.T1.Id==x.T3.Age);
+
         }
         /// <summary>
         /// 测试3张表联查
