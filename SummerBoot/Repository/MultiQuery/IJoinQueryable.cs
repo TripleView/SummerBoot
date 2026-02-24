@@ -32,12 +32,13 @@ public interface IJoinOrderQueryable<T1, T2>: IJoinQueryable<T1, T2>
 
 public class JoinOrderQueryable<T1, T2> : JoinQueryable<T1, T2>, IJoinOrderQueryable<T1, T2>
 {
+    private static MethodInfo thenByMethod = typeof(JoinQueryable<T1, T2>).GetMethod(nameof(OrderBy));
     public JoinOrderQueryable( IQueryable<JoinCondition<T1, T2>> source) :base(source)
     {
     }
     public IJoinOrderQueryable<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = thenByMethod.MakeGenericMethod(typeof(TKey));
         var result = InternalOrderBy(keySelector, methodInfo);
         return result;
     }
@@ -68,7 +69,11 @@ public class JoinQueryable<T1, T2, T3> : IJoinQueryable<T1, T2, T3>
 public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
 {
     public IQueryable<JoinCondition<T1, T2>> Source { get; }
-
+    private static MethodInfo leftJoinMethod = typeof(JoinQueryable<T1, T2>).GetMethod(nameof(LeftJoin));
+    private static MethodInfo rightJoinMethod = typeof(JoinQueryable<T1, T2>).GetMethod(nameof(RightJoin));
+    private static MethodInfo innerJoinMethod = typeof(JoinQueryable<T1, T2>).GetMethod(nameof(InnerJoin));
+    private static MethodInfo orderbyMethod = typeof(JoinQueryable<T1, T2>).GetMethod(nameof(OrderBy));
+    private static MethodInfo selectMethod = typeof(JoinQueryable<T1, T2>).GetMethod(nameof(Select));
     public JoinQueryable(IQueryable<JoinCondition<T1, T2>> source)
     {
         Source = source;
@@ -76,26 +81,26 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
 
     public IJoinOrderQueryable<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = orderbyMethod.MakeGenericMethod(typeof(TKey));
         var result= InternalOrderBy(keySelector, methodInfo);
         return result;
     }
 
     public IJoinQueryable<T1, T2, T3> LeftJoin<T3>(IQueryable<T3> second, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = leftJoinMethod.MakeGenericMethod(typeof(T3));
         return InternalJoin(second, on, methodInfo);
     }
 
     public IJoinQueryable<T1, T2, T3> RightJoin<T3>(IQueryable<T3> second, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = rightJoinMethod.MakeGenericMethod(typeof(T3));
         return InternalJoin(second, on, methodInfo);
     }
 
     public IJoinQueryable<T1, T2, T3> InnerJoin<T3>(IQueryable<T3> second, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = innerJoinMethod.MakeGenericMethod(typeof(T3));
         return InternalJoin(second, on, methodInfo);
     }
 
@@ -103,12 +108,10 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
     {
         if (Source == null) throw new ArgumentNullException(nameof(Source));
 
-        // 构造 LeftJoin 的表达式树
-        var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
+        var method = selectMethod.MakeGenericMethod(typeof(TResult));
         var callExpr = Expression.Call(
-            null,
-            orderByMethod,
-            Source.Expression,
+            Expression.Constant(this),
+            method,
             Expression.Quote(selector)
         );
 
@@ -124,9 +127,8 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         if (Source == null) throw new ArgumentNullException(nameof(Source));
 
         var callExpr = Expression.Call(
-            null,
+            Expression.Constant(this),
             methodInfo,
-            Source.Expression,
             Expression.Quote(keySelector)
         );
 
@@ -147,9 +149,8 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         if (on == null) throw new ArgumentNullException(nameof(on));
 
         var callExpr = Expression.Call(
-            null,
+            Expression.Constant(this),
             methodInfo,
-            Source.Expression,
             joinTable.Expression,
             Expression.Quote(on)
         );
@@ -163,6 +164,9 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
 
 public class JoinQueryable<T1> : IJoinQueryable<T1>
 {
+    private static MethodInfo leftJoinMethod = typeof(JoinQueryable<T1>).GetMethod(nameof(LeftJoin));
+    private static MethodInfo rightJoinMethod = typeof(JoinQueryable<T1>).GetMethod(nameof(RightJoin));
+    private static MethodInfo innerJoinMethod = typeof(JoinQueryable<T1>).GetMethod(nameof(InnerJoin));
     public IQueryable<T1> Source { get; }
 
     public JoinQueryable(IQueryable<T1> source)
@@ -171,19 +175,19 @@ public class JoinQueryable<T1> : IJoinQueryable<T1>
     }
     public IJoinQueryable<T1, T2> LeftJoin<T2>(IQueryable<T2> second, Expression<Func<JoinCondition<T1, T2>, bool>> on)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
-        return InternalJoin(second, on, methodInfo);
+        var methodInfo = JoinQueryableMethodsCache<T1, T2>.LeftJoinMethod;
+        return InternalJoinNew(second, on, methodInfo);
     }
 
     public IJoinQueryable<T1, T2> RightJoin<T2>(IQueryable<T2> second, Expression<Func<JoinCondition<T1, T2>, bool>> on)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = rightJoinMethod.MakeGenericMethod(typeof(T2));
         return InternalJoin(second, on, methodInfo);
     }
 
     public IJoinQueryable<T1, T2> InnerJoin<T2>(IQueryable<T2> second, Expression<Func<JoinCondition<T1, T2>, bool>> on)
     {
-        var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        var methodInfo = innerJoinMethod.MakeGenericMethod(typeof(T2));
         return InternalJoin(second, on, methodInfo);
     }
 
@@ -198,9 +202,8 @@ public class JoinQueryable<T1> : IJoinQueryable<T1>
         if (on == null) throw new ArgumentNullException(nameof(on));
 
         var callExpr = Expression.Call(
-            null,
+            Expression.Constant(this), 
             methodInfo,
-            Source.Expression,
             joinTable.Expression,
             Expression.Quote(on)
         );
@@ -211,4 +214,26 @@ public class JoinQueryable<T1> : IJoinQueryable<T1>
         return result;
     }
 
+    private IJoinQueryable<T1, T2> InternalJoinNew<T2>(
+        IQueryable<T2> joinTable,
+        Expression<Func<JoinCondition<T1, T2>, bool>> on,
+        MethodInfo methodInfo
+    )
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+        if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
+        if (on == null) throw new ArgumentNullException(nameof(on));
+
+        var callExpr = Expression.Call(
+            null, // 静态方法
+            methodInfo,
+            Source.Expression,
+            joinTable.Expression,
+            Expression.Quote(on));
+
+        var body = Source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
+        var result = new JoinQueryable<T1, T2>(body);
+
+        return result;
+    }
 }
