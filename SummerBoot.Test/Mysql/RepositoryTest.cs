@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Internal;
 using MySqlConnector;
+using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.MultiQuery;
 using SummerBoot.Test.Common;
 using SummerBoot.Test.Common.Dto;
@@ -723,8 +724,14 @@ namespace SummerBoot.Test.Mysql
 
             var orderCustomerPages4 = orderHeaderRepository
                 .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.Id)
-                .OrderBy(x => x.T1.CreateTime).ThenBy(x => x.T2.Id)
-                .OrderBy(x => x.T1.CustomerId).Select(x=>x.T1.Id).ToList();
+                .Where(x => x.T2.Quantity == 5 && x.T1.OrderNo == "a")
+                .OrderBy(x => x.T1.CreateTime)
+                .OrderByDescending(x => x.T1.OrderNo)
+                .ThenBy(x => x.T2.Id)
+                .ThenByDescending(x => x.T2.Quantity)
+                .OrderBy(x => x.T1.CustomerId)
+                .Select(x => x.T1.Id)
+                .ToList();
 
 
         }
