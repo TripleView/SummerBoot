@@ -112,8 +112,7 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
             return Where(predicate);
         }
 
-        var result = new JoinQueryable<T1, T2>(Source);
-        return result;
+        return this;
     }
     public IJoinOrderQueryable<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
@@ -161,6 +160,11 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
 
         var r = Source.Provider.CreateQuery<TResult>(callExpr);
         return r;
+    }
+
+    public int Count<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return this.Select(selector).Count();
     }
 
     protected IJoinOrderQueryable<T1, T2> InternalOrderBy<TKey>(
