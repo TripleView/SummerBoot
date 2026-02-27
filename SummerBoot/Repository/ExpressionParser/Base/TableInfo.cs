@@ -18,11 +18,6 @@ namespace SummerBoot.Repository.ExpressionParser.Base
         public string Schema { get; private set; }
 
         public List<ColumnInfo> Columns { get; }
-        /// <summary>
-        /// Table Alias
-        /// ±í±ğÃû
-        /// </summary>
-        public string TableAlias { get; set; }
 
         public Type Type { get; }
 

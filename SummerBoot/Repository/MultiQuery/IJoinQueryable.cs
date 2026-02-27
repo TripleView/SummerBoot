@@ -29,7 +29,7 @@ public interface IJoinQueryable<T1, T2>
 
     IJoinQueryable<T1, T2> WhereIf(bool condition,Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
 
-    int Count<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+    int Count(Expression<Func<JoinCondition<T1, T2>, bool>> selector);
 }
 
 public interface IJoinOrderQueryable<T1, T2> : IJoinQueryable<T1, T2>

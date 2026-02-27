@@ -162,9 +162,21 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         return r;
     }
 
-    public int Count<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public int Count(Expression<Func<JoinCondition<T1, T2>, bool>> selector)
     {
-        return this.Select(selector).Count();
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var methodInfo = JoinQueryableMethodsCache.Count.MakeGenericMethod(typeof(T1), typeof(T2));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+
+       var result= Source.Provider.Execute<int>(callExpr);
+
+       return result;
     }
 
     protected IJoinOrderQueryable<T1, T2> InternalOrderBy<TKey>(

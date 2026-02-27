@@ -716,6 +716,7 @@ namespace SummerBoot.Test.Mysql
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
 
+            
             //var orderCustomerPages3 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
             //    .LeftJoin(orderDetailRepository, x => x.T1.id == x.T2.Id)
             //    .OrderBy(x => x.T1.id)
@@ -732,7 +733,51 @@ namespace SummerBoot.Test.Mysql
                 .OrderBy(x => x.T1.CustomerId)
                 .Select(x => x.T1.Id)
                 .ToList();
+            //var ccc = orderHeaderRepository
+            //    .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+            //    .Count(x => x.T2.Id);
 
+        }
+
+        [Fact, Priority(120)]
+        public async Task TestJoinCountAsync()
+        {
+            //InitDatabase();
+            InitService();
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var ccc = orderHeaderRepository
+                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Count(x => x.T1.Id== orderHeader.Id);
 
         }
         /// <summary>

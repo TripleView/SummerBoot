@@ -41,7 +41,7 @@ public static class JoinQueryableMethods
     {
         throw new NotSupportedException("Only for expression translation.");
     }
-    
+
     public static IJoinOrderQueryable<T1, T2> ThenBy<T1, T2, TKey>(IJoinOrderQueryable<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
@@ -61,6 +61,12 @@ public static class JoinQueryableMethods
     {
         throw new NotSupportedException("Only for expression translation.");
     }
+
+    public static int Count<T1, T2>(IJoinQueryable<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> selector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
 }
 
 internal static class JoinQueryableMethodsCache
@@ -110,4 +116,10 @@ internal static class JoinQueryableMethodsCache
         typeof(JoinQueryableMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(JoinQueryableMethods.Where) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 2);
+
+    public static readonly MethodInfo Count =
+        typeof(JoinQueryableMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(JoinQueryableMethods.Count) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 2);
+    
 }
