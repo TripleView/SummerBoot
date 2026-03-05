@@ -621,7 +621,7 @@ namespace SummerBoot.Repository
                     var dynamicParameters = new DynamicParameters(t);
 
                     var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                    var id = multiResult.Read<int>().FirstOrDefault(); ;
+                    var id = multiResult.Read<int>().FirstOrDefault();
 
                     if (id != null)
                     {

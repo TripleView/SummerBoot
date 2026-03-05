@@ -69,6 +69,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     }
 
 
+    
     private List<SqlExpression> _lastGroupByExpressions = new List<SqlExpression>();
 
     private static readonly IDictionary<ExpressionType, string> nodeTypeMappings = new Dictionary<ExpressionType, string>
@@ -1924,8 +1925,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     result.LastInsertIdSql = "select SCOPE_IDENTITY() id";
                 }
+                if (dbType == DbType.MySql)
+                {
+                    result.LastInsertIdSql = "select LAST_INSERT_ID()";
+                }
 
-                result.LastInsertIdSql = "";
                 result.IdKeyPropertyInfo = keyColumn.Property;
                 result.IdName = keyColumn.Name;
             }
