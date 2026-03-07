@@ -30,6 +30,15 @@ public interface IJoinQueryable<T1, T2>
     IJoinQueryable<T1, T2> WhereIf(bool condition,Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
 
     int Count(Expression<Func<JoinCondition<T1, T2>, bool>> selector);
+
+    TResult Max<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+
+    TResult Min<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+    TResult Average<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+
+    TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+
+    TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 }
 
 public interface IJoinOrderQueryable<T1, T2> : IJoinQueryable<T1, T2>
