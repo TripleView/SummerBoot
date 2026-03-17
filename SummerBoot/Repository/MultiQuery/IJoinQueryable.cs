@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace SummerBoot.Repository.MultiQuery;
 
@@ -38,7 +39,7 @@ public interface IJoinQueryable<T1, T2>
 
     TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 
-    TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+    IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
 }
 
 public interface IJoinOrderQueryable<T1, T2> : IJoinQueryable<T1, T2>

@@ -89,6 +89,31 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         Source = source;
     }
 
+    public TResult Max<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return default;
+    }
+
+    public TResult Min<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return default;
+    }
+    public TResult Average<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return default;
+    }
+
+    public TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return default;
+    }
+
+    public IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(
+        Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    {
+        return default;
+    }
+
     public IJoinQueryable<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
     {
         if (Source == null) throw new ArgumentNullException(nameof(Source));
@@ -174,9 +199,9 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
             Expression.Quote(selector)
         );
 
-       var result= Source.Provider.Execute<int>(callExpr);
+        var result = Source.Provider.Execute<int>(callExpr);
 
-       return result;
+        return result;
     }
 
     protected IJoinOrderQueryable<T1, T2> InternalOrderBy<TKey>(
