@@ -716,7 +716,7 @@ namespace SummerBoot.Test.Mysql
             var customerRepository = serviceProvider.GetService<ICustomerRepository>();
             var addressRepository = serviceProvider.GetService<IAddressRepository>();
 
-            
+
             //var orderCustomerPages3 = orderHeaderRepository.Select(x => new { id = x.Id, f = x.OrderNo })
             //    .LeftJoin(orderDetailRepository, x => x.T1.id == x.T2.Id)
             //    .OrderBy(x => x.T1.id)
@@ -777,8 +777,14 @@ namespace SummerBoot.Test.Mysql
 
             var ccc = orderHeaderRepository
                 .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-                .Count(x => x.T1.Id== orderHeader.Id);
+                .Count(x => x.T1.Id == orderHeader.Id);
 
+
+            var c2 =await orderHeaderRepository
+                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .GroupBy(x => x.T1.Id)
+                .Select(x => new { x.Key, Count2 = x.Max(y => y.T1.CustomerId) })
+                .ToListAsync();
         }
         /// <summary>
         /// 测试3张表联查

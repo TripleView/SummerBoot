@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Linq;
 using System.Reflection;
@@ -108,8 +108,7 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         return default;
     }
 
-    public IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(
-        Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    public IEnumerable<IGrouping<TKey, JoinCondition<T1, T2>>> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
     {
         return default;
     }

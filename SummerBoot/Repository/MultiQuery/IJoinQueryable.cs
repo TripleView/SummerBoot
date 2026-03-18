@@ -39,7 +39,7 @@ public interface IJoinQueryable<T1, T2>
 
     TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 
-    IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
+    IEnumerable<IGrouping<TKey, JoinCondition<T1, T2>>> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
 }
 
 public interface IJoinOrderQueryable<T1, T2> : IJoinQueryable<T1, T2>
