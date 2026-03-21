@@ -1224,7 +1224,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 var bodySqlExpression = GetSqlExpression(bodyExpression);
                 _lastGroupByExpressions.Add(bodySqlExpression);
-                sourceSqlExpression?.GroupBy.Items.Add(bodySqlExpression);
+                if (sourceSqlExpression.GroupBy == null)
+                {
+                    sourceSqlExpression.GroupBy = new SqlGroupByExpression()
+                    {
+                        DbType = this.dbType,
+                        Items = new List<SqlExpression>()
+                    };
+                }
+                sourceSqlExpression.GroupBy.Items.Add(bodySqlExpression);
             }
             else if (wrapperExpression.SqlExpressions.HasValue())
             {

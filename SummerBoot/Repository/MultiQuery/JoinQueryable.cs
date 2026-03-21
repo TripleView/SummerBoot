@@ -108,9 +108,19 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
         return default;
     }
 
-    public IEnumerable<IGrouping<TKey, JoinCondition<T1, T2>>> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    public IJoinGroupQueryable<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
     {
-        return default;
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+        var methodInfo = JoinQueryableMethodsCache.GroupBy.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+        var r = Source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
+        var result = new JoinGroupQueryable<T1, T2, TKey>(r);
+        return result;
     }
 
     public IJoinQueryable<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
@@ -245,6 +255,30 @@ public class JoinQueryable<T1, T2> : IJoinQueryable<T1, T2>
 
 }
 
+public class JoinGroupQueryable<T1, T2, TKey> : IJoinGroupQueryable<T1, T2, TKey>
+{
+    public IQueryable<JoinCondition<T1, T2>> Source { get; }
+
+    public JoinGroupQueryable(IQueryable<JoinCondition<T1, T2>> source)
+    {
+        Source = source;
+    }
+    public IEnumerable<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var methodInfo = JoinQueryableMethodsCache.GroupBySelect.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey), typeof(TResult));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+
+        var r = Source.Provider.CreateQuery<TResult>(callExpr);
+        return r;
+    }
+}
 
 public class JoinQueryable<T1, T2, T3> : IJoinQueryable<T1, T2, T3>
 {

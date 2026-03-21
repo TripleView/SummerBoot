@@ -775,12 +775,12 @@ namespace SummerBoot.Test.Mysql
             await orderDetailRepository.InsertAsync(orderDetail1);
             await orderDetailRepository.InsertAsync(orderDetail2);
 
-            var ccc = orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-                .Count(x => x.T1.Id == orderHeader.Id);
+            //var ccc = orderHeaderRepository
+            //    .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+            //    .Count(x => x.T1.Id == orderHeader.Id);
 
 
-            var c2 =await orderHeaderRepository
+            var c2 = await orderHeaderRepository
                 .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .GroupBy(x => x.T1.Id)
                 .Select(x => new { x.Key, Count2 = x.Max(y => y.T1.CustomerId) })

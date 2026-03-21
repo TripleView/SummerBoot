@@ -67,6 +67,15 @@ public static class JoinQueryableMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
+    public static IJoinGroupQueryable<T1, T2, TKey> GroupBy<T1, T2, TKey>(IJoinQueryable<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static IEnumerable<TResult> Select<T1, T2, TKey, TResult>(IJoinGroupQueryable<T1, T2, TKey> source, Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
 }
 
 internal static class JoinQueryableMethodsCache
@@ -121,5 +130,14 @@ internal static class JoinQueryableMethodsCache
         typeof(JoinQueryableMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(JoinQueryableMethods.Count) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 2);
-    
+
+    public static readonly MethodInfo GroupBy =
+        typeof(JoinQueryableMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(JoinQueryableMethods.GroupBy) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 3);
+
+    public static readonly MethodInfo GroupBySelect =
+        typeof(JoinQueryableMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(JoinQueryableMethods.Select) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 4);
 }

@@ -28,7 +28,7 @@ public interface IJoinQueryable<T1, T2>
 
     IJoinQueryable<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
 
-    IJoinQueryable<T1, T2> WhereIf(bool condition,Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
+    IJoinQueryable<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
 
     int Count(Expression<Func<JoinCondition<T1, T2>, bool>> selector);
 
@@ -39,8 +39,14 @@ public interface IJoinQueryable<T1, T2>
 
     TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 
-    IEnumerable<IGrouping<TKey, JoinCondition<T1, T2>>> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
+    IJoinGroupQueryable<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
 }
+
+public interface IJoinGroupQueryable<T1, T2, TKey>
+{
+    IEnumerable<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector);
+}
+
 
 public interface IJoinOrderQueryable<T1, T2> : IJoinQueryable<T1, T2>
 {
