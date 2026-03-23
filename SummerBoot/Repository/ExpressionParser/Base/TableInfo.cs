@@ -31,7 +31,7 @@ namespace SummerBoot.Repository.ExpressionParser.Base
             this.Type = type;
             Columns = new List<ColumnInfo>();
             var tableAttribute = type.GetCustomAttribute<TableAttribute>();
-            Name = tableAttribute?.Name?? type.Name ;
+            Name = tableAttribute?.Name ?? type.Name;
             Schema = tableAttribute?.Schema ?? "";
 
             var properties = type.GetProperties().Where(it => !it.GetCustomAttributes().OfType<NotMappedAttribute>().Any()).ToList();

@@ -69,7 +69,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     }
 
 
-    
+
     private List<SqlExpression> _lastGroupByExpressions = new List<SqlExpression>();
 
     private static readonly IDictionary<ExpressionType, string> nodeTypeMappings = new Dictionary<ExpressionType, string>
@@ -1729,21 +1729,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         for (int i = 0; i < newExpression.Members.Count; i++)
         {
             var argument = newExpression.Arguments[i];
+            var memberInfo = newExpression.Members[i];
             var middleResult = this.Visit(argument);
             var bodySqlExpression = GetSqlExpression(middleResult);
             if (MethodName == nameof(Queryable.Select))
             {
-                if (bodySqlExpression is SqlSelectItemExpression sqlSelectItemExpression)
-                {
-
-                }
-                else
-                {
-                    sqlSelectItemExpression = new SqlSelectItemExpression()
+                var sqlSelectItemExpression = bodySqlExpression is SqlSelectItemExpression exp
+                    ? exp
+                    : new SqlSelectItemExpression()
                     {
                         Body = bodySqlExpression,
                     };
-                }
+                sqlSelectItemExpression.Alias = GetSqlIdentifierExpression(DbQueryUtil.GetColumnName(memberInfo));
+
                 list.Add(sqlSelectItemExpression);
             }
             else if (MethodName == nameof(Queryable.GroupBy))
@@ -1869,22 +1867,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         };
     }
 
-    //protected TableInfo GetTableInfo(Type type)
-    //{
-    //    var key = "GetTableInfo:" + type.FullName;
-    //    if (SbUtil.CacheDictionary.TryGetValue(key, out var cacheValue))
-    //    {
-    //        return (TableInfo)cacheValue;
-    //    }
-
-    //    var r1 = new TableInfo(type);
-    //    SbUtil.CacheDictionary.TryAdd(key, r1);
-    //    return r1;
-    //}
-
     public virtual DbQueryResult Insert<T>(T insertEntity)
     {
-        var key = "GetSqlInsertExpression:" + typeof(T).FullName;
+        var key = $"GetSqlInsertExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
         var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
@@ -1929,13 +1914,48 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var keyColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.IsDatabaseGeneratedIdentity && it.Name.ToLower() == "id");
             if (keyColumn != null)
             {
-                if (dbType == DbType.SqlServer)
+                switch (dbType)
                 {
-                    result.LastInsertIdSql = "select SCOPE_IDENTITY() id";
-                }
-                if (dbType == DbType.MySql)
-                {
-                    result.LastInsertIdSql = "select LAST_INSERT_ID()";
+                    case DbType.SqlServer:
+                        result.LastInsertIdSql = "select SCOPE_IDENTITY() id";
+                        break;
+                    case DbType.MySql:
+                        result.LastInsertIdSql = "select LAST_INSERT_ID()";
+                        break;
+                    case DbType.Pgsql:
+                        insertExpression.Returning = new SqlReturningExpression()
+                        {
+                            DbType = this.dbType,
+                            Items = new List<SqlExpression>()
+                            {
+                                new SqlSelectItemExpression()
+                                {
+                                    Body = GetSqlIdentifierExpression(keyColumn.Name)
+                                }
+                            }
+                        };
+                        break;
+                    case DbType.Sqlite:
+                        result.LastInsertIdSql = "SELECT last_insert_rowid() id";
+                        break;
+                    case DbType.Oracle:
+                        insertExpression.Returning = new SqlReturningExpression()
+                        {
+                            DbType = this.dbType,
+                            Items = new List<SqlExpression>()
+                            {
+                                new SqlSelectItemExpression()
+                                {
+                                    Body = GetSqlIdentifierExpression(keyColumn.Name)
+                                },
+                            },
+                            IntoVariables = new List<SqlExpression>()
+                            {
+                                GetSqlVariableExpression(keyColumn.Name)
+                            }
+                        };
+
+                        break;
                 }
 
                 result.IdKeyPropertyInfo = keyColumn.Property;
@@ -1952,7 +1972,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public DbQueryResult Update<T>(T updateEntity)
     {
-        var key = "GetSqlUpdateExpression" + typeof(T).FullName;
+        var key = $"GetSqlUpdateExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
         var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));

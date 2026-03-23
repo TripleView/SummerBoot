@@ -592,28 +592,28 @@ namespace SummerBoot.Repository
                     internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
                 }
             }
-            else if (databaseType == DatabaseType.Sqlite)
-            {
-                if (internalResult.IdKeyPropertyInfo != null)
-                {
-                    var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
-                    var dynamicParameters = new DynamicParameters(t);
+            //else if (databaseType == DatabaseType.Sqlite)
+            //{
+            //    if (internalResult.IdKeyPropertyInfo != null)
+            //    {
+            //        var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
+            //        var dynamicParameters = new DynamicParameters(t);
 
-                    var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                    var id = multiResult.Read<int>().FirstOrDefault();
+            //        var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
+            //        var id = multiResult.Read<int>().FirstOrDefault();
 
 
-                    if (id != null)
-                    {
-                        internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
-                    }
-                }
-                else
-                {
-                    await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
-                }
-            }
-            else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql)
+            //        if (id != null)
+            //        {
+            //            internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+            //        }
+            //    }
+            //    else
+            //    {
+            //        await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
+            //    }
+            //}
+            else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql || databaseType == DatabaseType.Sqlite)
             {
                 if (internalResult.IdKeyPropertyInfo != null)
                 {

@@ -1,6 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MySqlConnector;
 using SummerBoot.Core;
 using SummerBoot.Repository;
+using SummerBoot.Repository.Generator;
+using SummerBoot.Test.Common;
+using SummerBoot.Test.Common.Dto;
 using SummerBoot.Test.Mysql.Db;
 using SummerBoot.Test.Mysql.Models;
 using SummerBoot.Test.Mysql.Repository;
@@ -9,26 +15,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using SummerBoot.Repository.Generator;
 using Xunit;
 using Xunit.Priority;
-using System.Diagnostics;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore.Internal;
-using MySqlConnector;
-using SummerBoot.Repository.ExpressionParser.Parser;
-using SummerBoot.Repository.MultiQuery;
-using SummerBoot.Test.Common;
-using SummerBoot.Test.Common.Dto;
-using SummerBoot.Test.Mysql.Dto;
-using MySqlBulkLoader = MySql.Data.MySqlClient.MySqlBulkLoader;
 
 namespace SummerBoot.Test.Mysql
 {
@@ -38,6 +33,90 @@ namespace SummerBoot.Test.Mysql
     {
         private IServiceProvider serviceProvider;
 
+        [Fact, Priority(120)]
+        public async Task TestJoinCountAsync()
+        {
+            //InitDatabase();
+            InitService();
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var ccc = orderHeaderRepository
+                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Count(x => x.T1.Id == orderHeader.Id);
+
+        }
+
+        [Fact, Priority(120)]
+        public async Task TestJoinGroupAsync()
+        {
+            //InitDatabase();
+            InitService();
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
+            var addressRepository = serviceProvider.GetService<IAddressRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+            var c2 = await orderHeaderRepository
+                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .GroupBy(x => x.T1.Id)
+                .Select(x => new { x.Key, Count2 = x.Max(y => y.T1.CustomerId) })
+                .ToListAsync();
+
+        }
         /// <summary>
         /// 测试left/right join时左右实体类里有string类型,并且string类型为null时调用trim方法
         /// </summary>
@@ -739,53 +818,7 @@ namespace SummerBoot.Test.Mysql
 
         }
 
-        [Fact, Priority(120)]
-        public async Task TestJoinCountAsync()
-        {
-            //InitDatabase();
-            InitService();
-            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-            var customerRepository = serviceProvider.GetService<ICustomerRepository>();
-            var addressRepository = serviceProvider.GetService<IAddressRepository>();
-
-            var orderHeader = new OrderHeader()
-            {
-                CreateTime = DateTime.Now,
-                OrderNo = "ABC",
-                State = 1
-            };
-            await orderHeaderRepository.InsertAsync(orderHeader);
-
-            var orderDetail1 = new OrderDetail()
-            {
-                OrderHeaderId = orderHeader.Id,
-                ProductName = "A",
-                Quantity = 1,
-                State = 1
-            };
-
-            var orderDetail2 = new OrderDetail()
-            {
-                OrderHeaderId = orderHeader.Id,
-                ProductName = "B",
-                Quantity = 2,
-                State = 1
-            };
-            await orderDetailRepository.InsertAsync(orderDetail1);
-            await orderDetailRepository.InsertAsync(orderDetail2);
-
-            //var ccc = orderHeaderRepository
-            //    .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            //    .Count(x => x.T1.Id == orderHeader.Id);
-
-
-            var c2 = await orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-                .GroupBy(x => x.T1.Id)
-                .Select(x => new { x.Key, Count2 = x.Max(y => y.T1.CustomerId) })
-                .ToListAsync();
-        }
+   
         /// <summary>
         /// 测试3张表联查
         /// </summary>
@@ -2885,7 +2918,6 @@ namespace SummerBoot.Test.Mysql
         {
             InitDatabase();
             TestRepository();
-
         }
 
         [Fact, Priority(101)]

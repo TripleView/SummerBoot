@@ -359,7 +359,6 @@ namespace SummerBoot.Core
                     }
 
                     services.AddScoped(interfaceType, type);
-                    //services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, databaseUnit);
                 }
             }
 

@@ -1,0 +1,18 @@
+﻿using System.Collections.Generic;
+using SummerBoot.Repository;
+using SummerBoot.Repository.Attributes;
+using SummerBoot.Test.DbExecute.Common.Models;
+
+namespace SummerBoot.Test.DbExecute.Common.Repository
+{
+
+    [AutoRepository]
+    public interface IOrderQueryRepository
+    {
+        [Select("select a.OrderNo,b.ProductName from OrderHeader a join OrderDetail b on a.id=b.OrderHeaderId")]
+        OrderQueryDto GetOrderQuery();
+
+        [Select("select a.OrderNo,b.ProductName from OrderHeader a join OrderDetail b on a.id=b.OrderHeaderId")]
+        List<OrderQueryDto> GetOrderQueryList();
+    }
+}

@@ -1,0 +1,11 @@
+﻿using System.ComponentModel;
+
+namespace SummerBoot.Test.DbExecute.Common.Models
+{
+    [Description("NullableTable2")]
+    public class NullableTable2 : NullableTable
+    {
+
+    }
+
+}
