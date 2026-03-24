@@ -391,7 +391,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             throw new NotSupportedException(methodName);
         }
 
-        var d = DefaultFunctionCall.Contains == method;
         if (databaseUnit.SqlFunctionMappings.TryGetValue(method, out var callbackFunc))
         {
             var methodBodyExpression = this.Visit(node.Object);
@@ -1310,7 +1309,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private TableInfo GetTableInfo(Type type)
     {
-        var key = type.FullName;
+        var key = $"{databaseUnit.Id}:{type.FullName}";
 
         if (!classNameToTableInfoMap.TryGetValue(key, out TableInfo tableInfo))
         {
@@ -1329,7 +1328,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 }
             }
 
-            classNameToTableInfoMap.Add(key, tableInfo);
+            classNameToTableInfoMap.TryAdd(key, tableInfo);
         }
 
         if (!tableNameToTableAliasMap.TryGetValue(tableInfo.Name, out string tableAlias))
@@ -1343,7 +1342,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private SqlTableExpression GetSqlTableExpression(Type type)
     {
-        var key = type.FullName;
+        var key = $"{databaseUnit.Id}:{type.FullName}";
         var tableInfo = GetTableInfo(type);
         classNameToSqlTableExpressionMap.TryGetOrAdd(key, out var sqlTableExpression, () =>
         {
@@ -1951,7 +1950,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                             },
                             IntoVariables = new List<SqlExpression>()
                             {
-                                GetSqlVariableExpression(keyColumn.Name)
+                                new SqlVariableExpression()
+                                {
+                                    Name = keyColumn.Name,
+                                    Prefix = prefix,
+                                    DbType = dbType
+                                }
                             }
                         };
 
