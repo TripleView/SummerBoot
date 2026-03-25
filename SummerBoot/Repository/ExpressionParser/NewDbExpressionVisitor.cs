@@ -129,10 +129,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     protected DatabaseUnit databaseUnit;
     private readonly DynamicParameters parameters = new DynamicParameters();
     /// <summary>
-    /// Mapping between table names and aliases
-    /// 表名与别名的映射
+    /// Mapping of Table Names to Table Information
+    /// 表名到表信息的映射
     /// </summary>
-    private Dictionary<string, TableInfo> tableNameAliasMapping = new Dictionary<string, TableInfo>();
+    private Dictionary<string, TableInfo> tableNameToTableInfoMap = new Dictionary<string, TableInfo>();
     /// <summary>
     /// 类型限定名到表信息的映射
     /// Mapping of type qualified names to table information
@@ -698,20 +698,28 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private void MergeWhereExpression(Expression sourceExpression, SqlExpression where)
     {
-        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sourceExpression);
-        if (sqlSelectQueryExpression.Where != null)
+        if (sourceExpression is WrapperExpression wrapperExpression)
         {
-            sqlSelectQueryExpression.Where = new SqlBinaryExpression()
+            var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sourceExpression);
+            if (sqlSelectQueryExpression.Where != null)
             {
-                Left = sqlSelectQueryExpression.Where,
-                Operator = SqlBinaryOperator.And,
-                Right = where
-            };
+                sqlSelectQueryExpression.Where = new SqlBinaryExpression()
+                {
+                    Left = sqlSelectQueryExpression.Where,
+                    Operator = SqlBinaryOperator.And,
+                    Right = where
+                };
+            }
+            else
+            {
+                sqlSelectQueryExpression.Where = where;
+            }
         }
         else
         {
-            sqlSelectQueryExpression.Where = where;
+            throw new NotSupportedException(nameof(MergeWhereExpression));
         }
+
     }
 
     private AddParentSqlSelectExpressionResult AddParentSqlSelectExpression(SqlSelectExpression sqlSelectExpression, Action<SqlSelectQueryExpression> childrenSqlSelectExpression)
@@ -787,7 +795,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     orderBy = sqlSelectQueryExpression.OrderBy.Clone();
                     sqlSelectQueryExpression.OrderBy = null;
                 }
-                else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameAliasMapping.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
+                else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
                 {
                     var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First();
                     tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
@@ -1133,13 +1141,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             OrderByType = orderByType
         };
         var sourceSqlExpression = GetSqlSelectQueryExpression(sourceExpression);
-        if (sourceSqlExpression.OrderBy == null)
+
+        sourceSqlExpression.OrderBy ??= new SqlOrderByExpression()
         {
-            sourceSqlExpression.OrderBy = new SqlOrderByExpression()
-            {
-                Items = new List<SqlOrderByItemExpression>()
-            };
-        }
+            Items = new List<SqlOrderByItemExpression>()
+        };
         sourceSqlExpression.OrderBy.Items.Add(sqlOrderByItemExpression);
 
         return sourceExpression;
@@ -1329,7 +1335,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
 
             classNameToTableInfoMap.TryAdd(key, tableInfo);
+            
         }
+
+
+        tableNameToTableInfoMap.TryAdd(tableInfo.Name, tableInfo);
 
         if (!tableNameToTableAliasMap.TryGetValue(tableInfo.Name, out string tableAlias))
         {
@@ -1776,7 +1786,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
-            if (sqlSelectQueryExpression.Columns.Count == 0 && sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameAliasMapping.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
+            if (sqlSelectQueryExpression.Columns.Count == 0 && sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
             {
                 if (sqlSelectQueryExpression.GroupBy?.Items.HasValue() == true)
                 {
@@ -1833,17 +1843,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else if (expression is WrapperExpression { SqlExpression: SqlTableExpression sqlTableExpression } wrapperExpression2)
         {
-            //var r1 = new SqlSelectExpression()
-            //{
-            //    DbType = dbType,
-            //    Query = new SqlSelectQueryExpression()
-            //    {
-            //        DbType = dbType,
-            //        Columns = new List<SqlSelectItemExpression>(),
-            //        From = table,
-            //    }
-            //};
-            //return sqlSelectQueryExpression;
+            var tempR = new SqlSelectQueryExpression()
+            {
+                DbType = dbType,
+                Columns = new List<SqlSelectItemExpression>(),
+                From = sqlTableExpression,
+            };
+            wrapperExpression2.SqlExpression = new SqlSelectExpression()
+            {
+                DbType = dbType,
+                Query = tempR
+            };
+            return tempR;
         }
         throw new NotSupportedException(nameof(expression));
     }
