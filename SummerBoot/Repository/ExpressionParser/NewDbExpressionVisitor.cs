@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Http;
 using SummerBoot.Repository.MultiQuery;
 using YamlDotNet.Core.Tokens;
+using StackExchange.Redis;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
@@ -779,6 +780,42 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         };
     }
 
+    private SqlOrderByExpression BuildSqlOrderByExpression(SqlSelectQueryExpression sqlSelectQueryExpression)
+    {
+        var orderBy = new SqlOrderByExpression();
+        if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
+        {
+            var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First();
+            tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
+            orderBy = new SqlOrderByExpression()
+            {
+                Items = new List<SqlOrderByItemExpression>()
+                {
+                    new SqlOrderByItemExpression()
+                    {
+                        Body = GetSqlPropertyExpression(tableAlias, orderByColumn.Name)
+                    },
+                },
+            };
+        }
+        else if (sqlSelectQueryExpression.Columns?.Any() == true)
+        {
+            var column = sqlSelectQueryExpression.Columns.First();
+
+            orderBy = new SqlOrderByExpression()
+            {
+                Items = new List<SqlOrderByItemExpression>()
+                {
+                    new SqlOrderByItemExpression()
+                    {
+                        Body = column.Body.Clone()
+                    },
+                },
+            };
+        }
+
+        return orderBy;
+    }
 
     public virtual Expression ParsingPage(Expression sourceExpression, int offset, int pageSize)
     {
@@ -789,12 +826,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             if (isRowNumber)
             {
+                //在row_number中，如果原来有order by，那就转移到row_number()over()里；
                 var orderBy = new SqlOrderByExpression();
                 if (sqlSelectQueryExpression.OrderBy?.Items.Any() == true)
                 {
                     orderBy = sqlSelectQueryExpression.OrderBy.Clone();
                     sqlSelectQueryExpression.OrderBy = null;
                 }
+                //没有order by，那就取主键
                 else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
                 {
                     var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First();
@@ -802,13 +841,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     orderBy = new SqlOrderByExpression()
                     {
                         Items = new List<SqlOrderByItemExpression>()
+                        {
+                            new SqlOrderByItemExpression()
                             {
-                                new SqlOrderByItemExpression()
-                                {
-                                    Body = GetSqlPropertyExpression(tableAlias, orderByColumn.Name)
-                                },
+                                Body = GetSqlPropertyExpression(tableAlias, orderByColumn.Name)
                             },
+                        },
                     };
+                }
+                else
+                {
+                    throw new NotSupportedException();
                 }
 
                 var tempResult = AddParentSqlSelectExpression(sqlSelectExpression,
@@ -855,6 +898,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     tempSqlSelectQueryExpression.Where = where;
                 }
                 return GetWrapperExpression(sqlSelectExpression);
+            }
+            //OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY need order by
+            else if (databaseUnit.IsSqlServer)
+            {
+                sqlSelectQueryExpression.OrderBy ??= BuildSqlOrderByExpression(sqlSelectQueryExpression);
             }
 
             if (pageSize <= 0)
@@ -1335,7 +1383,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
 
             classNameToTableInfoMap.TryAdd(key, tableInfo);
-            
+
         }
 
 
