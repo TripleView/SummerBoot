@@ -218,7 +218,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (result is WrapperExpression wrapperExpression)
             {
                 //在没有选择字段的情况下，默认所有字段
-                AddDefaultColumns(result);
+                AddDefaultColumns(wrapperExpression.SqlExpression);
                 wrapperExpression.Parameters = this.parameters;
             }
         }
@@ -681,46 +681,40 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public virtual Expression VisitFirstOrDefault(MethodCallExpression firstOrDefaultCall)
     {
-
         var sourceExpression = this.Visit(firstOrDefaultCall.Arguments[0]);
-
         var sqlExpression = GetSqlExpression(sourceExpression);
         if (firstOrDefaultCall.Arguments.Count == 2)
         {
             var lambda = (LambdaExpression)this.StripQuotes(firstOrDefaultCall.Arguments[1]);
             var where = GetSqlExpression(this.Visit(lambda.Body));
-            MergeWhereExpression(sourceExpression, where);
-        }
-        AddDefaultColumns(sqlExpression);
-        var r1 = ParsingPage(sourceExpression, 0, 1);
-
-        return r1;
-    }
-
-    private void MergeWhereExpression(Expression sourceExpression, SqlExpression where)
-    {
-        if (sourceExpression is WrapperExpression wrapperExpression)
-        {
-            var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sourceExpression);
-            if (sqlSelectQueryExpression.Where != null)
-            {
-                sqlSelectQueryExpression.Where = new SqlBinaryExpression()
-                {
-                    Left = sqlSelectQueryExpression.Where,
-                    Operator = SqlBinaryOperator.And,
-                    Right = where
-                };
-            }
-            else
-            {
-                sqlSelectQueryExpression.Where = where;
-            }
+            var sqlSelectExpression = MergeWhereExpression(sqlExpression, where);
+            AddDefaultColumns(sqlSelectExpression);
+            var r1 = ParsingPage(sqlSelectExpression, 0, 1);
+            return GetWrapperExpression(r1);
         }
         else
         {
-            throw new NotSupportedException(nameof(MergeWhereExpression));
+            throw new NotSupportedException();
         }
+    }
 
+    private SqlSelectExpression MergeWhereExpression(SqlExpression sqlExpression, SqlExpression where)
+    {
+        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sqlExpression);
+        if (sqlSelectQueryExpression.Where != null)
+        {
+            sqlSelectQueryExpression.Where = new SqlBinaryExpression()
+            {
+                Left = sqlSelectQueryExpression.Where,
+                Operator = SqlBinaryOperator.And,
+                Right = where
+            };
+        }
+        else
+        {
+            sqlSelectQueryExpression.Where = where;
+        }
+        return GetSqlSelectExpression(sqlSelectQueryExpression);
     }
 
     private AddParentSqlSelectExpressionResult AddParentSqlSelectExpression(SqlSelectExpression sqlSelectExpression, Action<SqlSelectQueryExpression> childrenSqlSelectExpression)
@@ -817,12 +811,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return orderBy;
     }
 
-    public virtual Expression ParsingPage(Expression sourceExpression, int offset, int pageSize)
+    public virtual SqlSelectExpression ParsingPage(SqlSelectExpression sqlSelectExpression, int offset, int pageSize)
     {
-        var sqlExpression = GetSqlExpression(sourceExpression);
         var isRowNumber = databaseUnit.IsSqlServer && databaseUnit.SqlServerVersion < 11 || databaseUnit.IsOracle;
 
-        if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
+        if (sqlSelectExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression })
         {
             if (isRowNumber)
             {
@@ -897,7 +890,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     tempSqlSelectQueryExpression.Where = where;
                 }
-                return GetWrapperExpression(sqlSelectExpression);
+                return sqlSelectExpression;
             }
             //OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY need order by
             else if (databaseUnit.IsSqlServer)
@@ -917,8 +910,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             };
 
         }
+        else
+        {
+            throw new NotSupportedException();
+        }
 
-        return GetWrapperExpression(sqlExpression);
+        return sqlSelectExpression;
     }
 
 
@@ -1131,10 +1128,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var offsetSqlNumberExpression = GetSqlNumberExpression(skipExpression);
             offset = (int)offsetSqlNumberExpression.Value;
         }
-        AddDefaultColumns(sourceExpression);
-        var r1 = ParsingPage(sourceExpression, offset, pageSize);
 
-        return r1;
+        var sqlExpression = GetSqlExpression(sourceExpression);
+        var sqlSelectExpression = GetSqlSelectExpression(sqlExpression);
+        AddDefaultColumns(sqlSelectExpression);
+        var r1 = ParsingPage(sqlSelectExpression, offset, pageSize);
+
+        return GetWrapperExpression(r1);
     }
 
     public virtual Expression VisitWhereCall(MethodCallExpression whereCall)
@@ -1151,7 +1151,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (bodyExpression is WrapperExpression tempBodyExpression)
             {
                 ConvertBooleanValueToSqlBinaryExpression(tempBodyExpression);
-                var sqlSelectQueryExpression = GetSqlSelectQueryExpression(tempResult);
+                var sqlSelectQueryExpression = GetSqlSelectQueryExpression(tempBodyExpression.SqlExpression);
                 sqlSelectQueryExpression.Where = GetSqlExpression(tempBodyExpression);
             }
 
@@ -1166,7 +1166,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var lambda = (LambdaExpression)this.StripQuotes(whereCall.Arguments[1]);
         var bodyExpression = this.Visit(lambda.Body);
         var bodySqlExpression = GetSqlExpression(bodyExpression);
-
         SqlOrderByType orderByType;
         switch (whereCall.Method.Name)
         {
@@ -1188,7 +1187,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             Body = bodySqlExpression,
             OrderByType = orderByType
         };
-        var sourceSqlExpression = GetSqlSelectQueryExpression(sourceExpression);
+        var sourceSqlExpression = GetSqlSelectQueryExpression(GetSqlExpression(sourceExpression));
 
         sourceSqlExpression.OrderBy ??= new SqlOrderByExpression()
         {
@@ -1196,7 +1195,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         };
         sourceSqlExpression.OrderBy.Items.Add(sqlOrderByItemExpression);
 
-        return sourceExpression;
+        return GetWrapperExpression(GetSqlSelectExpression(sourceSqlExpression));
     }
     public virtual Expression VisitSelectCall(MethodCallExpression selectCall)
     {
@@ -1270,7 +1269,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             return bodyExpression;
         }
-        var sourceSqlExpression = GetSqlSelectQueryExpression(sourceExpression);
+        var sourceSqlExpression = GetSqlSelectQueryExpression(GetSqlExpression(sourceExpression));
         if (bodyExpression is WrapperExpression wrapperExpression)
         {
             if (wrapperExpression.SqlExpression != null)
@@ -1294,9 +1293,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
         }
 
-
-
-        return sourceExpression;
+        return GetWrapperExpression(GetSqlSelectExpression(sourceSqlExpression));
     }
 
     private bool CheckIsHandled(Expression expression)
@@ -1822,11 +1819,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return new WrapperExpression() { IsHandled = true };
     }
 
-    private void AddDefaultColumns(Expression expression)
-    {
-        var sqlExpression = GetSqlExpression(expression);
-        AddDefaultColumns(sqlExpression);
-    }
     /// <summary>
     /// 增加默认列
     /// </summary>
@@ -1873,38 +1865,55 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         throw new NotSupportedException(nameof(expression));
     }
 
-    private SqlSelectExpression GetSqlSelectExpression(Expression expression)
+    private SqlSelectExpression GetSqlSelectExpression(SqlExpression sqlExpression)
     {
-        if (expression is WrapperExpression { SqlExpression: SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression } wrapperExpression)
+        if (sqlExpression is SqlSelectExpression s1)
         {
-            return sqlSelectExpression;
+            return s1;
+        }
+        else if (sqlExpression is SqlSelectQueryExpression s3)
+        {
+            return new SqlSelectExpression()
+            {
+                DbType = this.dbType,
+                Query = s3
+            };
+        }
+        else if (sqlExpression is SqlTableExpression s2)
+        {
+            var query = GetSqlSelectQueryExpression(sqlExpression);
+            return new SqlSelectExpression()
+            {
+                DbType = this.dbType,
+                Query = query
+            };
         }
 
-        throw new NotSupportedException(nameof(expression));
+        throw new NotSupportedException(nameof(GetSqlSelectExpression));
     }
 
-    private SqlSelectQueryExpression GetSqlSelectQueryExpression(Expression expression)
+    private SqlSelectQueryExpression GetSqlSelectQueryExpression(SqlExpression sqlExpression)
     {
-        if (expression is WrapperExpression { SqlExpression: SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression } wrapperExpression)
+        if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression s4 })
         {
-            return sqlSelectQueryExpression;
+            return s4;
         }
-        else if (expression is WrapperExpression { SqlExpression: SqlTableExpression sqlTableExpression } wrapperExpression2)
+        else if (sqlExpression is SqlSelectQueryExpression s1)
+        {
+            return s1;
+        }
+        else if (sqlExpression is SqlTableExpression s2)
         {
             var tempR = new SqlSelectQueryExpression()
             {
                 DbType = dbType,
                 Columns = new List<SqlSelectItemExpression>(),
-                From = sqlTableExpression,
-            };
-            wrapperExpression2.SqlExpression = new SqlSelectExpression()
-            {
-                DbType = dbType,
-                Query = tempR
+                From = s2,
             };
             return tempR;
         }
-        throw new NotSupportedException(nameof(expression));
+
+        throw new NotSupportedException(nameof(GetSqlSelectQueryExpression));
     }
 
     private SqlNumberExpression GetSqlNumberExpression(Expression expression)
@@ -2162,7 +2171,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
 
         var body = this.Visit(expression);
-        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(body);
+        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(GetSqlExpression(body));
         var where = sqlSelectQueryExpression.Where;
         if (where != null)
         {
@@ -2187,8 +2196,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
-
-
 
             var tableExpression = new SqlTableExpression()
             {
