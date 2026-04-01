@@ -2091,7 +2091,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 });
             }
 
-            var keyList = new List<string>();
             foreach (var column in keyColumns)
             {
                 var columnName = column.Name;
@@ -2151,12 +2150,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 }
             }
 
-            var result = new DbQueryResult()
+            var r = new DbQueryResult()
             {
                 ExecuteSqlExpression = updateExpression
             };
-
-            return result;
+            
+            return r;
         });
 
         cacheResult.DynamicParameters = new DynamicParameters(updateEntity);

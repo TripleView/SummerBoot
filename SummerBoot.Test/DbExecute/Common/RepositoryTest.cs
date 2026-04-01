@@ -1,8 +1,11 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
 using Npgsql;
+using Oracle.ManagedDataAccess.Client;
 using SqlParser.Net;
 using SummerBoot.Core;
 using SummerBoot.Repository;
@@ -13,18 +16,11 @@ using SummerBoot.Test.DbExecute.Common.Models;
 using SummerBoot.Test.DbExecute.Common.Repository;
 using System;
 using System.Data.SQLite;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
-using Oracle.ManagedDataAccess.Client;
-using SummerBoot.Test.Oracle;
 using Xunit;
 using Xunit.Priority;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using SummerBoot.Test.Sqlite;
-using SummerBoot.Test.Sqlite.Db;
 
 namespace SummerBoot.Test.DbExecute.Common
 {
@@ -113,7 +109,7 @@ namespace SummerBoot.Test.DbExecute.Common
                         x.TableNameMapping = a => a.ToUpper();
                         x.ColumnNameMapping = a => a.ToUpper();
                         x.BindRepositoriesWithAttribute<AutoRepositoryAttribute>();
-                        x.BindManualRepositoriesWithAttribute<OracleManualRepositoryAttribute>();
+                        x.BindManualRepositoriesWithAttribute<ManualRepositoryAttribute>();
                         x.BindDbGeneratorType<IDbGenerator1>();
                         x.BeforeInsert += new RepositoryEvent(entity =>
                         {
@@ -324,6 +320,73 @@ namespace SummerBoot.Test.DbExecute.Common
 
            var dbOrder=  await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderHeader.OrderNo);
            Assert.Equal(dbOrder.Id,orderHeader.Id);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestUpdateAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var guid = Guid.NewGuid();
+            var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
+            var a = new NullableTable()
+            {
+                Int2 = 1,
+                Bool2 = true,
+                Byte2 = 1,
+                DateTime2 = dateNow.AddMinutes(1),
+                Decimal2 = 1m,
+                Decimal3 = 1.1m,
+                Double2 = 1.1,
+                Float2 = (float)1.1,
+                Guid2 = guid,
+                Short2 = 1,
+                TimeSpan2 = TimeSpan.FromHours(1),
+                String2 = "sb",
+                String3 = "sb",
+                Long2 = 2
+            };
+
+            await nullableTableRepository.InsertAsync(a);
+            var dbModel= await nullableTableRepository.FirstOrDefaultAsync(x => x.Guid2 == guid);
+            Assert.NotNull(dbModel);
+            dbModel.Int2 = 2;
+            dbModel.Bool2 = false;
+            dbModel.Byte2 = 2;
+            dbModel.DateTime2 = dateNow.AddMinutes(3);
+            dbModel.Decimal2 = 2m;
+            dbModel.Decimal3 = 2.2m;
+            dbModel.Double2 = 2.2;
+            dbModel.Float2 = (float)2.2;
+            dbModel.Guid2=Guid.NewGuid();
+            dbModel.Short2 = 2;
+            dbModel.TimeSpan2 = TimeSpan.FromHours(2);
+            dbModel.String2 = "sb2";
+            dbModel.String3 = "sb2";
+            dbModel.Long2 = 2;
+            await nullableTableRepository.UpdateAsync(dbModel);
+            var dbModel2 = await nullableTableRepository.GetAsync(dbModel.Id);
+            Assert.NotNull(dbModel2);
+            Assert.Equal(dbModel2.Int2, 2);
+            Assert.Equal(dbModel2.Bool2, false);
+            Assert.Equal(dbModel2.Byte2, (byte)2);
+            Assert.Equal(dbModel2.DateTime2, dateNow.AddMinutes(3));
+            Assert.Equal(dbModel2.Decimal2, 2m);
+            Assert.Equal(dbModel2.Decimal3, 2.2m);
+            Assert.Equal(dbModel2.Double2, 2.2);
+            Assert.Equal(dbModel2.Float2, (float)2.2);
+            Assert.Equal(dbModel2.Guid2, Guid.NewGuid());
+            Assert.Equal(dbModel2.Short2, (short)2);
+            Assert.Equal(dbModel2.TimeSpan2, TimeSpan.FromHours(2));
+            Assert.Equal(dbModel2.String2, "sb2");
+            Assert.Equal(dbModel2.String3, "sb2");
+            Assert.Equal(dbModel2.Long2, 2);
+
         }
 
         [Theory]
