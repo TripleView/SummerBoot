@@ -414,7 +414,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 Body = methodBody,
                 DynamicParameters = this.parameters,
                 FunctionParameters = parameterSqlExpressions,
-                AddParameter = this.GetSqlVariableExpression
+                AddParameter = this.GetSqlVariableExpressionWithValueAndDynamicName
             });
 
             return GetWrapperExpression(callResult);
@@ -422,7 +422,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else if (method.DeclaringType == typeof(DateTime))
         {
             var date = this.GetValue(node);
-            var r1 = GetSqlVariableExpression(date);
+            var r1 = GetSqlVariableExpressionWithValueAndDynamicName(date);
             return GetWrapperExpression(r1);
         }
         else
@@ -463,7 +463,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 var sqlVariableExpressions = new List<SqlVariableExpression>();
                 foreach (var value in values)
                 {
-                    var sqlVariableExpression = GetSqlVariableExpression(value);
+                    var sqlVariableExpression = GetSqlVariableExpressionWithValueAndDynamicName(value);
 
                     sqlVariableExpressions.Add(sqlVariableExpression);
                     if ((i >= 500 && i % 500 == 0) || i == count)
@@ -528,7 +528,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (sqlExpression is SqlStringExpression sqlStringExpression)
         {
-            return GetSqlVariableExpression(sqlStringExpression.Value);
+            return GetSqlVariableExpressionWithValueAndDynamicName(sqlStringExpression.Value);
         }
 
         return sqlExpression;
@@ -876,14 +876,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     {
                         Left = pageColumnExpression,
                         Operator = SqlBinaryOperator.GreaterThen,
-                        Right = GetSqlVariableExpression(offset)
+                        Right = GetSqlVariableExpressionWithValueAndDynamicName(offset)
                     },
                     Operator = SqlBinaryOperator.And,
                     Right = new SqlBinaryExpression()
                     {
                         Left = pageColumnExpression,
                         Operator = SqlBinaryOperator.LessThenOrEqualTo,
-                        Right = GetSqlVariableExpression(offset + pageSize)
+                        Right = GetSqlVariableExpressionWithValueAndDynamicName(offset + pageSize)
                     },
                 };
                 if (sqlSelectExpression.Query is SqlSelectQueryExpression tempSqlSelectQueryExpression)
@@ -905,8 +905,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
             sqlSelectQueryExpression.Limit = new SqlLimitExpression()
             {
-                Offset = GetSqlVariableExpression(offset),
-                RowCount = GetSqlVariableExpression(pageSize)
+                Offset = GetSqlVariableExpressionWithValueAndDynamicName(offset),
+                RowCount = GetSqlVariableExpressionWithValueAndDynamicName(pageSize)
             };
 
         }
@@ -938,7 +938,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         });
     }
 
-    private SqlVariableExpression GetSqlVariableExpression(object value)
+    private SqlVariableExpression GetSqlVariableExpressionWithSpecifiedName(string variableName)
+    {
+        return new SqlVariableExpression()
+        {
+            DbType = dbType,
+            Prefix = this.prefix,
+            Name = variableName
+        };
+    }
+
+    private SqlVariableExpression GetSqlVariableExpressionWithValueAndDynamicName(object value)
     {
         var parameterAlias = GetParameterAlias();
         this.parameters.Add(parameterAlias, value);
@@ -1435,7 +1445,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
             else if (MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
-                var r1 = GetSqlVariableExpression(strValue);
+                var r1 = GetSqlVariableExpressionWithValueAndDynamicName(strValue);
 
                 return GetWrapperExpression(r1);
 
@@ -1497,7 +1507,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else
         {
-            tempR = GetSqlVariableExpression(result);
+            tempR = GetSqlVariableExpressionWithValueAndDynamicName(result);
         }
 
         return GetWrapperExpression(tempR);
@@ -2216,86 +2226,85 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     Left = column,
                     Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlVariableExpression()
-                    {
-                        DbType = dbType,
-                        Prefix = this.prefix,
-                        Name = column.Value
-                    }
+                    Right = GetSqlVariableExpressionWithSpecifiedName(column.Value)
                 });
             }
 
-
-
-            var result = new DbQueryResult()
+            var r = new DbQueryResult()
             {
                 ExecuteSqlExpression = updateExpression
             };
 
-            return result;
+            return r;
         });
 
         return cacheResult;
-        //Clear();
-        //var table = this.getTableExpression(typeof(T));
-        //var tableName = GetSchemaTableName(table.Schema, table.Name);
-
-        //var middleResult = this.Visit(expression);
-        //this.FormatWhere(middleResult);
-        //var whereSql = _sb.ToString();
-        //_sb.Clear();
-
-        //var columnSetValueClauses = new List<string>();
-
-        //foreach (var selectItem in selectItems)
-        //{
-        //    if (selectItem.Select.Body is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
-        //    {
-        //        var body = unaryExpression.Operand;
-        //        var bodyResultExpression = this.Visit(body);
-        //        if (bodyResultExpression is ColumnExpression columnExpression)
-        //        {
-        //            this.VisitColumn(columnExpression);
-        //            _sb.Append("=");
-        //            _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
-        //            var columnSetValueClause = _sb.ToString();
-        //            columnSetValueClauses.Add(columnSetValueClause);
-        //            _sb.Clear();
-        //        }
-        //    }
-        //    else if (selectItem.Select.Body is MemberExpression memberExpression)
-        //    {
-        //        var bodyResultExpression = this.Visit(memberExpression);
-        //        if (bodyResultExpression is ColumnExpression columnExpression)
-        //        {
-        //            this.VisitColumn(columnExpression);
-        //            _sb.Append("=");
-        //            _sb.Append(BoxParameter(selectItem.Value, columnExpression.ValueType));
-        //            var columnSetValueClause = _sb.ToString();
-        //            columnSetValueClauses.Add(columnSetValueClause);
-        //            _sb.Clear();
-        //        }
-        //    }
-        //    else
-        //    {
-        //        throw new NotSupportedException("setValue only support one property,like it=>it.name");
-        //    }
-        //}
-        //var setValues = string.Join(",", columnSetValueClauses);
-
-        //var deleteSql = $"update {tableName} set {setValues} where 1=1";
-        //if (!string.IsNullOrWhiteSpace(whereSql))
-        //{
-        //    deleteSql += $" and {whereSql}";
-        //}
-
-        //var result = new DbQueryResult()
-        //{
-        //    Sql = deleteSql.Trim(),
-        //    SqlParameters = this.sqlParameters
-        //};
-        //return result;
-
     }
 
+    public DbQueryResult Get<T>(object id)
+    {
+        var key = $"GetSqlSelectExpressionById:{this.databaseUnit.Id}:{typeof(T).FullName}";
+        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        {
+            var table = this.GetTableInfo(typeof(T));
+            var dbType = this.dbType;
+
+            var idColumn = table.Columns.FirstOrDefault(it => it.IsKey && it.Name.ToLower() == "id");
+
+            if (idColumn == null)
+            {
+                throw new Exception("the id column is required");
+            }
+
+            var tableExpression = new SqlTableExpression()
+            {
+                Name = GetSqlIdentifierExpression(table.Name)
+            };
+            if (table.Schema.HasText())
+            {
+                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
+            }
+
+            var sqlSelectQueryExpression = new SqlSelectQueryExpression()
+            {
+                From = tableExpression
+            };
+            var sqlSelectExpression = new SqlSelectExpression()
+            {
+                DbType = dbType,
+                Query = sqlSelectQueryExpression
+            };
+
+            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
+
+
+            foreach (var column in columns)
+            {
+                var columnName = column.Name;
+
+                sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
+                {
+                    Body = GetSqlIdentifierExpression(columnName)
+                });
+            }
+
+            sqlSelectQueryExpression.Where = new SqlBinaryExpression()
+            {
+                Left = GetSqlIdentifierExpression(idColumn.Name),
+                Operator = SqlBinaryOperator.EqualTo,
+                Right = GetSqlVariableExpressionWithSpecifiedName(idColumn.Name.ToLower())
+            };
+
+            var r = new DbQueryResult()
+            {
+                ExecuteSqlExpression = sqlSelectExpression
+            };
+
+            return r;
+        });
+        var dp = new DynamicParameters();
+        dp.Add("id", id);
+        cacheResult.DynamicParameters = dp;
+        return cacheResult;
+    }
 }
