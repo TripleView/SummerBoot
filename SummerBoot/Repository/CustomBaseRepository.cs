@@ -688,7 +688,7 @@ namespace SummerBoot.Repository
             var internalResult = InternalDelete(t);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
-            var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
+            var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }

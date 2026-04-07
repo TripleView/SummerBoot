@@ -141,7 +141,8 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         protected DbQueryResult InternalDelete(T deleteEntity)
         {
-            return QueryFormatter.Delete(deleteEntity);
+            var result = new NewDbExpressionVisitor(databaseUnit).Delete(deleteEntity);
+            return result;
         }
 
         protected DbQueryResult InternalDelete(Expression predicate)

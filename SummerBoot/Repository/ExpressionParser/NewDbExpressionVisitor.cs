@@ -24,8 +24,9 @@ namespace SummerBoot.Repository.ExpressionParser;
 public class NewDbExpressionVisitor : ExpressionVisitor
 {
     private DbType dbType;
-    private static ConcurrentDictionary<string,SqlUpdateExpression> sqlUpdateExpressions=new ConcurrentDictionary<string,SqlUpdateExpression>();
-
+    private static ConcurrentDictionary<string,SqlUpdateExpression> sqlUpdateExpressionDic=new ConcurrentDictionary<string,SqlUpdateExpression>();
+    private static ConcurrentDictionary<string, List<ColumnInfo>> sqlExpressionKeyColumnDic = new ConcurrentDictionary<string, List<ColumnInfo>>();
+    private static ConcurrentDictionary<string, SqlDeleteExpression> sqlDeleteExpressionDic = new ConcurrentDictionary<string, SqlDeleteExpression>();
 
     public NewDbExpressionVisitor(DatabaseUnit databaseUnit)
     {
@@ -2056,14 +2057,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public DbQueryResult Update<T>(T updateEntity)
     {
-        var key = $"GetSqlUpdateExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
-        var sqlUpdateExpression = sqlUpdateExpressions.GetOrAdd(key, x =>
+        var typeName = typeof(T).FullName;
+        var key = $"GetSqlUpdateExpression:{this.databaseUnit.Id}:{typeName}";
+        var sqlUpdateExpression = sqlUpdateExpressionDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
 
             var keyColumns = table.Columns.Where(it => it.IsKey).ToList();
-
+            sqlExpressionKeyColumnDic.TryAdd(key, keyColumns);
             if (!keyColumns.Any())
             {
                 throw new Exception("Please set the primary key");
@@ -2097,79 +2099,83 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 });
             }
 
-            foreach (var column in keyColumns)
-            {
-                var columnName = column.Name;
-                if (column.Property.GetValue(updateEntity) is null)
-                {
-                    var condition = new SqlBinaryExpression()
-                    {
-                        Left = GetSqlIdentifierExpression(columnName),
-                        Operator = SqlBinaryOperator.Is,
-                        Right = new SqlNullExpression()
-                        {
-                            DbType = dbType
-                        }
-                    };
-                    if (updateExpression.Where == null)
-                    {
-                        updateExpression.Where = condition;
-                    }
-                    else
-                    {
-                        updateExpression.Where =
-                            new SqlBinaryExpression()
-                            {
-                                Left = updateExpression.Where,
-                                Operator = SqlBinaryOperator.And,
-                                Right = condition
-                            };
-                    }
-                }
-                else
-                {
-                    var condition = new SqlBinaryExpression()
-                    {
-                        Left = GetSqlIdentifierExpression(columnName),
-                        Operator = SqlBinaryOperator.EqualTo,
-                        Right = new SqlVariableExpression()
-                        {
-                            DbType = dbType,
-                            Prefix = this.prefix,
-                            Name = columnName
-                        }
-                    };
-                    if (updateExpression.Where == null)
-                    {
-                        updateExpression.Where = condition;
-                    }
-                    else
-                    {
-                        updateExpression.Where =
-                            new SqlBinaryExpression()
-                            {
-                                Left = updateExpression.Where,
-                                Operator = SqlBinaryOperator.And,
-                                Right = condition
-                            };
-                    }
-                }
-            }
-
             return updateExpression;
         });
 
-        var cacheResult = new DbQueryResult()
+        sqlExpressionKeyColumnDic.TryGetValue(key, out var keyColumns);
+        sqlUpdateExpression.Where = BuildWhereExpression(updateEntity, keyColumns);
+        var cacheResult = new DbQueryResult
         {
-            ExecuteSqlExpression = sqlUpdateExpression
+            ExecuteSqlExpression = sqlUpdateExpression,
+            DynamicParameters = new DynamicParameters(updateEntity)
         };
-        cacheResult.DynamicParameters = new DynamicParameters(updateEntity);
         return cacheResult;
     }
 
-    private void BuildWhere<T>(T entity,List<ColumnInfo> columnInfos)
+    private SqlBinaryExpression BuildWhereExpression<T>(T entity,List<ColumnInfo> columnInfos)
     {
+        SqlBinaryExpression where = null;
+        foreach (var column in columnInfos)
+        {
+            var columnName = column.Name;
+            var propertyName = column.PropertyName;
+            if (entity.GetPropertyValue(propertyName) is null)
+            {
+                var condition = new SqlBinaryExpression()
+                {
+                    Left = GetSqlIdentifierExpression(columnName),
+                    Operator = SqlBinaryOperator.Is,
+                    Right = new SqlNullExpression()
+                    {
+                        DbType = dbType
+                    }
+                };
+                if (where == null)
+                {
+                    where = condition;
+                }
+                else
+                {
+                    where =
+                        new SqlBinaryExpression()
+                        {
+                            Left = where,
+                            Operator = SqlBinaryOperator.And,
+                            Right = condition
+                        };
+                }
+            }
+            else
+            {
+                var condition = new SqlBinaryExpression()
+                {
+                    Left = GetSqlIdentifierExpression(columnName),
+                    Operator = SqlBinaryOperator.EqualTo,
+                    Right = new SqlVariableExpression()
+                    {
+                        DbType = dbType,
+                        Prefix = this.prefix,
+                        Name = columnName
+                    }
+                };
+                if (where == null)
+                {
+                    where = condition;
+                }
+                else
+                {
+                    where =
+                        new SqlBinaryExpression()
+                        {
+                            Left = where,
+                            Operator = SqlBinaryOperator.And,
+                            Right = condition
+                        };
+                }
+            }
+        }
 
+        return where;
     }
 
     public DbQueryResult ExecuteUpdate<T>(Expression expression, List<SelectItem<T>> updateItems)
@@ -2304,8 +2310,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public DbQueryResult Delete<T>(T deleteEntity)
     {
-        var key = $"GetSqlDeleteExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
-        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        var typeName = typeof(T).FullName;
+        var key = $"GetSqlDeleteExpression:{this.databaseUnit.Id}:{typeName}";
+        var sqlDeleteExpression = sqlDeleteExpressionDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
@@ -2321,46 +2328,22 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
             var sqlDeleteExpression = new SqlDeleteExpression()
             {
-                DbType = dbType
+                DbType = dbType,
+                Table = tableExpression
             };
-
+            
             var columns = table.Columns.Where(it => !it.IsIgnore).ToList();
-            SqlBinaryExpression where = null;
-            foreach (var column in columns)
-            {
-                var columnName = column.Name;
-                var wherePart = new SqlBinaryExpression()
-                {
-                    Left = GetSqlIdentifierExpression(columnName),
-                    Operator = SqlBinaryOperator.EqualTo,
-                    Right = GetSqlVariableExpressionWithSpecifiedName(column.PropertyName)
-                };
-                if (where == null)
-                {
-                    where = wherePart;
-                }
-                else
-                {
-                    where = new SqlBinaryExpression()
-                    {
-                        Left = where,
-                        Operator = SqlBinaryOperator.EqualTo,
-                        Right = wherePart
-                    };
-                }
-            }
-
-            sqlDeleteExpression.Where = where;
-            var r = new DbQueryResult()
-            {
-                ExecuteSqlExpression = sqlDeleteExpression
-            };
-
-            return r;
+            sqlExpressionKeyColumnDic.TryAdd(key, columns);
+            return sqlDeleteExpression;
         });
-        var dp = new DynamicParameters(deleteEntity);
-        cacheResult.DynamicParameters = dp;
-        return cacheResult;
 
+        sqlExpressionKeyColumnDic.TryGetValue(key, out var keyColumns);
+        sqlDeleteExpression.Where = BuildWhereExpression(deleteEntity, keyColumns);
+        var cacheResult = new DbQueryResult
+        {
+            ExecuteSqlExpression = sqlDeleteExpression,
+            DynamicParameters = new DynamicParameters(deleteEntity)
+        };
+        return cacheResult;
     }
 }
