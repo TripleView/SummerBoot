@@ -13,14 +13,14 @@ namespace SummerBoot.Repository.ExpressionParser.Base
         {
             var keyAttribute = propertyInfo.GetCustomAttribute<KeyAttribute>();
             var ignoreWhenUpdateAttribute = propertyInfo.GetCustomAttribute<IgnoreWhenUpdateAttribute>();
-
+            var notMappedAttribute = propertyInfo.GetCustomAttribute<NotMappedAttribute>();
             Name = DbQueryUtil.GetColumnName(propertyInfo);
             IsKey = keyAttribute != null;
             Property = propertyInfo;
             PropertyName = propertyInfo.Name;
             IsNullable = propertyInfo.PropertyType.IsNullable();
             IsIgnoreWhenUpdate = ignoreWhenUpdateAttribute != null;
-            
+            IsIgnore = notMappedAttribute != null;
             var databaseGenerated = Property.GetCustomAttribute<DatabaseGeneratedAttribute>();
             if (databaseGenerated != null)
             {
@@ -31,7 +31,7 @@ namespace SummerBoot.Repository.ExpressionParser.Base
                     IsDatabaseGeneratedIdentity = true;
                 }
             }
-            
+
         }
 
         /// <summary>
@@ -58,11 +58,15 @@ namespace SummerBoot.Repository.ExpressionParser.Base
         /// </summary>
         public bool IsIgnoreWhenUpdate { get; private set; }
 
-
+        /// <summary>
+        /// Ignore
+        /// 忽略
+        /// </summary>
+        public bool IsIgnore { get; private set; }
         /// <summary>
         /// Determine if it is a database auto-increment.
         /// 判断是否为数据库自增
         /// </summary>
-        public bool IsDatabaseGeneratedIdentity { get;private set; }
+        public bool IsDatabaseGeneratedIdentity { get; private set; }
     }
 }

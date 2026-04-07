@@ -123,9 +123,7 @@ namespace SummerBoot.Repository
         public override async Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null)
         {
             OpenDb();
-
             var result = await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, sql, param, dbTransaction);
-
             CloseDb();
             return result;
         }
@@ -292,9 +290,8 @@ namespace SummerBoot.Repository
         {
             var internalResult = InternalGetAll();
             databaseUnit.OnLogSqlInfo(internalResult);
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = dbConnection.Query<T>(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction).ToList();
+            var result = dbConnection.Query<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction).ToList();
             CloseDb();
 
             return result;
@@ -336,9 +333,8 @@ namespace SummerBoot.Repository
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
             databaseUnit.OnLogSqlInfo(internalResult);
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = dbConnection.Execute(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction);
+            var result = dbConnection.Execute(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -349,9 +345,7 @@ namespace SummerBoot.Repository
             DbQueryResult internalResult = InternalGet(id);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
-
-            var result = dbConnection.QueryFirstOrDefault<T>(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction);
+            var result = dbConnection.QueryFirstOrDefault<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -656,9 +650,8 @@ namespace SummerBoot.Repository
         {
             var internalResult = InternalGetAll();
             databaseUnit.OnLogSqlInfo(internalResult);
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = (await dbConnection.QueryAsync<T>(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction)).ToList();
+            var result = (await dbConnection.QueryAsync<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction)).ToList();
             CloseDb();
 
             return result;
@@ -684,21 +677,14 @@ namespace SummerBoot.Repository
             var exp = this.Where(predicate).Expression;
             var internalResult = InternalDelete(exp);
             databaseUnit.OnLogSqlInfo(internalResult);
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
             OpenDb();
-            var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction);
+            var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
 
         public override async Task<int> DeleteAsync(T t)
         {
-            //if (t is BaseEntity baseEntity && databaseUnit.IsUseSoftDelete)
-            //{
-            //    baseEntity.Active = 0;
-            //    return await this.UpdateAsync(t);
-            //}
-
             var internalResult = InternalDelete(t);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
@@ -712,9 +698,7 @@ namespace SummerBoot.Repository
             DbQueryResult internalResult = InternalGet(id);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
-            var dynamicParameters = ChangeDynamicParameters(internalResult.SqlParameters);
-
-            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(databaseUnit, internalResult.Sql, dynamicParameters, transaction: dbTransaction);
+            var result = await dbConnection.QueryFirstOrDefaultAsync<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
             CloseDb();
             return result;
         }
@@ -869,84 +853,84 @@ namespace SummerBoot.Repository
 
         private async Task OracleFastBatchInsertAsync(List<T> list)
         {
-            var internalResult = InternalFastInsert(list);
-            var cmd = dbConnection.CreateCommand();
-            //cmd.CommandTimeout = 100000000;
-            cmd.CommandText = internalResult.Sql;
-            cmd.SetPropertyValue("ArrayBindCount", list.Count);
-            if (dbTransaction != null)
-            {
-                cmd.Transaction = dbTransaction;
-            }
+            //var internalResult = InternalFastInsert(list);
+            //var cmd = dbConnection.CreateCommand();
+            ////cmd.CommandTimeout = 100000000;
+            //cmd.CommandText = internalResult.Sql;
+            //cmd.SetPropertyValue("ArrayBindCount", list.Count);
+            //if (dbTransaction != null)
+            //{
+            //    cmd.Transaction = dbTransaction;
+            //}
 
-            foreach (var parameter in internalResult.SqlParameters)
-            {
-                var param = cmd.CreateParameter();
-                if (parameter.DbType == DbType.Time)
-                {
-                    var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
-                    var dbtype = Enum.Parse(oracleDbType, "114");
-                    param.SetPropertyValue("OracleDbType", dbtype);
-                    param.Value = parameter.Value;
-                }
-                else if (parameter.DbType == DbType.Time)
-                {
-                    var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
-                    var dbtype = Enum.Parse(oracleDbType, "123");
-                    param.SetPropertyValue("OracleDbType", dbtype);
-                    param.Value = parameter.Value;
-                }
-                else
-                {
-                    param.DbType = parameter.DbType;
-                    param.Value = parameter.Value;
-                }
+            //foreach (var parameter in internalResult.SqlParameters)
+            //{
+            //    var param = cmd.CreateParameter();
+            //    if (parameter.DbType == DbType.Time)
+            //    {
+            //        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+            //        var dbtype = Enum.Parse(oracleDbType, "114");
+            //        param.SetPropertyValue("OracleDbType", dbtype);
+            //        param.Value = parameter.Value;
+            //    }
+            //    else if (parameter.DbType == DbType.Time)
+            //    {
+            //        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+            //        var dbtype = Enum.Parse(oracleDbType, "123");
+            //        param.SetPropertyValue("OracleDbType", dbtype);
+            //        param.Value = parameter.Value;
+            //    }
+            //    else
+            //    {
+            //        param.DbType = parameter.DbType;
+            //        param.Value = parameter.Value;
+            //    }
 
-                cmd.Parameters.Add(param);
-            }
+            //    cmd.Parameters.Add(param);
+            //}
 
-            var resultCount = await cmd.ExecuteNonQueryAsync(new CancellationToken());
+            //var resultCount = await cmd.ExecuteNonQueryAsync(new CancellationToken());
         }
 
         private async void OracleFastBatchInsert(List<T> list)
         {
-            var internalResult = InternalFastInsert(list);
-            var cmd = dbConnection.CreateCommand();
-            //cmd.CommandTimeout = 100000000;
-            cmd.CommandText = internalResult.Sql;
-            cmd.SetPropertyValue("ArrayBindCount", list.Count);
-            if (dbTransaction != null)
-            {
-                cmd.Transaction = dbTransaction;
-            }
+            //var internalResult = InternalFastInsert(list);
+            //var cmd = dbConnection.CreateCommand();
+            ////cmd.CommandTimeout = 100000000;
+            //cmd.CommandText = internalResult.Sql;
+            //cmd.SetPropertyValue("ArrayBindCount", list.Count);
+            //if (dbTransaction != null)
+            //{
+            //    cmd.Transaction = dbTransaction;
+            //}
 
-            foreach (var parameter in internalResult.SqlParameters)
-            {
-                var param = cmd.CreateParameter();
-                if (parameter.DbType == DbType.Time)
-                {
-                    var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
-                    var dbtype = Enum.Parse(oracleDbType, "114");
-                    param.SetPropertyValue("OracleDbType", dbtype);
-                    param.Value = parameter.Value;
-                }
-                else if (parameter.DbType == DbType.Time)
-                {
-                    var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
-                    var dbtype = Enum.Parse(oracleDbType, "123");
-                    param.SetPropertyValue("OracleDbType", dbtype);
-                    param.Value = parameter.Value;
-                }
-                else
-                {
-                    param.DbType = parameter.DbType;
-                    param.Value = parameter.Value;
-                }
+            //foreach (var parameter in internalResult.SqlParameters)
+            //{
+            //    var param = cmd.CreateParameter();
+            //    if (parameter.DbType == DbType.Time)
+            //    {
+            //        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+            //        var dbtype = Enum.Parse(oracleDbType, "114");
+            //        param.SetPropertyValue("OracleDbType", dbtype);
+            //        param.Value = parameter.Value;
+            //    }
+            //    else if (parameter.DbType == DbType.Time)
+            //    {
+            //        var oracleDbType = param!.GetType()!.GetProperty("OracleDbType")!.PropertyType;
+            //        var dbtype = Enum.Parse(oracleDbType, "123");
+            //        param.SetPropertyValue("OracleDbType", dbtype);
+            //        param.Value = parameter.Value;
+            //    }
+            //    else
+            //    {
+            //        param.DbType = parameter.DbType;
+            //        param.Value = parameter.Value;
+            //    }
 
-                cmd.Parameters.Add(param);
-            }
+            //    cmd.Parameters.Add(param);
+            //}
 
-            var resultCount = cmd.ExecuteNonQuery();
+            //var resultCount = cmd.ExecuteNonQuery();
         }
     }
 

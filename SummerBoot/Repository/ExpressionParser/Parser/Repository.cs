@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
-    public class Repository<T> : IRepository<T> 
+    public class Repository<T> : IRepository<T>
     {
         protected DatabaseUnit databaseUnit;
         private DbType dbType;
         public Type ElementType => typeof(T);
         protected QueryFormatter QueryFormatter;
 
-        public Expression Expression {get; protected set; }
+        public Expression Expression { get; protected set; }
         private DbQueryProvider provider { set; get; }
         public IQueryProvider Provider => provider;
         public List<SelectItem<T>> SelectItems { get; set; } = new List<SelectItem<T>>();
@@ -149,9 +149,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             return QueryFormatter.DeleteByExpression<T>(predicate);
         }
 
-        protected DbQueryResult InternalGet(dynamic id)
+        protected DbQueryResult InternalGet(object id)
         {
-            return QueryFormatter.Get<T>(id);
+            var result = new NewDbExpressionVisitor(databaseUnit).Get<T>(id);
+            return result;
         }
 
         protected DbQueryResult InternalGetAll()
@@ -168,7 +169,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
 
             var dbQueryResult = new NewDbExpressionVisitor(databaseUnit).ExecuteUpdate(Expression, this.SelectItems);
-            return this.Execute(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
+            return this.Execute(dbQueryResult.Sql, dbQueryResult.DynamicParameters);
 
         }
 
@@ -180,7 +181,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             }
 
             var dbQueryResult = new NewDbExpressionVisitor(databaseUnit).ExecuteUpdate(Expression, this.SelectItems);
-            return await this.ExecuteAsync(dbQueryResult.Sql, dbQueryResult.GetDynamicParameters());
+            return await this.ExecuteAsync(dbQueryResult.Sql, dbQueryResult.DynamicParameters);
         }
 
         public Page<T> ToPage()
@@ -188,7 +189,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             if (Provider is DbQueryProvider dbQueryProvider)
             {
                 var dbParam = dbQueryProvider.GetDbPageQueryResultByExpression(Expression);
-                var result = dbQueryProvider.linkRepository.QueryPage<T>(dbParam.Sql, null, dbParam.GetDynamicParameters());
+                var result = dbQueryProvider.linkRepository.QueryPage<T>(dbParam.Sql, null, dbParam.DynamicParameters);
                 return result;
             }
 

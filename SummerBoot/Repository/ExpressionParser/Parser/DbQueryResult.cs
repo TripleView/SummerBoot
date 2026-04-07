@@ -26,10 +26,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public DynamicParameters DynamicParameters { get; set; }
         /// <summary>
-        /// 参数
-        /// </summary>
-        public List<SqlParameter> SqlParameters { get; set; }
-        /// <summary>
         /// 插入数据库后获取ID的sql
         /// </summary>
         public string LastInsertIdSql { get; set; }
@@ -45,26 +41,6 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 列字段的信息
         /// </summary>
         public List<DbQueryResultPropertyInfoMapping> PropertyInfoMappings { get; set; }
-        /// <summary>
-        /// Get dynamic parameters
-        /// 获取动态参数
-        /// </summary>
-        /// <returns></returns>
-        public DynamicParameters GetDynamicParameters()
-        {
-            if (SqlParameters == null || SqlParameters.Count == 0)
-            {
-                return null;
-            }
-
-            var result = new DynamicParameters();
-            foreach (var parameter in SqlParameters)
-            {
-                result.Add(parameter.ParameterName, parameter.Value, valueType: parameter.ParameterType);
-            }
-
-            return result;
-        }
     }
 
     public class DbQueryResultPropertyInfoMapping

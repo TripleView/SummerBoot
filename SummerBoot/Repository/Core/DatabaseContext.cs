@@ -94,8 +94,6 @@ namespace SummerBoot.Repository.Core
 
                 cmd = SetUpDbCommand(dbConnection, databaseUnit, sql, param, transaction, commandTimeout, commandType, token);
 
-
-
                 reader = await cmd.ExecuteReaderWithCommandBehaviorAsync(GetBehavior(wasClosed, queryFirstOrDefaultBehavior), token);
 
                 var func = GetDeserializer(typeof(T), reader, databaseUnit);
@@ -916,7 +914,7 @@ namespace SummerBoot.Repository.Core
                 //通过索引从dataReader里读取数据，此时读取回来的是object类型
                 il.Emit(OpCodes.Ldarg_0); //[target, target,dataReader]
                 il.EmitInt32(queryMemberCacheInfo.DataReaderIndex);//[target, target,dataReader,i]
-                il.Emit( OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
+                il.Emit(OpCodes.Callvirt, GetItem);// [target, target, getItemValue]
                 //判断返回值是否为dbnull，如果是，则跳转到结束
                 il.Emit(OpCodes.Dup);// [target, target, getItemValue,getItemValue]
                 il.Emit(OpCodes.Isinst, typeof(DBNull));// [target, target, getItemValue, bool]
@@ -967,7 +965,7 @@ namespace SummerBoot.Repository.Core
             {
                 il.SteadOfLocal(returnValueLocal);
             }
-            
+
 
             il.BeginCatchBlock(typeof(Exception));
             //此时栈顶元素为[exception]

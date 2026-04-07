@@ -24,7 +24,9 @@ namespace SummerBoot.Repository.ExpressionParser;
 public class NewDbExpressionVisitor : ExpressionVisitor
 {
     private DbType dbType;
-    private static ConcurrentDictionary<Type, TableInfo> tableInfos = new ConcurrentDictionary<Type, TableInfo>();
+    private static ConcurrentDictionary<string,SqlUpdateExpression> sqlUpdateExpressions=new ConcurrentDictionary<string,SqlUpdateExpression>();
+
+
     public NewDbExpressionVisitor(DatabaseUnit databaseUnit)
     {
         this.databaseUnit = databaseUnit;
@@ -2055,7 +2057,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     public DbQueryResult Update<T>(T updateEntity)
     {
         var key = $"GetSqlUpdateExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
-        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        var sqlUpdateExpression = sqlUpdateExpressions.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
@@ -2081,8 +2083,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 Table = tableExpression
             };
 
-            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
-
+            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate && !it.IsIgnore).ToList();
 
             foreach (var column in columns)
             {
@@ -2092,12 +2093,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     Left = GetSqlIdentifierExpression(columnName),
                     Operator = SqlBinaryOperator.EqualTo,
-                    Right = new SqlVariableExpression()
-                    {
-                        DbType = dbType,
-                        Prefix = this.prefix,
-                        Name = columnName
-                    }
+                    Right = GetSqlVariableExpressionWithSpecifiedName(columnName)
                 });
             }
 
@@ -2160,16 +2156,20 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 }
             }
 
-            var r = new DbQueryResult()
-            {
-                ExecuteSqlExpression = updateExpression
-            };
-            
-            return r;
+            return updateExpression;
         });
 
+        var cacheResult = new DbQueryResult()
+        {
+            ExecuteSqlExpression = sqlUpdateExpression
+        };
         cacheResult.DynamicParameters = new DynamicParameters(updateEntity);
         return cacheResult;
+    }
+
+    private void BuildWhere<T>(T entity,List<ColumnInfo> columnInfos)
+    {
+
     }
 
     public DbQueryResult ExecuteUpdate<T>(Expression expression, List<SelectItem<T>> updateItems)
@@ -2181,11 +2181,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         var body = this.Visit(expression);
         var sqlSelectQueryExpression = GetSqlSelectQueryExpression(GetSqlExpression(body));
-        var where = sqlSelectQueryExpression.Where;
-        if (where != null)
-        {
-
-        }
 
         var updateColumns = new List<SqlIdentifierExpression>();
         foreach (var updateItem in updateItems)
@@ -2275,8 +2270,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 Query = sqlSelectQueryExpression
             };
 
-            var columns = table.Columns.Where(it => !it.IsKey && !it.IsIgnoreWhenUpdate).ToList();
-
+            var columns = table.Columns.Where(it => !it.IsIgnore).ToList();
 
             foreach (var column in columns)
             {
@@ -2306,5 +2300,67 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         dp.Add("id", id);
         cacheResult.DynamicParameters = dp;
         return cacheResult;
+    }
+
+    public DbQueryResult Delete<T>(T deleteEntity)
+    {
+        var key = $"GetSqlDeleteExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
+        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        {
+            var table = this.GetTableInfo(typeof(T));
+            var dbType = this.dbType;
+
+            var tableExpression = new SqlTableExpression()
+            {
+                Name = GetSqlIdentifierExpression(table.Name)
+            };
+            if (table.Schema.HasText())
+            {
+                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
+            }
+
+            var sqlDeleteExpression = new SqlDeleteExpression()
+            {
+                DbType = dbType
+            };
+
+            var columns = table.Columns.Where(it => !it.IsIgnore).ToList();
+            SqlBinaryExpression where = null;
+            foreach (var column in columns)
+            {
+                var columnName = column.Name;
+                var wherePart = new SqlBinaryExpression()
+                {
+                    Left = GetSqlIdentifierExpression(columnName),
+                    Operator = SqlBinaryOperator.EqualTo,
+                    Right = GetSqlVariableExpressionWithSpecifiedName(column.PropertyName)
+                };
+                if (where == null)
+                {
+                    where = wherePart;
+                }
+                else
+                {
+                    where = new SqlBinaryExpression()
+                    {
+                        Left = where,
+                        Operator = SqlBinaryOperator.EqualTo,
+                        Right = wherePart
+                    };
+                }
+            }
+
+            sqlDeleteExpression.Where = where;
+            var r = new DbQueryResult()
+            {
+                ExecuteSqlExpression = sqlDeleteExpression
+            };
+
+            return r;
+        });
+        var dp = new DynamicParameters(deleteEntity);
+        cacheResult.DynamicParameters = dp;
+        return cacheResult;
+
     }
 }

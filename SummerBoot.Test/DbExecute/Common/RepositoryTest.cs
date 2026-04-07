@@ -355,6 +355,7 @@ namespace SummerBoot.Test.DbExecute.Common
             await nullableTableRepository.InsertAsync(a);
             var dbModel= await nullableTableRepository.FirstOrDefaultAsync(x => x.Guid2 == guid);
             Assert.NotNull(dbModel);
+            var updateGuid = Guid.NewGuid();
             dbModel.Int2 = 2;
             dbModel.Bool2 = false;
             dbModel.Byte2 = 2;
@@ -363,7 +364,7 @@ namespace SummerBoot.Test.DbExecute.Common
             dbModel.Decimal3 = 2.2m;
             dbModel.Double2 = 2.2;
             dbModel.Float2 = (float)2.2;
-            dbModel.Guid2=Guid.NewGuid();
+            dbModel.Guid2= updateGuid;
             dbModel.Short2 = 2;
             dbModel.TimeSpan2 = TimeSpan.FromHours(2);
             dbModel.String2 = "sb2";
@@ -380,14 +381,53 @@ namespace SummerBoot.Test.DbExecute.Common
             Assert.Equal(dbModel2.Decimal3, 2.2m);
             Assert.Equal(dbModel2.Double2, 2.2);
             Assert.Equal(dbModel2.Float2, (float)2.2);
-            Assert.Equal(dbModel2.Guid2, Guid.NewGuid());
+            Assert.Equal(dbModel2.Guid2, updateGuid);
             Assert.Equal(dbModel2.Short2, (short)2);
             Assert.Equal(dbModel2.TimeSpan2, TimeSpan.FromHours(2));
             Assert.Equal(dbModel2.String2, "sb2");
             Assert.Equal(dbModel2.String3, "sb2");
             Assert.Equal(dbModel2.Long2, 2);
-
+            Assert.Equal(dbModel2.Id, dbModel.Id);
         }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestDeleteAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var guid = Guid.NewGuid();
+            var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
+            var a = new NullableTable()
+            {
+                Int2 = 1,
+                Bool2 = true,
+                Byte2 = 1,
+                DateTime2 = dateNow.AddMinutes(1),
+                Decimal2 = 1m,
+                Decimal3 = 1.1m,
+                Double2 = 1.1,
+                Float2 = (float)1.1,
+                Guid2 = guid,
+                Short2 = 1,
+                TimeSpan2 = TimeSpan.FromHours(1),
+                String2 = "sb",
+                String3 = "sb",
+                Long2 = 2
+            };
+
+            await nullableTableRepository.InsertAsync(a);
+            var dbModel = await nullableTableRepository.GetAsync(a.Id);
+            Assert.NotNull(dbModel);
+            await nullableTableRepository.DeleteAsync(a);
+            var dbModel2 = await nullableTableRepository.GetAsync(a.Id);
+            Assert.Null(dbModel2);
+        }
+
 
         [Theory]
         [InlineData(DbType.MySql)]

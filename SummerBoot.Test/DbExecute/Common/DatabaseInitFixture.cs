@@ -1,4 +1,4 @@
-锘縰sing System;
+using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using SummerBoot.Test.DbExecute.Common.Db;
@@ -9,7 +9,7 @@ public class DatabaseInitFixture : IDisposable
 {
     public DatabaseInitFixture()
     {
-      
+        //InitDatabase();
     }
 
     private void InitDatabase()
@@ -21,8 +21,8 @@ public class DatabaseInitFixture : IDisposable
     }
     private void InitMysqlDatabase()
     {
-        //鍒濆鍖栨暟鎹簱
-        using (var database = new MysqlDb())    //鏂板
+        //初始化数据库
+        using (var database = new MysqlDb())    //新增
         {
             database.Database.EnsureDeleted();
             database.Database.EnsureCreated();
@@ -54,8 +54,8 @@ public class DatabaseInitFixture : IDisposable
 
     private void InitPgsqlDatabase()
     {
-        //鍒濆鍖栨暟鎹簱
-        using (var database = new PgsqlDb())    //鏂板
+        //初始化数据库
+        using (var database = new PgsqlDb())    //新增
         {
             database.Database.EnsureDeleted();
             database.Database.EnsureCreated();
@@ -100,8 +100,8 @@ public class DatabaseInitFixture : IDisposable
 
     private void InitSqlserverDatabase()
     {
-        //鍒濆鍖栨暟鎹簱
-        using (var database = new SqlServerDb())    //鏂板
+        //初始化数据库
+        using (var database = new SqlServerDb())    //新增
         {
 
             database.Database.EnsureDeleted();
