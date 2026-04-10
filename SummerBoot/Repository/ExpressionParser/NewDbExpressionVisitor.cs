@@ -24,9 +24,14 @@ namespace SummerBoot.Repository.ExpressionParser;
 public class NewDbExpressionVisitor : ExpressionVisitor
 {
     private DbType dbType;
-    private static ConcurrentDictionary<string,SqlUpdateExpression> sqlUpdateExpressionDic=new ConcurrentDictionary<string,SqlUpdateExpression>();
+    private static ConcurrentDictionary<string, SqlUpdateExpression> sqlUpdateExpressionDic = new ConcurrentDictionary<string, SqlUpdateExpression>();
     private static ConcurrentDictionary<string, List<ColumnInfo>> sqlExpressionKeyColumnDic = new ConcurrentDictionary<string, List<ColumnInfo>>();
     private static ConcurrentDictionary<string, SqlDeleteExpression> sqlDeleteExpressionDic = new ConcurrentDictionary<string, SqlDeleteExpression>();
+    private bool isMysql;
+    private bool isSqlServer;
+    private bool isOracle;
+    private bool isSqlite;
+    private bool isPgsql;
 
     public NewDbExpressionVisitor(DatabaseUnit databaseUnit)
     {
@@ -36,6 +41,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             case DatabaseType.SqlServer:
                 dbType = DbType.SqlServer;
+                isSqlServer = true;
                 leftQualifiers = "[";
                 rightQualifiers = "]";
                 prefix = "@";
@@ -43,6 +49,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
             case DatabaseType.Mysql:
                 dbType = DbType.MySql;
+                isMysql = true;
                 leftQualifiers = "`";
                 rightQualifiers = "`";
                 prefix = "@";
@@ -50,6 +57,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
             case DatabaseType.Oracle:
                 dbType = DbType.Oracle;
+                isOracle = true;
                 leftQualifiers = "\"";
                 rightQualifiers = "\"";
                 prefix = ":";
@@ -57,6 +65,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
             case DatabaseType.Sqlite:
                 dbType = DbType.Sqlite;
+                isSqlite = true;
                 leftQualifiers = "`";
                 rightQualifiers = "`";
                 prefix = ":";
@@ -64,6 +73,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
             case DatabaseType.Pgsql:
                 dbType = DbType.Pgsql;
+                isPgsql = true;
                 leftQualifiers = "\"";
                 rightQualifiers = "\"";
                 prefix = "@";
@@ -406,7 +416,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     var nodeArgumentExpression = this.Visit(nodeArgument);
                     var parameterSqlExpression = GetSqlExpression(nodeArgumentExpression);
-                    parameterSqlExpression = ChangeSqlStringExpressionToSqlVariableExpression(parameterSqlExpression);
+                    parameterSqlExpression = ConvertFixedValueExpressionToSqlVariableExpression(parameterSqlExpression);
 
                     parameterSqlExpressions.Add(parameterSqlExpression);
                 }
@@ -527,11 +537,20 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return e;
     }
 
-    private SqlExpression ChangeSqlStringExpressionToSqlVariableExpression(SqlExpression sqlExpression)
+    /// <summary>
+    /// 将固定值转化为参数，比如字符串，数字等
+    /// </summary>
+    /// <param name="sqlExpression"></param>
+    /// <returns></returns>
+    private SqlExpression ConvertFixedValueExpressionToSqlVariableExpression(SqlExpression sqlExpression)
     {
         if (sqlExpression is SqlStringExpression sqlStringExpression)
         {
             return GetSqlVariableExpressionWithValueAndDynamicName(sqlStringExpression.Value);
+        }
+        else if (sqlExpression is SqlNumberExpression sqlNumberExpression)
+        {
+            return GetSqlVariableExpressionWithValueAndDynamicName(sqlNumberExpression.Value);
         }
 
         return sqlExpression;
@@ -556,11 +575,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
             var left = GetSqlExpression(leftExpression);
             var right = GetSqlExpression(rightExpression);
-            left = ChangeSqlStringExpressionToSqlVariableExpression(left);
-            right = ChangeSqlStringExpressionToSqlVariableExpression(right);
+            left = ConvertFixedValueExpressionToSqlVariableExpression(left);
+            right = ConvertFixedValueExpressionToSqlVariableExpression(right);
+
+            var tempResult = new SqlBinaryExpression()
+            {
+                Left = left,
+                Right = right,
+                Operator = sqlBinaryOperator
+            };
 
             var leftIsNull = left is SqlNullExpression;
             var rightIsNull = right is SqlNullExpression;
+            //左右任何一边为null,则转换为sql的时候不能用=号，而是转换为is null/is not null
             if (leftIsNull || rightIsNull)
             {
                 if (sqlBinaryOperator.Equals(SqlBinaryOperator.EqualTo))
@@ -571,24 +598,69 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     sqlBinaryOperator = SqlBinaryOperator.IsNot;
                 }
-
+                //如果左边值为Null，属性在右边,则左右要调换一下
                 if (leftIsNull)
                 {
                     (left, right) = (right, left);
                 }
+                tempResult = new SqlBinaryExpression()
+                {
+                    Left = left,
+                    Right = right,
+                    Operator = sqlBinaryOperator
+                };
+
+                return GetWrapperExpression(tempResult);
             }
-            var tempResult = new SqlBinaryExpression()
-            {
-                Left = left,
-                Right = right,
-                Operator = sqlBinaryOperator
-            };
+
+            tempResult = TransformSqlBinaryExpressionForMysqlFloat(tempResult,
+                binaryExpression.Right?.Type?.GetNullableUnderlyingType());
 
             return GetWrapperExpression(tempResult);
         }
 
-        //throw new NotSupportedException(MethodName);
         return base.VisitBinary(binaryExpression);
+    }
+
+    /// <summary>
+    /// MySQL中float是单精度浮点数，存储时会有微小误差，所以要改造成ABS(`Float2` - 1.1) < 0.0001这种方式
+    /// </summary>
+    /// <returns></returns>
+    private SqlBinaryExpression TransformSqlBinaryExpressionForMysqlFloat(SqlBinaryExpression originBinaryExpression, Type? type)
+    {
+        if (isMysql && type?.GetNullableUnderlyingType() == typeof(Single))
+        {
+            var left = originBinaryExpression.Left;
+            var right = originBinaryExpression.Right;
+            var sqlFunctionCallExpression = new SqlFunctionCallExpression()
+            {
+                Name = new SqlIdentifierExpression()
+                {
+                    Value = "ABS"
+                },
+                Arguments = new List<SqlExpression>()
+                {
+                    new SqlBinaryExpression()
+                    {
+                        Left = left,
+                        Right = right,
+                        Operator = SqlBinaryOperator.Sub
+                    }
+                }
+            };
+            var tempResult = new SqlBinaryExpression()
+            {
+                Left = sqlFunctionCallExpression,
+                Right = new SqlNumberExpression()
+                {
+                    Value = 0.0001m
+                },
+                Operator = SqlBinaryOperator.LessThen
+            };
+            return tempResult;
+        }
+
+        return originBinaryExpression;
     }
 
     /// <summary>
@@ -2112,13 +2184,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return cacheResult;
     }
 
-    private SqlBinaryExpression BuildWhereExpression<T>(T entity,List<ColumnInfo> columnInfos)
+    private SqlBinaryExpression BuildWhereExpression<T>(T entity, List<ColumnInfo> columnInfos)
     {
         SqlBinaryExpression where = null;
         foreach (var column in columnInfos)
         {
             var columnName = column.Name;
             var propertyName = column.PropertyName;
+
             if (entity.GetPropertyValue(propertyName) is null)
             {
                 var condition = new SqlBinaryExpression()
@@ -2158,6 +2231,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         Name = columnName
                     }
                 };
+
+                condition = TransformSqlBinaryExpressionForMysqlFloat(condition,
+                    column.Property.PropertyType);
+
                 if (where == null)
                 {
                     where = condition;
@@ -2331,7 +2408,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 DbType = dbType,
                 Table = tableExpression
             };
-            
+
             var columns = table.Columns.Where(it => !it.IsIgnore).ToList();
             sqlExpressionKeyColumnDic.TryAdd(key, columns);
             return sqlDeleteExpression;

@@ -26,7 +26,7 @@ namespace SummerBoot.Test.DbExecute.Common
 {
     [Collection("test")]
     [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
-    public class RepositoryTest:IClassFixture<DatabaseInitFixture>
+    public class RepositoryTest : IClassFixture<DatabaseInitFixture>
     {
         private readonly DatabaseInitFixture databaseInitFixture;
 
@@ -37,7 +37,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
         private IServiceProvider serviceProvider;
 
-        
+
 
         private void InitMysqlService()
         {
@@ -318,8 +318,8 @@ namespace SummerBoot.Test.DbExecute.Common
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
 
-           var dbOrder=  await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderHeader.OrderNo);
-           Assert.Equal(dbOrder.Id,orderHeader.Id);
+            var dbOrder = await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderHeader.OrderNo);
+            Assert.Equal(dbOrder.Id, orderHeader.Id);
         }
 
         [Theory]
@@ -353,7 +353,7 @@ namespace SummerBoot.Test.DbExecute.Common
             };
 
             await nullableTableRepository.InsertAsync(a);
-            var dbModel= await nullableTableRepository.FirstOrDefaultAsync(x => x.Guid2 == guid);
+            var dbModel = await nullableTableRepository.FirstOrDefaultAsync(x => x.Guid2 == guid);
             Assert.NotNull(dbModel);
             var updateGuid = Guid.NewGuid();
             dbModel.Int2 = 2;
@@ -364,7 +364,7 @@ namespace SummerBoot.Test.DbExecute.Common
             dbModel.Decimal3 = 2.2m;
             dbModel.Double2 = 2.2;
             dbModel.Float2 = (float)2.2;
-            dbModel.Guid2= updateGuid;
+            dbModel.Guid2 = updateGuid;
             dbModel.Short2 = 2;
             dbModel.TimeSpan2 = TimeSpan.FromHours(2);
             dbModel.String2 = "sb2";
@@ -422,6 +422,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
             await nullableTableRepository.InsertAsync(a);
             var dbModel = await nullableTableRepository.GetAsync(a.Id);
+            var dbModel12 = await nullableTableRepository.FirstOrDefaultAsync(x => x.Id == dbModel.Id && x.Double2 == dbModel.Double2);
             Assert.NotNull(dbModel);
             await nullableTableRepository.DeleteAsync(a);
             var dbModel2 = await nullableTableRepository.GetAsync(a.Id);
@@ -518,6 +519,6 @@ namespace SummerBoot.Test.DbExecute.Common
                 .ToListAsync();
             //Assert.Equal(2, count);
         }
-       
+
     }
 }
