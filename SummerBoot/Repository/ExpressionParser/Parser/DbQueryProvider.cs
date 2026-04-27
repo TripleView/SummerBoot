@@ -1,11 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using SqlParser.Net.Ast.Expression;
+using System.Xml.Linq;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
@@ -13,12 +12,11 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
     {
         public IDbExecuteAndQuery linkRepository;
         public DatabaseUnit DatabaseUnit;
-        private Func<Expression, WrapperExpression> getDbQueryResultByExpression;
-        public DbQueryProvider(DatabaseUnit databaseUnit, IDbExecuteAndQuery linkRepository, Func<Expression, WrapperExpression> getDbQueryResultByExpression)
+     
+        public DbQueryProvider(DatabaseUnit databaseUnit, IDbExecuteAndQuery linkRepository)
         {
             this.DatabaseUnit = databaseUnit;
             this.linkRepository = linkRepository;
-            this.getDbQueryResultByExpression = getDbQueryResultByExpression;
         }
         public IQueryable CreateQuery(Expression expression)
         {
@@ -28,18 +26,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         }
 
 
-        public IQueryable<TElement> CreateQuery<TElement>(Expression expression) 
+        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
             var result = new SummerbootQueryable<TElement>(expression, this);
             return result;
-        }
-
-        public DbQueryResult GetJoinQueryResultByExpression<T>(IRepository<T> repository, IPageable pageable = null)
-        {
-            var expression = repository.Expression;
-            //这一步将expression转化成我们自己的expression
-
-            throw new NotSupportedException();
         }
 
         public DbQueryResult GetDbPageQueryResultByExpression(Expression expression)
@@ -53,22 +43,9 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
             throw new NotImplementedException();
         }
 
-        private WrapperExpression GetWrapperExpression(Expression expression)
-        {
-            var wrapperExpression = getDbQueryResultByExpression(expression);
-            return wrapperExpression;
-        }
-
-        public IEnumerable<T> QueryList<T>(Expression expression)
-        {
-            var wrapperExpression = GetWrapperExpression(expression);
-            var sql = wrapperExpression.SqlExpression.ToSql();
-            var parameters = wrapperExpression.Parameters;
-            return linkRepository.QueryList<T>(sql, parameters);
-        }
         public TResult Execute<TResult>(Expression expression)
         {
-            var wrapperExpression = GetWrapperExpression(expression);
+            var wrapperExpression = GetDbQueryResultByExpression(expression);
             var sql = wrapperExpression.SqlExpression.ToSql();
             var parameters = wrapperExpression.Parameters;
             return linkRepository.QueryFirstOrDefault<TResult>(sql, parameters);
@@ -76,43 +53,77 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public async Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
         {
-            var wrapperExpression = GetWrapperExpression(expression);
+            var wrapperExpression = GetDbQueryResultByExpression(expression);
             var sql = wrapperExpression.SqlExpression.ToSql();
             var parameters = wrapperExpression.Parameters;
             return await linkRepository.QueryFirstOrDefaultAsync<TResult>(sql, parameters);
         }
+
+        /// <summary>
+        /// 执行删除或者更新
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<int> ExecuteDeleteOrUpdateAsync(Expression expression,
+            CancellationToken cancellationToken = default)
+        {
+            var wrapperExpression = GetDbQueryResultByExpression(expression);
+            var sql = wrapperExpression.SqlExpression.ToSql();
+            var parameters = wrapperExpression.Parameters;
+            return await linkRepository.ExecuteAsync(sql, parameters);
+        }
+
+        /// <summary>
+        /// 执行删除或者更新
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public int ExecuteDeleteOrUpdate(Expression expression, CancellationToken cancellationToken = default)
+        {
+            var wrapperExpression = GetDbQueryResultByExpression(expression);
+            var sql = wrapperExpression.SqlExpression.ToSql();
+            var parameters = wrapperExpression.Parameters;
+            return linkRepository.Execute(sql, parameters);
+        }
+
+        /// <summary>
+        /// 将结果集转化为列表
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        public async Task<List<T>> ToListAsync<T>(Expression expression)
+        {
+            var wrapperExpression = this.GetDbQueryResultByExpression(expression);
+            var sql = wrapperExpression.SqlExpression.ToSql();
+            var parameters = wrapperExpression.Parameters;
+            var result = await linkRepository.QueryListAsync<T>(sql, parameters);
+            return result;
+        }
+
+        public List<T> QueryList<T>(Expression expression)
+        {
+            var wrapperExpression = GetDbQueryResultByExpression(expression);
+            var sql = wrapperExpression.SqlExpression.ToSql();
+            var parameters = wrapperExpression.Parameters;
+            return linkRepository.QueryList<T>(sql, parameters);
+        }
+
+        private WrapperExpression GetDbQueryResultByExpression(Expression expression)
+        {
+            var newDbExpressionVisitor = new NewDbExpressionVisitor(DatabaseUnit);
+            var exp = newDbExpressionVisitor.Visit(expression);
+            if (exp is WrapperExpression wrapperExpression)
+            {
+                return wrapperExpression;
+            }
+
+            throw new NotSupportedException(expression.ToString());
+        }
     }
 
 
-    public class SummerbootQueryable<T> : IQueryable<T>
-    {
-        private readonly Expression expression;
-        private readonly DbQueryProvider provider;
 
-        public SummerbootQueryable(DbQueryProvider provider)
-        {
-            this.provider = provider;
-            this.expression = Expression.Constant(this);
-        }
-
-        public SummerbootQueryable(Expression expression,DbQueryProvider provider)
-        {
-            this.provider = provider;
-            this.expression = expression;
-        }
-
-        public Type ElementType => typeof(T);
-        public Expression Expression => expression;
-        public IQueryProvider Provider => provider;
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return provider.QueryList<T>(expression).GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
 }

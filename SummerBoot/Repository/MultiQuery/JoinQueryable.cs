@@ -263,7 +263,7 @@ public class JoinGroupQueryable<T1, T2, TKey> : IJoinGroupQueryable<T1, T2, TKey
     {
         Source = source;
     }
-    public IEnumerable<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+    public IQueryable<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
     {
         if (Source == null) throw new ArgumentNullException(nameof(Source));
 

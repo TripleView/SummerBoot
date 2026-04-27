@@ -44,7 +44,7 @@ public interface IJoinQueryable<T1, T2>
 
 public interface IJoinGroupQueryable<T1, T2, TKey>
 {
-    IEnumerable<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector);
+    IQueryable<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector);
 }
 
 

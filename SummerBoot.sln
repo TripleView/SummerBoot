@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SummerBoot.Performance.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OtherOrmTests", "OtherOrmTests\OtherOrmTests.csproj", "{7FF65900-483D-47B6-AFD4-9892FC8673FE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlParser.Net", "..\github\SqlParser.Net\SqlParser.Net\SqlParser.Net.csproj", "{61519B2E-5E41-7B5F-ABE1-C8AFB5F7F93B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{7FF65900-483D-47B6-AFD4-9892FC8673FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FF65900-483D-47B6-AFD4-9892FC8673FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FF65900-483D-47B6-AFD4-9892FC8673FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61519B2E-5E41-7B5F-ABE1-C8AFB5F7F93B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61519B2E-5E41-7B5F-ABE1-C8AFB5F7F93B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61519B2E-5E41-7B5F-ABE1-C8AFB5F7F93B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61519B2E-5E41-7B5F-ABE1-C8AFB5F7F93B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

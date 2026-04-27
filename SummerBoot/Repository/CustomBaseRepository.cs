@@ -1,6 +1,7 @@
 using SummerBoot.Core;
 using SummerBoot.Repository.Core;
 using SummerBoot.Repository.ExpressionParser.Parser;
+using SummerBoot.Repository.MultiQuery;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -106,9 +107,7 @@ namespace SummerBoot.Repository
         public override TResult QueryFirstOrDefault<TResult>(string sql, object param = null)
         {
             OpenDb();
-
             var result = dbConnection.QueryFirstOrDefault<TResult>(databaseUnit, sql, param, dbTransaction);
-
             CloseDb();
             return result;
         }
@@ -314,12 +313,6 @@ namespace SummerBoot.Repository
 
         public override int Delete(T t)
         {
-            //if (t is BaseEntity baseEntity && databaseUnit.IsUseSoftDelete)
-            //{
-            //    baseEntity.Active = 0;
-            //    return this.Update(t);
-            //}
-
             var internalResult = InternalDelete(t);
             databaseUnit.OnLogSqlInfo(internalResult);
             OpenDb();
@@ -331,11 +324,14 @@ namespace SummerBoot.Repository
         public override int Delete(Expression<Func<T, bool>> predicate)
         {
             var exp = this.Where(predicate).Expression;
-            var internalResult = InternalDelete(exp);
-            databaseUnit.OnLogSqlInfo(internalResult);
-            OpenDb();
-            var result = dbConnection.Execute(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
-            CloseDb();
+            var methodInfo = QueryableMethodsCache.ExecuteDelete;
+            var callExpr = Expression.Call(
+                null,
+                methodInfo,
+                exp
+            );
+
+            var result = provider.ExecuteDeleteOrUpdate(callExpr);
             return result;
         }
 
@@ -377,9 +373,7 @@ namespace SummerBoot.Repository
                 uow.BeginTransaction();
                 OpenDb();
                 list.BatchExecution((tempList) =>
-               {
-                   OracleFastBatchInsert(tempList);
-               }, 100000);
+                    OracleFastBatchInsert(tempList), 100000);
                 uow.Commit();
             }
             else if (databaseUnit.IsSqlServer)
@@ -586,27 +580,6 @@ namespace SummerBoot.Repository
                     internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
                 }
             }
-            //else if (databaseType == DatabaseType.Sqlite)
-            //{
-            //    if (internalResult.IdKeyPropertyInfo != null)
-            //    {
-            //        var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
-            //        var dynamicParameters = new DynamicParameters(t);
-
-            //        var multiResult = await dbConnection.QueryMultipleAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-            //        var id = multiResult.Read<int>().FirstOrDefault();
-
-
-            //        if (id != null)
-            //        {
-            //            internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
-            //        }
-            //    }
-            //    else
-            //    {
-            //        await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
-            //    }
-            //}
             else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql || databaseType == DatabaseType.Sqlite)
             {
                 if (internalResult.IdKeyPropertyInfo != null)
@@ -675,11 +648,14 @@ namespace SummerBoot.Repository
         public override async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
         {
             var exp = this.Where(predicate).Expression;
-            var internalResult = InternalDelete(exp);
-            databaseUnit.OnLogSqlInfo(internalResult);
-            OpenDb();
-            var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
-            CloseDb();
+            var methodInfo = QueryableMethodsCache.ExecuteDelete;
+            var callExpr = Expression.Call(
+                null,
+                methodInfo,
+                exp
+            );
+
+            var result = await provider.ExecuteDeleteOrUpdateAsync(callExpr);
             return result;
         }
 
@@ -705,22 +681,6 @@ namespace SummerBoot.Repository
 
 
         #endregion async
-
-        protected DynamicParameters ChangeDynamicParameters(List<SqlParameter> originSqlParameters)
-        {
-            if (originSqlParameters == null || originSqlParameters.Count == 0)
-            {
-                return null;
-            }
-
-            var result = new DynamicParameters();
-            foreach (var parameter in originSqlParameters)
-            {
-                result.Add(parameter.ParameterName, parameter.Value, valueType: parameter.ParameterType);
-            }
-
-            return result;
-        }
 
         public override async Task FastBatchInsertAsync(List<T> list)
         {

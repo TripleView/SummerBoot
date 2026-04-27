@@ -33,6 +33,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     private bool isSqlite;
     private bool isPgsql;
 
+
     public NewDbExpressionVisitor(DatabaseUnit databaseUnit)
     {
         this.databaseUnit = databaseUnit;
@@ -250,12 +251,21 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         var method = node.Method;
         var methodName = node.Method.Name;
+        var lastMethodCallName = "";
+        Expression result = null;
+        methodCallStack.Push(methodName);
+
         switch (method.Name)
         {
+            case nameof(QueryableMethodsCache.ExecuteDelete):
+                result = this.Visit(node.Arguments[0]);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
+                break;
             case nameof(Queryable.Select):
-                methodCallStack.Push(methodName);
-                var result = this.VisitSelectCall(node);
-                var lastMethodCallName = methodCallStack.Pop();
+                result = this.VisitSelectCall(node);
+                lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
                 return result;
             //get_Item方法的意思是从list里取数，比如list[0]
@@ -274,36 +284,32 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
             case nameof(Queryable.Where):
             case nameof(QueryableMethodsExtension.OrWhere):
-                methodCallStack.Push(method.Name);
                 //MethodName = method.Name;
-                var result2 = this.VisitWhereCall(node);
-                var lastMethodCallName2 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName2);
-                return result2;
+                result = this.VisitWhereCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.GroupBy):
-                methodCallStack.Push(methodName);
                 //MethodName = method.Name;
-                var result3 = this.VisitGroupByCall(node);
-                var lastMethodCallName3 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName3);
-                return result3;
+                result = this.VisitGroupByCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.OrderBy):
             case nameof(Queryable.OrderByDescending):
             case nameof(Queryable.ThenBy):
             case nameof(Queryable.ThenByDescending):
                 //MethodName = method.Name;
-                methodCallStack.Push(methodName);
-                var result4 = this.VisitOrderByCall(node);
-                var lastMethodCallName4 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName4);
-                return result4;
+                result = this.VisitOrderByCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.First):
             case nameof(Queryable.FirstOrDefault):
-                methodCallStack.Push(methodName);
-                var result6 = this.VisitFirstOrDefault(node);
-                var lastMethodCallName6 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName6);
-                return result6;
+                result = this.VisitFirstOrDefault(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.Distinct):
                 //针对group by里的count单独处理
                 if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
@@ -311,30 +317,26 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     break;
                 }
 
-                methodCallStack.Push(methodName);
-                var result5 = this.VisitDistinctCall(node);
-                var lastMethodCallName5 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName5);
-                return result5;
+                result = this.VisitDistinctCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.Count):
                 //针对group by里的count单独处理
                 if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
                 {
                     break;
                 }
-                methodCallStack.Push(methodName);
-                var result9 = this.VisitCount(node);
-                var lastMethodCallName9 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName9);
-                return result9;
+                result = this.VisitCount(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.Skip):
             case nameof(Queryable.Take):
-                methodCallStack.Push(methodName);
-
-                var result7 = this.VisitSkipTakeCall(node);
-                var lastMethodCallName7 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName7);
-                return result7;
+                result = this.VisitSkipTakeCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.Max):
             case nameof(Queryable.Min):
             case nameof(Queryable.Sum):
@@ -345,18 +347,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     break;
                 }
 
-                methodCallStack.Push(methodName);
-                var result8 = this.VisitMaxMinSumAvgCall(node);
-                var lastMethodCallName8 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName8);
-                return result8;
+                result = this.VisitMaxMinSumAvgCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(RepositoryExtension.LeftJoin):
-                methodCallStack.Push(methodName);
 
-                var result10 = this.VisitJoinCall(node);
-                var lastMethodCallName10 = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName10);
-                return result10;
+                result = this.VisitJoinCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
                 break;
 
         }
@@ -397,6 +397,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     body
                 }
             };
+            lastMethodCallName = methodCallStack.Pop();
+            lastMethodCalls.Add(lastMethodCallName);
             return GetWrapperExpression(sqlFunctionCallExpression);
         }
 
@@ -429,13 +431,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 FunctionParameters = parameterSqlExpressions,
                 AddParameter = this.GetSqlVariableExpressionWithValueAndDynamicName
             });
-
+            lastMethodCallName = methodCallStack.Pop();
+            lastMethodCalls.Add(lastMethodCallName);
             return GetWrapperExpression(callResult);
         }
         else if (method.DeclaringType == typeof(DateTime))
         {
             var date = this.GetValue(node);
             var r1 = GetSqlVariableExpressionWithValueAndDynamicName(date);
+            lastMethodCallName = methodCallStack.Pop();
+            lastMethodCalls.Add(lastMethodCallName);
             return GetWrapperExpression(r1);
         }
         else
@@ -484,12 +489,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         var targetList = new List<SqlExpression>();
                         targetList.AddRange(sqlVariableExpressions);
 
-                        var result = new SqlInExpression()
+                        var sqlInExpression = new SqlInExpression()
                         {
                             Body = body,
                             TargetList = targetList
                         };
-                        sqlInExpressions.Add(result);
+                        sqlInExpressions.Add(sqlInExpression);
 
                         sqlVariableExpressions.Clear();
                     }
@@ -510,9 +515,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                             Operator = SqlBinaryOperator.Or
                         };
                     }
-
+                    lastMethodCallName = methodCallStack.Pop();
+                    lastMethodCalls.Add(lastMethodCallName);
                     return GetWrapperExpression(first);
                 }
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
                 return GetWrapperExpression(sqlInExpressions.First());
             }
         }
@@ -551,6 +559,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else if (sqlExpression is SqlNumberExpression sqlNumberExpression)
         {
             return GetSqlVariableExpressionWithValueAndDynamicName(sqlNumberExpression.Value);
+        }
+        else if (sqlExpression is SqlBoolExpression sqlBoolExpression)
+        {
+            return isPgsql 
+                ? GetSqlVariableExpressionWithValueAndDynamicName(sqlBoolExpression.Value) 
+                : GetSqlVariableExpressionWithValueAndDynamicName(sqlBoolExpression.Value ? 1 : 0);
         }
 
         return sqlExpression;
@@ -628,7 +642,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// <returns></returns>
     private SqlBinaryExpression TransformSqlBinaryExpressionForMysqlFloat(SqlBinaryExpression originBinaryExpression, Type? type)
     {
-        if (isMysql && type?.GetNullableUnderlyingType() == typeof(Single))
+        if ((isMysql || isPgsql || isSqlite) && type?.GetNullableUnderlyingType() == typeof(Single))
         {
             var left = originBinaryExpression.Left;
             var right = originBinaryExpression.Right;
@@ -721,14 +735,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 right.SqlExpression = GetSqlNumberExpression(sqlBoolExpression2.Value ? 1 : 0);
             }
             //it.Name == "hzp" && true
-            else if (left.PropertyType == null && right.SqlExpression is SqlBoolExpression sqlBoolExpression3)
+            else if (left.SqlExpression is SqlBinaryExpression && left.PropertyType == null && right.SqlExpression is SqlBoolExpression sqlBoolExpression3)
             {
-                ConvertBooleanValueToSqlBinaryExpression(right);
+                right.SqlExpression = ConvertBooleanValueToSqlBinaryExpression(sqlBoolExpression3);
             }
             //true && it.Name == "hzp"
-            else if (right.PropertyType == null && left.SqlExpression is SqlBoolExpression sqlBoolExpression4)
+            else if (right.SqlExpression is SqlBinaryExpression && right.PropertyType == null && left.SqlExpression is SqlBoolExpression sqlBoolExpression4)
             {
-                ConvertBooleanValueToSqlBinaryExpression(left);
+                left.SqlExpression = ConvertBooleanValueToSqlBinaryExpression(sqlBoolExpression4);
             }
         }
 
@@ -739,17 +753,20 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// 把布尔值转为sql二元表达式
     /// </summary>
     /// <param name="wrapperExpression"></param>
-    private void ConvertBooleanValueToSqlBinaryExpression(WrapperExpression wrapperExpression)
+    private SqlExpression ConvertBooleanValueToSqlBinaryExpression(SqlExpression sqlExpression)
     {
-        if (wrapperExpression.SqlExpression is SqlBoolExpression sqlBoolExpression4)
+        if (sqlExpression is SqlBoolExpression sqlBoolExpression4)
         {
-            wrapperExpression.SqlExpression = new SqlBinaryExpression()
+            var mResult = new SqlBinaryExpression()
             {
                 Left = GetSqlNumberExpression(1),
                 Operator = SqlBinaryOperator.EqualTo,
                 Right = GetSqlNumberExpression(sqlBoolExpression4.Value ? 1 : 0),
             };
+            return mResult;
         }
+
+        return sqlExpression;
     }
 
 
@@ -1231,18 +1248,48 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else
         {
             var tempResult = this.Visit(whereCall.Arguments[0]);
+            var sourceExpression = GetSqlExpression(tempResult);
             var lambda = (LambdaExpression)this.StripQuotes(whereCall.Arguments[1]);
             var bodyExpression = this.Visit(lambda.Body);
-            if (bodyExpression is WrapperExpression tempBodyExpression)
-            {
-                ConvertBooleanValueToSqlBinaryExpression(tempBodyExpression);
-                var sqlSelectQueryExpression = GetSqlSelectQueryExpression(tempBodyExpression.SqlExpression);
-                sqlSelectQueryExpression.Where = GetSqlExpression(tempBodyExpression);
-            }
+            var tempBodyExpression = GetSqlExpression(bodyExpression);
 
-            return tempResult;
+            tempBodyExpression = ConvertBooleanValueToSqlBinaryExpression(tempBodyExpression);
+
+            var r1 = MergeWhereIntoMainSqlExpression(sourceExpression, tempBodyExpression);
+
+            return GetWrapperExpression(r1);
         }
 
+    }
+
+    /// <summary>
+    /// 把where合并到主sqlExpression里
+    /// </summary>
+    /// <param name="mainSqlExpression"></param>
+    /// <param name="where"></param>
+    /// <returns></returns>
+    /// <exception cref="NotSupportedException"></exception>
+    private SqlExpression MergeWhereIntoMainSqlExpression(SqlExpression mainSqlExpression, SqlExpression where)
+    {
+        if (mainSqlExpression is SqlDeleteExpression sqlDeleteExpression)
+        {
+            sqlDeleteExpression.Where = where;
+            return sqlDeleteExpression;
+        }
+        else if (mainSqlExpression is SqlSelectExpression sqlSelectExpression)
+        {
+            if (sqlSelectExpression.Query is SqlSelectQueryExpression sqlSelectQueryExpression)
+            {
+                sqlSelectQueryExpression.Where = where;
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(mainSqlExpression));
+            }
+
+        }
+
+        return mainSqlExpression;
     }
 
     public virtual Expression VisitOrderByCall(MethodCallExpression whereCall)
@@ -1502,8 +1549,31 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (constant.Value is IQueryable queryable)
         {
-            var table = GetSqlTableExpression(queryable.ElementType);
-            return GetWrapperExpression(table);
+            SqlExpression r1 = GetSqlTableExpression(queryable.ElementType);
+
+            if (methodCallStack.TryPeek(out var methodName) && methodName == nameof(JoinQueryableMethods.LeftJoin))
+            {
+                return GetWrapperExpression(r1);
+            }
+
+            //如果是方法解析的最底层，即repository仓库本身，则开始构建最基础的增删改查sqlExpression，比如repository.where.orderby.tolist
+            if (index == methodCallStack.Count)
+            {
+                var lastMethodName = methodCallStack.Last();
+                if (lastMethodName == nameof(QueryableMethods.ExecuteDelete))
+                {
+                    r1 = new SqlDeleteExpression()
+                    {
+                        DbType = dbType,
+                        Table = r1
+                    };
+                }
+                else
+                {
+                    r1 = GetSqlSelectExpression(r1);
+                }
+            }
+            return GetWrapperExpression(r1);
         }
         else if (constant.Value is string strValue)
         {
@@ -2203,20 +2273,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                         DbType = dbType
                     }
                 };
-                if (where == null)
-                {
-                    where = condition;
-                }
-                else
-                {
-                    where =
-                        new SqlBinaryExpression()
-                        {
-                            Left = where,
-                            Operator = SqlBinaryOperator.And,
-                            Right = condition
-                        };
-                }
+                where = CombineWhereSqlExpression(where, condition);
             }
             else
             {
@@ -2234,24 +2291,29 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
                 condition = TransformSqlBinaryExpressionForMysqlFloat(condition,
                     column.Property.PropertyType);
-
-                if (where == null)
-                {
-                    where = condition;
-                }
-                else
-                {
-                    where =
-                        new SqlBinaryExpression()
-                        {
-                            Left = where,
-                            Operator = SqlBinaryOperator.And,
-                            Right = condition
-                        };
-                }
+                where = CombineWhereSqlExpression(where, condition);
             }
         }
 
+        return where;
+    }
+
+    private SqlBinaryExpression CombineWhereSqlExpression(SqlBinaryExpression where, SqlBinaryExpression condition)
+    {
+        if (where == null)
+        {
+            where = condition;
+        }
+        else
+        {
+            where =
+                new SqlBinaryExpression()
+                {
+                    Left = where,
+                    Operator = SqlBinaryOperator.And,
+                    Right = condition
+                };
+        }
         return where;
     }
 
@@ -2384,7 +2446,55 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         cacheResult.DynamicParameters = dp;
         return cacheResult;
     }
+    public DbQueryResult GetAll<T>()
+    {
+        var key = $"GetSqlSelectExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
+        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        {
+            var table = this.GetTableInfo(typeof(T));
+            var dbType = this.dbType;
 
+            var tableExpression = new SqlTableExpression()
+            {
+                Name = GetSqlIdentifierExpression(table.Name)
+            };
+            if (table.Schema.HasText())
+            {
+                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
+            }
+
+            var sqlSelectQueryExpression = new SqlSelectQueryExpression()
+            {
+                From = tableExpression
+            };
+            var sqlSelectExpression = new SqlSelectExpression()
+            {
+                DbType = dbType,
+                Query = sqlSelectQueryExpression
+            };
+
+            var columns = table.Columns;
+
+            foreach (var column in columns)
+            {
+                var columnName = column.Name;
+
+                sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
+                {
+                    Body = GetSqlIdentifierExpression(columnName)
+                });
+            }
+
+            var r = new DbQueryResult()
+            {
+                ExecuteSqlExpression = sqlSelectExpression
+            };
+
+            return r;
+        });
+
+        return cacheResult;
+    }
     public DbQueryResult Delete<T>(T deleteEntity)
     {
         var typeName = typeof(T).FullName;
@@ -2420,6 +2530,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             ExecuteSqlExpression = sqlDeleteExpression,
             DynamicParameters = new DynamicParameters(deleteEntity)
+        };
+        return cacheResult;
+    }
+
+    public DbQueryResult DeleteByExpression<T>(Expression predicate)
+    {
+        var wrapperExpression = this.Visit(predicate);
+        var deleteExpression = GetSqlExpression(wrapperExpression);
+        var c = deleteExpression.ToFormat();
+        var cacheResult = new DbQueryResult
+        {
+            ExecuteSqlExpression = deleteExpression,
+            DynamicParameters = this.parameters
         };
         return cacheResult;
     }

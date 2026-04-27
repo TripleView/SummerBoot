@@ -33,6 +33,7 @@ public class Program
             // 查询所有
             var blogs = db.Blogs.ToList();
             Console.WriteLine($"当前博客数量：{blogs.Count}");
+           var d=  db.Blogs.Max(x=>x.Name);
             var sss = db.Blogs.Skip(1).Take(100).Where(x => x.Name == "abc").ToQueryString();
             var s1 = db.Blogs.Skip(1).Where(x => x.Name == "abc").ToQueryString();
             var s2 = db.Blogs.Take(100).Where(x => x.Name == "abc").ToQueryString();

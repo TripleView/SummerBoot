@@ -3,10 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using SummerBoot.Core;
 
 namespace SummerBoot.Repository.ExpressionParser.Parser
 {
+    internal static class QueryableMethodsCache
+    {
+        public static readonly MethodInfo ExecuteDelete =
+            typeof(QueryableMethods)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Single(m => m.Name == nameof(QueryableMethods.ExecuteDelete));
+    }
+
+    public static class QueryableMethods
+    {
+        public static Task ExecuteDelete(IQueryable source)
+        {
+            throw new NotSupportedException("Only for expression translation.");
+        }
+    }
+
     public static class QueryableMethodsExtension
     {
         public static List<MethodInfo> QueryMethodInfos =

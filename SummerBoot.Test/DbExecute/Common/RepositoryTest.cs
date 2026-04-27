@@ -328,6 +328,31 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestGetAllAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = Guid.NewGuid().ToString("N"),
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var dbOrders = await orderHeaderRepository.GetAllAsync();
+            Assert.True(dbOrders.Count > 0);
+            Assert.True(dbOrders.Any(x => x.Id == orderHeader.Id));
+        }
+
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestUpdateAsync(DbType dbType)
         {
             ChangeDb(dbType);
@@ -422,11 +447,144 @@ namespace SummerBoot.Test.DbExecute.Common
 
             await nullableTableRepository.InsertAsync(a);
             var dbModel = await nullableTableRepository.GetAsync(a.Id);
-            var dbModel12 = await nullableTableRepository.FirstOrDefaultAsync(x => x.Id == dbModel.Id && x.Double2 == dbModel.Double2);
             Assert.NotNull(dbModel);
             await nullableTableRepository.DeleteAsync(a);
             var dbModel2 = await nullableTableRepository.GetAsync(a.Id);
             Assert.Null(dbModel2);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestFirstOrDefaultByExpressionAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var guid = Guid.NewGuid();
+            var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
+            var dbModel = new NullableTable()
+            {
+                Int2 = 1,
+                Bool2 = true,
+                Byte2 = 1,
+                DateTime2 = dateNow.AddMinutes(1),
+                Decimal2 = 1m,
+                Decimal3 = 1.1m,
+                Double2 = 1.1,
+                Float2 = (float)1.1,
+                Guid2 = guid,
+                Short2 = 1,
+                TimeSpan2 = TimeSpan.FromHours(1),
+                String2 = "sb",
+                String3 = "sb",
+                Long2 = 2
+            };
+
+            await nullableTableRepository.InsertAsync(dbModel);
+            var dbModel12 = await nullableTableRepository.FirstOrDefaultAsync(x => x.Id == dbModel.Id
+                && x.Int2 == dbModel.Int2
+                && x.Bool2 == dbModel.Bool2
+                && x.Byte2 == dbModel.Byte2
+                && x.DateTime2 == dbModel.DateTime2
+                && x.Decimal2 == dbModel.Decimal2
+                && x.Decimal3 == dbModel.Decimal3
+                && x.Float2 == dbModel.Float2
+                && x.Guid2 == dbModel.Guid2
+                && x.Short2 == dbModel.Short2
+                && x.TimeSpan2 == dbModel.TimeSpan2
+                && x.String2 == dbModel.String2
+                && x.String3 == dbModel.String3
+                && x.Long2 == dbModel.Long2
+                && x.Double2 == dbModel.Double2);
+            Assert.NotNull(dbModel12);
+        }
+
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestDeleteByExpressionAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var guid = Guid.NewGuid();
+            var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
+            var a = new NullableTable()
+            {
+                Int2 = 1,
+                Bool2 = true,
+                Byte2 = 1,
+                DateTime2 = dateNow.AddMinutes(1),
+                Decimal2 = 1m,
+                Decimal3 = 1.1m,
+                Double2 = 1.1,
+                Float2 = (float)1.1,
+                Guid2 = guid,
+                Short2 = 1,
+                TimeSpan2 = TimeSpan.FromHours(1),
+                String2 = "sb",
+                String3 = "sb",
+                Long2 = 2
+            };
+
+            await nullableTableRepository.InsertAsync(a);
+            var dbModel = await nullableTableRepository.GetAsync(a.Id);
+
+            Assert.NotNull(dbModel);
+
+            var affectedRow = await nullableTableRepository.DeleteAsync(x => x.Id == dbModel.Id && x.Double2 == dbModel.Double2 && x.Float2 == dbModel.Float2);
+            Assert.Equal(1, affectedRow);
+            var dbModel2 = await nullableTableRepository.GetAsync(a.Id);
+            Assert.Null(dbModel2);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestPageAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var repository2 = serviceProvider.GetService<INewRepository<OrderHeader>>();
+
+             repository2.Where(x => x.Id == 1).Select(x => x.OrderNo).ToList();
+             repository2.OrderBy(x => x.Id).ThenBy(x=>x.OrderNo).Select(x=>x.Id).ToList();
+            //await repository2.UpdateAsync();
+            repository2.Where(x => x.OrderNo == "abc").Skip(1).Take(1).ToPage();
+            repository2.Where(x => x.OrderNo == "abc").ToPage(new Pageable(1, 10));
+
+           var orderNo = Guid.NewGuid().ToString();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 1,
+            };
+            //orderHeaderRepository.Where(x => x.Id == 1).Select(x => x.Id).ToList()
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 2,
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).ToPageAsync();
+            Assert.Equal(2, pageResult.TotalPages);
+
         }
 
 
@@ -469,7 +627,7 @@ namespace SummerBoot.Test.DbExecute.Common
             await orderDetailRepository.InsertAsync(orderDetail2);
 
             var count = orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .Count(x => x.T1.Id == orderHeader.Id);
             Assert.Equal(2, count);
         }
@@ -485,12 +643,13 @@ namespace SummerBoot.Test.DbExecute.Common
             ChangeDb(dbType);
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
+            var orderNo = Guid.NewGuid().ToString();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
-                OrderNo = "ABC",
-                State = 1
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
 
@@ -512,12 +671,15 @@ namespace SummerBoot.Test.DbExecute.Common
             await orderDetailRepository.InsertAsync(orderDetail1);
             await orderDetailRepository.InsertAsync(orderDetail2);
 
-            var c2 = await orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+            var r1 = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.OrderNo == orderNo)
                 .GroupBy(x => x.T1.Id)
                 .Select(x => new { x.Key, Count2 = x.Max(y => y.T1.CustomerId) })
                 .ToListAsync();
-            //Assert.Equal(2, count);
+            Assert.Equal(1, r1.Count);
+            Assert.Equal(orderHeader.Id, r1.First().Key);
+            Assert.Equal(orderHeader.CustomerId, r1.First().Count2);
         }
 
     }

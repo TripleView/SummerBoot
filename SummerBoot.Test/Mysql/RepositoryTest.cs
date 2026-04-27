@@ -70,7 +70,7 @@ namespace SummerBoot.Test.Mysql
             await orderDetailRepository.InsertAsync(orderDetail2);
 
             var ccc = orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .Count(x => x.T1.Id == orderHeader.Id);
 
         }
@@ -111,7 +111,7 @@ namespace SummerBoot.Test.Mysql
             await orderDetailRepository.InsertAsync(orderDetail1);
             await orderDetailRepository.InsertAsync(orderDetail2);
             var c2 = await orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .GroupBy(x => x.T1.Id)
                 .Select(x => new { x.Key, Count2 = x.Max(y => y.T1.CustomerId) })
                 .ToListAsync();
@@ -803,7 +803,7 @@ namespace SummerBoot.Test.Mysql
             //    .ToList();
 
             var orderCustomerPages4 = orderHeaderRepository
-                .LeftJoin2(orderDetailRepository, x => x.T1.Id == x.T2.Id)
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.Id)
                 .Where(x => x.T2.Quantity == 5 && x.T1.OrderNo == "a")
                 .OrderBy(x => x.T1.CreateTime)
                 .OrderByDescending(x => x.T1.OrderNo)

@@ -124,13 +124,16 @@ namespace SummerBoot.Repository
         /// <exception cref="ArgumentNullException"></exception>
         public static async Task<List<T>> ToListAsync<T>(this IQueryable<T> source)
         {
-            if (!(source is IRepository<T> repository))
+            if (source is IRepository<T> repository)
             {
-                throw new Exception("only support IRepository");
+                return await repository.ToListAsync();
             }
-            if (repository == null) throw new ArgumentNullException("source");
+            else if (source is SummerbootQueryable<T> SummerbootQueryable)
+            {
+                return await SummerbootQueryable.DbQueryProvider.ToListAsync<T>(SummerbootQueryable.Expression);
+            }
 
-            return await repository.ToListAsync();
+            throw new NotSupportedException(nameof(source));
         }
 
         public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source)
@@ -254,12 +257,6 @@ namespace SummerBoot.Repository
             return source;
         }
 
-        public static async Task<List<T1>> ToListAsync<T1>(this IEnumerable<T1> source)
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            return source.ToList();
-        }
-
         #region Joint query of two tables
         private static JoinResult<T1, T2> InternalJoin<T1, T2>(this IQueryable<T1> source,
           IQueryable<T2> joinTable,
@@ -287,23 +284,13 @@ namespace SummerBoot.Repository
             return result;
         }
 
-        public static IJoinQueryable<T1, T2> LeftJoin2<T1, T2>(
+        public static IJoinQueryable<T1, T2> LeftJoin<T1, T2>(
             this IQueryable<T1> source,
             IQueryable<T2> joinTable,
             Expression<Func<JoinCondition<T1, T2>, bool>> on)
             where T1 : class where T2 : class
         {
             return new JoinQueryable<T1>(source).LeftJoin(joinTable,on);
-        }
-
-        public static JoinResult<T1, T2> LeftJoin<T1, T2>(
-            this IQueryable<T1> source,
-            IQueryable<T2> joinTable,
-            Expression<Func<JoinCondition<T1, T2>, bool>> on)
-        where T1 : class where T2 : class
-        {
-            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
-            return InternalJoin(source, joinTable, on, leftJoinMethod);
         }
 
         public static JoinResult<T1, T2> InnerJoin<T1, T2>(
@@ -324,15 +311,6 @@ namespace SummerBoot.Repository
         {
             var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
             return InternalJoin(source, joinTable, on, leftJoinMethod);
-        }
-
-        public static JoinResult<T1, T2> LeftJoin<T1, T2>(
-            this IQueryable<T1> source,
-            T2 joinTable,
-            Expression<Func<JoinCondition<T1, T2>, bool>> on)
-            where T1 : class where T2 : class
-        {
-            return source.LeftJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
         }
 
         public static JoinResult<T1, T2> RightJoin<T1, T2>(
