@@ -23,45 +23,42 @@ namespace SummerBoot.Repository
         private static ConcurrentDictionary<string, Type> TargetTypeCache { set; get; } =
             new ConcurrentDictionary<string, Type>();
 
-        //IRepository接口里的固定方法名
-        private string[] solidMethodNames = new string[] {
-            nameof(IRepository<BaseEntity>.FastBatchInsertAsync),
-            nameof( IRepository<BaseEntity>.FastBatchInsert),
-            nameof( IRepository<BaseEntity>.ToListAsync),
-            nameof( IRepository<BaseEntity>.ToPage),
-            nameof(IRepository<BaseEntity>.ToPageAsync),
-            nameof( IRepository<BaseEntity>.QueryListAsync),
-            nameof( IRepository<BaseEntity>.QueryList),
-            nameof( IRepository<BaseEntity>.QueryPage),
-            nameof( IRepository<BaseEntity>.QueryPageAsync),
-            nameof(IRepository<BaseEntity>.Execute),
-            nameof( IRepository<BaseEntity>.ExecuteAsync),
-            nameof( IRepository<BaseEntity>.ExecuteUpdate),
-            nameof( IRepository<BaseEntity>.ExecuteUpdateAsync),
-            nameof(IRepository<BaseEntity>.Execute),
-            nameof( IRepository<BaseEntity>.ExecuteAsync),
-            nameof( IRepository<BaseEntity>.UpdateAsync),
-            nameof( IRepository<BaseEntity>.Update),
-            nameof( IRepository<BaseEntity>.Delete),
-            nameof( IRepository<BaseEntity>.DeleteAsync),
-            nameof( IRepository<BaseEntity>.FirstOrDefaultAsync),
-            nameof( IRepository<BaseEntity>.Insert),
-            nameof( IRepository<BaseEntity>.InsertAsync),
-            nameof( IRepository<BaseEntity>.Get),
-            nameof( IRepository<BaseEntity>.GetAsync),
-            nameof( IRepository<BaseEntity>.GetAll),
-            nameof( IRepository<BaseEntity>.GetAllAsync),
-            nameof( IRepository<BaseEntity>.QueryFirstOrDefault),
-            nameof( IRepository<BaseEntity>.QueryFirstOrDefaultAsync),
-            "set_SelectItems","get_SelectItems", "get_Provider", "get_ElementType", "get_Expression", "GetEnumerator",
-            nameof(IRepository<BaseEntity>.FirstAsync),
-            nameof(IRepository<BaseEntity>.MaxAsync),
-            nameof(IRepository<BaseEntity>.MinAsync),
-                nameof(IRepository<BaseEntity>.SumAsync),
-                nameof(IRepository<BaseEntity>.AverageAsync),
-                nameof(IRepository<BaseEntity>.CountAsync),
-               "set_MultiQueryContext",
-               "get_MultiQueryContext",
+        //IBaseRepository接口里的固定方法名
+        private List<string> solidMethodNames = new List<string> {
+            nameof(IBaseRepository<BaseEntity>.FastBatchInsertAsync),
+            nameof( IBaseRepository<BaseEntity>.FastBatchInsert),
+            nameof( IBaseRepository<BaseEntity>.ToListAsync),
+            nameof( IBaseRepository<BaseEntity>.ToPage),
+            nameof(IBaseRepository<BaseEntity>.ToPageAsync),
+            nameof( IBaseRepository<BaseEntity>.QueryListAsync),
+            nameof( IBaseRepository<BaseEntity>.QueryList),
+            nameof( IBaseRepository<BaseEntity>.QueryPage),
+            nameof( IBaseRepository<BaseEntity>.QueryPageAsync),
+            nameof(IBaseRepository<BaseEntity>.Execute),
+            nameof( IBaseRepository<BaseEntity>.ExecuteAsync),
+            nameof( IBaseRepository<BaseEntity>.ExecuteUpdate),
+            nameof( IBaseRepository<BaseEntity>.ExecuteUpdateAsync),
+            nameof(IBaseRepository<BaseEntity>.Execute),
+            nameof( IBaseRepository<BaseEntity>.ExecuteAsync),
+            nameof( IBaseRepository<BaseEntity>.UpdateAsync),
+            nameof( IBaseRepository<BaseEntity>.Update),
+            nameof( IBaseRepository<BaseEntity>.Delete),
+            nameof( IBaseRepository<BaseEntity>.DeleteAsync),
+            nameof( IBaseRepository<BaseEntity>.FirstOrDefaultAsync),
+            nameof( IBaseRepository<BaseEntity>.Insert),
+            nameof( IBaseRepository<BaseEntity>.InsertAsync),
+            nameof( IBaseRepository<BaseEntity>.Get),
+            nameof( IBaseRepository<BaseEntity>.GetAsync),
+            nameof( IBaseRepository<BaseEntity>.GetAll),
+            nameof( IBaseRepository<BaseEntity>.GetAllAsync),
+            nameof( IBaseRepository<BaseEntity>.QueryFirstOrDefault),
+            nameof( IBaseRepository<BaseEntity>.QueryFirstOrDefaultAsync),
+            nameof(IBaseRepository<BaseEntity>.FirstAsync),
+            nameof(IBaseRepository<BaseEntity>.MaxAsync),
+            nameof(IBaseRepository<BaseEntity>.MinAsync),
+                nameof(IBaseRepository<BaseEntity>.SumAsync),
+                nameof(IBaseRepository<BaseEntity>.AverageAsync),
+                nameof(IBaseRepository<BaseEntity>.CountAsync),
         };
 
         public object Build(Type interfaceType, params object[] constructor)
@@ -191,6 +188,7 @@ namespace SummerBoot.Repository
         /// <returns></returns>
         private Type BuildTargetType(Type interfaceType, Type customBaseRepositoryType, Type repositoryServiceType)
         {
+            solidMethodNames = typeof(CustomBaseRepository<BaseEntity>).GetMethods().Select(x => x.Name).ToList();
             targetType = interfaceType;
             string assemblyName = targetType.Name + "ProxyAssembly";
             string moduleName = targetType.Name + "ProxyModule";
@@ -241,8 +239,8 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IEnumerable).GetMethods());
                         //targetMethods.AddRange(typeof(IQueryable).GetMethods());
-                        //var c = typeof(IRepository<>).MakeGenericType(genericType).GetMethods();
-                        targetMethods.AddRange(typeof(IRepository<>).MakeGenericType(genericType).GetMethods());
+                        //var c = typeof(IBaseRepository<>).MakeGenericType(genericType).GetMethods();
+                        targetMethods.AddRange(typeof(IBaseRepository<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
                         targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());
                         break;

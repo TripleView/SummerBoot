@@ -148,6 +148,24 @@ internal static class RepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
+    /// <summary>
+    /// 生成经过分页的结果
+    /// </summary>
+    /// <returns></returns>
+    public static Page<T> ToPage<T>(IPageLambdaRepository<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    /// <summary>
+    /// 生成经过分页的结果
+    /// </summary>
+    /// <returns></returns>
+    public static Task<Page<T>> ToPageAsync<T>(IPageLambdaRepository<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
     public static TResult Max<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
@@ -184,6 +202,16 @@ internal static class RepositoryMethods
     }
 
     public static Task<TResult> AverageAsync<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static int ExecuteUpdate<T>(ILambdaRepository<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static Task<int> ExecuteUpdateAsync<T>(ILambdaRepository<T> source)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -234,7 +262,7 @@ internal static class RepositoryMethodsCache
     public static readonly MethodInfo GroupBySelect =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Single(m => m.Name == nameof(RepositoryMethods.Select) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 4);
+            .Single(m => m.Name == nameof(RepositoryMethods.Select) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 3);
 
     public static readonly MethodInfo ToList =
         typeof(RepositoryMethods)
@@ -314,12 +342,23 @@ internal static class RepositoryMethodsCache
     public static readonly MethodInfo ToPage =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Single(m => m.Name == nameof(RepositoryMethods.ToPage) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1);
+            .Single(m => m.Name == nameof(RepositoryMethods.ToPage) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
 
     public static readonly MethodInfo ToPageAsync =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Single(m => m.Name == nameof(RepositoryMethods.ToPageAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1);
+            .Single(m => m.Name == nameof(RepositoryMethods.ToPageAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
+
+    public static readonly MethodInfo ToPageNoPageParameter =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.ToPage) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
+
+    public static readonly MethodInfo ToPageNoPageParameterAsync =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.ToPageAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
+
 
     public static readonly MethodInfo Max =
         typeof(RepositoryMethods)
@@ -360,4 +399,15 @@ internal static class RepositoryMethodsCache
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.AverageAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 2);
+
+    public static readonly MethodInfo ExecuteUpdate =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.ExecuteUpdate) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
+
+    public static readonly MethodInfo ExecuteUpdateAsync =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.ExecuteUpdateAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
+
 }

@@ -228,9 +228,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public Page<T> ToPage(IPageable pageable)
         {
-            CheckPageable(pageable);
-            var result = this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPage();
-            return result;
+            throw new NotSupportedException();
+            //CheckPageable(pageable);
+            //var result = this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPage();
+            //return result;
         }
 
         public virtual T Get(object id)
@@ -338,9 +339,10 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
 
         public async Task<Page<T>> ToPageAsync(IPageable pageable)
         {
-            CheckPageable(pageable);
-            var result = await this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPageAsync();
-            return result;
+            throw new NotSupportedException();
+            //CheckPageable(pageable);
+            //var result = await this.Skip((pageable.PageNumber - 1) * pageable.PageSize).Take(pageable.PageSize).ToPageAsync();
+            //return result;
         }
 
         public async Task<List<T>> ToListAsync()

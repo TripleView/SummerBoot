@@ -1693,7 +1693,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
         }
 
-        if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(RepositoryExtension.OrderBy) || MethodName == nameof(RepositoryExtension.Select))
+        if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(Queryable.OrderBy) || MethodName == nameof(Queryable.Select))
         {
 
         }

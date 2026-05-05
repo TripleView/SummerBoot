@@ -13,383 +13,383 @@ namespace SummerBoot.Repository
 {
     public static partial class RepositoryExtension
     {
-        /// <summary>
-        /// 对仓储查出的结果进行赋值
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source"></param>
-        /// <param name="select"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static IRepository<T> SetValue<T>(this IQueryable<T> source, Expression<Func<T, object>> select, object value)
-        {
-            if (!(source is Repository<T> repository))
-            {
-                throw new Exception("only support Repository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
-            if (select == null) throw new ArgumentNullException("select");
-            repository.SelectItems.Add(new SelectItem<T>()
-            {
-                Select = select,
-                Value = value
-            });
+        ///// <summary>
+        ///// 对仓储查出的结果进行赋值
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="source"></param>
+        ///// <param name="select"></param>
+        ///// <param name="value"></param>
+        ///// <returns></returns>
+        //public static IRepository<T> SetValue<T>(this IBaseRepository<T> source, Expression<Func<T, object>> select, object value)
+        //{
+        //    if (!(source is Repository<T> repository))
+        //    {
+        //        throw new Exception("only support Repository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
+        //    if (select == null) throw new ArgumentNullException("select");
+        //    repository.SelectItems.Add(new SelectItem<T>()
+        //    {
+        //        Select = select,
+        //        Value = value
+        //    });
 
-            return repository;
-        }
+        //    return repository;
+        //}
 
-        /// <summary>
-        /// 分页
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source2"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static Page<T> ToPage<T>(this IQueryable<T> source)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        ///// <summary>
+        ///// 分页
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="source2"></param>
+        ///// <returns></returns>
+        ///// <exception cref="Exception"></exception>
+        ///// <exception cref="ArgumentNullException"></exception>
+        //public static Page<T> ToPage<T>(this IBaseRepository<T> source)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return repository.ToPage();
-        }
+        //    return repository.ToPage();
+        //}
 
-        /// <summary>
-        /// 异步分页
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source2"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static async Task<Page<T>> ToPageAsync<T>(this IQueryable<T> source)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        ///// <summary>
+        ///// 异步分页
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="source2"></param>
+        ///// <returns></returns>
+        ///// <exception cref="Exception"></exception>
+        ///// <exception cref="ArgumentNullException"></exception>
+        //public static async Task<Page<T>> ToPageAsync<T>(this IBaseRepository<T> source)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return await repository.ToPageAsync();
-        }
+        //    return await repository.ToPageAsync();
+        //}
 
-        /// <summary>
-        /// 分页
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static Page<T> ToPage<T>(this IQueryable<T> source, IPageable pageable)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        ///// <summary>
+        ///// 分页
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="source"></param>
+        ///// <returns></returns>
+        ///// <exception cref="Exception"></exception>
+        ///// <exception cref="ArgumentNullException"></exception>
+        //public static Page<T> ToPage<T>(this IBaseRepository<T> source, IPageable pageable)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return repository.ToPage(pageable);
-        }
+        //    return repository.ToPage(pageable);
+        //}
 
-        /// <summary>
-        /// 异步分页
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source2"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static async Task<Page<T>> ToPageAsync<T>(this IQueryable<T> source, IPageable pageable)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        ///// <summary>
+        ///// 异步分页
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="source2"></param>
+        ///// <returns></returns>
+        ///// <exception cref="Exception"></exception>
+        ///// <exception cref="ArgumentNullException"></exception>
+        //public static async Task<Page<T>> ToPageAsync<T>(this IBaseRepository<T> source, IPageable pageable)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return await repository.ToPageAsync(pageable);
-        }
+        //    return await repository.ToPageAsync(pageable);
+        //}
 
-        /// <summary>
-        /// 异步获取列表
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source2"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static async Task<List<T>> ToListAsync<T>(this IQueryable<T> source)
-        {
-            if (source is IRepository<T> repository)
-            {
-                return await repository.ToListAsync();
-            }
-            else if (source is SummerbootQueryable<T> SummerbootQueryable)
-            {
-                return await SummerbootQueryable.DbQueryProvider.ToListAsync<T>(SummerbootQueryable.Expression);
-            }
+        ///// <summary>
+        ///// 异步获取列表
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="source2"></param>
+        ///// <returns></returns>
+        ///// <exception cref="Exception"></exception>
+        ///// <exception cref="ArgumentNullException"></exception>
+        //public static async Task<List<T>> ToListAsync<T>(this IBaseRepository<T> source)
+        //{
+        //    if (source is IRepository<T> repository)
+        //    {
+        //        return await repository.ToListAsync();
+        //    }
+        //    else if (source is SummerbootQueryable<T> SummerbootQueryable)
+        //    {
+        //        return await SummerbootQueryable.DbQueryProvider.ToListAsync<T>(SummerbootQueryable.Expression);
+        //    }
 
-            throw new NotSupportedException(nameof(source));
-        }
+        //    throw new NotSupportedException(nameof(source));
+        //}
 
-        public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        //public static async Task<T> FirstOrDefaultAsync<T>(this IBaseRepository<T> source)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return await repository.FirstOrDefaultAsync();
-        }
+        //    return await repository.FirstOrDefaultAsync();
+        //}
 
-        public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> selector)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
-            var result = await repository.FirstOrDefaultAsync(selector);
-            return result;
-        }
+        //public static async Task<T> FirstOrDefaultAsync<T>(this IBaseRepository<T> source, Expression<Func<T, bool>> selector)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
+        //    var result = await repository.FirstOrDefaultAsync(selector);
+        //    return result;
+        //}
 
-        public static async Task<T> FirstAsync<T>(this IQueryable<T> source)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        //public static async Task<T> FirstAsync<T>(this IBaseRepository<T> source)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return await repository.FirstAsync();
-        }
+        //    return await repository.FirstAsync();
+        //}
 
-        public static async Task<T> FirstAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> selector)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
-            var result = await repository.FirstAsync(selector);
-            return result;
-        }
+        //public static async Task<T> FirstAsync<T>(this IBaseRepository<T> source, Expression<Func<T, bool>> selector)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
+        //    var result = await repository.FirstAsync(selector);
+        //    return result;
+        //}
 
-        public static async Task<TResult> SumAsync<T, TResult>(this IQueryable<T> source, Expression<Func<T, TResult>> selector)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
+        //public static async Task<TResult> SumAsync<T, TResult>(this IBaseRepository<T> source, Expression<Func<T, TResult>> selector)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
 
-            if (repository == null) throw new ArgumentNullException("source");
-            var result = await repository.SumAsync(selector);
-            return result;
-        }
+        //    if (repository == null) throw new ArgumentNullException("source");
+        //    var result = await repository.SumAsync(selector);
+        //    return result;
+        //}
 
-        public static async Task<TResult> AverageAsync<T, TResult>(this IQueryable<T> source, Expression<Func<T, TResult>> selector)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
+        //public static async Task<TResult> AverageAsync<T, TResult>(this IBaseRepository<T> source, Expression<Func<T, TResult>> selector)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
 
-            if (repository == null) throw new ArgumentNullException("source");
-            var result = await repository.AverageAsync(selector);
-            return result;
-        }
+        //    if (repository == null) throw new ArgumentNullException("source");
+        //    var result = await repository.AverageAsync(selector);
+        //    return result;
+        //}
 
-        public static async Task<TResult> MaxAsync<T, TResult>(
-            this IQueryable<T> source,
-            Expression<Func<T, TResult>> selector)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
-            if (repository == null) throw new ArgumentNullException("source");
+        //public static async Task<TResult> MaxAsync<T, TResult>(
+        //    this IBaseRepository<T> source,
+        //    Expression<Func<T, TResult>> selector)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
+        //    if (repository == null) throw new ArgumentNullException("source");
 
-            return await repository.MaxAsync(selector);
-        }
+        //    return await repository.MaxAsync(selector);
+        //}
 
-        public static IQueryable<T> OrWhere<T>(this IQueryable<T> source, Expression<Func<T, bool>> predicate)
-        {
-            if (!(source is IRepository<T> repository))
-            {
-                throw new Exception("only support IRepository");
-            }
+        //public static IBaseRepository<T> OrWhere<T>(this IBaseRepository<T> source, Expression<Func<T, bool>> predicate)
+        //{
+        //    if (!(source is IRepository<T> repository))
+        //    {
+        //        throw new Exception("only support IRepository");
+        //    }
 
-            if (repository == null) throw new ArgumentNullException("source");
-            var methodInfo = new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(QueryableMethodsExtension.OrWhere)
-                .GetMethodInfo().GetGenericMethodDefinition().MakeGenericMethod(typeof(T));
+        //    if (repository == null) throw new ArgumentNullException("source");
+        //    var methodInfo = new Func<IBaseRepository<object>, Expression<Func<object, bool>>, IBaseRepository<object>>(QueryableMethodsExtension.OrWhere)
+        //        .GetMethodInfo().GetGenericMethodDefinition().MakeGenericMethod(typeof(T));
 
-            return repository.Provider.CreateQuery<T>(
-                Expression.Call(
-                    null,
-                    methodInfo,
-                    repository.Expression, Expression.Quote(predicate)
-                ));
+        //    return repository.Provider.CreateQuery<T>(
+        //        Expression.Call(
+        //            null,
+        //            methodInfo,
+        //            repository.Expression, Expression.Quote(predicate)
+        //        ));
 
-        }
+        //}
 
-        public static IQueryable<T> WhereIf<T>(this IQueryable<T> source, bool condition, Expression<Func<T, bool>> predicate)
-        {
-            if (condition)
-            {
-                return source.Where(predicate);
-            }
+        //public static IBaseRepository<T> WhereIf<T>(this IBaseRepository<T> source, bool condition, Expression<Func<T, bool>> predicate)
+        //{
+        //    if (condition)
+        //    {
+        //        return source.Where(predicate);
+        //    }
 
-            return source;
-        }
+        //    return source;
+        //}
 
-        public static IQueryable<T> OrWhereIf<T>(this IQueryable<T> source, bool condition, Expression<Func<T, bool>> predicate)
-        {
-            if (condition)
-            {
-                return source.OrWhere(predicate);
-            }
+        //public static IBaseRepository<T> OrWhereIf<T>(this IBaseRepository<T> source, bool condition, Expression<Func<T, bool>> predicate)
+        //{
+        //    if (condition)
+        //    {
+        //        return source.OrWhere(predicate);
+        //    }
 
-            return source;
-        }
+        //    return source;
+        //}
 
         #region Joint query of two tables
-        private static JoinResult<T1, T2> InternalJoin<T1, T2>(this IQueryable<T1> source,
-          IQueryable<T2> joinTable,
-          Expression<Func<JoinCondition<T1, T2>, bool>> on,
-          MethodInfo methodInfo
-      )
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
-            if (on == null) throw new ArgumentNullException(nameof(on));
+      //  private static JoinResult<T1, T2> InternalJoin<T1, T2>(this IBaseRepository<T1> source,
+      //    IBaseRepository<T2> joinTable,
+      //    Expression<Func<JoinCondition<T1, T2>, bool>> on,
+      //    MethodInfo methodInfo
+      //)
+      //  {
+      //      if (source == null) throw new ArgumentNullException(nameof(source));
+      //      if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
+      //      if (on == null) throw new ArgumentNullException(nameof(on));
 
-            var callExpr = Expression.Call(
-                null,
-                methodInfo,
-                source.Expression,
-                joinTable.Expression,
-                Expression.Quote(on)
-            );
+      //      var callExpr = Expression.Call(
+      //          null,
+      //          methodInfo,
+      //          source.Expression,
+      //          joinTable.Expression,
+      //          Expression.Quote(on)
+      //      );
 
-            var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
-            var result = new JoinResult<T1, T2>()
-            {
-                Repository = r
-            };
-            return result;
-        }
+      //      var r = source.Provider.CreateQuery< IBaseRepository< JoinCondition <T1, T2>>>(callExpr);
+      //      var result = new JoinResult<T1, T2>()
+      //      {
+      //          Repository = r
+      //      };
+      //      return result;
+      //  }
 
         public static IJoinQueryable<T1, T2> LeftJoin<T1, T2>(
-            this IQueryable<T1> source,
-            IQueryable<T2> joinTable,
+            this IBaseRepository<T1> source,
+            IBaseRepository<T2> joinTable,
             Expression<Func<JoinCondition<T1, T2>, bool>> on)
             where T1 : class where T2 : class
         {
             return new JoinQueryable<T1>(source).LeftJoin(joinTable,on);
         }
 
-        public static JoinResult<T1, T2> InnerJoin<T1, T2>(
-            this IQueryable<T1> source,
-            IQueryable<T2> joinTable,
-            Expression<Func<JoinCondition<T1, T2>, bool>> on)
-            where T1 : class where T2 : class
-        {
-            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
-            return InternalJoin(source, joinTable, on, leftJoinMethod);
-        }
+        //public static JoinResult<T1, T2> InnerJoin<T1, T2>(
+        //    this IBaseRepository<T1> source,
+        //    IBaseRepository<T2> joinTable,
+        //    Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        //    where T1 : class where T2 : class
+        //{
+        //    var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        //    return InternalJoin(source, joinTable, on, leftJoinMethod);
+        //}
 
-        public static JoinResult<T1, T2> RightJoin<T1, T2>(
-            this IQueryable<T1> source,
-            IQueryable<T2> joinTable,
-            Expression<Func<JoinCondition<T1, T2>, bool>> on)
-            where T1 : class where T2 : class
-        {
-            var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
-            return InternalJoin(source, joinTable, on, leftJoinMethod);
-        }
+        //public static JoinResult<T1, T2> RightJoin<T1, T2>(
+        //    this IBaseRepository<T1> source,
+        //    IBaseRepository<T2> joinTable,
+        //    Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        //    where T1 : class where T2 : class
+        //{
+        //    var leftJoinMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        //    return InternalJoin(source, joinTable, on, leftJoinMethod);
+        //}
 
-        public static JoinResult<T1, T2> RightJoin<T1, T2>(
-            this IQueryable<T1> source,
-            T2 joinTable,
-            Expression<Func<JoinCondition<T1, T2>, bool>> on)
-            where T1 : class where T2 : class
-        {
-            return source.RightJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
-        }
+        //public static JoinResult<T1, T2> RightJoin<T1, T2>(
+        //    this IBaseRepository<T1> source,
+        //    T2 joinTable,
+        //    Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        //    where T1 : class where T2 : class
+        //{
+        //    return source.RightJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
+        //}
 
-        public static JoinResult<T1, T2> InnerJoin<T1, T2>(
-            this IQueryable<T1> source,
-            T2 joinTable,
-            Expression<Func<JoinCondition<T1, T2>, bool>> on)
-            where T1 : class where T2 : class
-        {
-            return source.InnerJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
-        }
+        //public static JoinResult<T1, T2> InnerJoin<T1, T2>(
+        //    this IBaseRepository<T1> source,
+        //    T2 joinTable,
+        //    Expression<Func<JoinCondition<T1, T2>, bool>> on)
+        //    where T1 : class where T2 : class
+        //{
+        //    return source.InnerJoin(new SummerbootQueryable<T2>(source.Provider as DbQueryProvider), on);
+        //}
 
-        public static JoinResult<T1, T2> WhereIf<T1, T2>(
-            this JoinResult<T1, T2> source,
-            bool value,
-            Expression<Func<JoinCondition<T1, T2>, bool>> where)
-            where T1 : class where T2 : class
-        {
-            if (value)
-            {
-                return source.Where(where);
-            }
+        //public static JoinResult<T1, T2> WhereIf<T1, T2>(
+        //    this JoinResult<T1, T2> source,
+        //    bool value,
+        //    Expression<Func<JoinCondition<T1, T2>, bool>> where)
+        //    where T1 : class where T2 : class
+        //{
+        //    if (value)
+        //    {
+        //        return source.Where(where);
+        //    }
 
-            return source;
-        }
+        //    return source;
+        //}
 
-        public static JoinResult<T1, T2> Where<T1, T2>(
-            this JoinResult<T1, T2> source,
-            Expression<Func<JoinCondition<T1, T2>, bool>> where)
-            where T1 : class where T2 : class
-        {
-            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (where == null) throw new ArgumentNullException(nameof(where));
-            var sourceRepository = source.Repository;
-            var callExpr = Expression.Call(
-                null,
-                methodInfo,
-                sourceRepository.Expression,
-                Expression.Quote(where)
-            );
+        //public static JoinResult<T1, T2> Where<T1, T2>(
+        //    this JoinResult<T1, T2> source,
+        //    Expression<Func<JoinCondition<T1, T2>, bool>> where)
+        //    where T1 : class where T2 : class
+        //{
+        //    var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2));
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
+        //    if (where == null) throw new ArgumentNullException(nameof(where));
+        //    var sourceRepository = source.Repository;
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        methodInfo,
+        //        sourceRepository.Expression,
+        //        Expression.Quote(where)
+        //    );
 
-            var r = sourceRepository.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
-            var result = new JoinResult<T1, T2>()
-            {
-                Repository = r
-            };
-            return result;
-        }
+        //    var r = sourceRepository.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
+        //    var result = new JoinResult<T1, T2>()
+        //    {
+        //        Repository = r
+        //    };
+        //    return result;
+        //}
 
-        public static JoinOrderByResult<T1, T2> OrderBy<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
-        {
-            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
-            var source = joinResult.Repository;
-            if (source == null) throw new ArgumentNullException(nameof(source));
+        //public static JoinOrderByResult<T1, T2> OrderBy<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
+        //{
+        //    if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+        //    var source = joinResult.Repository;
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
 
-            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
-            var callExpr = Expression.Call(
-                null,
-                orderByMethod,
-                source.Expression,
-                Expression.Quote(orderBy)
-            );
+        //    var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        orderByMethod,
+        //        source.Expression,
+        //        Expression.Quote(orderBy)
+        //    );
 
-            var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
-            var result = new JoinOrderByResult<T1, T2>()
-            {
-                Repository = r
-            };
-            return result;
-        }
+        //    var r = source.Provider.CreateQuery<JoinCondition<T1, T2>>(callExpr);
+        //    var result = new JoinOrderByResult<T1, T2>()
+        //    {
+        //        Repository = r
+        //    };
+        //    return result;
+        //}
 
         //public static JoinOrderByResult<T1, T2> ThenBy<T1, T2, TResult>(this JoinOrderByResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> orderBy)
         //{
@@ -415,171 +415,171 @@ namespace SummerBoot.Repository
         //}
 
 
-        public static IEnumerable<TResult> Select<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
-        {
-            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
-            var source = joinResult.Repository;
-            if (source == null) throw new ArgumentNullException(nameof(source));
+        //public static IEnumerable<TResult> Select<T1, T2, TResult>(this JoinResult<T1, T2> joinResult, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+        //{
+        //    if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+        //    var source = joinResult.Repository;
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
 
-            // 构造 LeftJoin 的表达式树
-            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
-            var callExpr = Expression.Call(
-                null,
-                orderByMethod,
-                source.Expression,
-                Expression.Quote(selector)
-            );
+        //    // 构造 LeftJoin 的表达式树
+        //    var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        orderByMethod,
+        //        source.Expression,
+        //        Expression.Quote(selector)
+        //    );
 
-            var r = source.Provider.CreateQuery<TResult>(callExpr);
-            return r;
-        }
+        //    var r = source.Provider.CreateQuery<TResult>(callExpr);
+        //    return r;
+        //}
 
 
 
         #endregion
 
         #region Joint query of three tables
-        private static JoinResult<T1, T2, T3> InternalJoin<T1, T2, T3>(this JoinResult<T1, T2> source,
-          IQueryable<T3> joinTable,
-          Expression<Func<JoinCondition<T1, T2, T3>, bool>> on,
-          MethodInfo methodInfo
-      )
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
-            if (on == null) throw new ArgumentNullException(nameof(on));
+      //  private static JoinResult<T1, T2, T3> InternalJoin<T1, T2, T3>(this JoinResult<T1, T2> source,
+      //    IBaseRepository<T3> joinTable,
+      //    Expression<Func<JoinCondition<T1, T2, T3>, bool>> on,
+      //    MethodInfo methodInfo
+      //)
+      //  {
+      //      if (source == null) throw new ArgumentNullException(nameof(source));
+      //      if (joinTable == null) throw new ArgumentNullException(nameof(joinTable));
+      //      if (on == null) throw new ArgumentNullException(nameof(on));
 
-            var callExpr = Expression.Call(
-                null,
-                methodInfo,
-                source.Repository.Expression,
-                joinTable.Expression,
-                Expression.Quote(on)
-            );
+      //      var callExpr = Expression.Call(
+      //          null,
+      //          methodInfo,
+      //          source.Repository.Expression,
+      //          joinTable.Expression,
+      //          Expression.Quote(on)
+      //      );
 
-            var r = source.Repository.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
-            var result = new JoinResult<T1, T2, T3>()
-            {
-                Repository = r
-            };
-            return result;
-        }
+      //      var r = source.Repository.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+      //      var result = new JoinResult<T1, T2, T3>()
+      //      {
+      //          Repository = r
+      //      };
+      //      return result;
+      //  }
 
-        public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> source,
-            IQueryable<T3> joinTable,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
-        {
-            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-            return InternalJoin(source, joinTable, on, methodInfo);
-        }
+      //  public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
+      //      this JoinResult<T1, T2> source,
+      //      IBaseRepository<T3> joinTable,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+      //      return InternalJoin(source, joinTable, on, methodInfo);
+      //  }
 
-        public static JoinResult<T1, T2, T3> InnerJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> source,
-            IQueryable<T3> joinTable,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
-        {
-            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-            return InternalJoin(source, joinTable, on, methodInfo);
-        }
+      //  public static JoinResult<T1, T2, T3> InnerJoin<T1, T2, T3>(
+      //      this JoinResult<T1, T2> source,
+      //      IBaseRepository<T3> joinTable,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+      //      return InternalJoin(source, joinTable, on, methodInfo);
+      //  }
 
-        public static JoinResult<T1, T2, T3> RightJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> source,
-            IQueryable<T3> joinTable,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
-        {
-            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-            return InternalJoin(source, joinTable, on, methodInfo);
-        }
+      //  public static JoinResult<T1, T2, T3> RightJoin<T1, T2, T3>(
+      //      this JoinResult<T1, T2> source,
+      //      IBaseRepository<T3> joinTable,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+      //      return InternalJoin(source, joinTable, on, methodInfo);
+      //  }
 
-        public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> source,
-            T3 joinTable,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
-        {
-            return source.LeftJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
-        }
+      //  public static JoinResult<T1, T2, T3> LeftJoin<T1, T2, T3>(
+      //      this JoinResult<T1, T2> source,
+      //      T3 joinTable,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      return source.LeftJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
+      //  }
 
-        public static JoinResult<T1, T2, T3> RightJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> source,
-            T3 joinTable,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
-        {
-            return source.RightJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
-        }
-        public static JoinResult<T1, T2, T3> InnerJoin<T1, T2, T3>(
-            this JoinResult<T1, T2> source,
-            T3 joinTable,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
-            where T1 : class where T2 : class where T3 : class
-        {
-            return source.InnerJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
-        }
+      //  public static JoinResult<T1, T2, T3> RightJoin<T1, T2, T3>(
+      //      this JoinResult<T1, T2> source,
+      //      T3 joinTable,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      return source.RightJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
+      //  }
+      //  public static JoinResult<T1, T2, T3> InnerJoin<T1, T2, T3>(
+      //      this JoinResult<T1, T2> source,
+      //      T3 joinTable,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      return source.InnerJoin(new SummerbootQueryable<T3>(source.Repository.Provider as DbQueryProvider), on);
+      //  }
 
-        public static JoinResult<T1, T2, T3> WhereIf<T1, T2, T3>(
-            this JoinResult<T1, T2, T3> source,
-            bool value,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> where)
-            where T1 : class where T2 : class where T3 : class
-        {
-            if (value)
-            {
-                return source.Where(where);
-            }
+      //  public static JoinResult<T1, T2, T3> WhereIf<T1, T2, T3>(
+      //      this JoinResult<T1, T2, T3> source,
+      //      bool value,
+      //      Expression<Func<JoinCondition<T1, T2, T3>, bool>> where)
+      //      where T1 : class where T2 : class where T3 : class
+      //  {
+      //      if (value)
+      //      {
+      //          return source.Where(where);
+      //      }
 
-            return source;
-        }
+      //      return source;
+      //  }
 
-        public static JoinResult<T1, T2, T3> Where<T1, T2, T3>(
-            this JoinResult<T1, T2, T3> source,
-            Expression<Func<JoinCondition<T1, T2, T3>, bool>> where)
-            where T1 : class where T2 : class where T3 : class
-        {
-            var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (where == null) throw new ArgumentNullException(nameof(where));
-            var sourceRepository = source.Repository;
-            var callExpr = Expression.Call(
-                null,
-                methodInfo,
-                sourceRepository.Expression,
-                Expression.Quote(where)
-            );
+        //public static JoinResult<T1, T2, T3> Where<T1, T2, T3>(
+        //    this JoinResult<T1, T2, T3> source,
+        //    Expression<Func<JoinCondition<T1, T2, T3>, bool>> where)
+        //    where T1 : class where T2 : class where T3 : class
+        //{
+        //    var methodInfo = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
+        //    if (where == null) throw new ArgumentNullException(nameof(where));
+        //    var sourceRepository = source.Repository;
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        methodInfo,
+        //        sourceRepository.Expression,
+        //        Expression.Quote(where)
+        //    );
 
-            var r = sourceRepository.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
-            var result = new JoinResult<T1, T2, T3>()
-            {
-                Repository = r
-            };
-            return result;
-        }
+        //    var r = sourceRepository.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+        //    var result = new JoinResult<T1, T2, T3>()
+        //    {
+        //        Repository = r
+        //    };
+        //    return result;
+        //}
 
-        public static JoinOrderByResult<T1, T2, T3> OrderBy<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
-        {
-            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
-            var source = joinResult.Repository;
-            if (source == null) throw new ArgumentNullException(nameof(source));
+        //public static JoinOrderByResult<T1, T2, T3> OrderBy<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
+        //{
+        //    if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+        //    var source = joinResult.Repository;
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
 
-            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
-            var callExpr = Expression.Call(
-                null,
-                orderByMethod,
-                source.Expression,
-                Expression.Quote(orderBy)
-            );
+        //    var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        orderByMethod,
+        //        source.Expression,
+        //        Expression.Quote(orderBy)
+        //    );
 
-            var r = source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
-            var result = new JoinOrderByResult<T1, T2, T3>()
-            {
-                Repository = r
-            };
-            return result;
-        }
+        //    var r = source.Provider.CreateQuery<JoinCondition<T1, T2, T3>>(callExpr);
+        //    var result = new JoinOrderByResult<T1, T2, T3>()
+        //    {
+        //        Repository = r
+        //    };
+        //    return result;
+        //}
 
         //public static JoinResult<T1, T2, T3> ThenBy<T1, T2, T3, TResult>(this JoinOrderByResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> orderBy)
         //{
@@ -605,34 +605,34 @@ namespace SummerBoot.Repository
 
 
 
-        public static IEnumerable<TResult> Select<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> selector)
-        {
-            if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
-            var source = joinResult.Repository;
-            if (source == null) throw new ArgumentNullException(nameof(source));
+        //public static IEnumerable<TResult> Select<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult, Expression<Func<JoinCondition<T1, T2, T3>, TResult>> selector)
+        //{
+        //    if (joinResult == null) throw new ArgumentNullException(nameof(joinResult));
+        //    var source = joinResult.Repository;
+        //    if (source == null) throw new ArgumentNullException(nameof(source));
 
-            // 构造 LeftJoin 的表达式树
-            var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
-            var callExpr = Expression.Call(
-                null,
-                orderByMethod,
-                source.Expression,
-                Expression.Quote(selector)
-            );
+        //    // 构造 LeftJoin 的表达式树
+        //    var orderByMethod = ((MethodInfo)MethodBase.GetCurrentMethod()).MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
+        //    var callExpr = Expression.Call(
+        //        null,
+        //        orderByMethod,
+        //        source.Expression,
+        //        Expression.Quote(selector)
+        //    );
 
-            var r = source.Provider.CreateQuery<TResult>(callExpr);
-            return r;
-        }
+        //    var r = source.Provider.CreateQuery<TResult>(callExpr);
+        //    return r;
+        //}
         #endregion
 
-        public static List<TResult> ToList<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult)
-        {
-            if (joinResult.Repository != null)
-            {
-                var c = joinResult.Repository.ToList();
-            }
-            return new List<TResult>();
-        }
+        //public static List<TResult> ToList<T1, T2, T3, TResult>(this JoinResult<T1, T2, T3> joinResult)
+        //{
+        //    if (joinResult.Repository != null)
+        //    {
+        //        var c = joinResult.Repository.ToList();
+        //    }
+        //    return new List<TResult>();
+        //}
 
     }
 }

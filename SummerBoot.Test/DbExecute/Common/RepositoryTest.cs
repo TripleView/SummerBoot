@@ -556,13 +556,13 @@ namespace SummerBoot.Test.DbExecute.Common
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
-            var repository2 = serviceProvider.GetService<INewRepository<OrderHeader>>();
+            //var repository2 = serviceProvider.GetService<INewRepository<OrderHeader>>();
 
-             repository2.Where(x => x.Id == 1).Select(x => x.OrderNo).ToList();
-             repository2.OrderBy(x => x.Id).ThenBy(x=>x.OrderNo).Select(x=>x.Id).ToList();
-            //await repository2.UpdateAsync();
-            repository2.Where(x => x.OrderNo == "abc").Skip(1).Take(1).ToPage();
-            repository2.Where(x => x.OrderNo == "abc").ToPage(new Pageable(1, 10));
+            // repository2.Where(x => x.Id == 1).Select(x => x.OrderNo).ToList();
+            // repository2.OrderBy(x => x.Id).ThenBy(x=>x.OrderNo).Select(x=>x.Id).ToList();
+            ////await repository2.UpdateAsync();
+            //repository2.Where(x => x.OrderNo == "abc").Skip(1).Take(1).ToPage();
+            //repository2.Where(x => x.OrderNo == "abc").ToPage(new Pageable(1, 10));
 
            var orderNo = Guid.NewGuid().ToString();
             var orderHeader = new OrderHeader()
@@ -582,7 +582,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 CustomerId = 2,
             };
             await orderHeaderRepository.InsertAsync(orderHeader2);
-            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).ToPageAsync();
+            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).ToPageAsync(new Pageable(1,1));
             Assert.Equal(2, pageResult.TotalPages);
 
         }
