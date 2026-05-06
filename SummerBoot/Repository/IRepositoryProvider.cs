@@ -45,21 +45,21 @@ public class RepositoryProvider : IRepositoryProvider
             var genericType = type.GetGenericTypeDefinition();
             var childrenType = type.GetGenericArguments().First();
             Type newType = null;
-            if (genericType == typeof(IOrderLambdaRepository<>))
-            {
-                newType = typeof(OrderLambdaRepository<>).MakeGenericType(childrenType);
-            }
-            else if (genericType == typeof(IPageLambdaRepository<>))
+
+            if (genericType == typeof(IPageLambdaRepository<>))
             {
                 newType = typeof(PageLambdaRepository<>).MakeGenericType(childrenType);
+
+            }
+            else if ( genericType == typeof(ILambdaRepository<>) || genericType == typeof(IOrderLambdaRepository<>))
+            {
+                newType = typeof(OrderLambdaRepository<>).MakeGenericType(childrenType);
             }
             else if (genericType == typeof(IBaseRepository<>))
             {
                 newType = typeof(CustomBaseRepository<>).MakeGenericType(childrenType);
             }
-
-            var result = (T)Activator.CreateInstance(newType);
-            return result;
+            return (T)Activator.CreateInstance(newType, args: new object[2] { expression, this });
         }
         else
         {

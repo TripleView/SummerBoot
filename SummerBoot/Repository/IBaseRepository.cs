@@ -9,11 +9,16 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Repository;
 
-public interface ILambdaRepository<T>
+public interface IBaseLambdaRepository
 {
     Expression Expression { get; }
-    Type ElementType => typeof(T);
+    Type ElementType { get; }
     IRepositoryProvider Provider { get; }
+}
+
+public interface ILambdaRepository<T> : IBaseLambdaRepository
+{
+
     ILambdaRepository<T> Where(Expression<Func<T, bool>> predicate);
     ILambdaRepository<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate);
     IOrderLambdaRepository<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector);
@@ -116,17 +121,16 @@ public interface IOrderLambdaRepository<T> : ILambdaRepository<T>
 
 public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
 {
+    public OrderLambdaRepository(Expression expression, IRepositoryProvider provider)
+    {
+        this.Expression = expression;
+        this.Provider = provider;
+    }
     public IRepositoryProvider Provider { get; protected set; }
 
     public Type ElementType => typeof(T);
 
     public Expression Expression { get; protected set; }
-
-    public void SetExpressionAndProvider(Expression expression, IRepositoryProvider provider)
-    {
-        this.Expression = expression;
-        this.Provider = provider;
-    }
 
     public ILambdaRepository<T> Where(Expression<Func<T, bool>> predicate)
     {
@@ -335,13 +339,21 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
 
     public T First(Expression<Func<T, bool>> predicate)
     {
-        var result = this.Where(predicate).First();
+        var result = this.FirstOrDefault(predicate);
+        if (result == null)
+        {
+            throw new Exception("Sequence contains no matching element");
+        }
         return result;
     }
 
     public async Task<T> FirstAsync(Expression<Func<T, bool>> predicate)
     {
-        var result = await this.Where(predicate).FirstAsync();
+        var result = await this.FirstOrDefaultAsync(predicate);
+        if (result == null)
+        {
+            throw new Exception("Sequence contains no matching element");
+        }
         return result;
     }
 
@@ -355,15 +367,30 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
         return await this.FirstAsync();
     }
 
+    private MethodCallExpression GetFirstOrDefaultMethodCallExpression(Expression<Func<T, bool>> predicate)
+    {
+        var methodInfo = RepositoryMethodsCache.FirstOrDefaultWithPredicate.MakeGenericMethod(typeof(T));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Expression,
+            Expression.Quote(predicate)
+        );
+        return callExpr;
+    }
+
+
     public T FirstOrDefault(Expression<Func<T, bool>> predicate)
     {
-        var result = this.Where(predicate).FirstOrDefault();
+        var callExpression = GetFirstOrDefaultMethodCallExpression(predicate);
+        var result = Provider.QueryFirstOrDefault<T>(callExpression);
         return result;
     }
 
     public async Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
     {
-        var result = await this.Where(predicate).FirstOrDefaultAsync();
+        var callExpression = GetFirstOrDefaultMethodCallExpression(predicate);
+        var result = await Provider.QueryFirstOrDefaultAsync<T>(callExpression);
         return result;
     }
 
@@ -381,7 +408,7 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
     public Page<T> ToPage()
     {
         var callExpr = GetToPageMethodCallExpression();
-        var result =  Provider.QueryPage<T>(callExpr);
+        var result = Provider.QueryPage<T>(callExpr);
 
         return result;
     }
@@ -389,7 +416,7 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
     public async Task<Page<T>> ToPageAsync()
     {
         var callExpr = GetToPageMethodCallExpression();
-        var result =await Provider.QueryPageAsync<T>(callExpr);
+        var result = await Provider.QueryPageAsync<T>(callExpr);
 
         return result;
     }
@@ -545,12 +572,16 @@ public interface IPageLambdaRepository<T> : IOrderLambdaRepository<T>
 
 public class PageLambdaRepository<T> : OrderLambdaRepository<T>, IPageLambdaRepository<T>
 {
+
+    public PageLambdaRepository(Expression expression, IRepositoryProvider provider) : base(expression, provider)
+    {
+    }
     public IBaseRepository<T> Source { get; }
 
-    public PageLambdaRepository(IBaseRepository<T> source)
-    {
-        Source = source;
-    }
+    //public PageLambdaRepository(IBaseRepository<T> source)
+    //{
+    //    Source = source;
+    //}
 
     public Page<T> ToPage()
     {

@@ -18,7 +18,7 @@ namespace SummerBoot.Repository;
 
 public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository<T>
 {
-    public CustomBaseRepository(IUnitOfWork uow)
+    public CustomBaseRepository(IUnitOfWork uow) : base(null, null)
     {
         this.uow = uow;
         this.dbFactory = uow.DbFactory;
@@ -27,7 +27,7 @@ public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository
         this.entityClassHandler = uow.EntityClassHandler;
         Init(databaseUnit);
     }
-    
+
     protected IUnitOfWork uow;
     protected IDbFactory dbFactory;
     protected IDbConnection dbConnection;
@@ -356,12 +356,12 @@ public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository
 
     public async Task<int> DeleteAsync(Expression<Func<T, bool>> predicate)
     {
-        var exp = this.Where(predicate).Expression;
-        var methodInfo = QueryableMethodsCache.ExecuteDelete;
+        var methodInfo = RepositoryMethodsCache.DeleteWithPredicate.MakeGenericMethod(typeof(T));
         var callExpr = Expression.Call(
             null,
             methodInfo,
-            exp
+            Expression,
+            Expression.Quote(predicate)
         );
 
         var result = await Provider.ExecuteAsync(callExpr);

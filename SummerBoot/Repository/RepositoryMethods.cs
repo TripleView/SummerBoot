@@ -80,12 +80,12 @@ internal static class RepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static int Count<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> selector)
+    public static int Count<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static Task<int> CountAsync<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> selector)
+    public static Task<int> CountAsync<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -100,12 +100,22 @@ internal static class RepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static T First<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> selector)
+    public static T First<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static Task<T> FirstAsync<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> selector)
+    public static int Delete<T>(IBaseRepository<T> source, Expression<Func<T, bool>> predicate)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static async Task<T> DeleteAsync<T>(IBaseRepository<T> source, Expression<Func<T, bool>> predicate)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static Task<T> FirstAsync<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -120,12 +130,12 @@ internal static class RepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static T FirstOrDefault<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> selector)
+    public static T FirstOrDefault<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static Task<T> FirstOrDefaultAsync<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> selector)
+    public static Task<T> FirstOrDefaultAsync<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -284,7 +294,7 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.Count) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    public static readonly MethodInfo CountWithSelector =
+    public static readonly MethodInfo CountWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.Count) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
@@ -294,7 +304,7 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.CountAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    public static readonly MethodInfo CountAsyncWithSelector =
+    public static readonly MethodInfo CountAsyncWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.CountAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
@@ -304,7 +314,7 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.First) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    public static readonly MethodInfo FirstWithSelector =
+    public static readonly MethodInfo FirstWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.First) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
@@ -314,17 +324,22 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.FirstAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    public static readonly MethodInfo FirstAsyncWithSelector =
+    public static readonly MethodInfo FirstAsyncWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.FirstAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
+
+    public static readonly MethodInfo DeleteWithPredicate =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.Delete) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
 
     public static readonly MethodInfo FirstOrDefault =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.FirstOrDefault) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    public static readonly MethodInfo FirstOrDefaultWithSelector =
+    public static readonly MethodInfo FirstOrDefaultWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.FirstOrDefault) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
@@ -334,7 +349,7 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.FirstOrDefaultAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    public static readonly MethodInfo FirstOrDefaultAsyncWithSelector =
+    public static readonly MethodInfo FirstOrDefaultAsyncWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.FirstOrDefaultAsync) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);

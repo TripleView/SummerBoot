@@ -310,6 +310,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
                 return result;
+            case nameof(RepositoryMethods.Delete):
+            case nameof(RepositoryMethods.DeleteAsync):
+                result = this.VisitDeleteCall(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(Queryable.Distinct):
                 //针对group by里的count单独处理
                 if (methodName == nameof(Queryable.Count) && LastMethodName == nameof(Queryable.GroupBy))
@@ -562,8 +568,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else if (sqlExpression is SqlBoolExpression sqlBoolExpression)
         {
-            return isPgsql 
-                ? GetSqlVariableExpressionWithValueAndDynamicName(sqlBoolExpression.Value) 
+            return isPgsql
+                ? GetSqlVariableExpressionWithValueAndDynamicName(sqlBoolExpression.Value)
                 : GetSqlVariableExpressionWithValueAndDynamicName(sqlBoolExpression.Value ? 1 : 0);
         }
 
@@ -576,7 +582,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
 
         }
-        else if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+        else if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count) || MethodName == nameof(RepositoryMethods.Delete))
         {
             if (!nodeTypeSqlBinaryOperatorsMappings.TryGetValue(binaryExpression.NodeType, out var sqlBinaryOperator))
             {
@@ -783,6 +789,30 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             AddDefaultColumns(sqlSelectExpression);
             var r1 = ParsingPage(sqlSelectExpression, 0, 1);
             return GetWrapperExpression(r1);
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    public virtual Expression VisitDeleteCall(MethodCallExpression deleteCall)
+    {
+        var sourceExpression = this.Visit(deleteCall.Arguments[0]);
+        var sqlExpression = GetSqlExpression(sourceExpression);
+        if (deleteCall.Arguments.Count == 2)
+        {
+            var lambda = (LambdaExpression)this.StripQuotes(deleteCall.Arguments[1]);
+            var where = GetSqlExpression(this.Visit(lambda.Body));
+            if (sqlExpression is SqlDeleteExpression sqlDeleteExpression)
+            {
+                sqlDeleteExpression.Where = where;
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(sqlExpression));
+            }
+            return GetWrapperExpression(sqlExpression);
         }
         else
         {
@@ -1547,9 +1577,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitConstant(ConstantExpression constant)
     {
-        if (constant.Value is IQueryable queryable)
+        if (constant.Value is IBaseLambdaRepository baseRepository)
         {
-            SqlExpression r1 = GetSqlTableExpression(queryable.ElementType);
+            SqlExpression r1 = GetSqlTableExpression(baseRepository.ElementType);
 
             if (methodCallStack.TryPeek(out var methodName) && methodName == nameof(JoinQueryableMethods.LeftJoin))
             {
@@ -1560,7 +1590,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (index == methodCallStack.Count)
             {
                 var lastMethodName = methodCallStack.Last();
-                if (lastMethodName == nameof(QueryableMethods.ExecuteDelete))
+                if (lastMethodName == nameof(QueryableMethods.ExecuteDelete) || lastMethodName == nameof(RepositoryMethods.Delete))
                 {
                     r1 = new SqlDeleteExpression()
                     {
