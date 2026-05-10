@@ -24,17 +24,37 @@
 
 	<ItemGroup>
 		<Compile Remove="Repository\DbAdapters\**" />
+		<Compile Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
+		<Compile Remove="Repository\SqlParser\**" />
 		<Content Remove="Repository\DbAdapters\**" />
+		<Content Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
+		<Content Remove="Repository\SqlParser\**" />
 		<EmbeddedResource Remove="Repository\DbAdapters\**" />
+		<EmbeddedResource Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
+		<EmbeddedResource Remove="Repository\SqlParser\**" />
 		<None Remove="Repository\DbAdapters\**" />
+		<None Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
+		<None Remove="Repository\SqlParser\**" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Remove="Feign\HeaderAttribute.cs" />
 		<Compile Remove="Repository\BaseRepository.cs" />
+		<Compile Remove="Repository\CustomBaseRepository2.cs" />
+		<Compile Remove="Repository\ExpressionParser\ExpressionTreeParsingResult.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\DbQueryProvider.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\IAsyncQueryable.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\IAsyncQueryProvider.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\IDbExecuteAndQuery.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\IRepository.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\QueryableMethodsExtension.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\Repository.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\SummerbootQueryable.cs" />
+		<Compile Remove="Repository\IBaseRepository2.cs" />
 		<Compile Remove="Repository\RepositoryAspectSupport3.cs" />
 		<Compile Remove="Repository\RepositoryInterceptor.cs" />
 		<Compile Remove="Repository\RepositoryInterceptor2.cs" />
+		<Compile Remove="Repository\RepositoryMultiQueryExtension.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

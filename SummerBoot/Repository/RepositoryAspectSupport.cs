@@ -1,9 +1,7 @@
-ï»¿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
-using SummerBoot.Repository.SqlParser.Dialect;
-using SummerBoot.Repository.SqlParser.Dto;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -41,11 +39,11 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// å‚æ•°å­—å…¸
+        /// ²ÎÊı×Öµä
         /// </summary>
         private Dictionary<string, object> parameterDictionary = new Dictionary<string, object>();
         /// <summary>
-        /// ä»“å‚¨å‚æ•°
+        /// ²Ö´¢²ÎÊı
         /// </summary>
         private RepositoryOption repositoryOption;
 
@@ -53,7 +51,7 @@ namespace SummerBoot.Repository
 
         private void Init()
         {
-            //å…ˆè·å¾—å·¥ä½œå•å…ƒå’Œæ•°æ®åº“å·¥å‚ä»¥åŠåºåˆ—åŒ–å™¨
+            //ÏÈ»ñµÃ¹¤×÷µ¥ÔªºÍÊı¾İ¿â¹¤³§ÒÔ¼°ĞòÁĞ»¯Æ÷
             //uow = ServiceProvider.GetService<IUnitOfWork>();
             //dbFactory = ServiceProvider.GetService<IDbFactory>();
             repositoryOption = ServiceProvider.GetService<RepositoryOption>();
@@ -78,7 +76,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// é€šè¿‡é…ç½®æ–‡ä»¶è·å–å…·ä½“çš„å€¼
+        /// Í¨¹ıÅäÖÃÎÄ¼ş»ñÈ¡¾ßÌåµÄÖµ
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -117,12 +115,12 @@ namespace SummerBoot.Repository
         {
             ServiceProvider = serviceProvider;
             Init();
-            //å¤„ç†selecté€»è¾‘
+            //´¦ÀíselectÂß¼­
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
                 var repositoryOption = serviceProvider.GetService<RepositoryOption>();
-                //è·å¾—åŠ¨æ€å‚æ•°
+                //»ñµÃ¶¯Ì¬²ÎÊı
                 var dbArgs = GetParameters(method, args);
                 if (pageable == null)
                 {
@@ -139,40 +137,40 @@ namespace SummerBoot.Repository
                 sql = ReplaceSqlBindWhereCondition(sql);
                 var result = new Page<T>() { };
 
-                SqlParser.SqlParser parser;
+                //SqlParser.SqlParser parser;
 
-                if (databaseUnit.IsOracle)
-                {
-                    parser = new OracleParser();
-                }
-                else if (databaseUnit.IsSqlServer)
-                {
-                    parser = new SqlServerParser();
-                }
-                else if (databaseUnit.IsMysql)
-                {
-                    parser = new MysqlParser();
-                }
-                else if (databaseUnit.IsPgsql)
-                {
-                    parser = new PgsqlParser();
-                }
-                else
-                {
-                    parser = new SqliteParser();
-                }
+                //if (databaseUnit.IsOracle)
+                //{
+                //    parser = new OracleParser();
+                //}
+                //else if (databaseUnit.IsSqlServer)
+                //{
+                //    parser = new SqlServerParser();
+                //}
+                //else if (databaseUnit.IsMysql)
+                //{
+                //    parser = new MysqlParser();
+                //}
+                //else if (databaseUnit.IsPgsql)
+                //{
+                //    parser = new PgsqlParser();
+                //}
+                //else
+                //{
+                //    parser = new SqliteParser();
+                //}
 
-                var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
+                //var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
 
-                ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
+                //ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
 
-                var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit,parseResult.CountSql, dbArgs, transaction: dbTransaction);
-                var resultList = dbConnection.Query<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction).ToList();
-                result.TotalPages = count;
-                result.Data = resultList;
+                //var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit,parseResult.CountSql, dbArgs, transaction: dbTransaction);
+                //var resultList = dbConnection.Query<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction).ToList();
+                //result.TotalPages = count;
+                //result.Data = resultList;
 
-                result.PageSize = pageable.PageSize;
-                result.PageNumber = pageable.PageNumber;
+                //result.PageSize = pageable.PageSize;
+                //result.PageNumber = pageable.PageNumber;
 
                 CloseDb();
 
@@ -186,12 +184,12 @@ namespace SummerBoot.Repository
         {
             ServiceProvider = serviceProvider;
             Init();
-            //å¤„ç†selecté€»è¾‘
+            //´¦ÀíselectÂß¼­
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
                 var repositoryOption = serviceProvider.GetService<RepositoryOption>();
-                //è·å¾—åŠ¨æ€å‚æ•°
+                //»ñµÃ¶¯Ì¬²ÎÊı
                 var dbArgs = GetParameters(method, args);
                 if (pageable == null)
                 {
@@ -209,40 +207,40 @@ namespace SummerBoot.Repository
 
                 var result = new Page<T>() { };
 
-                SqlParser.SqlParser parser;
+                //SqlParser.SqlParser parser;
 
-                if (databaseUnit.IsOracle)
-                {
-                    parser = new OracleParser();
-                }
-                else if (databaseUnit.IsSqlServer)
-                {
-                    parser = new SqlServerParser();
-                }
-                else if (databaseUnit.IsMysql)
-                {
-                    parser = new MysqlParser();
-                }
-                else if (databaseUnit.IsPgsql)
-                {
-                    parser = new PgsqlParser();
-                }
-                else
-                {
-                    parser = new SqliteParser();
-                }
+                //if (databaseUnit.IsOracle)
+                //{
+                //    parser = new OracleParser();
+                //}
+                //else if (databaseUnit.IsSqlServer)
+                //{
+                //    parser = new SqlServerParser();
+                //}
+                //else if (databaseUnit.IsMysql)
+                //{
+                //    parser = new MysqlParser();
+                //}
+                //else if (databaseUnit.IsPgsql)
+                //{
+                //    parser = new PgsqlParser();
+                //}
+                //else
+                //{
+                //    parser = new SqliteParser();
+                //}
 
-                var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
+                //var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
 
-                ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
+                //ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
 
-                var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, parseResult.CountSql, dbArgs, transaction: dbTransaction);
-                var resultList = (await dbConnection.QueryAsync<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction)).ToList();
-                result.TotalPages = count;
-                result.Data = resultList;
+                //var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, parseResult.CountSql, dbArgs, transaction: dbTransaction);
+                //var resultList = (await dbConnection.QueryAsync<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction)).ToList();
+                //result.TotalPages = count;
+                //result.Data = resultList;
 
-                result.PageSize = pageable.PageSize;
-                result.PageNumber = pageable.PageNumber;
+                //result.PageSize = pageable.PageSize;
+                //result.PageNumber = pageable.PageNumber;
 
                 CloseDb();
 
@@ -260,10 +258,10 @@ namespace SummerBoot.Repository
             var targetType = typeof(T);
             var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
 
-            //è·å¾—åŠ¨æ€å‚æ•°
+            //»ñµÃ¶¯Ì¬²ÎÊı
             var dbArgs = GetParameters(method, args);
 
-            //å¤„ç†selecté€»è¾‘
+            //´¦ÀíselectÂß¼­
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
@@ -299,13 +297,13 @@ namespace SummerBoot.Repository
 
             Init();
 
-            //å¤„ç†selecté€»è¾‘
+            //´¦ÀíselectÂß¼­
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
 
 
-                //è·å¾—åŠ¨æ€å‚æ•°
+                //»ñµÃ¶¯Ì¬²ÎÊı
                 var dbArgs = GetParameters(method, args);
                 var sql = selectAttribute.Sql;
                 sql = GetValueByConfiguration(sql);
@@ -348,7 +346,7 @@ namespace SummerBoot.Repository
 
             Init();
 
-            //è·å¾—åŠ¨æ€å‚æ•°
+            //»ñµÃ¶¯Ì¬²ÎÊı
             var dbArgs = GetParameters(method, args);
             var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
@@ -369,7 +367,7 @@ namespace SummerBoot.Repository
         {
             ServiceProvider = serviceProvider;
             Init();
-            //è·å¾—åŠ¨æ€å‚æ•°
+            //»ñµÃ¶¯Ì¬²ÎÊı
             var dbArgs = GetParameters(method, args);
             var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
             var updateAttribute = method.GetCustomAttribute<UpdateAttribute>();
@@ -385,7 +383,7 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// æ›¿æ¢sqlè¯­å¥é‡Œçš„bindWhereæ¡ä»¶çš„è¯­å¥ï¼Œå¦‚{{ and a.name=@name}}
+        /// Ìæ»»sqlÓï¾äÀïµÄbindWhereÌõ¼şµÄÓï¾ä£¬Èç{{ and a.name=@name}}
         /// </summary>
         /// <param name="sql"></param>
         /// <returns></returns>
@@ -393,7 +391,7 @@ namespace SummerBoot.Repository
         {
             var bindWhereParameterNames = parameterDictionary.Keys.ToList();
 
-            //å‚æ•°å‰ç¼€
+            //²ÎÊıÇ°×º
             var parameterPrefix = "";
             switch (databaseUnit.DatabaseType)
             {
@@ -421,7 +419,7 @@ namespace SummerBoot.Repository
                         hasFind = true;
                     }
                 }
-                //å¦‚æœå‚æ•°æœ‰å€¼æ‰è¿”å›è¯¥æ¡ä»¶åˆ¤æ–­è¯­å¥ï¼Œå¦åˆ™è¿”å›ç©º
+                //Èç¹û²ÎÊıÓĞÖµ²Å·µ»Ø¸ÃÌõ¼şÅĞ¶ÏÓï¾ä£¬·ñÔò·µ»Ø¿Õ
                 if (hasFind)
                 {
                     return matchValue.Replace("{{", "").Replace("}}", "");
@@ -434,21 +432,21 @@ namespace SummerBoot.Repository
             return tempSql;
         }
         /// <summary>
-        /// è·å–å®é™…å‚æ•°å€¼
+        /// »ñÈ¡Êµ¼Ê²ÎÊıÖµ
         /// </summary>
         /// <param name="method"></param>
         /// <param name="args"></param>
         /// <returns></returns>
         private DynamicParameters GetParameters(MethodInfo method, object[] args)
         {
-            //è·å–å‚æ•°
+            //»ñÈ¡²ÎÊı
             var dbArgs = new DynamicParameters();
             var parameterInfos = method.GetParameters();
             for (var i = 0; i < parameterInfos.Length; i++)
             {
                 var parameterType = parameterInfos[i].ParameterType;
                 var parameterTypeIsString = parameterType.IsString();
-                //å¦‚æœæ˜¯åˆ†é¡µå‚æ•°ç›´æ¥è·³è¿‡
+                //Èç¹ûÊÇ·ÖÒ³²ÎÊıÖ±½ÓÌø¹ı
                 if (typeof(IPageable).IsAssignableFrom(parameterType))
                 {
                     if (pageable != null)
@@ -458,7 +456,7 @@ namespace SummerBoot.Repository
                     pageable = (IPageable)args[i];
                 }
 
-                //æŸ¥æ‰¾æ‰€æœ‰æ¡ä»¶è¯­å¥æ›¿æ¢
+                //²éÕÒËùÓĞÌõ¼şÓï¾äÌæ»»
                 var bindWhere = parameterType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(parameterType.GetGenericTypeDefinition());
                 if (bindWhere)
                 {
@@ -490,12 +488,12 @@ namespace SummerBoot.Repository
                 }
                 else
                 {
-                    //å¦‚æœæ˜¯å€¼ç±»å‹æˆ–è€…å­—ç¬¦ä¸²ç›´æ¥æ·»åŠ åˆ°å‚æ•°é‡Œ
+                    //Èç¹ûÊÇÖµÀàĞÍ»òÕß×Ö·û´®Ö±½ÓÌí¼Óµ½²ÎÊıÀï
                     if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
                     {
                         dbArgs.Add(parameterInfos[i].Name, args[i], valueType: parameterType);
                     }
-                    //å¦‚æœæ˜¯ç±»ï¼Œåˆ™è¯»å–å±æ€§å€¼ï¼Œç„¶åæ·»åŠ åˆ°å‚æ•°é‡Œ
+                    //Èç¹ûÊÇÀà£¬Ôò¶ÁÈ¡ÊôĞÔÖµ£¬È»ºóÌí¼Óµ½²ÎÊıÀï
                     else if (parameterType.IsClass)
                     {
                         var properties = parameterType.GetProperties();
@@ -507,7 +505,7 @@ namespace SummerBoot.Repository
                             {
                                 dbArgs.Add(info.Name, info.GetValue(args[i]), valueType: propertyType);
                             }
-                            //æŸ¥æ‰¾æ‰€æœ‰æ¡ä»¶è¯­å¥æ›¿æ¢
+                            //²éÕÒËùÓĞÌõ¼şÓï¾äÌæ»»
                             var propertyBindWhere = propertyType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition());
                             if (propertyBindWhere)
                             {
@@ -546,18 +544,18 @@ namespace SummerBoot.Repository
             return dbArgs;
         }
 
-        protected void ChangeDynamicParameters(List<SqlParameter> originSqlParameters, DynamicParameters dynamicParameters)
-        {
-            if (originSqlParameters == null || originSqlParameters.Count == 0)
-            {
-                return;
-            }
+        //protected void ChangeDynamicParameters(List<SqlParameter> originSqlParameters, DynamicParameters dynamicParameters)
+        //{
+        //    if (originSqlParameters == null || originSqlParameters.Count == 0)
+        //    {
+        //        return;
+        //    }
 
-            foreach (var parameter in originSqlParameters)
-            {
-                dynamicParameters.Add(parameter.ParameterName, parameter.Value,valueType:parameter.ParameterType);
-            }
-        }
+        //    foreach (var parameter in originSqlParameters)
+        //    {
+        //        dynamicParameters.Add(parameter.ParameterName, parameter.Value,valueType:parameter.ParameterType);
+        //    }
+        //}
 
     }
 }

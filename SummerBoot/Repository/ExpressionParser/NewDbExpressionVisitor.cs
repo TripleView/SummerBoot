@@ -1,11 +1,13 @@
 using SqlParser.Net;
 using SqlParser.Net.Ast;
 using SqlParser.Net.Ast.Expression;
+using StackExchange.Redis;
 using SummerBoot.Core;
 using SummerBoot.Repository.Core;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.ExpressionParser.Util;
+using SummerBoot.Repository.MultiQuery;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -14,10 +16,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.AspNetCore.Http;
-using SummerBoot.Repository.MultiQuery;
-using YamlDotNet.Core.Tokens;
-using StackExchange.Redis;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
@@ -250,19 +248,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         var method = node.Method;
-        var methodName = node.Method.Name;
+        var methodName = method.Name;
         var lastMethodCallName = "";
         Expression result = null;
         methodCallStack.Push(methodName);
 
-        switch (method.Name)
+        switch (methodName)
         {
-            case nameof(QueryableMethodsCache.ExecuteDelete):
-                result = this.Visit(node.Arguments[0]);
+            case nameof(RepositoryMethodsCache.ToPage):
+
+                result = this.VisitToPage(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
                 return result;
-                break;
             case nameof(Queryable.Select):
                 result = this.VisitSelectCall(node);
                 lastMethodCallName = methodCallStack.Pop();
@@ -283,7 +281,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
                 break;
             case nameof(Queryable.Where):
-            case nameof(QueryableMethodsExtension.OrWhere):
+                //case nameof(QueryableMethodsExtension.OrWhere):
                 //MethodName = method.Name;
                 result = this.VisitWhereCall(node);
                 lastMethodCallName = methodCallStack.Pop();
@@ -358,7 +356,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 lastMethodCalls.Add(lastMethodCallName);
                 return result;
             case nameof(RepositoryExtension.LeftJoin):
-
+            case nameof(RepositoryExtension.RightJoin):
+            case nameof(RepositoryExtension.InnerJoin):
                 result = this.VisitJoinCall(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
@@ -582,7 +581,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
 
         }
-        else if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count) || MethodName == nameof(RepositoryMethods.Delete))
+        else if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count) || MethodName == nameof(RepositoryMethods.Delete))
         {
             if (!nodeTypeSqlBinaryOperatorsMappings.TryGetValue(binaryExpression.NodeType, out var sqlBinaryOperator))
             {
@@ -1104,30 +1103,22 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sourceExpression = this.Visit(countCall.Arguments[0]);
         var sqlSourceExpression = GetSqlExpression(sourceExpression);
         SqlExpression where = null;
+        var hasWhere = false;
         if (countCall.Arguments.Count == 2)
         {
             var lambda = (LambdaExpression)this.StripQuotes(countCall.Arguments[1]);
             var whereExpression = this.Visit(lambda.Body);
             where = GetSqlExpression(whereExpression);
+            hasWhere = true;
         }
         if (sqlSourceExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
-            sqlSelectQueryExpression.Columns.Clear();
-            sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
+            ProcessCountCall(sqlSelectQueryExpression);
+            if (hasWhere)
             {
-                Body = new SqlFunctionCallExpression()
-                {
-                    Name = new SqlIdentifierExpression()
-                    {
-                        Value = "count"
-                    },
-                    Arguments = new List<SqlExpression>()
-                   {
-                       new SqlAllColumnExpression()
-                   }
-                }
-            });
-            sqlSelectQueryExpression.Where = where;
+                sqlSelectQueryExpression.Where = where;
+            }
+
             return sourceExpression;
         }
         else
@@ -1136,6 +1127,73 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
     }
 
+
+    /// <summary>
+    /// 在PostgreSQL（pgsql）和sqlserver中，使用聚合函数（如count）时，不能和order by一起用，除非你有group by。因为count(*)只会返回一行结果，order by没有意义，所以会报错
+    /// </summary>
+    /// <param name="countSqlSelectQueryExpression"></param>
+    private void ProcessCountCall(SqlSelectQueryExpression countSqlSelectQueryExpression)
+    {
+        if (countSqlSelectQueryExpression.Columns == null)
+        {
+            countSqlSelectQueryExpression.Columns = new List<SqlSelectItemExpression>();
+        }
+        else
+        {
+            countSqlSelectQueryExpression.Columns.Clear();
+        }
+
+        var d = countSqlSelectQueryExpression.ToFormat();
+        countSqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
+        {
+            Body = new SqlFunctionCallExpression()
+            {
+                Name = new SqlIdentifierExpression()
+                {
+                    Value = "count"
+                },
+                Arguments = new List<SqlExpression>()
+                {
+                    new SqlAllColumnExpression()
+                }
+            }
+        });
+        countSqlSelectQueryExpression.OrderBy = null;
+    }
+
+    public virtual Expression VisitToPage(MethodCallExpression toPageCall)
+    {
+        var sourceExpression = this.Visit(toPageCall.Arguments[0]);
+        var sqlSourceExpression = GetSqlExpression(sourceExpression);
+        var pageable = new Pageable(1, 1);
+        if (toPageCall.Arguments.Count == 2)
+        {
+            pageable = (Pageable)((ConstantExpression)toPageCall.Arguments[1]).Value;
+            if (sqlSourceExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
+            {
+                var countSqlSelectQueryExpression = sqlSelectQueryExpression.Clone();
+                ProcessCountCall(countSqlSelectQueryExpression);
+                var offset = (pageable.PageNumber - 1) * pageable.PageSize;
+                AddDefaultColumns(sqlSelectExpression);
+                var pageSqlSelectExpression = ParsingPage(sqlSelectExpression, offset, pageable.PageSize);
+
+                var countSqlExpression = GetSqlSelectExpression(countSqlSelectQueryExpression);
+                return GetWrapperExpression(pageSqlSelectExpression, countSqlExpression: countSqlExpression);
+            }
+        }
+        else if (toPageCall.Arguments.Count == 1)
+        {
+            if (sqlSourceExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
+            {
+                var countSqlSelectQueryExpression = sqlSelectQueryExpression.Clone();
+                ProcessCountCall(countSqlSelectQueryExpression);
+                AddDefaultColumns(sqlSelectExpression);
+                var countSqlExpression = GetSqlSelectExpression(countSqlSelectQueryExpression);
+                return GetWrapperExpression(sqlSelectExpression, countSqlExpression: countSqlExpression);
+            }
+        }
+        throw new NotSupportedException(nameof(VisitToPage));
+    }
     public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression maxMinCall)
     {
         return null;
@@ -1185,10 +1243,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         var methodName = joinExpression.Method.Name;
         var joinType = SqlJoinType.LeftJoin;
-        if (methodName == nameof(RepositoryExtension.LeftJoin))
+        switch (methodName)
         {
-            joinType = SqlJoinType.LeftJoin;
+            case nameof(RepositoryExtension.LeftJoin):
+                joinType = SqlJoinType.LeftJoin;
+                break;
+            case nameof(RepositoryExtension.RightJoin):
+                joinType = SqlJoinType.RightJoin;
+                break;
+            case nameof(RepositoryExtension.InnerJoin):
+                joinType = SqlJoinType.RightJoin;
+                break;
         }
+
         var arg0 = this.Visit(joinExpression.Arguments[0]);
         var arg1 = this.Visit(joinExpression.Arguments[1]);
         var lambda = (LambdaExpression)this.StripQuotes(joinExpression.Arguments[2]);
@@ -1264,9 +1331,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sqlExpression = GetSqlExpression(sourceExpression);
         var sqlSelectExpression = GetSqlSelectExpression(sqlExpression);
         AddDefaultColumns(sqlSelectExpression);
-        var r1 = ParsingPage(sqlSelectExpression, offset, pageSize);
+        var methodCallList = methodCallStack.ToList();
+        if (methodCallList.ElementAtOrDefault(1) == nameof(RepositoryMethods.ToPage))
+        {
+            var pageable = new Pageable();
+            return GetWrapperExpression(sqlSelectExpression,pageable:pageable);
+        }
+        else
+        {
+            var r1 = ParsingPage(sqlSelectExpression, offset, pageSize);
 
-        return GetWrapperExpression(r1);
+            return GetWrapperExpression(r1);
+        }
+
     }
 
     public virtual Expression VisitWhereCall(MethodCallExpression whereCall)
@@ -1581,7 +1658,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             SqlExpression r1 = GetSqlTableExpression(baseRepository.ElementType);
 
-            if (methodCallStack.TryPeek(out var methodName) && methodName == nameof(JoinQueryableMethods.LeftJoin))
+            if (methodCallStack.TryPeek(out var methodName) && methodName == nameof(JoinRepositoryMethods.LeftJoin))
             {
                 return GetWrapperExpression(r1);
             }
@@ -1590,7 +1667,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (index == methodCallStack.Count)
             {
                 var lastMethodName = methodCallStack.Last();
-                if (lastMethodName == nameof(QueryableMethods.ExecuteDelete) || lastMethodName == nameof(RepositoryMethods.Delete))
+                if (lastMethodName == nameof(RepositoryMethods.Delete))
                 {
                     r1 = new SqlDeleteExpression()
                     {
@@ -1618,7 +1695,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 };
                 return GetWrapperExpression(sqlSelectItemExpression);
             }
-            else if (MethodName == nameof(QueryableMethodsExtension.OrWhere) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var r1 = GetSqlVariableExpressionWithValueAndDynamicName(strValue);
 
@@ -1689,9 +1766,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     }
 
-    private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null)
+    private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null, SqlExpression countSqlExpression = null, Pageable pageable = null)
     {
-        return new WrapperExpression() { SqlExpression = sqlExpression, PropertyType = propertyType };
+        return new WrapperExpression() { SqlExpression = sqlExpression, PropertyType = propertyType, CountSqlExpression = countSqlExpression, Pageable = pageable };
     }
 
     private SqlPropertyExpression GetSqlPropertyExpression(Type type, PropertyInfo propertyInfo)

@@ -83,35 +83,36 @@ public interface ILambdaRepository<T> : IBaseLambdaRepository
 
 public interface IGroupLambdaRepository<T, TKey>
 {
-    IBaseRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, TResult>>> selector);
+    ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, TResult>>> selector);
 }
 
-public class GroupLambdaRepository<T, TKey> : IGroupLambdaRepository<T, TKey>
+public class GroupLambdaRepository<T, TKey> : IGroupLambdaRepository<T, TKey>, IBaseLambdaRepository
 {
-    public IBaseRepository<T> Source { get; }
-
-    public GroupLambdaRepository(IBaseRepository<T> source)
+    public GroupLambdaRepository(Expression expression, IRepositoryProvider provider)
     {
-        Source = source;
+        this.Expression = expression;
+        this.Provider = provider;
     }
-    public IBaseRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, TResult>>> selector)
-    {
-        if (Source == null) throw new ArgumentNullException(nameof(Source));
+    public IRepositoryProvider Provider { get; protected set; }
 
+    public Type ElementType => typeof(T);
+
+    public Expression Expression { get; protected set; }
+
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, TResult>>> selector)
+    {
         var methodInfo = RepositoryMethodsCache.GroupBySelect.MakeGenericMethod(typeof(T), typeof(TKey), typeof(TResult));
         var callExpr = Expression.Call(
             null,
             methodInfo,
-            Source.Expression,
+            Expression,
             Expression.Quote(selector)
         );
 
-        var r = Source.Provider.CreateQuery<IBaseRepository<TResult>>(callExpr);
+        var r = Provider.CreateQuery<ILambdaRepository<TResult>>(callExpr);
         return r;
     }
 }
-
-
 
 public interface IOrderLambdaRepository<T> : ILambdaRepository<T>
 {
@@ -209,9 +210,8 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
             Expression,
             Expression.Quote(keySelector)
         );
-        var r = Provider.CreateQuery<IBaseRepository<T>>(callExpr);
-        var result = new GroupLambdaRepository<T, TKey>(r);
-        return result;
+        var r = Provider.CreateQuery<IGroupLambdaRepository<T, TKey>>(callExpr);
+        return r;
     }
 
     public ILambdaRepository<TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
@@ -394,32 +394,6 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
         return result;
     }
 
-    private MethodCallExpression GetToPageMethodCallExpression()
-    {
-        var methodInfo = RepositoryMethodsCache.ToPageNoPageParameter.MakeGenericMethod(typeof(T));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            Expression
-        );
-        return callExpr;
-    }
-
-    public Page<T> ToPage()
-    {
-        var callExpr = GetToPageMethodCallExpression();
-        var result = Provider.QueryPage<T>(callExpr);
-
-        return result;
-    }
-
-    public async Task<Page<T>> ToPageAsync()
-    {
-        var callExpr = GetToPageMethodCallExpression();
-        var result = await Provider.QueryPageAsync<T>(callExpr);
-
-        return result;
-    }
     private MethodCallExpression GetToPageWithParameterMethodCallExpression(IPageable pageable)
     {
         var methodInfo = RepositoryMethodsCache.ToPage.MakeGenericMethod(typeof(T));
@@ -576,21 +550,32 @@ public class PageLambdaRepository<T> : OrderLambdaRepository<T>, IPageLambdaRepo
     public PageLambdaRepository(Expression expression, IRepositoryProvider provider) : base(expression, provider)
     {
     }
-    public IBaseRepository<T> Source { get; }
 
-    //public PageLambdaRepository(IBaseRepository<T> source)
-    //{
-    //    Source = source;
-    //}
+    private MethodCallExpression GetToPageMethodCallExpression()
+    {
+        var methodInfo = RepositoryMethodsCache.ToPageNoPageParameter.MakeGenericMethod(typeof(T));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Expression
+        );
+        return callExpr;
+    }
 
     public Page<T> ToPage()
     {
-        throw new NotImplementedException();
+        var callExpr = GetToPageMethodCallExpression();
+        var result = Provider.QueryPage<T>(callExpr);
+
+        return result;
     }
 
     public async Task<Page<T>> ToPageAsync()
     {
-        throw new NotImplementedException();
+        var callExpr = GetToPageMethodCallExpression();
+        var result = await Provider.QueryPageAsync<T>(callExpr);
+
+        return result;
     }
 }
 
@@ -636,6 +621,8 @@ public interface ISqlExecutor
     /// <param name="pageParameter"></param>
     /// <returns></returns>
     Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null);
+
+    Page<TResult> QueryPageWithFullSql<TResult>(string pageSql, string countSql, object param = null);
     #endregion
 
     #region async
@@ -675,6 +662,8 @@ public interface ISqlExecutor
     /// <param name="pageParameter"></param>
     /// <returns></returns>
     Task<Page<TResult>> QueryPageAsync<TResult>(string sql, Pageable pageParameter, object param = null);
+
+    Task<Page<TResult>> QueryPageWithFullSqlAsync<TResult>(string pageSql, string countSql, object param = null);
     #endregion
 }
 

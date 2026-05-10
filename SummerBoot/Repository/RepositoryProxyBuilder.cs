@@ -241,8 +241,8 @@ namespace SummerBoot.Repository
                         //targetMethods.AddRange(typeof(IQueryable).GetMethods());
                         //var c = typeof(IBaseRepository<>).MakeGenericType(genericType).GetMethods();
                         targetMethods.AddRange(typeof(IBaseRepository<>).MakeGenericType(genericType).GetMethods());
-                        targetMethods.AddRange(typeof(IDbExecuteAndQuery).GetMethods());
-                        targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());
+                        targetMethods.AddRange(typeof(ISqlExecutor).GetMethods());
+                        //targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());
                         break;
                     }
                 }

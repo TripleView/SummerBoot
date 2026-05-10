@@ -15,6 +15,8 @@ public class WrapperExpression : Expression
     public bool IsHandled { get; set; }
     public SqlExpression SqlExpression { get; set; }
 
+    public SqlExpression CountSqlExpression { get; set; }
+
     public List<SqlExpression> SqlExpressions { get; set; }
     /// <summary>
     /// Property Type
@@ -26,4 +28,9 @@ public class WrapperExpression : Expression
     /// 参数
     /// </summary>
     public DynamicParameters Parameters { get; set; }
+    /// <summary>
+    /// 分页参数
+    /// pagingParams
+    /// </summary>
+    public Pageable Pageable { get; set; }
 }

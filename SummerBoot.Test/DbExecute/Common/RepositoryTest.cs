@@ -556,15 +556,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
             var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
-            //var repository2 = serviceProvider.GetService<INewRepository<OrderHeader>>();
-
-            // repository2.Where(x => x.Id == 1).Select(x => x.OrderNo).ToList();
-            // repository2.OrderBy(x => x.Id).ThenBy(x=>x.OrderNo).Select(x=>x.Id).ToList();
-            ////await repository2.UpdateAsync();
-            //repository2.Where(x => x.OrderNo == "abc").Skip(1).Take(1).ToPage();
-            //repository2.Where(x => x.OrderNo == "abc").ToPage(new Pageable(1, 10));
-
-           var orderNo = Guid.NewGuid().ToString();
+            var orderNo = Guid.NewGuid().ToString();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
@@ -572,7 +564,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 State = 1,
                 CustomerId = 1,
             };
-            //orderHeaderRepository.Where(x => x.Id == 1).Select(x => x.Id).ToList()
+
             await orderHeaderRepository.InsertAsync(orderHeader);
             var orderHeader2 = new OrderHeader()
             {
@@ -582,11 +574,133 @@ namespace SummerBoot.Test.DbExecute.Common
                 CustomerId = 2,
             };
             await orderHeaderRepository.InsertAsync(orderHeader2);
-            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).ToPageAsync(new Pageable(1,1));
+            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).ToPageAsync(new Pageable(1, 10));
             Assert.Equal(2, pageResult.TotalPages);
-
+            Assert.Equal(orderNo, pageResult.Data[0].OrderNo);
+            Assert.Equal(orderNo, pageResult.Data[1].OrderNo);
         }
 
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestPage2Async(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderNo = Guid.NewGuid().ToString();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 1,
+            };
+
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 2,
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).Skip(1).Take(1).ToPageAsync();
+            Assert.Equal(1, pageResult.TotalPages);
+            Assert.Equal(orderNo, pageResult.Data[0].OrderNo);
+        }
+
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestPageOrderByAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderNo = Guid.NewGuid().ToString();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 1,
+            };
+
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 2,
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).OrderBy(x => x.CustomerId).ToPageAsync(new Pageable(1, 10));
+            Assert.Equal(2, pageResult.TotalPages);
+            Assert.Equal(1, pageResult.Data[0].CustomerId);
+            Assert.Equal(2, pageResult.Data[1].CustomerId);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestCountAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderNo = Guid.NewGuid().ToString();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 1,
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).CountAsync();
+            Assert.Equal(1, r1);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestOrderByCountAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderNo = Guid.NewGuid().ToString();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 1,
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).OrderBy(x=>x.OrderNo).CountAsync();
+            Assert.Equal(1, r1);
+        }
 
         [Theory]
         [InlineData(DbType.MySql)]
@@ -626,9 +740,9 @@ namespace SummerBoot.Test.DbExecute.Common
             await orderDetailRepository.InsertAsync(orderDetail1);
             await orderDetailRepository.InsertAsync(orderDetail2);
 
-            var count = orderHeaderRepository
+            var count = await orderHeaderRepository
                 .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-                .Count(x => x.T1.Id == orderHeader.Id);
+                .CountAsync(x => x.T1.Id == orderHeader.Id);
             Assert.Equal(2, count);
         }
 

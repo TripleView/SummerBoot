@@ -130,16 +130,18 @@ public class RepositoryProvider : IRepositoryProvider
     public Page<TResult> QueryPage<TResult>(Expression expression)
     {
         var wrapperExpression = GetDbQueryResultByExpression(expression);
-        var sql = wrapperExpression.SqlExpression.ToSql();
+        var pageSql = wrapperExpression.SqlExpression.ToSql();
+        var countSql = wrapperExpression.CountSqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
-        return Repository.QueryPage<TResult>(sql, null, parameters);
+        return Repository.QueryPageWithFullSql<TResult>(pageSql, countSql, parameters);
     }
 
     public async Task<Page<TResult>> QueryPageAsync<TResult>(Expression expression)
     {
         var wrapperExpression = GetDbQueryResultByExpression(expression);
-        var sql = wrapperExpression.SqlExpression.ToSql();
+        var pageSql = wrapperExpression.SqlExpression.ToSql();
+        var countSql = wrapperExpression.CountSqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
-        return await Repository.QueryPageAsync<TResult>(sql, null, parameters);
+        return await Repository.QueryPageWithFullSqlAsync<TResult>(pageSql, countSql, parameters);
     }
 }

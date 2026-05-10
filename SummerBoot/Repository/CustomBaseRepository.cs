@@ -16,7 +16,7 @@ using DbType = SqlParser.Net.DbType;
 
 namespace SummerBoot.Repository;
 
-public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository<T>
+public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<T>
 {
     public CustomBaseRepository(IUnitOfWork uow) : base(null, null)
     {
@@ -170,12 +170,12 @@ public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository
 
     public int Delete(Expression<Func<T, bool>> predicate)
     {
-        var exp = this.Where(predicate).Expression;
-        var methodInfo = QueryableMethodsCache.ExecuteDelete;
+        var methodInfo = RepositoryMethodsCache.DeleteWithPredicate.MakeGenericMethod(typeof(T));
         var callExpr = Expression.Call(
             null,
             methodInfo,
-            exp
+            Expression,
+            Expression.Quote(predicate)
         );
 
         var result = Provider.Execute(callExpr);
@@ -531,7 +531,10 @@ public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository
     {
         throw new NotImplementedException();
     }
-
+    public Page<TResult> QueryPageWithFullSql<TResult>(string pageSql, string countSql, object param = null)
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 
     #region async
@@ -562,9 +565,29 @@ public class CustomBaseRepository<T> : OrderLambdaRepository<T>, IBaseRepository
 
     public async Task<Page<TResult>> QueryPageAsync<TResult>(string sql, Pageable pageParameter, object param = null)
     {
-        await Task.Yield();
-        throw new NotImplementedException();
+        OpenDb();
+        var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, "", param, dbTransaction);
+        var item = (await dbConnection.QueryAsync<TResult>(databaseUnit, sql, param, dbTransaction)).ToList();
+        CloseDb();
+        var result = new Page<TResult>()
+        {
+            Data = item,
+            TotalPages = count
+        };
+        return result;
     }
-
+    public async Task<Page<TResult>> QueryPageWithFullSqlAsync<TResult>(string pageSql, string countSql, object param = null)
+    {
+        OpenDb();
+        var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, countSql, param, dbTransaction);
+        var item = (await dbConnection.QueryAsync<TResult>(databaseUnit, pageSql, param, dbTransaction)).ToList();
+        CloseDb();
+        var result = new Page<TResult>()
+        {
+            Data = item,
+            TotalPages = count
+        };
+        return result;
+    }
     #endregion
 }
