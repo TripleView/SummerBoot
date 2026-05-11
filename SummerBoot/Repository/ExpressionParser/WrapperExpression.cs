@@ -6,7 +6,7 @@ using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
-public class WrapperExpression : Expression
+internal class WrapperExpression : Expression
 {
     /// <summary>
     /// Is the processing completed
@@ -33,4 +33,9 @@ public class WrapperExpression : Expression
     /// pagingParams
     /// </summary>
     public Pageable Pageable { get; set; }
+    /// <summary>
+    /// 内部分页参数
+    /// internal pagingParams
+    /// </summary>
+    public InternalPageable InternalPageable { get; set; }
 }

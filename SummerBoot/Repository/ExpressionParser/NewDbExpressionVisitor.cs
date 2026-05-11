@@ -789,7 +789,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var r1 = ParsingPage(sqlSelectExpression, 0, 1);
             return GetWrapperExpression(r1);
         }
-        else
+        else if (firstOrDefaultCall.Arguments.Count == 1 && sqlExpression is SqlSelectExpression sqlSelectExpression)
+        {
+            AddDefaultColumns(sqlSelectExpression);
+            var r1 = ParsingPage(sqlSelectExpression, 0, 1);
+            return GetWrapperExpression(r1);
+        }
+        else 
         {
             throw new NotSupportedException();
         }
@@ -932,7 +938,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return orderBy;
     }
 
-    public virtual SqlSelectExpression ParsingPage(SqlSelectExpression sqlSelectExpression, int offset, int pageSize)
+    public virtual SqlSelectExpression ParsingPage(SqlSelectExpression sqlSelectExpression, int offset, int take)
     {
         var isRowNumber = databaseUnit.IsSqlServer && databaseUnit.SqlServerVersion < 11 || databaseUnit.IsOracle;
 
@@ -1004,7 +1010,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     {
                         Left = pageColumnExpression,
                         Operator = SqlBinaryOperator.LessThenOrEqualTo,
-                        Right = GetSqlVariableExpressionWithValueAndDynamicName(offset + pageSize)
+                        Right = GetSqlVariableExpressionWithValueAndDynamicName(offset + take)
                     },
                 };
                 if (sqlSelectExpression.Query is SqlSelectQueryExpression tempSqlSelectQueryExpression)
@@ -1019,15 +1025,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 sqlSelectQueryExpression.OrderBy ??= BuildSqlOrderByExpression(sqlSelectQueryExpression);
             }
 
-            if (pageSize <= 0)
+            if (take <= 0)
             {
-                pageSize = int.MaxValue;
+                take = int.MaxValue;
             }
 
             sqlSelectQueryExpression.Limit = new SqlLimitExpression()
             {
                 Offset = GetSqlVariableExpressionWithValueAndDynamicName(offset),
-                RowCount = GetSqlVariableExpressionWithValueAndDynamicName(pageSize)
+                RowCount = GetSqlVariableExpressionWithValueAndDynamicName(take)
             };
 
         }
@@ -1185,11 +1191,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             if (sqlSourceExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
             {
+                var internalPageable = ((WrapperExpression)sourceExpression).InternalPageable;
                 var countSqlSelectQueryExpression = sqlSelectQueryExpression.Clone();
                 ProcessCountCall(countSqlSelectQueryExpression);
                 AddDefaultColumns(sqlSelectExpression);
                 var countSqlExpression = GetSqlSelectExpression(countSqlSelectQueryExpression);
-                return GetWrapperExpression(sqlSelectExpression, countSqlExpression: countSqlExpression);
+                var pageSqlSelectExpression = ParsingPage(sqlSelectExpression, internalPageable.Skip, internalPageable.Take);
+                return GetWrapperExpression(pageSqlSelectExpression, countSqlExpression: countSqlExpression);
             }
         }
         throw new NotSupportedException(nameof(VisitToPage));
@@ -1334,8 +1342,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var methodCallList = methodCallStack.ToList();
         if (methodCallList.ElementAtOrDefault(1) == nameof(RepositoryMethods.ToPage))
         {
-            var pageable = new Pageable();
-            return GetWrapperExpression(sqlSelectExpression,pageable:pageable);
+            var internalPageable = new InternalPageable(offset, pageSize);
+            return GetWrapperExpression(sqlSelectExpression, internalPageable: internalPageable);
         }
         else
         {
@@ -1664,7 +1672,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
 
             //如果是方法解析的最底层，即repository仓库本身，则开始构建最基础的增删改查sqlExpression，比如repository.where.orderby.tolist
-            if (index == methodCallStack.Count)
+            if (index >= methodCallStack.Count)
             {
                 var lastMethodName = methodCallStack.Last();
                 if (lastMethodName == nameof(RepositoryMethods.Delete))
@@ -1766,9 +1774,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     }
 
-    private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null, SqlExpression countSqlExpression = null, Pageable pageable = null)
+    private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null, SqlExpression countSqlExpression = null, Pageable pageable = null, InternalPageable internalPageable = null)
     {
-        return new WrapperExpression() { SqlExpression = sqlExpression, PropertyType = propertyType, CountSqlExpression = countSqlExpression, Pageable = pageable };
+        return new WrapperExpression() { SqlExpression = sqlExpression, PropertyType = propertyType, CountSqlExpression = countSqlExpression, Pageable = pageable, InternalPageable = internalPageable };
     }
 
     private SqlPropertyExpression GetSqlPropertyExpression(Type type, PropertyInfo propertyInfo)

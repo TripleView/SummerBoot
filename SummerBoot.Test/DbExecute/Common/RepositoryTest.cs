@@ -16,6 +16,7 @@ using SummerBoot.Test.DbExecute.Common.Models;
 using SummerBoot.Test.DbExecute.Common.Repository;
 using System;
 using System.Data.SQLite;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,8 +25,6 @@ using Xunit.Priority;
 
 namespace SummerBoot.Test.DbExecute.Common
 {
-    [Collection("test")]
-    [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
     public class RepositoryTest : IClassFixture<DatabaseInitFixture>
     {
         private readonly DatabaseInitFixture databaseInitFixture;
@@ -346,6 +345,66 @@ namespace SummerBoot.Test.DbExecute.Common
             Assert.True(dbOrders.Any(x => x.Id == orderHeader.Id));
         }
 
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestGetAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = Guid.NewGuid().ToString("N"),
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var dbOrder = await orderHeaderRepository.GetAsync(orderHeader.Id);
+            Assert.Equal(dbOrder.OrderNo, orderHeader.OrderNo);
+            Assert.Equal(dbOrder.State, orderHeader.State);
+            Assert.True(TestUtils.CompareTwoDate(dbOrder.CreateTime, orderHeader.CreateTime));
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestOrderByFirstOrDefaultAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+
+            var orderNo = Guid.NewGuid().ToString("N");
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId=1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 2,
+                CustomerId = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var dbOrder = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).OrderBy(x => x.State)
+                .FirstOrDefaultAsync();
+            Assert.Equal(dbOrder.CustomerId, orderHeader.CustomerId);
+            Assert.Equal(dbOrder.State, orderHeader.State);
+            Assert.True(TestUtils.CompareTwoDate(dbOrder.CreateTime, orderHeader.CreateTime));
+
+        }
 
         [Theory]
         [InlineData(DbType.MySql)]
@@ -586,6 +645,42 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestWhereToListAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderNo = Guid.NewGuid().ToString();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 1,
+            };
+
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 2,
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).ToListAsync();
+            Assert.Equal(2, r1.Count);
+            Assert.Equal(orderNo, r1[0].OrderNo);
+            Assert.Equal(orderNo, r1[1].OrderNo);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestPage2Async(DbType dbType)
         {
             ChangeDb(dbType);
@@ -611,7 +706,7 @@ namespace SummerBoot.Test.DbExecute.Common
             };
             await orderHeaderRepository.InsertAsync(orderHeader2);
             var pageResult = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).Skip(1).Take(1).ToPageAsync();
-            Assert.Equal(1, pageResult.TotalPages);
+            Assert.Equal(2, pageResult.TotalPages);
             Assert.Equal(orderNo, pageResult.Data[0].OrderNo);
         }
 
@@ -698,7 +793,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 CustomerId = 1,
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
-            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).OrderBy(x=>x.OrderNo).CountAsync();
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).OrderBy(x => x.OrderNo).CountAsync();
             Assert.Equal(1, r1);
         }
 
