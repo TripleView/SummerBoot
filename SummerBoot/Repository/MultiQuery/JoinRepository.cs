@@ -226,7 +226,7 @@ public class JoinRepository<T1, T2> : IJoinRepository<T1, T2>
             Expression.Quote(predicate)
         );
 
-        var result =await Source.Provider.QueryFirstOrDefaultAsync<int>(callExpr);
+        var result = await Source.Provider.QueryFirstOrDefaultAsync<int>(callExpr);
 
         return result;
     }

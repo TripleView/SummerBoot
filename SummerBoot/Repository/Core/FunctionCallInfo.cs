@@ -13,5 +13,5 @@ public class FunctionCallInfo
     public List<SqlExpression> FunctionParameters { get; set; }
 
     public DynamicParameters DynamicParameters { get; set; }
-    public Func<object,SqlVariableExpression> AddParameter { get; set; }
+    public Func<object, Type?, SqlVariableExpression> AddParameter { get; set; }
 }

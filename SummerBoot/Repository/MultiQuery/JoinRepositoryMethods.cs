@@ -52,7 +52,7 @@ public static class JoinRepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IEnumerable<TResult> Select<T1, T2, TResult>(IJoinOrderRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public static IEnumerable<TResult> Select<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }

@@ -236,7 +236,7 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
 
     public async Task<List<T>> ToListAsync()
     {
-        var result = Provider.QueryList<T>(Expression);
+        var result =await Provider.QueryListAsync<T>(Expression);
         return result;
     }
     private IPageLambdaRepository<T> InternalTakeSkip(

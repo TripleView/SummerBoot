@@ -256,7 +256,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         switch (methodName)
         {
             case nameof(RepositoryMethodsCache.ToPage):
-
                 result = this.VisitToPage(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
@@ -282,13 +281,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 break;
             case nameof(Queryable.Where):
                 //case nameof(QueryableMethodsExtension.OrWhere):
-                //MethodName = method.Name;
                 result = this.VisitWhereCall(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
                 return result;
             case nameof(Queryable.GroupBy):
-                //MethodName = method.Name;
+
                 result = this.VisitGroupByCall(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
@@ -297,7 +295,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             case nameof(Queryable.OrderByDescending):
             case nameof(Queryable.ThenBy):
             case nameof(Queryable.ThenByDescending):
-                //MethodName = method.Name;
+
                 result = this.VisitOrderByCall(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
@@ -581,7 +579,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
 
         }
-        else if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count) || MethodName == nameof(RepositoryMethods.Delete))
+        else if (IsJoinMethod(MethodName) ||
+                 MethodName == nameof(Queryable.Where) ||
+                 MethodName == nameof(Queryable.FirstOrDefault) ||
+                 MethodName == nameof(Queryable.First) ||
+                 MethodName == nameof(Queryable.Count) ||
+                 MethodName == nameof(RepositoryMethods.Delete))
         {
             if (!nodeTypeSqlBinaryOperatorsMappings.TryGetValue(binaryExpression.NodeType, out var sqlBinaryOperator))
             {
@@ -795,7 +798,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var r1 = ParsingPage(sqlSelectExpression, 0, 1);
             return GetWrapperExpression(r1);
         }
-        else 
+        else
         {
             throw new NotSupportedException();
         }
@@ -1075,10 +1078,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         };
     }
 
-    private SqlVariableExpression GetSqlVariableExpressionWithValueAndDynamicName(object value)
+    private SqlVariableExpression GetSqlVariableExpressionWithValueAndDynamicName(object value, Type? valueType = null)
     {
         var parameterAlias = GetParameterAlias();
-        this.parameters.Add(parameterAlias, value);
+        this.parameters.Add(parameterAlias, value, valueType: valueType);
         return new SqlVariableExpression()
         {
             Name = parameterAlias,
@@ -1202,49 +1205,46 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         throw new NotSupportedException(nameof(VisitToPage));
     }
-    public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression maxMinCall)
+    public virtual Expression VisitMaxMinSumAvgCall(MethodCallExpression methodCall)
     {
-        return null;
-        //var methodName = maxMinCall.Method.Name;
+        var methodName = methodCall.Method.Name;
 
-        //var sourceExpression = this.Visit(maxMinCall.Arguments[0]);
-        //ColumnExpression column = null;
-        //if (maxMinCall.Arguments.Count == 2)
-        //{
-        //    var lambda = (LambdaExpression)this.StripQuotes(maxMinCall.Arguments[1]);
-        //    column = this.Visit(lambda.Body) as ColumnExpression;
-        //}
-        //else
-        //{
-        //    throw new NotSupportedException(methodName);
-        //}
+        var sourceExpression = this.Visit(methodCall.Arguments[0]);
+        var sourceSqlExpression = GetSqlExpression(sourceExpression);
+        SqlExpression columnSqlExpression = null;
+        if (methodCall.Arguments.Count == 2)
+        {
+            var lambda = (LambdaExpression)this.StripQuotes(methodCall.Arguments[1]);
+            var columnExpression = this.Visit(lambda.Body);
+            columnSqlExpression = GetSqlExpression(columnExpression);
+        }
+        else
+        {
+            throw new NotSupportedException(methodName);
+        }
 
-        //column.FunctionName = methodName;
-        //if (methodName == nameof(Queryable.Average))
-        //{
-        //    column.FunctionName = "AVG";
-        //}
-
-        //if (sourceExpression is TableExpression table)
-        //{
-        //    var result = new SelectExpression(null, "", table.Columns, table);
-
-        //    result.Columns.Clear();
-
-        //    result.Columns.Add(column);
-
-        //    return result;
-        //}
-        //else if (sourceExpression is SelectExpression selectExpression)
-        //{
-        //    selectExpression.Columns.Clear();
-        //    selectExpression.Columns.Add(column);
-        //    return selectExpression;
-        //}
-        //else
-        //{
-        //    throw new NotSupportedException(methodName);
-        //}
+        var functionName = methodName;
+        if (methodName == nameof(Queryable.Average))
+        {
+            functionName = "AVG";
+        }
+        var sqlFunctionCallExpression = new SqlFunctionCallExpression()
+        {
+            Name = new SqlIdentifierExpression()
+            {
+                Value = functionName
+            },
+            Arguments = new List<SqlExpression>()
+            {
+                columnSqlExpression
+            }
+        };
+        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(sourceSqlExpression);
+        sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()
+        {
+            Body = sqlFunctionCallExpression
+        });
+        return sourceExpression;
     }
 
     public virtual Expression VisitJoinCall(MethodCallExpression joinExpression)
@@ -1260,7 +1260,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 joinType = SqlJoinType.RightJoin;
                 break;
             case nameof(RepositoryExtension.InnerJoin):
-                joinType = SqlJoinType.RightJoin;
+                joinType = SqlJoinType.InnerJoin;
                 break;
         }
 
@@ -1660,13 +1660,20 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return sqlTableExpression;
     }
 
+    private bool IsJoinMethod(string methodName)
+    {
+        return methodName == nameof(JoinRepositoryMethods.LeftJoin) ||
+               methodName == nameof(JoinRepositoryMethods.RightJoin) ||
+               methodName == nameof(JoinRepositoryMethods.InnerJoin);
+    }
+
     protected override Expression VisitConstant(ConstantExpression constant)
     {
         if (constant.Value is IBaseLambdaRepository baseRepository)
         {
             SqlExpression r1 = GetSqlTableExpression(baseRepository.ElementType);
 
-            if (methodCallStack.TryPeek(out var methodName) && methodName == nameof(JoinRepositoryMethods.LeftJoin))
+            if (methodCallStack.TryPeek(out var methodName) && IsJoinMethod(methodName))
             {
                 return GetWrapperExpression(r1);
             }
@@ -1764,6 +1771,17 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 Value = str
             };
+        }
+        else if (result is null)
+        {
+            if (member is MemberExpression memberExpression)
+            {
+                tempR = GetSqlVariableExpressionWithValueAndDynamicName(result, valueType: memberExpression.Type);
+            }
+            else
+            {
+                throw new NotSupportedException(nameof(member));
+            }
         }
         else
         {

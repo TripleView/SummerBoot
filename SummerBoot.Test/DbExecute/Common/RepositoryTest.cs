@@ -351,6 +351,123 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestSumAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString("N");
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).SumAsync(x => x.State);
+            Assert.Equal(101, r1);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestMaxAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString("N");
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).MaxAsync(x => x.State);
+            Assert.Equal(100, r1);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestMinAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString("N");
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).MinAsync(x => x.State);
+            Assert.Equal(1, r1);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestAverageAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString("N");
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).AverageAsync(x => x.State);
+            Assert.Equal(50, r1);
+        }
+
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestGetAsync(DbType dbType)
         {
             ChangeDb(dbType);
@@ -839,6 +956,45 @@ namespace SummerBoot.Test.DbExecute.Common
                 .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .CountAsync(x => x.T1.Id == orderHeader.Id);
             Assert.Equal(2, count);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinEntityWithStringNullCallMethod(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
+            var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+            var name = GetRandomName();
+            var propNullTest = new PropNullTest()
+            {
+                Name = name
+            };
+            await propNullTestRepository.InsertAsync(propNullTest);
+            var propNullTestItem = new PropNullTestItem()
+            {
+                Name = "testitem",
+                MapId = propNullTest.Id
+            };
+            await propNullTestItemRepository.InsertAsync(propNullTestItem);
+
+            var test = new PropNullTest()
+            {
+                Name = null
+            };
+
+            var result = await propNullTestRepository.InnerJoin(propNullTestItemRepository, it => it.T1.Id == it.T2.MapId && it.T2.Name == test.Name.Trim())
+                .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+            Assert.Empty(result);
+        }
+
+        private string GetRandomName()
+        {
+            return Guid.NewGuid().ToString("N");
         }
 
         [Theory]
