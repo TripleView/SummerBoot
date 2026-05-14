@@ -1,5 +1,4 @@
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,13 +14,14 @@ using SummerBoot.Test.DbExecute.Common.Db;
 using SummerBoot.Test.DbExecute.Common.Models;
 using SummerBoot.Test.DbExecute.Common.Repository;
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Priority;
+using DbType = SqlParser.Net.DbType;
 
 namespace SummerBoot.Test.DbExecute.Common
 {
@@ -292,7 +292,7 @@ namespace SummerBoot.Test.DbExecute.Common
                     InitSqlServerService();
                     break;
                 case DbType.Sqlite:
-                    var conn = $"Data Source=./{Guid.NewGuid().ToString("N")}.db";
+                    var conn = $"Data Source=./{GetRandomName()}.db";
                     InitSqliteDatabase(conn);
                     InitSqliteServices(conn);
                     break;
@@ -312,7 +312,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
-                OrderNo = Guid.NewGuid().ToString("N"),
+                OrderNo = GetRandomName(),
                 State = 1
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
@@ -335,7 +335,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
-                OrderNo = Guid.NewGuid().ToString("N"),
+                OrderNo = GetRandomName(),
                 State = 1
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
@@ -355,7 +355,7 @@ namespace SummerBoot.Test.DbExecute.Common
         {
             ChangeDb(dbType);
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-            var orderNo = Guid.NewGuid().ToString("N");
+            var orderNo = GetRandomName();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
@@ -384,7 +384,7 @@ namespace SummerBoot.Test.DbExecute.Common
         {
             ChangeDb(dbType);
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-            var orderNo = Guid.NewGuid().ToString("N");
+            var orderNo = GetRandomName();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
@@ -413,7 +413,7 @@ namespace SummerBoot.Test.DbExecute.Common
         {
             ChangeDb(dbType);
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-            var orderNo = Guid.NewGuid().ToString("N");
+            var orderNo = GetRandomName();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
@@ -442,7 +442,7 @@ namespace SummerBoot.Test.DbExecute.Common
         {
             ChangeDb(dbType);
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-            var orderNo = Guid.NewGuid().ToString("N");
+            var orderNo = GetRandomName();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
@@ -476,7 +476,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
-                OrderNo = Guid.NewGuid().ToString("N"),
+                OrderNo = GetRandomName(),
                 State = 1
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
@@ -498,13 +498,13 @@ namespace SummerBoot.Test.DbExecute.Common
             ChangeDb(dbType);
             var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
 
-            var orderNo = Guid.NewGuid().ToString("N");
+            var orderNo = GetRandomName();
             var orderHeader = new OrderHeader()
             {
                 CreateTime = DateTime.Now,
                 OrderNo = orderNo,
                 State = 1,
-                CustomerId=1
+                CustomerId = 1
             };
             await orderHeaderRepository.InsertAsync(orderHeader);
             var orderHeader2 = new OrderHeader()
@@ -990,6 +990,143 @@ namespace SummerBoot.Test.DbExecute.Common
             var result = await propNullTestRepository.InnerJoin(propNullTestItemRepository, it => it.T1.Id == it.T2.MapId && it.T2.Name == test.Name.Trim())
                 .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
             Assert.Empty(result);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinEntityWithNullableProperty(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
+            var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+            var name = GetRandomName();
+            var propNullTest = new PropNullTest()
+            {
+                Name = name
+            };
+            await propNullTestRepository.InsertAsync(propNullTest);
+            var propNullTestItem = new PropNullTestItem()
+            {
+                Name = "testitem",
+                MapId = propNullTest.Id
+            };
+            await propNullTestItemRepository.InsertAsync(propNullTestItem);
+
+            var result = await propNullTestRepository.LeftJoin(propNullTestItemRepository, it => it.T1.Id == it.T2.MapId)
+                .Where(x => x.T1.Name == name)
+                .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+            Assert.Single(result);
+            Assert.Equal(name, result.First().Name);
+            Assert.Equal(propNullTest.Id, result.First().MapId);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestWhereConditionContainOtherMethod(DbType dbType)
+        {
+
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTableList = new List<NullableTable>();
+            var dateNow = new DateTime(2023, 10, 24, 17, 0, 0);
+            var name = GetRandomName();
+            for (int i = 0; i < 5; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = i,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = dateNow.AddMinutes(i),
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = name,
+                    String3 = "sb",
+                    Long2 = 2
+                };
+
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.InsertAsync(nullableTableList);
+
+            var result = await nullableTableRepository.Where(it => it.String2 == TestWhereConditionContainStringMethodItem(name) && it.DateTime2 >= dateNow.AddMinutes(3)).ToListAsync();
+            Assert.Equal(2, result.Count);
+
+            var result2 = await nullableTableRepository.Where(it => it.String2 == TestWhereConditionContainStringMethodItem(name) && it.DateTime2 >= TestWhereConditionContainDateTimeMethodItem(dateNow)).ToListAsync();
+            Assert.Equal(2, result2.Count);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestWhereConditionHaveNullableValue(DbType dbType)
+        {
+
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTableList = new List<NullableTable>();
+            var name = GetRandomName();
+            for (int i = 0; i < 5; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = i,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = DateTime.Now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = name,
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+
+                nullableTableList.Add(a);
+            }
+
+            await nullableTableRepository.InsertAsync(nullableTableList);
+            var list = new List<int>() { 1, 11, 111 };
+            var result = await nullableTableRepository.Where(it => it.String2 == TestWhereConditionContainStringMethodItem(name) && list.Contains(it.Int2.Value)).ToListAsync();
+            Assert.Equal(1, result.Count);
+            Assert.Equal(1, result[0].Int2);
+            var result2 =await nullableTableRepository.Where(it => it.Int2.Value == new { value = 2 }.value).ToListAsync();
+            Assert.Equal(1, result2.Count);
+            Assert.Equal(2, result2[0].Int2);
+        }
+
+
+        private string TestWhereConditionContainStringMethodItem(string name)
+        {
+            return name;
+        }
+
+        private DateTime TestWhereConditionContainDateTimeMethodItem(DateTime dateTime)
+        {
+            return dateTime.AddMinutes(3);
         }
 
         private string GetRandomName()

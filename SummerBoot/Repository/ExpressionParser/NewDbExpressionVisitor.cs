@@ -438,15 +438,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             lastMethodCalls.Add(lastMethodCallName);
             return GetWrapperExpression(callResult);
         }
-        else if (method.DeclaringType == typeof(DateTime))
-        {
-            var date = this.GetValue(node);
-            var r1 = GetSqlVariableExpressionWithValueAndDynamicName(date);
-            lastMethodCallName = methodCallStack.Pop();
-            lastMethodCalls.Add(lastMethodCallName);
-            return GetWrapperExpression(r1);
-        }
-        else
+        //list.
+        else if (methodName == nameof(List<BaseEntity>.Contains) && method.DeclaringType?.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>)) == true)
         {
             //collection
             var isIEnumerable = method.DeclaringType.GetInterfaces().Contains(typeof(IEnumerable)) &&
@@ -527,9 +520,24 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 return GetWrapperExpression(sqlInExpressions.First());
             }
         }
+        else
+        {
+            var date = this.GetValue(node);
+            var r1 = GetSqlVariableExpressionWithValueAndDynamicName(date);
+            lastMethodCallName = methodCallStack.Pop();
+            lastMethodCalls.Add(lastMethodCallName);
+            return GetWrapperExpression(r1);
+        }
 
         throw new NotSupportedException(
             $"not support method {methodName},You can call the function AddSqlFunctionMapping in DatabaseUnit to add mapping");
+    }
+
+    private bool IsListContains(MethodInfo methodInfo)
+    {
+        return methodInfo.Name == "Contains"
+               && methodInfo.DeclaringType?.IsGenericType == true
+               && methodInfo.DeclaringType.GetGenericTypeDefinition() == typeof(List<>);
     }
 
     /// <summary>
@@ -1826,18 +1834,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
         }
 
-        if (MethodName == nameof(RepositoryExtension.LeftJoin) || MethodName == nameof(Queryable.OrderBy) || MethodName == nameof(Queryable.Select))
-        {
-
-        }
-        //if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.OrderBy) || MethodName == nameof(Queryable.OrderByDescending) || MethodName == nameof(Queryable.GroupBy))
-        else
-        {
-
-        }
-
         //解析静态值,例如dto里的参数，dto.Name
-        if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is ConstantExpression constantExpression)
+        if (IsNullableGetValue(memberExpression))
+        {
+            return Visit(memberExpression.Expression);
+        }
+        else if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is ConstantExpression constantExpression)
         {
             var value = GetConstExpression(memberExpression);
             return value;
@@ -1868,10 +1870,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             //var tableAlias = memberExpression.Member.Name;
             //var table = new TableExpression(memberExpression.Type, tableAlias);
             //return new ColumnsExpression(table.Columns, memberExpression.Type);
-        }
-        else if (IsNullableGetValue(memberExpression))
-        {
-            return Visit(memberExpression.Expression);
         }
         //如果是可以直接获取值得
         else if (memberExpression.Expression is MemberExpression parentExpression)
@@ -1959,10 +1957,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// <returns></returns>
     private bool IsNullableGetValue(MemberExpression memberExpression)
     {
-        return memberExpression.Member != null && memberExpression.Member.Name == "Value" &&
-                        memberExpression.Member.DeclaringType != null &&
-                        memberExpression.Member.DeclaringType.IsGenericType &&
-                        memberExpression.Member.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>);
+        return memberExpression.Member != null && memberExpression.Member.Name == nameof(Nullable<int>.Value) &&
+                        memberExpression.Member.DeclaringType?.IsNullable() == true;
     }
     /// <summary>
     /// 获取嵌套的member的层数
