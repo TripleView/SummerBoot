@@ -808,6 +808,5 @@ public interface IBaseRepository<T> : IPageLambdaRepository<T>, ISqlExecutor
     /// </summary>
     /// <param name="list"></param>
     Task FastBatchInsertAsync(List<T> list);
-
     #endregion async
 }

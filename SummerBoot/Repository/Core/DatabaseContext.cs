@@ -794,7 +794,6 @@ namespace SummerBoot.Repository.Core
                 it.Name == "get_Item" && it.GetParameters().Length == 1 &&
                 it.GetParameters()[0].ParameterType == typeof(int));
 
-        private static object lockObj = new object();
 
         public static Func<IDataReader, object> GetDeserializer(Type type, IDataReader dr, DatabaseUnit databaseUnit)
         {
@@ -1221,7 +1220,7 @@ namespace SummerBoot.Repository.Core
             foreach (var info in memberCacheInfos)
             {
                 var tableColName = tableColNames.FirstOrDefault(it =>
-                    string.Equals(it.name, info.Name, StringComparison.InvariantCultureIgnoreCase));
+                    string.Equals(it.name, info.PropertyName, StringComparison.InvariantCultureIgnoreCase));
                 if (tableColName == null)
                 {
                     continue;

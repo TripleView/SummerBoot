@@ -1,4 +1,4 @@
-ï»¿
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,11 +39,11 @@ namespace SummerBoot.Core
     {
         public static IServiceCollection AddSummerBoot(this IServiceCollection services, CultureInfo cultureInfo = null)
         {
-            //è®¾ç½®è¯­è¨€
+            //ÉèÖÃÓïÑÔ
             if (cultureInfo == null) cultureInfo = CultureInfo.CurrentCulture;
             ResourceManager.cultureInfo = cultureInfo;
             //var f= ResourceManager.InternalGet("err1");
-            //Console.WriteLine("è¿›å…¥å¤šè¯­è¨€æ¨¡å¼"+f);
+            //Console.WriteLine("½øÈë¶àÓïÑÔÄ£Ê½"+f);
             services.AddLogging();
 
             var types = SbUtil.GetAppAllTypes();
@@ -56,7 +56,7 @@ namespace SummerBoot.Core
                 if (autoRegisterAttribute == null) return;
                 var interfaceType = autoRegisterAttribute.InterfaceType;
                 if (interfaceType == null) throw new ArgumentNullException(it.Name + "The corresponding interface type cannot be empty");
-                if (!it.GetInterfaces().Contains(interfaceType)) throw new Exception(it.Name + "å¿…é¡»ç»§æ‰¿æ¥å£" + interfaceType.Name);
+                if (!it.GetInterfaces().Contains(interfaceType)) throw new Exception(it.Name + "±ØĞë¼Ì³Ğ½Ó¿Ú" + interfaceType.Name);
 
                 switch (autoRegisterAttribute.ServiceLifetime)
                 {
@@ -77,7 +77,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// å¯¹mvcè¿›è¡Œå¢å¼ºæ“ä½œ
+        /// ¶Ômvc½øĞĞÔöÇ¿²Ù×÷
         /// </summary>
         /// <param name="services"></param>
         /// <param name="action"></param>
@@ -100,7 +100,7 @@ namespace SummerBoot.Core
 
             if (option.UseValidateParameterHandle)
             {
-                // å…³é—­netcoreè‡ªåŠ¨å¤„ç†å‚æ•°æ ¡éªŒæœºåˆ¶
+                // ¹Ø±Õnetcore×Ô¶¯´¦Àí²ÎÊıĞ£Ñé»úÖÆ
                 services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
                 services.Configure<MvcOptions>(it => it.Filters.Add<ValidateParameterActionFilter>());
             }
@@ -138,35 +138,47 @@ namespace SummerBoot.Core
             AssemblyBuilder assyBuilder = AssemblyBuilder.DefineDynamicAssembly(assyName, AssemblyBuilderAccess.Run);
             ModuleBuilder modBuilder = assyBuilder.DefineDynamicModule(moduleName);
 
-            //æ·»åŠ æ•°æ®åº“å•å…ƒ
+            //Ìí¼ÓÊı¾İ¿âµ¥Ôª
             foreach (var optionDatabaseUnit in option.DatabaseUnits)
             {
                 var databaseUnit = optionDatabaseUnit.Value;
-                //åŠ¨æ€ç”ŸæˆIDbFactoryæ¥å£ç±»å‹
+                //¶¯Ì¬Éú³ÉIDbFactory½Ó¿ÚÀàĞÍ
                 var iCustomDbFactoryType = GenerateCustomInterface(modBuilder, typeof(IDbFactory));
-                //åŠ¨æ€ç”ŸæˆIEntityClassHandleræ¥å£ç±»å‹
+                //¶¯Ì¬Éú³ÉIEntityClassHandler½Ó¿ÚÀàĞÍ
                 var iCustomEntityClassHandlerType = GenerateCustomInterface(modBuilder, typeof(IEntityClassHandler));
 
                 var customEntityClassHandlerType = GenerateCustomEntityClassHandler(modBuilder, databaseUnit.EntityClassHandlerType,
                      iCustomEntityClassHandlerType);
                 services.AddScoped(iCustomEntityClassHandlerType, customEntityClassHandlerType);
-                //æ³¨å†Œå·¥å‚
+                //×¢²á¹¤³§
                 AddSummerBootRepositoryCustomDbFactory(services, iCustomDbFactoryType, databaseUnit, modBuilder);
-                //åŠ¨æ€ç”ŸæˆICustomUnitOfWorkæ¥å£ç±»å‹
+                //¶¯Ì¬Éú³ÉICustomUnitOfWork½Ó¿ÚÀàĞÍ
                 var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, databaseUnit.IUnitOfWorkType, iCustomEntityClassHandlerType);
-                //æ³¨å†Œå·¥ä½œå•å…ƒ
+                //×¢²á¹¤×÷µ¥Ôª
                 services.AddScoped(databaseUnit.IUnitOfWorkType, customUnitOfWorkType);
-                //åŠ¨æ€ç”Ÿæˆä»“å‚¨åŸºç±»
-                var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType);
-
-                services.AddScoped(customBaseRepositoryType);
-                //åŠ¨æ€ç”ŸæˆRepositoryService
+               
+                //¶¯Ì¬Éú³ÉRepositoryService
                 var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType);
                 services.AddScoped(repositoryServiceType);
-                //æ·»åŠ æ•°æ®åº“ç”Ÿæˆå™¨ç±»
+                //¶¯Ì¬Éú³ÉIDatabaseSpecificProvider½Ó¿ÚÀàĞÍ
+                if (databaseUnit.IDatabaseSpecificProviderType != null)
+                {
+                    var iCustomDatabaseSpecificProviderType = GenerateCustomInterface(modBuilder, typeof(IDatabaseSpecificProvider));
+                    services.AddScoped(iCustomDatabaseSpecificProviderType, databaseUnit.IDatabaseSpecificProviderType);
+                    //¶¯Ì¬Éú³É²Ö´¢»ùÀà
+                    var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDatabaseSpecificProviderType);
+
+                    services.AddScoped(customBaseRepositoryType);
+                }
+                else
+                {
+                    throw new NotSupportedException(nameof(databaseUnit.IDatabaseSpecificProviderType)+" must be define");
+                }
+
+                //Ìí¼ÓÊı¾İ¿âÉú³ÉÆ÷Àà
                 if (databaseUnit.IDbGeneratorType != null)
                 {
-                    //åŠ¨æ€ç”ŸæˆIDatabaseFieldMappingæ¥å£ç±»å‹
+                    //¶¯Ì¬Éú³ÉIDatabaseFieldMapping½Ó¿ÚÀàĞÍ
                     var iDatabaseFieldMappingType = GenerateCustomInterface(modBuilder, typeof(IDatabaseFieldMapping));
                     var iDatabaseInfoType = GenerateCustomInterface(modBuilder, typeof(IDatabaseInfo));
                     var dbGeneratorType = GenerateCustomDbGenerator(modBuilder, iDatabaseFieldMappingType, iCustomDbFactoryType,
@@ -180,7 +192,7 @@ namespace SummerBoot.Core
                         var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(SqlServerDatabaseInfo),
                             iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
                         services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
-                        //å…ˆç¼“å­˜SqlBulkCopyçš„typeç±»å‹
+                        //ÏÈ»º´æSqlBulkCopyµÄtypeÀàĞÍ
 
                         try
                         {
@@ -214,7 +226,7 @@ namespace SummerBoot.Core
                             SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
                             SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
 
-                            //ç¼“å­˜å§”æ‰˜
+                            //»º´æÎ¯ÍĞ
                             var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
                             var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
                             var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
@@ -267,7 +279,7 @@ namespace SummerBoot.Core
                                 .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
                                           );
 
-                            //ç¼“å­˜å§”æ‰˜
+                            //»º´æÎ¯ÍĞ
                             var mysqlBulkCopyWriteMethodTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(object) };
                             var mysqlBulkCopyWriteMethodFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodTypes);
                             var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
@@ -313,19 +325,19 @@ namespace SummerBoot.Core
                         services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
                     }
                 }
-                //æ•°æ®è¿ç§»
+                //Êı¾İÇ¨ÒÆ
                 if (databaseUnit.IsDataMigrateMode)
                 {
                     if (!databaseUnit.IsOracle)
                     {
                         throw new NotSupportedException("Only supports Oracle");
                     }
-                    //åŠ¨æ€ç”Ÿæˆè¿ç§»ä»“å‚¨åŸºç±»
+                    //¶¯Ì¬Éú³ÉÇ¨ÒÆ²Ö´¢»ùÀà
                     var customDataMigrateBaseRepositoryType = GenerateDataMigrateCustomBaseRepository(modBuilder, databaseUnit);
                     var type = databaseUnit.DataMigrateRepositoryType;
                     services.AddScoped(type, customDataMigrateBaseRepositoryType);
                 }
-                //ä»“å‚¨
+                //²Ö´¢
                 var bindRepositoryTypes = databaseUnit.BindRepositoryTypes;
                 var autoRepositoryTypes = bindRepositoryTypes.Where(x => x.IsInterface).ToList();
                 var manualRepositoryTypes = bindRepositoryTypes.Where(x => x.IsClass).ToList();
@@ -371,14 +383,14 @@ namespace SummerBoot.Core
         private static Type GenerateCustomEntityClassHandler(ModuleBuilder modBuilder, Type parentType, Type interface1)
         {
             parentType ??= typeof(DefaultEntityClassHandler);
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             ;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = new Type[] { interface1 };
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomEntityClassHandler" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
             if (parentConstruct != null)
@@ -430,7 +442,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// æ·»åŠ è‡ªå®šä¹‰æ•°æ®å·¥å‚æ¥å£å’Œè‡ªå®šä¹‰æ•°æ®å·¥å‚åˆ°iocå®¹å™¨
+        /// Ìí¼Ó×Ô¶¨ÒåÊı¾İ¹¤³§½Ó¿ÚºÍ×Ô¶¨ÒåÊı¾İ¹¤³§µ½iocÈİÆ÷
         /// </summary>
         /// <param name="services"></param>
         /// <param name="serviceType"></param>
@@ -459,15 +471,15 @@ namespace SummerBoot.Core
 
         private static Type GenerateCustomDbFactory(ModuleBuilder modBuilder, Type interface1)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Class | TypeAttributes.Public;
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = new Type[] { interface1 };
             parentType = typeof(CustomDbFactory);
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomDbFactory" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
@@ -485,16 +497,16 @@ namespace SummerBoot.Core
 
         private static Type GenerateCustomUnitOfWork(ModuleBuilder modBuilder, Type constructorType, Type interfaceType, Type iCustomEntityClassHandlerType)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType = typeof(UnitOfWork);
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = new Type[] { interfaceType };
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomUnitOfWork" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
@@ -514,7 +526,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ç”Ÿæˆçˆ¶ç±»ä¸ºæŒ‡å®šç±»å¹¶ä¸”å®ç°æŸæ¥å£çš„æ–°ç±»
+        /// Éú³É¸¸ÀàÎªÖ¸¶¨Àà²¢ÇÒÊµÏÖÄ³½Ó¿ÚµÄĞÂÀà
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="parentType"></param>
@@ -523,15 +535,15 @@ namespace SummerBoot.Core
         /// <returns></returns>
         private static Type GenerateClassImplementInterface(ModuleBuilder modBuilder, Type parentType, Type interfaceType, Type[] constructorTypes)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = new Type[] { interfaceType };
 
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType(parentType.Name + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
@@ -561,25 +573,25 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ç”Ÿæˆç‰¹æ®Šä»“å‚¨åŸºç±»
+        /// Éú³ÉÌØÊâ²Ö´¢»ùÀà
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="constructorType"></param>
         /// <param name="interfaceType"></param>
         /// <returns></returns>
-        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType)
+        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType,Type iCustomDatabaseSpecificProviderType)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = Type.EmptyTypes;
             parentType = typeof(CustomBaseRepository<>);
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomBaseRepository" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
             string[] typeParamNames = { "T" };
             GenericTypeParameterBuilder[] typeParams =
@@ -592,7 +604,7 @@ namespace SummerBoot.Core
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] { ICustomUnitOfWorkType });
+                new Type[] { ICustomUnitOfWorkType, iCustomDatabaseSpecificProviderType });
 
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
@@ -606,7 +618,7 @@ namespace SummerBoot.Core
 
 
         /// <summary>
-        /// ç”Ÿæˆè¿ç§»ä»“å‚¨åŸºç±»
+        /// Éú³ÉÇ¨ÒÆ²Ö´¢»ùÀà
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="constructorType"></param>
@@ -614,13 +626,13 @@ namespace SummerBoot.Core
         /// <returns></returns>
         private static Type GenerateDataMigrateCustomBaseRepository(ModuleBuilder modBuilder, DatabaseUnit databaseUnit)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = new Type[] { databaseUnit.DataMigrateRepositoryType };
             if (databaseUnit.IsOracle)
             {
@@ -631,7 +643,7 @@ namespace SummerBoot.Core
                 throw new NotSupportedException("only support oracle");
             }
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("BaseMigrateDataRepository" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
@@ -650,7 +662,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ç”Ÿæˆæ•°æ®åº“ç”Ÿæˆå™¨ç±»
+        /// Éú³ÉÊı¾İ¿âÉú³ÉÆ÷Àà
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="ICustomUnitOfWorkType"></param>
@@ -658,16 +670,16 @@ namespace SummerBoot.Core
         /// <returns></returns>
         private static Type GenerateCustomDbGenerator(ModuleBuilder modBuilder, Type IDatabaseFieldMappingType, Type ICustomDbFactoryType, Type IDatabaseInfoType, Type[] interfaceTypes)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
 
             parentType = typeof(DbGenerator);
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("CustomDbGenerator" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
 
             var parentConstruct = parentType.GetConstructors().FirstOrDefault();
@@ -688,7 +700,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ç”ŸæˆRepositoryServiceç±»
+        /// Éú³ÉRepositoryServiceÀà
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="ICustomUnitOfWorkType"></param>
@@ -696,17 +708,17 @@ namespace SummerBoot.Core
         /// <returns></returns>
         private static Type GenerateRepositoryService(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType)
         {
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Class;
 
-            //çˆ¶ç±»å‹
+            //¸¸ÀàĞÍ
             Type parentType;
-            //è¦å®ç°çš„æ¥å£
+            //ÒªÊµÏÖµÄ½Ó¿Ú
             Type[] interfaceTypes = Type.EmptyTypes;
             parentType = typeof(RepositoryService);
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType("RepositoryService" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
             string[] typeParamNames = { "T" };
 
@@ -726,7 +738,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ç”Ÿæˆç»§æ‰¿ä¸ç‰¹å®šæ¥å£çš„æ¥å£
+        /// Éú³É¼Ì³ĞÓëÌØ¶¨½Ó¿ÚµÄ½Ó¿Ú
         /// </summary>
         /// <param name="modBuilder"></param>
         /// <param name="interfaceType"></param>
@@ -737,7 +749,7 @@ namespace SummerBoot.Core
             {
                 throw new ArgumentNullException(nameof(interfaceType));
             }
-            //æ–°ç±»å‹çš„å±æ€§
+            //ĞÂÀàĞÍµÄÊôĞÔ
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
                                               TypeAttributes.Interface |
                                               TypeAttributes.Abstract |
@@ -746,7 +758,7 @@ namespace SummerBoot.Core
                                               TypeAttributes.BeforeFieldInit |
                                               TypeAttributes.AutoLayout;
 
-            //å¾—åˆ°ç±»å‹ç”Ÿæˆå™¨            
+            //µÃµ½ÀàĞÍÉú³ÉÆ÷            
             TypeBuilder typeBuilder = modBuilder.DefineType(interfaceType.Name + Guid.NewGuid().ToString("N"), newTypeAttribute, null, new Type[] { interfaceType });
             var resultType = typeBuilder.CreateTypeInfo().AsType();
             return resultType;
@@ -944,7 +956,7 @@ namespace SummerBoot.Core
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            //åˆ¤æ–­æ–¹æ³•è¿”å›ç±»å‹æ˜¯ä¸æ˜¯task<>
+            //ÅĞ¶Ï·½·¨·µ»ØÀàĞÍÊÇ²»ÊÇtask<>
             foreach (var methodInfo in serviceType.GetMethods())
             {
                 if (!typeof(Task<>).IsAssignableFrom(methodInfo.ReturnType) && !typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
@@ -985,7 +997,7 @@ namespace SummerBoot.Core
             httpClient.ConfigurePrimaryHttpMessageHandler(it =>
             {
                 var feignHttpClientHandler = it.GetRequiredService<FeignHttpClientHandler>();
-                //å¿½ç•¥httpsè¯ä¹¦
+                //ºöÂÔhttpsÖ¤Êé
                 if (feignClient.IsIgnoreHttpsCertificateValidate)
                 {
                     feignHttpClientHandler.ServerCertificateCustomValidationCallback =

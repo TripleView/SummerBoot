@@ -13,36 +13,18 @@ namespace SummerBoot.Repository.ExpressionParser.Parser.Dialect
             
         }
 
-
-        protected override string GetLastInsertIdSql()
+        public override FastBatchQueryCondition FastBatchInsert<T>(List<T> insertEntitys)
         {
-            return "Select LAST_INSERT_ID() id";
-        }
+            var table = SbUtil.GetTableInfo(typeof(T));
+            var tableName = GetSchemaTableName(table.Schema, table.Name);
 
-        protected override string GetFunctionAlias(string functionName)
-        {
-            if (functionName == "LEN")
+            var result = new FastBatchQueryCondition()
             {
-                return "LENGTH";
-            }
-            return base.GetFunctionAlias(functionName);
-        }
+                Sql = tableName,
+                PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it => new DbQueryResultPropertyInfoMapping() { ColumnName = it.Name, PropertyInfo = it.Property }).ToList()
+            };
 
-       
-        public override DbQueryResult FastBatchInsert<T>(List<T> insertEntitys)
-        {
-            return null;
-            //var table = this.GetTableInfo(typeof(T));
-            //var tableName = GetSchemaTableName(table.Schema, table.Name);
-
-            //var result = new DbQueryResult()
-            //{
-            //    Sql = tableName,
-            //    DynamicParameters = this.dynamicParameters,
-            //    PropertyInfoMappings = table.Columns.Where(it => !(it.IsKey && it.IsDatabaseGeneratedIdentity)).Select(it => new DbQueryResultPropertyInfoMapping() { ColumnName = it.Name, PropertyInfo = it.Property }).ToList()
-            //};
-
-            //return result;
+            return result;
         }
     }
 }

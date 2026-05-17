@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using SummerBoot.Repository.Generator.Dto;
 
@@ -8,14 +8,14 @@ namespace SummerBoot.Repository.Generator
     {
         /// <summary>
         /// Generate sql statements for database tables through c# classes
-        /// é€šè¿‡c#ç±»ç”Ÿæˆæ•°æ®åº“è¡¨çš„sqlè¯­å¥
+        /// Í¨¹ıc#ÀàÉú³ÉÊı¾İ¿â±íµÄsqlÓï¾ä
         /// </summary>
         /// <param name="types">c# class</param>
-        /// <param name="fieldTypeMappers">Generic field type mapping;é€šç”¨å­—æ®µç±»å‹æ˜ å°„</param>
+        /// <param name="fieldTypeMappers">Generic field type mapping;Í¨ÓÃ×Ö¶ÎÀàĞÍÓ³Éä</param>
         /// <returns></returns>
-        List<GenerateDatabaseSqlResult> GenerateSql(List<Type> types, Dictionary<Type, string> fieldTypeMappers = null);
+        List<GenerateDatabaseSqlResult> GenerateSql(List<Type> types, Dictionary<Type, string> fieldTypeMappers = null,bool isForce=false);
         /// <summary>
-        /// æ‰§è¡Œç”Ÿæˆæ•°æ®åº“è¡¨çš„sqlè¯­å¥
+        /// Ö´ĞĞÉú³ÉÊı¾İ¿â±íµÄsqlÓï¾ä
         /// </summary>
         /// <param name="generateDatabaseSqlResult"></param>
         void ExecuteGenerateSql(GenerateDatabaseSqlResult generateDatabaseSqlResult);
@@ -24,7 +24,7 @@ namespace SummerBoot.Repository.Generator
         List<string> GetAllTableNames();
 
         /// <summary>
-        /// Get table information by name;é€šè¿‡åç§°è·å–è¡¨ä¿¡æ¯
+        /// Get table information by name;Í¨¹ıÃû³Æ»ñÈ¡±íĞÅÏ¢
         /// </summary>
         /// <param name="tableName"></param>
         /// <returns></returns>

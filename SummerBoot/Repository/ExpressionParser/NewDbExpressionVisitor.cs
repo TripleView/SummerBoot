@@ -138,7 +138,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     #region 本次新增
 
-    private SqlSelectExpression result = new SqlSelectExpression();
     protected DatabaseUnit databaseUnit;
     private readonly DynamicParameters parameters = new DynamicParameters();
     /// <summary>
@@ -271,7 +270,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 {
                     var obj = GetValue(node.Object);
                     var value = method.Invoke(obj, new[] { constantExpression.Value });
-                    return Expression.Constant(value);
+                    var r1 = GetSqlVariableExpressionWithValueAndDynamicName(value);
+                    return GetWrapperExpression(r1);
                 }
                 else
                 {
@@ -587,12 +587,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
 
         }
-        else if (IsJoinMethod(MethodName) ||
-                 MethodName == nameof(Queryable.Where) ||
-                 MethodName == nameof(Queryable.FirstOrDefault) ||
-                 MethodName == nameof(Queryable.First) ||
-                 MethodName == nameof(Queryable.Count) ||
-                 MethodName == nameof(RepositoryMethods.Delete))
+        //todo 删除这里
+        //else if (IsJoinMethod(MethodName) ||
+        //         MethodName == nameof(Queryable.Where) ||
+        //         MethodName == nameof(Queryable.FirstOrDefault) ||
+        //         MethodName == nameof(Queryable.First) ||
+        //         MethodName == nameof(Queryable.Count) ||
+        //         MethodName == nameof(RepositoryMethods.Delete) ||
+        //         MethodName == "get_Item")
+        else
         {
             if (!nodeTypeSqlBinaryOperatorsMappings.TryGetValue(binaryExpression.NodeType, out var sqlBinaryOperator))
             {
@@ -1760,31 +1763,31 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private Expression GetConstExpression(Expression member)
     {
-        var result = GetValue(member);
+        var tempResult = GetValue(member);
         var tempR = new SqlExpression();
-        if (result.IsNumeric())
+        if (tempResult.IsNumeric())
         {
-            tempR = GetSqlNumberExpression(Convert.ToDecimal(result));
+            tempR = GetSqlNumberExpression(Convert.ToDecimal(tempResult));
         }
-        else if (result is bool boolValue)
+        else if (tempResult is bool boolValue)
         {
             tempR = new SqlBoolExpression()
             {
                 Value = boolValue
             };
         }
-        else if (result is string str)
+        else if (tempResult is string str)
         {
             tempR = new SqlStringExpression()
             {
                 Value = str
             };
         }
-        else if (result is null)
+        else if (tempResult is null)
         {
             if (member is MemberExpression memberExpression)
             {
-                tempR = GetSqlVariableExpressionWithValueAndDynamicName(result, valueType: memberExpression.Type);
+                tempR = GetSqlVariableExpressionWithValueAndDynamicName(tempResult, valueType: memberExpression.Type);
             }
             else
             {
@@ -1793,7 +1796,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
         else
         {
-            tempR = GetSqlVariableExpressionWithValueAndDynamicName(result);
+            tempR = GetSqlVariableExpressionWithValueAndDynamicName(tempResult);
         }
 
         return GetWrapperExpression(tempR);
@@ -1859,7 +1862,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else if (GetNumberOfMemberExpressionLayers(memberExpression) > 0 && GetMemberExpressionLastExpression(memberExpression) is NewExpression newExpression && newExpression.Arguments.Any() && newExpression.Arguments[0] is ConstantExpression)
         {
             var value = GetValue(memberExpression);
-            return Expression.Constant(value);
+            var r1 = GetSqlVariableExpressionWithValueAndDynamicName(value);
+            return GetWrapperExpression(r1);
         }
         //只有一层，类似于it.T1这种
         else if (GetNumberOfMemberExpressionLayers(memberExpression) == 1

@@ -471,7 +471,11 @@ namespace SummerBoot.Repository
                     throw new NotSupportedException("init error", cacheException as Exception);
                 }
             }
-
+            else
+            {
+                CloseDb();
+                throw new NotSupportedException("not support dbtype:"+this);
+            }
             CloseDb();
         }
 

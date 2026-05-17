@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using SummerBoot.Core.Utils.Reflection;
 using SummerBoot.Repository;
+using SummerBoot.Repository.ExpressionParser.Base;
 
 namespace SummerBoot.Core
 {
@@ -207,7 +208,22 @@ namespace SummerBoot.Core
         }
 
         public static ConcurrentDictionary<string, object> CacheDictionary = new ConcurrentDictionary<string, object>();
+        public static ConcurrentDictionary<string, TableInfo> TableInfoCacheDictionary = new ConcurrentDictionary<string, TableInfo>();
         public static ConcurrentDictionary<string, Delegate> CacheDelegateDictionary = new ConcurrentDictionary<string, Delegate>();
+
+        public static TableInfo GetTableInfo(Type type)
+        {
+            var key = "getTableInfo" + type.FullName;
+            if (SbUtil.TableInfoCacheDictionary.TryGetValue(key, out var cacheValue))
+            {
+                return cacheValue;
+            }
+
+            var result = new TableInfo(type);
+            SbUtil.TableInfoCacheDictionary.TryAdd(key, result);
+            return result;
+        }
+
         /// <summary>
         /// 通过表达式树获取实体类的属性值
         /// </summary>
@@ -322,7 +338,7 @@ namespace SummerBoot.Core
         /// <param name="objType"></param>
         /// <param name="propertyInfos"></param>
         /// <returns></returns>
-        public static Func<T, object[]> BuildObjectGetValuesDelegate<T>(List<PropertyInfo> propertyInfos) where T : class
+        public static Func<T, object[]> BuildObjectGetValuesDelegate<T>(List<PropertyInfo> propertyInfos) 
         {
             var objParameter = Expression.Parameter(typeof(T), "model");
             var selectExpressions = propertyInfos.Select(it => BuildObjectGetValueExpression(objParameter, it));
@@ -345,7 +361,7 @@ namespace SummerBoot.Core
             return convertExpression;
         }
 
-        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null, bool useColumnAttribute = false) where T : class
+        public static DataTable ToDataTable<T>(this IEnumerable<T> source, List<PropertyInfo> propertyInfos = null, bool useColumnAttribute = false) 
         {
             var table = new DataTable("template");
             if (propertyInfos == null || propertyInfos.Count == 0)
