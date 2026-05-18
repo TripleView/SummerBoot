@@ -20,10 +20,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\SummerBoot\SummerBoot.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="..\logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
@@ -35,7 +31,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Npgsql" Version="9.0.5" />
+	  <PackageReference Include="MySqlConnector" Version="2.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\SummerBoot\SummerBoot.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -161,12 +161,13 @@ namespace SummerBoot.Core
                 var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType);
                 services.AddScoped(repositoryServiceType);
                 //动态生成IDatabaseSpecificProvider接口类型
+                Type customBaseRepositoryType = null;
                 if (databaseUnit.IDatabaseSpecificProviderType != null)
                 {
                     var iCustomDatabaseSpecificProviderType = GenerateCustomInterface(modBuilder, typeof(IDatabaseSpecificProvider));
                     services.AddScoped(iCustomDatabaseSpecificProviderType, databaseUnit.IDatabaseSpecificProviderType);
                     //动态生成仓储基类
-                    var customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDatabaseSpecificProviderType);
+                    customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDatabaseSpecificProviderType);
 
                     services.AddScoped(customBaseRepositoryType);
                 }

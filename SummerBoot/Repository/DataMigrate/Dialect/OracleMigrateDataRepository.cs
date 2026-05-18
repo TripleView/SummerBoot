@@ -12,7 +12,7 @@ namespace SummerBoot.Repository.DataMigrate.Dialect;
 public class OracleMigrateDataRepository: BaseMigrateDataRepository
 {
     
-    public OracleMigrateDataRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
+    public OracleMigrateDataRepository(IUnitOfWork unitOfWork, IDatabaseSpecificProvider databaseSpecificProvider) : base(unitOfWork, databaseSpecificProvider)
     {
         this.leftQuote = "\"";
         this.rightQuote = "\"";

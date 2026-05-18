@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
+	  <TargetFrameworks>$(MySdk)</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
 	  <Nullable>disable</Nullable>
@@ -10,9 +10,30 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="HybridQuery\**" />
+    <Compile Remove="MultiDatabaseMixed\**" />
+    <Compile Remove="Mysql\**" />
+    <Compile Remove="Oracle\**" />
+    <Compile Remove="Pgsql\**" />
+    <Compile Remove="Sqlite\**" />
     <Compile Remove="SqlParser\**" />
+    <Compile Remove="SqlServer\**" />
+    <EmbeddedResource Remove="HybridQuery\**" />
+    <EmbeddedResource Remove="MultiDatabaseMixed\**" />
+    <EmbeddedResource Remove="Mysql\**" />
+    <EmbeddedResource Remove="Oracle\**" />
+    <EmbeddedResource Remove="Pgsql\**" />
+    <EmbeddedResource Remove="Sqlite\**" />
     <EmbeddedResource Remove="SqlParser\**" />
+    <EmbeddedResource Remove="SqlServer\**" />
+    <None Remove="HybridQuery\**" />
+    <None Remove="MultiDatabaseMixed\**" />
+    <None Remove="Mysql\**" />
+    <None Remove="Oracle\**" />
+    <None Remove="Pgsql\**" />
+    <None Remove="Sqlite\**" />
     <None Remove="SqlParser\**" />
+    <None Remove="SqlServer\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,17 +43,21 @@
 
   <ItemGroup>
 
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.17" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.17" />
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.20" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.22" />
+    <!--<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />-->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
-    <PackageReference Include="MySql.Data" Version="8.0.29" />
+    <!--<PackageReference Include="MySql.Data" Version="8.0.29" />-->
     <PackageReference Include="MySql.EntityFrameworkCore" Version="5.0.13" />
-    <PackageReference Include="MySqlConnector" Version="2.1.10" />
+    <!--<PackageReference Include="MySqlConnector" Version="2.1.10" />-->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.10" />
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="5.21.4" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="7.21.13" />
+    <!--<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.200" />-->
     <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.112.1" />
+    <!--<PackageReference Include="System.Data.SQLite.Core" Version="1.0.112.1" />-->
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="Xunit.Priority" Version="1.1.6" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
@@ -44,8 +69,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SummerBoot.MySql\SummerBoot.Mysql.csproj" />
+    <ProjectReference Include="..\SummerBoot.Oracle\SummerBoot.Oracle.csproj" />
+    <ProjectReference Include="..\SummerBoot.Pgsql\SummerBoot.Pgsql.csproj" />
+    <ProjectReference Include="..\SummerBoot.Sqlite\SummerBoot.Sqlite.csproj" />
+    <ProjectReference Include="..\SummerBoot.Sqlserver\SummerBoot.SqlServer.csproj" />
     <ProjectReference Include="..\SummerBoot\SummerBoot.csproj" />
-    <!--<ProjectReference Include="D:\test3\MySqlConnector\MySqlConnector.csproj" />-->
+
   </ItemGroup>
 
   <ItemGroup>

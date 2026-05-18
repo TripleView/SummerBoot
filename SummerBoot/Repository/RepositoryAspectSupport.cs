@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using SummerBoot.Repository.Attributes;
+using SummerBoot.Repository.Core;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,7 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using SummerBoot.Repository.Core;
 
 namespace SummerBoot.Repository
 {

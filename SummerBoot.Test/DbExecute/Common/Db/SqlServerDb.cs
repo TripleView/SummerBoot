@@ -1,6 +1,6 @@
-﻿using System;
 using Microsoft.EntityFrameworkCore;
-using SummerBoot.Test.SqlServer.Models;
+using System;
+using SummerBoot.Test.DbExecute.Common.Models;
 
 namespace SummerBoot.Test.DbExecute.Common.Db
 {

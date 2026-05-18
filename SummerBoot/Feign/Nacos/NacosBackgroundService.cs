@@ -1,19 +1,19 @@
-ï»¿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SummerBoot.Core;
 using SummerBoot.Feign.Nacos.Dto;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 
 namespace SummerBoot.Feign.Nacos
 {
     /// <summary>
-    /// nocasåå°æœåŠ¡
+    /// nocasºóÌ¨·şÎñ
     /// </summary>
     public class NacosBackgroundService: BackgroundService
     {
@@ -32,7 +32,7 @@ namespace SummerBoot.Feign.Nacos
         }
 
         /// <summary>
-        /// å‘é€å¿ƒè·³
+        /// ·¢ËÍĞÄÌø
         /// </summary>
         /// <returns></returns>
         private async void SendHeartBeats(object state)

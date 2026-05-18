@@ -1,20 +1,15 @@
-ï»¿using SummerBoot.Test.Model;
-using System;
-using System.Threading.Tasks;
-using SummerBoot.Test.Mysql.Models;
-using Xunit;
-using Microsoft.Extensions.DependencyInjection;
-using SummerBoot.Test.Mysql.Repository;
 using Microsoft.Extensions.Configuration;
-using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 using MySql.Data.MySqlClient;
 using Oracle.ManagedDataAccess.Client;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Generator;
-using SummerBoot.Test.Mysql;
 using SummerBoot.Test.Common;
-using SummerBoot.Test.Oracle;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace SummerBoot.Test.HybridQuery;
 
@@ -25,7 +20,7 @@ public class HybridQueryTest
     private void InitService(bool isTestRepeatedlyAddDatabaseUnit=false)
     {
         var build = new ConfigurationBuilder();
-        build.SetBasePath(Directory.GetCurrentDirectory());  // è·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
+        build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌĞòÖ´ĞĞÄ¿Â¼
         build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
         var configurationRoot = build.Build();
 
@@ -101,7 +96,7 @@ public class HybridQueryTest
 
     /// <summary>
     /// Testing mixed inserts and queries
-    /// æµ‹è¯•æ··åˆæ’å…¥å’ŒæŸ¥è¯¢
+    /// ²âÊÔ»ìºÏ²åÈëºÍ²éÑ¯
     /// </summary>
     [Fact]
     public async Task TestHybridInsertAndQuery()
@@ -132,7 +127,7 @@ public class HybridQueryTest
 
     /// <summary>
     /// Testing mixed transactions
-    /// æµ‹è¯•æ··åˆäº‹åŠ¡
+    /// ²âÊÔ»ìºÏÊÂÎñ
     /// </summary>
     [Fact]
     public async Task TestHybridTransaction()
@@ -180,7 +175,7 @@ public class HybridQueryTest
 
     /// <summary>
     /// test Repeatedly add database unit
-    /// é‡å¤æ·»åŠ æ•°æ®åº“å•å…ƒ
+    /// ÖØ¸´Ìí¼ÓÊı¾İ¿âµ¥Ôª
     /// </summary>
     [Fact]
     public async Task TestRepeatedlyAddDatabaseUnit()

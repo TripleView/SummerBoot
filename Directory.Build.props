@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <MySdk>net6.0;net8.0</MySdk>
+    <DefineConstants>$(DefineConstants);MY_GLOBAL_DEFINE</DefineConstants>
+  </PropertyGroup>
+</Project>

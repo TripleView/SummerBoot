@@ -1,14 +1,11 @@
-锘縰sing Microsoft.Extensions.Configuration;
+using BenchmarkDotNet.Attributes;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
-using Polly.Caching;
 using SummerBoot.Core;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Generator;
-using System;
 using System.Diagnostics;
-using BenchmarkDotNet.Attributes;
-using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Performance.Test;
 
@@ -16,13 +13,13 @@ public class Performance
 {
     private int total = 20000;
     private IFreeSql fsql;
-    static readonly string CONFIG_FILE = "app.json";  // 閰嶇疆鏂囦欢鍦板潃
+    static readonly string CONFIG_FILE = "app.json";  // 配置文件地址
     private IServiceProvider serviceProvider;
 
     private void InitFreeSql()
     {
         var build = new ConfigurationBuilder();
-        build.SetBasePath(Directory.GetCurrentDirectory());  // 鑾峰彇褰撳墠绋嬪簭鎵ц鐩綍
+        build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
         build.AddJsonFile(CONFIG_FILE, true, true);
         var configurationRoot = build.Build();
 
@@ -175,7 +172,7 @@ public class Performance
     private void InitSummerboot()
     {
         var build = new ConfigurationBuilder();
-        build.SetBasePath(Directory.GetCurrentDirectory());  // 鑾峰彇褰撳墠绋嬪簭鎵ц鐩綍
+        build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
         build.AddJsonFile(CONFIG_FILE, true, true);
         var configurationRoot = build.Build();
 

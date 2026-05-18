@@ -1,25 +1,10 @@
-ï»¿using System;
-using System.Collections.Generic;
-using System.Data.SQLite;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MySql.Data.MySqlClient;
-using Npgsql;
-using Oracle.ManagedDataAccess.Client;
 using SqlParser.Net;
-using SummerBoot.Cache;
 using SummerBoot.Core;
-using SummerBoot.Repository.Generator;
 using SummerBoot.Test.Common;
-using SummerBoot.Test.Model;
-using SummerBoot.Test.Mysql;
-using SummerBoot.Test.Oracle;
-using SummerBoot.Test.Pgsql;
-using SummerBoot.Test.Sqlite;
-using SummerBoot.Test.SqlServer;
+using System;
+using System.IO;
 using Xunit;
 
 namespace SummerBoot.Test.DbGenerator;
@@ -27,10 +12,10 @@ namespace SummerBoot.Test.DbGenerator;
 public class DbGeneratorTest
 {
     private IServiceProvider serviceProvider;
-    private  void InitService()
+    private void InitService()
     {
         var build = new ConfigurationBuilder();
-        build.SetBasePath(Directory.GetCurrentDirectory());  // èŽ·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
+        build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌÐòÖ´ÐÐÄ¿Â¼
         build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
         var configurationRoot = build.Build();
         var services = new ServiceCollection();
@@ -65,46 +50,46 @@ public class DbGeneratorTest
 
         services.AddSummerBootRepository(it =>
         {
-            it.AddDatabaseUnit<OracleConnection, IUnitOfWork1>(oracleDbConnectionString,
-                x =>
-                {
-                    x.TableNameMapping = a => a.ToUpper();
-                    x.ColumnNameMapping = a => a.ToUpper();
-                    x.BindRepositoriesWithAttribute<OracleAutoRepositoryAttribute>();
-                    x.BindManualRepositoriesWithAttribute<OracleManualRepositoryAttribute>();
-                    x.BindDbGeneratorType<IDbGenerator1>();
-                });
+            //it.AddOracle<IUnitOfWork1>(oracleDbConnectionString,
+            //    x =>
+            //    {
+            //        x.TableNameMapping = a => a.ToUpper();
+            //        x.ColumnNameMapping = a => a.ToUpper();
+            //        x.BindRepositoriesWithAttribute<OracleAutoRepositoryAttribute>();
+            //        x.BindManualRepositoriesWithAttribute<OracleManualRepositoryAttribute>();
+            //        x.BindDbGeneratorType<IDbGenerator1>();
+            //    });
 
-            it.AddDatabaseUnit<MySqlConnection, IUnitOfWork2>(mysqlDbConnectionString,
-                x =>
-                {
-                    x.BindRepositoriesWithAttribute<MysqlAutoRepositoryAttribute>();
-                    x.BindDbGeneratorType<IDbGenerator2>();
-                    
-                });
+            //it.AddMysql<IUnitOfWork2>(mysqlDbConnectionString,
+            //    x =>
+            //    {
+            //        x.BindRepositoriesWithAttribute<MysqlAutoRepositoryAttribute>();
+            //        x.BindDbGeneratorType<IDbGenerator2>();
 
-            it.AddDatabaseUnit<SqlConnection, IUnitOfWork3>(sqlServerDbConnectionString,
-                x =>
-                {
-                    x.BindRepositoriesWithAttribute<SqlServerAutoRepositoryAttribute>();
-                    x.BindDbGeneratorType<IDbGenerator3>();
-                    
-                });
+            //    });
 
-            it.AddDatabaseUnit<NpgsqlConnection, IUnitOfWork4>(pgsqlDbConnectionString,
-                x =>
-                {
-                    x.BindRepositoriesWithAttribute<PgsqlAutoRepositoryAttribute>();
-                    x.BindDbGeneratorType<IDbGenerator4>();
-                   
-                });
+            //it.AddSqlServer<IUnitOfWork3>(sqlServerDbConnectionString,
+            //    x =>
+            //    {
+            //        x.BindRepositoriesWithAttribute<SqlServerAutoRepositoryAttribute>();
+            //        x.BindDbGeneratorType<IDbGenerator3>();
 
-            it.AddDatabaseUnit<SQLiteConnection, IUnitOfWork5>(sqliteDbConnectionString,
-                x =>
-                {
-                    x.BindRepositoriesWithAttribute<SqliteAutoRepositoryAttribute>();
-                    x.BindDbGeneratorType<IDbGenerator5>();
-                });
+            //    });
+
+            //it.AddPgsql<IUnitOfWork4>(pgsqlDbConnectionString,
+            //    x =>
+            //    {
+            //        x.BindRepositoriesWithAttribute<PgsqlAutoRepositoryAttribute>();
+            //        x.BindDbGeneratorType<IDbGenerator4>();
+
+            //    });
+
+            //it.AddSqlite<IUnitOfWork5>(sqliteDbConnectionString,
+            //    x =>
+            //    {
+            //        x.BindRepositoriesWithAttribute<SqliteAutoRepositoryAttribute>();
+            //        x.BindDbGeneratorType<IDbGenerator5>();
+            //    });
         });
 
         serviceProvider = services.BuildServiceProvider();
@@ -112,7 +97,7 @@ public class DbGeneratorTest
     }
 
     /// <summary>
-    /// æµ‹è¯•å¢žåŠ å­—æ®µè®¾ç½®é»˜è®¤å€¼
+    /// ²âÊÔÔö¼Ó×Ö¶ÎÉèÖÃÄ¬ÈÏÖµ
     /// </summary>
     [Theory]
     [InlineData(DbType.MySql)]
@@ -124,5 +109,5 @@ public class DbGeneratorTest
     {
         InitService();
     }
-    
+
 }

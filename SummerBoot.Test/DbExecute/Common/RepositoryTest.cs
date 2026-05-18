@@ -1,14 +1,14 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MySqlConnector;
-using Npgsql;
-using Oracle.ManagedDataAccess.Client;
-using SqlParser.Net;
 using SummerBoot.Core;
+using SummerBoot.Mysql;
+using SummerBoot.Oracle;
+using SummerBoot.Pgsql;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Generator;
+using SummerBoot.Sqlite;
+using SummerBoot.SqlServer;
 using SummerBoot.Test.Common;
 using SummerBoot.Test.Common.Dto;
 using SummerBoot.Test.DbExecute.Common.Db;
@@ -16,8 +16,6 @@ using SummerBoot.Test.DbExecute.Common.Models;
 using SummerBoot.Test.DbExecute.Common.Repository;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -62,7 +60,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<MySqlConnection, IUnitOfWork1>(connectionString,
+                it.AddMysql<IUnitOfWork1>(connectionString,
                     x =>
                     {
                         x.BindRepositoriesWithAttribute<AutoRepositoryAttribute>();
@@ -107,7 +105,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<OracleConnection, IUnitOfWork1>(connectionString,
+                it.AddOracle<IUnitOfWork1>(connectionString,
                     x =>
                     {
                         x.DebugSqlAction = debugSqlAction;
@@ -155,7 +153,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<NpgsqlConnection, IUnitOfWork1>(connectionString,
+                it.AddPgsql<IUnitOfWork1>(connectionString,
                     x =>
                     {
                         x.BindRepositoriesWithAttribute<AutoRepositoryAttribute>();
@@ -200,7 +198,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<SqlConnection, IUnitOfWork1>(connectionString,
+                it.AddSqlServer<IUnitOfWork1>(connectionString,
                     x =>
                     {
                         x.BindRepositoriesWithAttribute<AutoRepositoryAttribute>();
@@ -254,7 +252,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
             services.AddSummerBootRepository(it =>
             {
-                it.AddDatabaseUnit<SQLiteConnection, IUnitOfWork1>(databaseString,
+                it.AddSqlite<IUnitOfWork1>(databaseString,
                     x =>
                     {
                         x.BindRepositoriesWithAttribute<AutoRepositoryAttribute>();
@@ -2358,7 +2356,7 @@ namespace SummerBoot.Test.DbExecute.Common
             {
                 unitOfWork.RollBack();
             }
-           
+
             var customers = await customerRepository.Where(it => it.Name == name).ToListAsync();
             Assert.Equal(2, customers.Count);
             Assert.Equal(name, customers[0].Name);
@@ -2454,7 +2452,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var s = sw.ElapsedMilliseconds;
             output.WriteLine($"cost {s}ms");
             var count = await nullableTableRepository.CountAsync(x => x.String2 == name);
-            Assert.Equal(total,count);
+            Assert.Equal(total, count);
         }
 
         private void CompareTwoNullable(NullableTable2 entity, NullableTable2 dbEntity)

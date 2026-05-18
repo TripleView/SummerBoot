@@ -1,12 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using Polly;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SummerBoot.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace SummerBoot.Repository
 {

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Cache;
 using SummerBoot.Core;
-using SummerBoot.Test.Feign;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace SummerBoot.Test.Cache

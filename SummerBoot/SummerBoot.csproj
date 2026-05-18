@@ -17,7 +17,7 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/TripleView/SummerBoot</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<TargetFrameworks>netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>$(MySdk)</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<PackageIcon>logo.png</PackageIcon>
 	</PropertyGroup>
@@ -58,7 +58,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include=".\logo.png">
+		<None Include="..\logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
@@ -88,7 +88,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="logo.png">
+		<None Update="..\logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

@@ -1,9 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using SummerBoot.Test.Oracle.Db;
+using SummerBoot.Test.DbExecute.Common.Db;
 
 namespace SummerBoot.Test;
 
-using Xunit;
 using System;
 
 // 1. 定义夹具类（存放初始化逻辑）

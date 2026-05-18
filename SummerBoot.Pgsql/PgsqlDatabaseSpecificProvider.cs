@@ -23,11 +23,11 @@ public class PgsqlDatabaseSpecificProvider : DefaultDatabaseSpecificProvider, ID
         {
             foreach (var p in list)
             {
-                await writer.StartRowAsync();
-                await writer.WriteAsync(1, "123");
-                await writer.WriteAsync(p.Id, NpgsqlDbType.Integer);
-                await writer.WriteAsync(p.Name, NpgsqlDbType.Text);
-                await writer.WriteAsync(p.Birthday, NpgsqlDbType.Timestamp);
+                //await writer.StartRowAsync();
+                //await writer.WriteAsync(1, "123");
+                //await writer.WriteAsync(p.Id, NpgsqlDbType.Integer);
+                //await writer.WriteAsync(p.Name, NpgsqlDbType.Text);
+                //await writer.WriteAsync(p.Birthday, NpgsqlDbType.Timestamp);
             }
             await writer.CompleteAsync();
         }

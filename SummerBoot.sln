@@ -19,6 +19,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlParser.Net", "..\github\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.Pgsql", "SummerBoot.Pgsql\SummerBoot.Pgsql.csproj", "{CA4AED5F-155A-4644-8549-04D78419034C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.Oracle", "SummerBoot.Oracle\SummerBoot.Oracle.csproj", "{B8FE71D8-9044-44EE-886A-C67A68DBFCB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.SqlServer", "SummerBoot.Sqlserver\SummerBoot.SqlServer.csproj", "{DBB8BDDE-B91F-4B27-9640-12B779EF90F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.Mysql", "SummerBoot.MySql\SummerBoot.Mysql.csproj", "{97DCCE19-9FAA-380A-00E3-BC8788A33A2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SummerBoot.Sqlite", "SummerBoot.Sqlite\SummerBoot.Sqlite.csproj", "{89C13DD8-3E2D-9C02-962A-34392ED686B8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +65,22 @@ Global
 		{CA4AED5F-155A-4644-8549-04D78419034C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA4AED5F-155A-4644-8549-04D78419034C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA4AED5F-155A-4644-8549-04D78419034C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8FE71D8-9044-44EE-886A-C67A68DBFCB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8FE71D8-9044-44EE-886A-C67A68DBFCB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8FE71D8-9044-44EE-886A-C67A68DBFCB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8FE71D8-9044-44EE-886A-C67A68DBFCB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBB8BDDE-B91F-4B27-9640-12B779EF90F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBB8BDDE-B91F-4B27-9640-12B779EF90F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBB8BDDE-B91F-4B27-9640-12B779EF90F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBB8BDDE-B91F-4B27-9640-12B779EF90F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97DCCE19-9FAA-380A-00E3-BC8788A33A2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97DCCE19-9FAA-380A-00E3-BC8788A33A2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97DCCE19-9FAA-380A-00E3-BC8788A33A2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97DCCE19-9FAA-380A-00E3-BC8788A33A2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89C13DD8-3E2D-9C02-962A-34392ED686B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89C13DD8-3E2D-9C02-962A-34392ED686B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89C13DD8-3E2D-9C02-962A-34392ED686B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89C13DD8-3E2D-9C02-962A-34392ED686B8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

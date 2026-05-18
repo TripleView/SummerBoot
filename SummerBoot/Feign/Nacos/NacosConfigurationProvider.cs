@@ -1,17 +1,15 @@
-ï»¿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SummerBoot.Core;
+using SummerBoot.Core.Configuration.Parser;
 using SummerBoot.Feign.Nacos.Dto;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SummerBoot.Core.Configuration.Parser;
-using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Feign.Nacos
 {
@@ -98,11 +96,11 @@ namespace SummerBoot.Feign.Nacos
         }
 
         /// <summary>
-        /// å­˜æ¯ä¸€ä¸ªé…ç½®çš„æœ€åå€¼
+        /// ´æÃ¿Ò»¸öÅäÖÃµÄ×îºóÖµ
         /// </summary>
         private Dictionary<string, string> lastContentDic;
         /// <summary>
-        /// å­˜æ¯ä¸€ä¸ªé…ç½®çš„å­—å…¸çš„åˆé›†
+        /// ´æÃ¿Ò»¸öÅäÖÃµÄ×ÖµäµÄºÏ¼¯
         /// </summary>
         private Dictionary<string, IDictionary<string, string>> lastDic;
 
@@ -180,8 +178,8 @@ namespace SummerBoot.Feign.Nacos
                             lastContentDic[key] = result;
 
                             var hasConfigType = httpResponseMessage.Headers.TryGetValues(NacosUtil.CONFIG_TYPE, out var listValues);
-                            //æ ¹æ®è¿”å›çš„é…ç½®ç±»å‹è§£ææ•°æ®
-                            //é…ç½®ç±»å‹
+                            //¸ù¾İ·µ»ØµÄÅäÖÃÀàĞÍ½âÎöÊı¾İ
+                            //ÅäÖÃÀàĞÍ
                             var configType = "text";
                             var configTypeValues = listValues?.ToList() ?? new List<string>();
                             if (hasConfigType && configTypeValues.Count > 0)
