@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore;
 using SummerBoot.Test.DbExecute.Common.Models;
 
@@ -26,6 +26,16 @@ namespace SummerBoot.Test.DbExecute.Common.Db
             modelBuilder.Entity<NotNullableTable>().Property(it => it.Long2).HasComment("Long2").IsRequired(true);
             modelBuilder.Entity<NullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
             modelBuilder.Entity<NotNullableTable>().Property(it => it.Decimal3).HasPrecision(20, 4);
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTime))
+                    {
+                        property.SetColumnType("timestamp");
+                    }
+                }
+            }
         }
         public DbSet<Customer> Customer { get; set; }
         public DbSet<OrderHeader> OrderHeader { get; set; }

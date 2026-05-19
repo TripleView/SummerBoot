@@ -267,7 +267,7 @@ namespace SummerBoot.Repository
         /// <summary>
         /// database Specific Provider Type;数据库特殊操作提供器类型
         /// </summary>
-        public Type IDatabaseSpecificProviderType { get; private set; }
+        public Type DatabaseSpecificProviderType { get; private set; }
         /// <summary>
         /// Automatically generated list of storage types;自动生成的仓储类型列表
         /// </summary>
@@ -339,7 +339,7 @@ namespace SummerBoot.Repository
         /// </summary>
         public void BindDatabaseSpecificProviderType<T>() where T : IDatabaseSpecificProvider
         {
-            this.IDatabaseSpecificProviderType = typeof(T);
+            this.DatabaseSpecificProviderType = typeof(T);
         }
         
         /// <summary>

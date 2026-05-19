@@ -43,17 +43,15 @@
 
   <ItemGroup>
 
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.20" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.20" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.22" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
     <!--<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />-->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <!--<PackageReference Include="MySql.Data" Version="8.0.29" />-->
-    <PackageReference Include="MySql.EntityFrameworkCore" Version="5.0.13" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="7.0.16" />
     <!--<PackageReference Include="MySqlConnector" Version="2.1.10" />-->
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.10" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.18" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="7.21.13" />
     <!--<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.200" />-->
     <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0" />
@@ -65,7 +63,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="coverlet.collector" Version="1.2.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
 
   <ItemGroup>

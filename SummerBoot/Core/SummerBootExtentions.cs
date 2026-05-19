@@ -156,16 +156,18 @@ namespace SummerBoot.Core
                 var customUnitOfWorkType = GenerateCustomUnitOfWork(modBuilder, iCustomDbFactoryType, databaseUnit.IUnitOfWorkType, iCustomEntityClassHandlerType);
                 //注册工作单元
                 services.AddScoped(databaseUnit.IUnitOfWorkType, customUnitOfWorkType);
-               
+
                 //动态生成RepositoryService
                 var repositoryServiceType = GenerateRepositoryService(modBuilder, databaseUnit.IUnitOfWorkType);
                 services.AddScoped(repositoryServiceType);
                 //动态生成IDatabaseSpecificProvider接口类型
                 Type customBaseRepositoryType = null;
-                if (databaseUnit.IDatabaseSpecificProviderType != null)
+                if (databaseUnit.DatabaseSpecificProviderType != null)
                 {
                     var iCustomDatabaseSpecificProviderType = GenerateCustomInterface(modBuilder, typeof(IDatabaseSpecificProvider));
-                    services.AddScoped(iCustomDatabaseSpecificProviderType, databaseUnit.IDatabaseSpecificProviderType);
+                    //动态生成仓储基类
+                    var customDatabaseSpecificProvider = GenerateCustomDatabaseSpecificProvider(modBuilder, databaseUnit.IUnitOfWorkType, databaseUnit.DatabaseSpecificProviderType, iCustomDatabaseSpecificProviderType);
+                    services.AddScoped(iCustomDatabaseSpecificProviderType, customDatabaseSpecificProvider);
                     //动态生成仓储基类
                     customBaseRepositoryType = GenerateCustomBaseRepository(modBuilder, databaseUnit.IUnitOfWorkType, iCustomDatabaseSpecificProviderType);
 
@@ -173,7 +175,7 @@ namespace SummerBoot.Core
                 }
                 else
                 {
-                    throw new NotSupportedException(nameof(databaseUnit.IDatabaseSpecificProviderType)+" must be define");
+                    throw new NotSupportedException(nameof(databaseUnit.DatabaseSpecificProviderType) + " must be define");
                 }
 
                 //添加数据库生成器类
@@ -434,7 +436,8 @@ namespace SummerBoot.Core
                 }
                 var proxy = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider);
                 return proxy;
-            };
+            }
+            ;
 
             var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, lifetime);
             services.Add(serviceDescriptor);
@@ -462,7 +465,8 @@ namespace SummerBoot.Core
             {
                 var customDbFactory = customDbFactoryType.CreateInstance(new object[] { databaseUnit });
                 return customDbFactory;
-            };
+            }
+            ;
 
             var serviceDescriptor = new ServiceDescriptor(serviceType, Factory, ServiceLifetime.Scoped);
             services.Add(serviceDescriptor);
@@ -580,7 +584,7 @@ namespace SummerBoot.Core
         /// <param name="constructorType"></param>
         /// <param name="interfaceType"></param>
         /// <returns></returns>
-        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType,Type iCustomDatabaseSpecificProviderType)
+        private static Type GenerateCustomBaseRepository(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type iCustomDatabaseSpecificProviderType)
         {
             //新类型的属性
             TypeAttributes newTypeAttribute = TypeAttributes.Public |
@@ -610,6 +614,7 @@ namespace SummerBoot.Core
             var conIl = constructor.GetILGenerator();
             conIl.Emit(OpCodes.Ldarg_0);
             conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Ldarg_2);
             conIl.Emit(OpCodes.Call, parentConstruct);
             conIl.Emit(OpCodes.Ret);
 
@@ -617,6 +622,42 @@ namespace SummerBoot.Core
             return resultType;
         }
 
+        /// <summary>
+        /// 生成特殊仓储基类
+        /// </summary>
+        /// <param name="modBuilder"></param>
+        /// <param name="constructorType"></param>
+        /// <param name="interfaceType"></param>
+        /// <returns></returns>
+        private static Type GenerateCustomDatabaseSpecificProvider(ModuleBuilder modBuilder, Type ICustomUnitOfWorkType, Type customDatabaseSpecificProviderType, Type iCustomDatabaseSpecificProviderType)
+        {
+            //新类型的属性
+            TypeAttributes newTypeAttribute = TypeAttributes.Public |
+                                              TypeAttributes.Class;
+
+            //父类型
+            Type parentType;
+            //要实现的接口
+            Type[] interfaceTypes = new Type[1] { iCustomDatabaseSpecificProviderType };
+            parentType = customDatabaseSpecificProviderType;
+
+            //得到类型生成器            
+            TypeBuilder typeBuilder = modBuilder.DefineType("CustomDatabaseSpecificProvider" + Guid.NewGuid().ToString("N"), newTypeAttribute, parentType, interfaceTypes);
+
+            var parentConstruct = parentType.GetConstructors().FirstOrDefault();
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
+                new Type[] { ICustomUnitOfWorkType });
+
+            var conIl = constructor.GetILGenerator();
+            conIl.Emit(OpCodes.Ldarg_0);
+            conIl.Emit(OpCodes.Ldarg_1);
+            conIl.Emit(OpCodes.Call, parentConstruct);
+            conIl.Emit(OpCodes.Ret);
+
+            var resultType = typeBuilder.CreateTypeInfo().AsType();
+            return resultType;
+        }
 
         /// <summary>
         /// 生成迁移仓储基类
@@ -949,7 +990,8 @@ namespace SummerBoot.Core
                 var proxy = feignProxyBuilder.Build(serviceType, httpService, provider);
 
                 return proxy;
-            };
+            }
+            ;
 
             var feignClient = serviceType.GetCustomAttribute<FeignClientAttribute>();
             if (feignClient == null)

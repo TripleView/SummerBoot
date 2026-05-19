@@ -10,6 +10,8 @@ public class DatabaseInitFixture : IDisposable
     public DatabaseInitFixture()
     {
         //InitDatabase();
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+        //InitPgsqlDatabase();
     }
 
     private void InitDatabase()
