@@ -633,6 +633,89 @@ namespace SummerBoot.Test.DbExecute.Common
             Assert.Null(dbModel2);
         }
 
+        /// <summary>
+        /// 测试带事务的快速批量插入
+        /// </summary>
+        /// <param name="dbType"></param>
+        /// <returns></returns>
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        public async Task TestFastBatchInsertWithDbTransactionAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var guid = Guid.NewGuid();
+            var now = DateTime.Now;
+            var now2 = now;
+            var total = 20000;
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+
+            var nullableTableList = new List<NullableTable>();
+            var name = GetRandomName();
+            for (int i = 0; i < total; i++)
+            {
+                var a = new NullableTable()
+                {
+                    Int2 = 2,
+                    Bool2 = true,
+                    Byte2 = 1,
+                    DateTime2 = now,
+                    Decimal2 = 1m,
+                    Decimal3 = 1.1m,
+                    Double2 = 1.1,
+                    Float2 = (float)1.1,
+                    Guid2 = Guid.NewGuid(),
+                    Id = 1,
+                    Short2 = 1,
+                    TimeSpan2 = TimeSpan.FromHours(1),
+                    String2 = name,
+                    String3 = "sb",
+                    Long2 = 2,
+                    Enum2 = Model.Enum2.y,
+                    Int3 = 4
+                };
+                if (i == 0)
+                {
+                    a.Guid2 = guid;
+                }
+                nullableTableList.Add(a);
+            }
+
+            try
+            {
+                unitOfWork.BeginTransaction();
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                throw new Exception("test");
+                unitOfWork.Commit();
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+            var count = await nullableTableRepository.CountAsync(x => x.String2 == name);
+            Assert.Equal(0, count);
+
+            try
+            {
+                var sw = Stopwatch.StartNew();
+                unitOfWork.BeginTransaction();
+                await nullableTableRepository.FastBatchInsertAsync(nullableTableList);
+                unitOfWork.Commit();
+                sw.Stop();
+                output.WriteLine(dbType.ToString() + ":" + sw.ElapsedMilliseconds);
+            }
+            catch (Exception e)
+            {
+                unitOfWork.RollBack();
+            }
+
+            var count2 = await nullableTableRepository.CountAsync(x => x.String2 == name);
+            Assert.Equal(total, count2);
+        }
+
         [Theory]
         [InlineData(DbType.MySql)]
         [InlineData(DbType.Pgsql)]
