@@ -24,15 +24,19 @@
 
 	<ItemGroup>
 		<Compile Remove="Repository\DbAdapters\**" />
+		<Compile Remove="Repository\ExpressionParser\Parser\Dialect\**" />
 		<Compile Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
 		<Compile Remove="Repository\SqlParser\**" />
 		<Content Remove="Repository\DbAdapters\**" />
+		<Content Remove="Repository\ExpressionParser\Parser\Dialect\**" />
 		<Content Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
 		<Content Remove="Repository\SqlParser\**" />
 		<EmbeddedResource Remove="Repository\DbAdapters\**" />
+		<EmbeddedResource Remove="Repository\ExpressionParser\Parser\Dialect\**" />
 		<EmbeddedResource Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
 		<EmbeddedResource Remove="Repository\SqlParser\**" />
 		<None Remove="Repository\DbAdapters\**" />
+		<None Remove="Repository\ExpressionParser\Parser\Dialect\**" />
 		<None Remove="Repository\ExpressionParser\Parser\MultiQuery\**" />
 		<None Remove="Repository\SqlParser\**" />
 	</ItemGroup>
@@ -48,6 +52,7 @@
 		<Compile Remove="Repository\ExpressionParser\Parser\IDbExecuteAndQuery.cs" />
 		<Compile Remove="Repository\ExpressionParser\Parser\IRepository.cs" />
 		<Compile Remove="Repository\ExpressionParser\Parser\QueryableMethodsExtension.cs" />
+		<Compile Remove="Repository\ExpressionParser\Parser\QueryFormatter.cs" />
 		<Compile Remove="Repository\ExpressionParser\Parser\Repository.cs" />
 		<Compile Remove="Repository\ExpressionParser\Parser\SummerbootQueryable.cs" />
 		<Compile Remove="Repository\IBaseRepository2.cs" />

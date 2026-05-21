@@ -714,6 +714,8 @@ namespace SummerBoot.Test.DbExecute.Common
 
             var count2 = await nullableTableRepository.CountAsync(x => x.String2 == name);
             Assert.Equal(total, count2);
+            var dbModel = await nullableTableRepository.FirstOrDefaultAsync(x => x.String2 == name && x.Guid2 == guid);
+            TestUtils.CompareTwoModel(dbModel, nullableTableList[0], new List<string>() { "Id" });
         }
 
         [Theory]

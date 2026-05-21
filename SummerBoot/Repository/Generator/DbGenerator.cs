@@ -174,9 +174,9 @@ namespace SummerBoot.Repository.Generator
                 var schema = tableAttribute?.Schema;
                 schema = databaseInfo.GetDefaultSchema(schema);
                 var tableDescription = tableDescriptionAttribute?.Description ?? "";
-                var propertys = type.GetProperties().OrderBy(it => it.ReflectedType == it.DeclaringType ? 1 : 0).ToList();
+                var properties = type.GetProperties().OrderBy(it => it.ReflectedType == it.DeclaringType ? 1 : 0).ToList();
                 var fieldInfos = new List<DatabaseFieldInfoDto>();
-                foreach (var propertyInfo in propertys)
+                foreach (var propertyInfo in properties)
                 {
                     var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
                     var fieldName = columnAttribute != null ? columnAttribute.Name : propertyInfo.Name;

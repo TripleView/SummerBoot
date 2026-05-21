@@ -5,6 +5,7 @@ using SummerBoot.Repository;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace SummerBoot.Pgsql;
@@ -21,23 +22,52 @@ public class PgsqlDatabaseSpecificProvider : DefaultDatabaseSpecificProvider, ID
 
     public override async Task FastBatchInsertAsync<T>(List<T> list)
     {
-        var (sql, propertyTypes) = GetCommand(list);
+        this.OpenDb();
+        var (sql, propertyNames, propertyTypes) = GetCommand(list);
         using (var writer = await ((NpgsqlConnection)dbConnection).BeginBinaryImportAsync(sql))
         {
 
             foreach (var p in list)
             {
                 await writer.StartRowAsync();
-                foreach (var propertyType in propertyTypes)
+                for (var i = 0; i < propertyNames.Count; i++)
                 {
-                    await writer.WriteAsync(p.GetPropertyValue(propertyType.Name));
+                    var propertyName = propertyNames[i];
+                    var propertyType = propertyTypes[i];
+                    var value = p.GetPropertyValue(propertyName);
+                    if (value is null)
+                    {
+                        await writer.WriteAsync(value);
+                    }
+                    else
+                    {
+                        var underlyingType = propertyType;
+                        var isNullable = propertyType.IsNullable();
+                        if (isNullable)
+                        {
+                            underlyingType = propertyType.GetUnderlyingType();
+                        }
+
+                        //如果是枚举类型，统一转为int
+                        if (underlyingType.IsEnum)
+                        {
+                            var enumUnderlyingType = Enum.GetUnderlyingType(underlyingType);
+
+                            value = Convert.ChangeType(value, enumUnderlyingType);
+                        }
+                        await writer.WriteAsync(value);
+                    }
+                      
+                    
                 }
+
             }
             await writer.CompleteAsync();
         }
+        this.CloseDb();
     }
 
-    private (string, List<Type>) GetCommand<T>(List<T> list)
+    private (string, List<string>, List<Type>) GetCommand<T>(List<T> list)
     {
         var table = SbUtil.GetTableInfo(typeof(T));
         var tableName = GetSchemaTableName(table.Schema, table.Name);
@@ -66,9 +96,8 @@ public class PgsqlDatabaseSpecificProvider : DefaultDatabaseSpecificProvider, ID
             parameterNameList.Add(parameterName);
         }
 
+        var sql = $"copy {tableName} ({string.Join(",", columnNameList)}) from stdin (format binary)";
 
-        var sql = $"copy {tableName} ({string.Join(",", columnNameList)}) from stdin (format binary";
-
-        return (sql, propertyTypes);
+        return (sql, propertyNames, propertyTypes);
     }
 }

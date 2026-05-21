@@ -242,9 +242,9 @@ namespace SummerBoot.Core
             }
 
             var key = "GetPropertyValue:" + type.FullName + property.Name;
-            if (CacheDictionary.TryGetValue(key, out var func))
+            if (CacheDelegateDictionary.TryGetValue(key, out var func))
             {
-                return ((Delegate)func).DynamicInvoke(model);
+                return func.DynamicInvoke(model);
             }
 
             var modelExpression = Expression.Parameter(type, "model");
@@ -252,7 +252,7 @@ namespace SummerBoot.Core
             var convertExpression = Expression.Convert(propertyExpression, typeof(object));
             var lambda = Expression.Lambda(convertExpression, modelExpression).Compile();
             var result = lambda.DynamicInvoke(model);
-            CacheDictionary.TryAdd(key, lambda);
+            CacheDelegateDictionary.TryAdd(key, lambda);
             return result;
         }
 
@@ -267,9 +267,9 @@ namespace SummerBoot.Core
             }
 
             var key = "GetPropertyValue2:" + type.FullName + property.Name;
-            if (CacheDictionary.TryGetValue(key, out var func))
+            if (CacheDelegateDictionary.TryGetValue(key, out var func))
             {
-                return ((Delegate)func).DynamicInvoke(model);
+                return func.DynamicInvoke(model);
             }
 
             var dynamicMethod = new DynamicMethod("GetPropertyValueByEmit" + Guid.NewGuid().ToString("N"), typeof(object),
@@ -294,7 +294,7 @@ namespace SummerBoot.Core
             il.Emit(OpCodes.Ret);
             var funcType = typeof(Func<,>).MakeGenericType(type, typeof(object));
             var lambda = dynamicMethod.CreateDelegate(funcType);
-            CacheDictionary.TryAdd(key, lambda);
+            CacheDelegateDictionary.TryAdd(key, lambda);
             var result = lambda.DynamicInvoke(model);
             return result;
         }
