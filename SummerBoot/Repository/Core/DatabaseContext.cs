@@ -676,7 +676,7 @@ namespace SummerBoot.Repository.Core
             var parameter = dbCommand.CreateParameter();
             parameter.ParameterName = parameterName;
             parameter.Direction = paramInfo.ParameterDirection;
-
+            
             var isSetValue = true;
             if (paramInfo.DbType != null)
             {

@@ -1092,7 +1092,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     private SqlVariableExpression GetSqlVariableExpressionWithValueAndDynamicName(object value, Type? valueType = null)
     {
         var parameterAlias = GetParameterAlias();
-        this.parameters.Add(parameterAlias, value, valueType: valueType);
+        if (isSqlite && value is decimal)
+        {
+            this.parameters.Add(parameterAlias, Convert.ToDouble(value) , valueType: typeof(double));
+        }
+        else
+        {
+            this.parameters.Add(parameterAlias, value, valueType: valueType);
+        }
+       
         return new SqlVariableExpression()
         {
             Name = parameterAlias,
@@ -1732,7 +1740,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else if (constant.Value.IsNumeric())
         {
             return GetWrapperExpression(GetSqlNumberExpression(Convert.ToDecimal(constant.Value)));
-
         }
         else if (constant.Value is bool boolValue)
         {
@@ -1847,6 +1854,24 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var value = GetConstExpression(memberExpression);
             return value;
         }
+        else if (GetNumberOfMemberExpressionLayers(memberExpression) > 0
+                 && memberExpression.Member == SbUtil.StringLengthPropertyInfo)
+        {
+            var middleExpression = this.Visit(memberExpression.Expression);
+            var sqlExpression = GetSqlExpression(middleExpression);
+            var r1 = new SqlFunctionCallExpression()
+            {
+                Name = new SqlIdentifierExpression()
+                {
+                    Value = lengthName
+                },
+                Arguments = new List<SqlExpression>()
+                {
+                    sqlExpression
+                }
+            };
+            return GetWrapperExpression(r1);
+        }
         //解析类似于it.T1.Name这种
         else if (GetNumberOfMemberExpressionLayers(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
         {
@@ -1865,55 +1890,31 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var r1 = GetSqlVariableExpressionWithValueAndDynamicName(value);
             return GetWrapperExpression(r1);
         }
-        //只有一层，类似于it.T1这种
-        else if (GetNumberOfMemberExpressionLayers(memberExpression) == 1
-                 && memberExpression.Expression.Type != null
-                 && memberExpression.Expression.Type.Name.Contains("JoinCondition"))
-        {
-            return null;
-            //var tableAlias = memberExpression.Member.Name;
-            //var table = new TableExpression(memberExpression.Type, tableAlias);
-            //return new ColumnsExpression(table.Columns, memberExpression.Type);
-        }
+
+        //todo 删除这里 只有一层，类似于it.T1这种
+        //else if (GetNumberOfMemberExpressionLayers(memberExpression) == 1
+        //         && memberExpression.Expression.Type != null
+        //         && memberExpression.Expression.Type.Name.Contains("JoinCondition"))
+        //{
+        //return null;
+        //var tableAlias = memberExpression.Member.Name;
+        //var table = new TableExpression(memberExpression.Type, tableAlias);
+        //return new ColumnsExpression(table.Columns, memberExpression.Type);
+        //}
         //如果是可以直接获取值得
         else if (memberExpression.Expression is MemberExpression parentExpression)
         {
-            //兼容it.name.length>5
-            if (memberExpression.Member is PropertyInfo p1 && p1?.Name == "Length")
+            //判断是否为可空类型
+            if (IsNullableGetValue(memberExpression))
             {
-                //获取所有列
                 var middleExpression = this.Visit(parentExpression);
-                var sqlExpression = GetSqlExpression(middleExpression);
-                var r1 = new SqlFunctionCallExpression()
-                {
-                    Name = new SqlIdentifierExpression()
-                    {
-                        Value = lengthName
-                    },
-                    Arguments = new List<SqlExpression>()
-                        {
-                            sqlExpression
-                        }
-                };
-                return GetWrapperExpression(r1);
-
+                return middleExpression;
             }
             else
             {
-                //判断是否为可空类型
-                if (IsNullableGetValue(memberExpression))
-                {
-                    var middleExpression = this.Visit(parentExpression);
-                    return middleExpression;
-                }
-                else
-                {
-                    var value = GetConstExpression(memberExpression);
-                    return value;
-                }
-
+                var value = GetConstExpression(memberExpression);
+                return value;
             }
-
         }
         //如果是it.name这种形式
         else if (memberExpression.Expression is ParameterExpression parameterExpression && memberExpression.Member is PropertyInfo p2)

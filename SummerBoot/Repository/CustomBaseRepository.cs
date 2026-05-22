@@ -264,15 +264,14 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
 
     public List<T> Insert(List<T> list)
     {
-        this.uow.BeginTransaction();
         OpenDb();
+        this.uow.BeginTransaction();
         foreach (var item in list)
         {
             Insert(item);
         }
-        CloseDb();
         this.uow.Commit();
-
+        CloseDb();
         return list;
     }
 
@@ -496,15 +495,14 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
 
     public async Task<List<T>> InsertAsync(List<T> list)
     {
-        this.uow.BeginTransaction();
         OpenDb();
+        this.uow.BeginTransaction();
         foreach (var item in list)
         {
             await InsertAsync(item);
         }
-        CloseDb();
         this.uow.Commit();
-
+        CloseDb();
         return list;
     }
 
@@ -525,7 +523,17 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
 
         //databaseUnit.OnLogSqlInfo(internalResult);
         OpenDb();
-        await databaseSpecificProvider.FastBatchInsertAsync(list);
+        if (IsSqlite)
+        {
+            uow.BeginTransaction();
+            await InsertAsync(list);
+            uow.Commit();
+        }
+        else
+        {
+            await databaseSpecificProvider.FastBatchInsertAsync(list);
+        }
+            
         CloseDb();
     }
 

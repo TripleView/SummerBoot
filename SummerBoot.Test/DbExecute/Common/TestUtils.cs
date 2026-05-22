@@ -23,6 +23,8 @@ public class TestUtils
     /// <param name="ignoreColumnNames"></param>
     public static void CompareTwoModel<T>(T m1, T m2, List<string> ignoreColumnNames = null)
     {
+        Assert.NotNull(m1);
+        Assert.NotNull(m2);
         var table = SbUtil.GetTableInfo(typeof(T));
         var columnNames = table.Columns.Select(x => x.Property.Name).ToList();
         foreach (var columnName in columnNames)

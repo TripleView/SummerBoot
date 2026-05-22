@@ -497,6 +497,33 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestStringLength(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+
+            var name = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = name,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var dbOrder2 = await orderHeaderRepository.FirstOrDefaultAsync(x => x.Id == orderHeader.Id && x.OrderNo.Length > 0);
+
+            var dbOrder = await orderHeaderRepository.FirstOrDefaultAsync(x => x.Id == orderHeader.Id && x.OrderNo.Length == name.Length);
+            TestUtils.CompareTwoModel(dbOrder2,orderHeader);
+            TestUtils.CompareTwoModel(dbOrder, orderHeader);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestOrderByFirstOrDefaultAsync(DbType dbType)
         {
             ChangeDb(dbType);
@@ -643,6 +670,7 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Pgsql)]
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestFastBatchInsertWithDbTransactionAsync(DbType dbType)
         {
             ChangeDb(dbType);
@@ -2488,10 +2516,10 @@ namespace SummerBoot.Test.DbExecute.Common
         /// <returns></returns>
         [Theory]
         [InlineData(DbType.MySql)]
-        //[InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Pgsql)]
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
-        //[InlineData(DbType.Sqlite)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestFastBatchInsert(DbType dbType)
         {
             ChangeDb(dbType);
