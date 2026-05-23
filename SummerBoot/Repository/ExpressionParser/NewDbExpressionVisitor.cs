@@ -1681,9 +1681,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private bool IsJoinMethod(string methodName)
     {
-        return methodName == nameof(JoinRepositoryMethods.LeftJoin) ||
-               methodName == nameof(JoinRepositoryMethods.RightJoin) ||
-               methodName == nameof(JoinRepositoryMethods.InnerJoin);
+        return methodName == nameof(JoinRepository2Methods.LeftJoin) ||
+               methodName == nameof(JoinRepository2Methods.RightJoin) ||
+               methodName == nameof(JoinRepository2Methods.InnerJoin);
     }
 
     protected override Expression VisitConstant(ConstantExpression constant)

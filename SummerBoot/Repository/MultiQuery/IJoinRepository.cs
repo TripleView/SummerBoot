@@ -42,10 +42,19 @@ public interface IJoinRepository<T1, T2>
 
     TResult Sum<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 
-    IJoinGroupQueryable<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
+
+    Task<TResult> MaxAsync<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+
+    Task<TResult> MinAsync<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+    Task<TResult> AverageAsync<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+
+    Task<TResult> SumAsync<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+
+
+    IJoinGroupRepository<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
 }
 
-public interface IJoinGroupQueryable<T1, T2, TKey>
+public interface IJoinGroupRepository<T1, T2, TKey>
 {
     ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector);
 }

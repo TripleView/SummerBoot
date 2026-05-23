@@ -514,7 +514,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var dbOrder2 = await orderHeaderRepository.FirstOrDefaultAsync(x => x.Id == orderHeader.Id && x.OrderNo.Length > 0);
 
             var dbOrder = await orderHeaderRepository.FirstOrDefaultAsync(x => x.Id == orderHeader.Id && x.OrderNo.Length == name.Length);
-            TestUtils.CompareTwoModel(dbOrder2,orderHeader);
+            TestUtils.CompareTwoModel(dbOrder2, orderHeader);
             TestUtils.CompareTwoModel(dbOrder, orderHeader);
         }
 
@@ -1073,6 +1073,186 @@ namespace SummerBoot.Test.DbExecute.Common
                 .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .CountAsync(x => x.T1.Id == orderHeader.Id);
             Assert.Equal(2, count);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinMaxAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 100
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var value = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.Id == orderHeader.Id)
+                .MaxAsync(x => x.T2.State);
+            Assert.Equal(100, value);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinMinAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 100
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var value = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.Id == orderHeader.Id)
+                .MinAsync(x => x.T2.State);
+            Assert.Equal(1, value);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinSumAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 100
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var value = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.Id == orderHeader.Id)
+                .SumAsync(x => x.T2.State);
+            Assert.Equal(101, value);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinAverageAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 100
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var value = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.Id == orderHeader.Id)
+                .AverageAsync(x => x.T2.State);
+            Assert.Equal(50, value);
         }
 
         [Theory]
