@@ -307,7 +307,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 lastMethodCalls.Add(lastMethodCallName);
                 return result;
             case nameof(RepositoryMethods.Delete):
-            case nameof(RepositoryMethods.DeleteAsync):
                 result = this.VisitDeleteCall(node);
                 lastMethodCallName = methodCallStack.Pop();
                 lastMethodCalls.Add(lastMethodCallName);
