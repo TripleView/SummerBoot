@@ -89,6 +89,7 @@
 
   <ItemGroup>
     <Folder Include="Cache\" />
+    <Folder Include="DbExecute\Common\Dto\" />
     <Folder Include="ExpressionParser\" />
   </ItemGroup>
 

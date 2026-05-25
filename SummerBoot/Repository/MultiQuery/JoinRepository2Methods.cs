@@ -55,7 +55,7 @@ public static class JoinRepository2Methods
     {
         throw new NotSupportedException("Only for expression translation.");
     }
-    public static IEnumerable<TResult> Select<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public static ILambdaRepository<TResult> Select<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }

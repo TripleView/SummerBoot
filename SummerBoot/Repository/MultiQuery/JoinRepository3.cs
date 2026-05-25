@@ -303,9 +303,9 @@ public class JoinGroupRepository<T1, T2, T3, TKey> : IJoinGroupRepository<T1, T2
 
 public class JoinRepository<T1, T2, T3, T4> : IJoinRepository<T1, T2, T3, T4>
 {
-    public ILambdaRepository<JoinCondition<T1, T2, T3>> Source { get; }
+    public ILambdaRepository<JoinCondition<T1, T2, T3, T4>> Source { get; }
 
-    public JoinRepository(ILambdaRepository<JoinCondition<T1, T2, T3>> source)
+    public JoinRepository(ILambdaRepository<JoinCondition<T1, T2, T3, T4>> source)
     {
         Source = source;
     }

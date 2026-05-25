@@ -586,14 +586,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
 
         }
-        //todo 删除这里
-        //else if (IsJoinMethod(MethodName) ||
-        //         MethodName == nameof(Queryable.Where) ||
-        //         MethodName == nameof(Queryable.FirstOrDefault) ||
-        //         MethodName == nameof(Queryable.First) ||
-        //         MethodName == nameof(Queryable.Count) ||
-        //         MethodName == nameof(RepositoryMethods.Delete) ||
-        //         MethodName == "get_Item")
         else
         {
             if (!nodeTypeSqlBinaryOperatorsMappings.TryGetValue(binaryExpression.NodeType, out var sqlBinaryOperator))
@@ -868,7 +860,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 if (sqlSelectItemExpression.Body is SqlPropertyExpression sqlPropertyExpression)
                 {
-
                     sqlPropertyExpression.Table = tableAliasSqlIdentifierExpression;
                     sqlPropertyExpression.Name = sqlSelectItemExpression.Alias ?? sqlPropertyExpression.Name;
                 }
@@ -1889,17 +1880,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var r1 = GetSqlVariableExpressionWithValueAndDynamicName(value);
             return GetWrapperExpression(r1);
         }
-
-        //todo 删除这里 只有一层，类似于it.T1这种
-        //else if (GetNumberOfMemberExpressionLayers(memberExpression) == 1
-        //         && memberExpression.Expression.Type != null
-        //         && memberExpression.Expression.Type.Name.Contains("JoinCondition"))
-        //{
-        //return null;
-        //var tableAlias = memberExpression.Member.Name;
-        //var table = new TableExpression(memberExpression.Type, tableAlias);
-        //return new ColumnsExpression(table.Columns, memberExpression.Type);
-        //}
         //如果是可以直接获取值得
         else if (memberExpression.Expression is MemberExpression parentExpression)
         {
@@ -2028,33 +2008,45 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitMemberInit(MemberInitExpression memberInitExpression)
     {
-        return null;
-        //var newColumns = new List<ColumnExpression>();
+        var list = new List<SqlExpression>();
 
-        //for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
-        //{
-        //    var binding = memberInitExpression.Bindings[i];
-        //    var memberInfo = binding.Member;
-        //    if (!(memberInfo is PropertyInfo))
-        //    {
-        //        throw new NotSupportedException(memberInfo.ToString());
-        //    }
+        for (int i = 0; i < memberInitExpression.Bindings.Count; i++)
+        {
+            var binding = memberInitExpression.Bindings[i];
+            var memberInfo = binding.Member;
+            if (!(memberInfo is PropertyInfo))
+            {
+                throw new NotSupportedException(memberInfo.ToString());
+            }
+          
+            if (binding is MemberAssignment memberAssignment)
+            {
+                var columnExpression= this.Visit(memberAssignment.Expression);
+                var sqlExpression = GetSqlExpression(columnExpression);
+                var aliasName= memberAssignment.Member.Name;
+                var sqlSelectItemExpression = sqlExpression is SqlSelectItemExpression exp
+                    ? exp
+                    : new SqlSelectItemExpression()
+                    {
+                        Body = sqlExpression,
+                    };
+                sqlSelectItemExpression.Alias = GetSqlIdentifierExpression(DbQueryUtil.GetColumnName(memberInfo));
+                list.Add(sqlSelectItemExpression);
+            }
+            else
+            {
+                throw new NotSupportedException("argument can not parse");
+            }
+        }
+        if (list.Any())
+        {
+            return new WrapperExpression()
+            {
+                SqlExpressions = list
+            };
+        }
 
-        //    if (binding is MemberAssignment memberAssignment && memberAssignment.Expression is MemberExpression memberExpression)
-        //    {
-        //        var tempColumnExpression = new ColumnExpression((memberExpression.Member as PropertyInfo).PropertyType, memberExpression.Member.Name,
-        //            memberExpression.Member, 0);
-        //        tempColumnExpression.ColumnAlias = DbQueryUtil.GetColumnName((memberInfo as PropertyInfo));
-        //        newColumns.Add(tempColumnExpression);
-        //    }
-        //    else
-        //    {
-        //        throw new NotSupportedException("argument can not parse");
-        //    }
-        //}
-
-        //var result = new ColumnsExpression(newColumns, memberInitExpression.Type);
-        //return result;
+        return new WrapperExpression() { IsHandled = true };
     }
 
     protected override Expression VisitNew(NewExpression newExpression)

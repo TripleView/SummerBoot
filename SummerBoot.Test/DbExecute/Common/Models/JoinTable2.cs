@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SummerBoot.Test.DbExecute.Common.Models;
 
-public class JoinTable1
+public class JoinTable2
 {
     [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity), Column("ID")]
     public int Id { set; get; }
@@ -12,4 +12,6 @@ public class JoinTable1
     public string Name { get; set; }
     public int Index { get; set; }
     public DateTime CreateTime { get; set; }
+
+    public int Table1Id { get; set; }
 }

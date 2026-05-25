@@ -11,9 +11,9 @@ namespace SummerBoot.Repository.MultiQuery;
 
 public interface IJoinRepository<T1, T2, T3>
 {
-    IJoinRepository<T1, T2, T3, T4> LeftJoin<T4>(ILambdaRepository<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
-    IJoinRepository<T1, T2, T3, T4> RightJoin<T4>(ILambdaRepository<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
-    IJoinRepository<T1, T2, T3, T4> InnerJoin<T4>(ILambdaRepository<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
+    IJoinRepository<T1, T2, T3, T4> LeftJoin<T4>(ILambdaRepository<T4> table, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on);
+    IJoinRepository<T1, T2, T3, T4> RightJoin<T4>(ILambdaRepository<T4> table, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on);
+    IJoinRepository<T1, T2, T3, T4> InnerJoin<T4>(ILambdaRepository<T4> table, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on);
     IJoinOrderRepository<T1, T2, T3> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2, T3>, TKey>> keySelector);
 
     IJoinOrderRepository<T1, T2, T3> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2, T3>, TKey>> keySelector);
