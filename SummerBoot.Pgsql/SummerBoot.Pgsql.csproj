@@ -35,7 +35,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Npgsql" Version="7.0.10" />
+	  <PackageReference Include="Npgsql" Version="6.0.13" />
 	</ItemGroup>
 
 </Project>

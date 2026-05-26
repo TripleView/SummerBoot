@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore;
 using SummerBoot.Test.DbExecute.Common.Models;
 
@@ -40,5 +40,13 @@ namespace SummerBoot.Test.DbExecute.Common.Db
         public DbSet<PropNullTest> PropNullTest { get; set; }
 
         public DbSet<PropNullTestItem> PropNullTestItem { get; set; }
+
+        public DbSet<JoinTable1> JoinTable1 { get; set; }
+        public DbSet<JoinTable2> JoinTable2 { get; set; }
+        public DbSet<JoinTable3> JoinTable3 { get; set; }
+        public DbSet<JoinTable4> JoinTable4 { get; set; }
+        public DbSet<JoinTable5> JoinTable5 { get; set; }
+        public DbSet<JoinTable6> JoinTable6 { get; set; }
+        public DbSet<JoinTable7> JoinTable7 { get; set; }
     }
 }

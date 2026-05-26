@@ -20,42 +20,44 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinCountAsync(DbType dbType)
+    public async Task TestJoinCount3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-        var orderHeader = new OrderHeader()
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
+        var name = GetRandomName();
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = "ABC",
-            State = 1
+            Name = name,
+            Index = 1
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            Index = 1,
+            Table1Id = joinTable1.Id
         };
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail2 = new OrderDetail()
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "B",
-            Quantity = 2,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            Index = 1,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
+        await joinTable3Repository.InsertAsync(joinTable3);
 
-        var count = await orderHeaderRepository
-            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .CountAsync(x => x.T1.Id == orderHeader.Id);
-        Assert.Equal(2, count);
+        var count = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .LeftJoin(joinTable3Repository,x=>x.T2.Id==x.T3.Table2Id)
+            .CountAsync(x => x.T1.Name== name);
+        Assert.Equal(1, count);
     }
 
     [Theory]
@@ -64,7 +66,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestInnerJoinAsync(DbType dbType)
+    public async Task TestInnerJoin3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -112,7 +114,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestRightJoinAsync(DbType dbType)
+    public async Task TestRightJoin3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -161,57 +163,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestAnonymousAsync(DbType dbType)
-    {
-        ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-        var name = GetRandomName();
-        var name2 = GetRandomName();
-        var orderHeader = new OrderHeader()
-        {
-            CreateTime = DateTime.Now,
-            OrderNo = name,
-            State = -100
-        };
-        await orderHeaderRepository.InsertAsync(orderHeader);
-
-        var orderDetail1 = new OrderDetail()
-        {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
-        };
-
-        var orderDetail2 = new OrderDetail()
-        {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = name2,
-            Quantity = 2,
-            State = 1
-        };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
-
-        var outputDto = await orderHeaderRepository
-            .RightJoin(orderDetailRepository, x => x.T1.State == x.T2.OrderHeaderId)
-            .WhereIf(orderHeader.Id > 0, x => x.T2.ProductName == name2)
-            .OrderByDescending(x => x.T2.Id)
-            .Select(x => new { Id = x.T1.Id })
-            .FirstOrDefaultAsync();
-        Assert.Equal(0,outputDto.Id);
-    }
-
-
-    [Theory]
-    [InlineData(DbType.MySql)]
-    [InlineData(DbType.Pgsql)]
-    [InlineData(DbType.Oracle)]
-    [InlineData(DbType.SqlServer)]
-    [InlineData(DbType.Sqlite)]
-    public async Task TestLeftJoinAsync(DbType dbType)
+    public async Task TestLeftJoin3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -261,7 +213,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinMaxAsync(DbType dbType)
+    public async Task TestJoinMax3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -306,7 +258,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinMinAsync(DbType dbType)
+    public async Task TestJoinMin3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -351,7 +303,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinSumAsync(DbType dbType)
+    public async Task TestJoinSum3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -396,7 +348,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinAverageAsync(DbType dbType)
+    public async Task TestJoinAverage3Async(DbType dbType)
     {
         ChangeDb(dbType);
         var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
@@ -441,7 +393,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinEntityWithStringNullCallMethod(DbType dbType)
+    public async Task TestJoinEntityWithStringNullCallMethod3(DbType dbType)
     {
         ChangeDb(dbType);
         var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
@@ -475,7 +427,7 @@ public partial class RepositoryTest
     [InlineData(DbType.Oracle)]
     [InlineData(DbType.SqlServer)]
     [InlineData(DbType.Sqlite)]
-    public async Task TestJoinEntityWithNullableProperty(DbType dbType)
+    public async Task TestJoinEntityWithNullableProperty3(DbType dbType)
     {
         ChangeDb(dbType);
         var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
