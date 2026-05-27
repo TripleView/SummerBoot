@@ -262,8 +262,9 @@ public class JoinRepository<T1, T2> : IJoinRepository<T1, T2>
         if (on == null) throw new ArgumentNullException(nameof(on));
 
         var callExpr = Expression.Call(
-            Expression.Constant(this),
+            null,
             methodInfo,
+            Source.Expression,
             joinTable.Expression,
             Expression.Quote(on)
         );
