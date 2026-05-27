@@ -1084,13 +1084,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var parameterAlias = GetParameterAlias();
         if (isSqlite && value is decimal)
         {
-            this.parameters.Add(parameterAlias, Convert.ToDouble(value) , valueType: typeof(double));
+            this.parameters.Add(parameterAlias, Convert.ToDouble(value), valueType: typeof(double));
         }
         else
         {
             this.parameters.Add(parameterAlias, value, valueType: valueType);
         }
-       
+
         return new SqlVariableExpression()
         {
             Name = parameterAlias,
@@ -1289,6 +1289,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             if (sqlSelectExpression.Alias == null && sqlExpressionIdToAliasMap.TryGetValue(sqlSelectExpression.Id, out var aliasValue))
             {
                 sqlSelectExpression.Alias = GetSqlIdentifierExpression(aliasValue);
+            }
+
+            if (IsJoinMethod(LastMethodName) && sqlSelectExpression.Query is SqlSelectQueryExpression sqlSelectQueryExpression)
+            {
+                sqlSelectQueryExpression.From = new SqlJoinTableExpression()
+                {
+                    Left = sqlSelectQueryExpression.From,
+                    JoinType = joinType,
+                    Right = right,
+                    Conditions = on
+                };
+                return sqlSelectExpression;
             }
         }
 
@@ -2018,12 +2030,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 throw new NotSupportedException(memberInfo.ToString());
             }
-          
+
             if (binding is MemberAssignment memberAssignment)
             {
-                var columnExpression= this.Visit(memberAssignment.Expression);
+                var columnExpression = this.Visit(memberAssignment.Expression);
                 var sqlExpression = GetSqlExpression(columnExpression);
-                var aliasName= memberAssignment.Member.Name;
+                var aliasName = memberAssignment.Member.Name;
                 var sqlSelectItemExpression = sqlExpression is SqlSelectItemExpression exp
                     ? exp
                     : new SqlSelectItemExpression()

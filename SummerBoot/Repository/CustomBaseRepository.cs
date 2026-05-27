@@ -407,7 +407,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
 
         if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
         {
-            var dynamicParameters = new DynamicParameters(t);
+            var dynamicParameters = internalResult.DynamicParameters;
             if (internalResult.IdKeyPropertyInfo != null && !databaseUnit.IsDataMigrateMode)
             {
                 dynamicParameters.Add(internalResult.IdName, 0, dbType: System.Data.DbType.Int32, direction: ParameterDirection.Output);

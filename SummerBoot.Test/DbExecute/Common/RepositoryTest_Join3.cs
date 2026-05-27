@@ -31,7 +31,7 @@ public partial class RepositoryTest
         {
             CreateTime = DateTime.Now,
             Name = name,
-            Index = 1
+            OrderIndex = 1
         };
         await joinTable1Repository.InsertAsync(joinTable1);
 
@@ -39,7 +39,7 @@ public partial class RepositoryTest
         {
             CreateTime = DateTime.Now,
             Name = "ABC",
-            Index = 1,
+            OrderIndex = 1,
             Table1Id = joinTable1.Id
         };
         await joinTable2Repository.InsertAsync(joinTable2);
@@ -48,7 +48,7 @@ public partial class RepositoryTest
         {
             CreateTime = DateTime.Now,
             Name = "ABC",
-            Index = 1,
+            OrderIndex = 1,
             Table2Id = joinTable2.Id
         };
         await joinTable3Repository.InsertAsync(joinTable3);

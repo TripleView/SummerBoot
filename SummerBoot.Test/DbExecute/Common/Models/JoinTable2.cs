@@ -10,7 +10,7 @@ public class JoinTable2
     public int Id { set; get; }
 
     public string Name { get; set; }
-    public int Index { get; set; }
+    public int OrderIndex { get; set; }
     public DateTime CreateTime { get; set; }
 
     public int Table1Id { get; set; }
