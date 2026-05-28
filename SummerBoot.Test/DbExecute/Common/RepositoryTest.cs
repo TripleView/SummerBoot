@@ -7,6 +7,7 @@ using SummerBoot.Oracle;
 using SummerBoot.Pgsql;
 using SummerBoot.Repository;
 using SummerBoot.Repository.Generator;
+using SummerBoot.Repository.TypeHandler.Dialect.Mysql;
 using SummerBoot.Sqlite;
 using SummerBoot.SqlServer;
 using SummerBoot.Test.Common;
@@ -77,6 +78,8 @@ namespace SummerBoot.Test.DbExecute.Common
                                 guidModel.Address = "ppp";
                             }
                         });
+                        x.SetTypeHandler(typeof(Guid), new MysqlStringGuidTypeHandler());
+                        x.SetCsharpTypeToDatabaseTypeNameMap(typeof(Guid), "char(36)");
                     });
             });
 
@@ -1192,7 +1195,8 @@ namespace SummerBoot.Test.DbExecute.Common
 
             ChangeDb(dbType);
             var guidModelRepository = serviceProvider.GetService<IGuidModelRepository>();
-            var unitOfWork = serviceProvider.GetService<IUnitOfWork1>();
+            var dbGenerator1 = serviceProvider.GetService<IDbGenerator1>();
+            //dbGenerator1.GenerateSql(new List<Type>() { typeof(GuidModel) });
             var id = Guid.NewGuid();
             var guidModel = new GuidModel()
             {

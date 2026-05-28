@@ -195,59 +195,9 @@ namespace SummerBoot.Core
                         var customDatabaseInfoType = GenerateClassImplementInterface(modBuilder, typeof(SqlServerDatabaseInfo),
                             iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
                         services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
-                        //先缓存SqlBulkCopy的type类型
-
-                        try
-                        {
-                            var sqlServerAssembly = Assembly.Load("Microsoft.Data.SqlClient");
-                            var sqlBulkCopyType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy");
-                            var sqlBulkCopyOptionsType = sqlServerAssembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions");
-
-                            var constructorInfo = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
-                                it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType.GetInterfaces()
-                                    .Any(x => x == typeof(IDbConnection)));
-                            var generateObjectDelegate = SbUtil.BuildGenerateObjectDelegate(constructorInfo);
-
-                            var constructorInfo3 = sqlBulkCopyType.GetConstructors().FirstOrDefault(it =>
-                                it.GetParameters().Length == 3 && it.GetParameters()[2].ParameterType.GetInterfaces()
-                                    .Any(x => x == typeof(IDbTransaction)));
-                            var generateObjectDelegate3 = SbUtil.BuildGenerateObjectDelegate(constructorInfo3);
-
-                            var sqlBulkCopyWriteMethod = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                                 it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
-                                 it.GetParameters()[0].ParameterType == typeof(DataTable));
-                            var sqlBulkCopyWriteMethodAsync = sqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                                it.Name == "WriteToServerAsync" && it.GetParameters().Length == 1 &&
-                                it.GetParameters()[0].ParameterType == typeof(DataTable));
-
-                            var addColumnMappingMethodInfo = sqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-                                .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 2 && it.GetParameters()[0].ParameterType == typeof(string)
-                                           && it.GetParameters()[1].ParameterType == typeof(string));
-
-                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate", generateObjectDelegate);
-                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegate3", generateObjectDelegate3);
-                            SbUtil.CacheDictionary.TryAdd("addColumnMappingMethodInfo", addColumnMappingMethodInfo);
-                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyOptionsType", sqlBulkCopyOptionsType);
-
-                            //缓存委托
-                            var sqlBulkCopyWriteMethodTypes = new Type[] { sqlBulkCopyType, typeof(DataTable) };
-                            var sqlBulkCopyWriteMethodFuncType = Expression.GetActionType(sqlBulkCopyWriteMethodTypes);
-                            var sqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodFuncType, sqlBulkCopyWriteMethod);
-                            SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodDelegate", sqlBulkCopyWriteMethodDelegate);
-
-                            var sqlBulkCopyWriteMethodAsyncTypes = new Type[] { sqlBulkCopyType, typeof(DataTable), typeof(Task) };
-                            var sqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(sqlBulkCopyWriteMethodAsyncTypes);
-                            var sqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(sqlBulkCopyWriteMethodAsyncFuncType, sqlBulkCopyWriteMethodAsync);
-                            SbUtil.CacheDelegateDictionary.TryAdd("sqlBulkCopyWriteMethodAsyncDelegate", sqlBulkCopyWriteMethodAsyncDelegate);
-                        }
-                        catch (Exception e)
-                        {
-                            SbUtil.CacheDictionary.TryAdd("sqlBulkCopyDelegateErr", e);
-                        }
                     }
                     else if (databaseUnit.IsOracle)
                     {
-
                         var customDatabaseFieldMappingType = GenerateClassImplementInterface(modBuilder, typeof(OracleDatabaseFieldMapping),
                             iDatabaseFieldMappingType, Type.EmptyTypes);
                         services.AddTransient(iDatabaseFieldMappingType, customDatabaseFieldMappingType);
@@ -264,50 +214,6 @@ namespace SummerBoot.Core
                             iDatabaseInfoType, new Type[] { iCustomDbFactoryType });
                         services.AddTransient(iDatabaseInfoType, customDatabaseInfoType);
 
-                        try
-                        {
-                            var mysqlAssembly = Assembly.Load("MySqlConnector");
-                            var mysqlBulkCopyType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopy");
-                            var mySqlBulkCopyResultType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyResult");
-
-                            var mySqlBulkCopyColumnMappingType = mysqlAssembly.GetType("MySqlConnector.MySqlBulkCopyColumnMapping");
-
-                            var mysqlBulkCopyWriteMethod = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                                 it.Name == "WriteToServer" && it.GetParameters().Length == 1 &&
-                                 it.GetParameters()[0].ParameterType == typeof(DataTable));
-                            var mysqlBulkCopyWriteMethodAsync = mysqlBulkCopyType.GetMethods().FirstOrDefault(it =>
-                                it.Name == "WriteToServerAsync" && it.GetParameters().Length == 2 &&
-                                it.GetParameters()[0].ParameterType == typeof(DataTable));
-                            var addColumnMappingMethodInfo = mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType.GetMethods()
-                                .FirstOrDefault(it => it.Name == "Add" && it.GetParameters().Length == 1 && it.GetParameters()[0].ParameterType == mySqlBulkCopyColumnMappingType
-                                          );
-
-                            //缓存委托
-                            var mysqlBulkCopyWriteMethodTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(object) };
-                            var mysqlBulkCopyWriteMethodFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodTypes);
-                            var mysqlBulkCopyWriteMethodDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodFuncType, mysqlBulkCopyWriteMethod);
-                            SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodDelegate", mysqlBulkCopyWriteMethodDelegate);
-                            var mySqlBulkCopyResultValueTaskType = typeof(ValueTask<>).MakeGenericType(mySqlBulkCopyResultType);
-                            var mysqlBulkCopyWriteMethodAsyncTypes = new Type[] { mysqlBulkCopyType, typeof(DataTable), typeof(CancellationToken), mySqlBulkCopyResultValueTaskType };
-                            var mysqlBulkCopyWriteMethodAsyncFuncType = Expression.GetFuncType(mysqlBulkCopyWriteMethodAsyncTypes);
-                            var mysqlBulkCopyWriteMethodAsyncDelegate = Delegate.CreateDelegate(mysqlBulkCopyWriteMethodAsyncFuncType, mysqlBulkCopyWriteMethodAsync);
-                            SbUtil.CacheDelegateDictionary.TryAdd("mysqlBulkCopyWriteMethodAsyncDelegate", mysqlBulkCopyWriteMethodAsyncDelegate);
-
-                            var addColumnMappingMethodInfoTypes = new Type[] { mysqlBulkCopyType.GetProperty("ColumnMappings").PropertyType, mySqlBulkCopyColumnMappingType };
-                            var addColumnMappingMethodInfoType = Expression.GetActionType(addColumnMappingMethodInfoTypes);
-                            var addColumnMappingMethodInfoDelegate = Delegate.CreateDelegate(addColumnMappingMethodInfoType, addColumnMappingMethodInfo);
-                            SbUtil.CacheDelegateDictionary.TryAdd("addColumnMappingMethodInfoDelegate", addColumnMappingMethodInfoDelegate);
-
-                            SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyWriteMethodAsync", mysqlBulkCopyWriteMethodAsync);
-                            SbUtil.CacheDictionary.TryAdd("mySqlBulkCopyColumnMappingType", mySqlBulkCopyColumnMappingType);
-                            SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyType", mysqlBulkCopyType);
-                            SbUtil.CacheDictionary.TryAdd("mysqlAddColumnMappingMethodInfo", addColumnMappingMethodInfo);
-
-                        }
-                        catch (Exception e)
-                        {
-                            SbUtil.CacheDictionary.TryAdd("mysqlBulkCopyDelegateErr", e);
-                        }
                     }
                     else if (databaseUnit.IsSqlite)
                     {

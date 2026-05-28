@@ -222,6 +222,12 @@ namespace SummerBoot.Repository.Generator
                     {
                         dbFieldTypeName = tempDbFieldTypeName;
                     }
+
+                    if (databaseUnit.CsharpTypeToDatabaseTypeNames.TryGetValue(propertyInfo.PropertyType,
+                            out var databaseTypeName))
+                    {
+                        dbFieldTypeName = databaseTypeName;
+                    }
                     //最高级别的column字段映射
                     if (columnAttribute != null && columnAttribute.TypeName.HasText())
                     {

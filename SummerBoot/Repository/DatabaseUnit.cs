@@ -1,5 +1,7 @@
+using SummerBoot.Core;
 using SummerBoot.Repository.Core;
 using SummerBoot.Repository.DataMigrate;
+using SummerBoot.Repository.ExpressionParser;
 using SummerBoot.Repository.ExpressionParser.Parser;
 using SummerBoot.Repository.Generator;
 using System;
@@ -7,15 +9,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Reflection;
-using SummerBoot.Core;
-using System.Security.Claims;
-using System.ComponentModel;
-using System.Linq.Expressions;
 using SqlParser.Net.Ast.Expression;
-using SummerBoot.Repository.ExpressionParser;
 
 namespace SummerBoot.Repository
 {
@@ -39,6 +35,10 @@ namespace SummerBoot.Repository
         /// </summary>
         public Func<string, string> TableNameMapping { get; set; }
         public Dictionary<Type, DbType> ParameterTypeMaps { get; }
+        /// <summary>
+        /// Mapping from C# types to database type names;c#类型到数据库类型名称的映射
+        /// </summary>
+        public Dictionary<Type, string> CsharpTypeToDatabaseTypeNames { get; }
         /// <summary>
         /// Is it data migration mode? If yes, ignore id auto-increment when inserting data
         /// 是否为数据迁移模式,如果是，则插入数据时忽略id自增
@@ -158,6 +158,7 @@ namespace SummerBoot.Repository
             this.DbConnectionType = dbConnectionType;
             this.ConnectionString = connectionString;
             this.ParameterTypeMaps = SbUtil.CsharpTypeToDbTypeMap.DeepClone();
+            this.CsharpTypeToDatabaseTypeNames = new Dictionary<Type, string>();
             this.Id = Guid.NewGuid();
             TypeHandlers.TryAdd(Id, new Dictionary<Type, Type>());
             InitDefaultFunctionCall();
@@ -167,11 +168,11 @@ namespace SummerBoot.Repository
         {
             var p = x.FunctionParameters.First();
 
-            if (sqlBinaryOperator.Equals( SqlBinaryOperator.Like))
+            if (sqlBinaryOperator.Equals(SqlBinaryOperator.Like))
             {
                 AddLikeWildcards(p, x.DynamicParameters, likeLeft, likeRight);
             }
-            
+
             return new SqlBinaryExpression()
             {
                 Left = x.Body,
@@ -341,7 +342,7 @@ namespace SummerBoot.Repository
         {
             this.DatabaseSpecificProviderType = typeof(T);
         }
-        
+
         /// <summary>
         /// Binding entity class handler
         /// 绑定实体类处理程序
@@ -376,7 +377,29 @@ namespace SummerBoot.Repository
         }
 
         /// <summary>
-        /// 设置参数类型映射
+        /// Setting the mapping from C# types to database type names 设置c#类型到数据库类型名称的映射
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="dbTypeName"></param>
+        public void SetCsharpTypeToDatabaseTypeNameMap(Type type, string dbTypeName)
+        {
+            var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
+            var realType = nullableUnderlyingType ?? type;
+            var nullableType = typeof(Nullable<>).MakeGenericType(realType);
+            if (this.CsharpTypeToDatabaseTypeNames.ContainsKey(realType))
+            {
+                this.CsharpTypeToDatabaseTypeNames[realType] = dbTypeName;
+                this.CsharpTypeToDatabaseTypeNames[nullableType] = dbTypeName;
+            }
+            else
+            {
+                this.CsharpTypeToDatabaseTypeNames.Add(realType, dbTypeName);
+                this.CsharpTypeToDatabaseTypeNames.Add(nullableType, dbTypeName);
+            }
+        }
+
+        /// <summary>
+        /// Setting parameter type mapping;设置参数类型映射
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dbType"></param>
