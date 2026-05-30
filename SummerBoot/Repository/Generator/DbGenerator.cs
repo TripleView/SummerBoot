@@ -113,7 +113,10 @@ namespace SummerBoot.Repository.Generator
                         sb.AppendLine("      [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
                     }
                     sb.AppendLine($"      [Column(\"{columnInfo.ColumnName}\")]");
-                    var fieldType = databaseFieldMapping.ConvertDatabaseTypeToCsharpType(new List<DatabaseFieldInfoDto>() { columnInfo }).First();
+                    var fieldType = databaseUnit.DatabaseTypeNameToCsharpTypeNameMaps.ContainsKey(columnInfo.ColumnDataType) ?
+                        databaseUnit.DatabaseTypeNameToCsharpTypeNameMaps[columnInfo.ColumnDataType]
+                            : databaseFieldMapping.ConvertDatabaseTypeToCsharpType(new List<DatabaseFieldInfoDto>() { columnInfo }).First();
+
                     var nullablePart = (columnInfo.IsNullable && csharpCanBeNullableType.Any(it => it == fieldType)) ? "?" : "";
                     //为了符合c#命名规范，重新计算列名
                     var columnName = columnInfo.ColumnName;
@@ -223,7 +226,7 @@ namespace SummerBoot.Repository.Generator
                         dbFieldTypeName = tempDbFieldTypeName;
                     }
 
-                    if (databaseUnit.CsharpTypeToDatabaseTypeNames.TryGetValue(propertyInfo.PropertyType,
+                    if (databaseUnit.CsharpTypeToDatabaseTypeNameMaps.TryGetValue(propertyInfo.PropertyType,
                             out var databaseTypeName))
                     {
                         dbFieldTypeName = databaseTypeName;
@@ -271,7 +274,7 @@ namespace SummerBoot.Repository.Generator
                 //判断数据库中是否已经有这张表，如果有，则比较两张表的结构
                 var dbTableInfo = databaseInfo.GetTableInfoByName(schema, tableName);
                 //如果存在这张表
-                if (dbTableInfo.FieldInfos.Any()&& !isForce)
+                if (dbTableInfo.FieldInfos.Any() && !isForce)
                 {
                     var item = new GenerateDatabaseSqlResult()
                     {

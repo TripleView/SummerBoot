@@ -30,12 +30,24 @@ namespace SummerBoot.Test.DbExecute.Common.Db
             {
                 foreach (var property in entityType.GetProperties())
                 {
-                    if (property.ClrType == typeof(DateTime))
+                    if (property.ClrType == typeof(DateTime)|| property.ClrType == typeof(DateTime?))
                     {
                         property.SetColumnType("timestamp");
                     }
                 }
             }
+
+            // 全局将所有 DateTime 属性映射为 timestamp without time zone
+            //foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            //{
+            //    foreach (var property in entityType.GetProperties())
+            //    {
+            //        if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+            //        {
+            //            property.SetColumnType("timestamp without time zone");
+            //        }
+            //    }
+            //}
         }
         public DbSet<Customer> Customer { get; set; }
         public DbSet<OrderHeader> OrderHeader { get; set; }

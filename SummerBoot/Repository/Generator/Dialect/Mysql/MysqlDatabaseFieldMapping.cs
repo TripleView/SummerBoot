@@ -1,4 +1,4 @@
-锘縰sing System;
+using System;
 using System.Collections.Generic;
 using SummerBoot.Core;
 using SummerBoot.Repository.Generator.Dto;
@@ -30,6 +30,7 @@ namespace SummerBoot.Repository.Generator.Dialect
             {"blob","byte[]"},
             {"date","DateTime"},
             {"datetime","DateTime"},
+            {"datetime(6)","DateTime"},
             {"double","double"},
             {"float","float"},
             {"int","int"},
@@ -44,6 +45,7 @@ namespace SummerBoot.Repository.Generator.Dialect
             {"smallint unsigned","ushort"},
             {"text","string"},
             {"time","TimeSpan"},
+            {"time(6)","TimeSpan"},
             {"timestamp","DateTime"},
             {"tinyblob","byte[]"},
             {"tinyint","sbyte"},
@@ -82,7 +84,7 @@ namespace SummerBoot.Repository.Generator.Dialect
                 {
                     item = "byte[]";
                 }
-                //鐗规畩鎯呭喌
+                //特殊情况
                 if (databaseFieldInfo.ColumnDataType == "varbinary(16)")
                 {
                     item = "Guid";

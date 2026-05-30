@@ -69,43 +69,45 @@ public partial class RepositoryTest
     public async Task TestInnerJoin3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
         var name = GetRandomName();
-        var orderHeader = new OrderHeader()
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = name,
-            State = 1
+            Name = name,
+            OrderIndex = 1
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = 1,
+            Table1Id = joinTable1.Id
         };
-
-        var orderDetail2 = new OrderDetail()
+        await joinTable2Repository.InsertAsync(joinTable2);
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "B",
-            Quantity = 2,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
+        await joinTable3Repository.InsertAsync(joinTable3);
 
-        var id = await orderHeaderRepository
-            .InnerJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .WhereIf(orderHeader.Id > 0, x => x.T1.OrderNo == name)
-            .OrderByDescending(x => x.T2.Id)
-            .Select(x => x.T2.Id)
+        var id = await joinTable1Repository
+            .InnerJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .InnerJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T3.Name == name3)
+            .OrderByDescending(x => x.T3.Id)
+            .Select(x => x.T3.Id)
             .FirstOrDefaultAsync();
-        Assert.Equal(orderDetail2.Id, id);
+      
+        Assert.Equal(joinTable3.Id, id);
     }
 
     [Theory]
@@ -117,44 +119,57 @@ public partial class RepositoryTest
     public async Task TestRightJoin3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
         var name = GetRandomName();
-        var name2 = GetRandomName();
-        var orderHeader = new OrderHeader()
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = name,
-            State = -100
+            Name = name,
+            OrderIndex = -100
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
         };
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail2 = new OrderDetail()
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = name2,
-            Quantity = 2,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
-
-        var outputDto = await orderHeaderRepository
-            .RightJoin(orderDetailRepository, x => x.T1.State == x.T2.OrderHeaderId)
-            .WhereIf(orderHeader.Id > 0, x => x.T2.ProductName == name2)
-            .OrderByDescending(x => x.T2.Id)
-            .Select(x => new JoinOutputDto() { Id = x.T1.Id })
+        await joinTable3Repository.InsertAsync(joinTable3);
+        var outputDto = await joinTable1Repository
+            .RightJoin(joinTable2Repository, x => x.T1.OrderIndex == x.T2.Id)
+            .RightJoin(joinTable3Repository, x => x.T2.OrderIndex == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T3.Name == name3)
+            .OrderByDescending(x => x.T3.Id)
+            .Select(x => new JoinOutputDto() { Id = x.T1.Id,Id2 = x.T2.Id})
             .FirstOrDefaultAsync();
+
         Assert.Null(outputDto.Id);
+        Assert.Null(outputDto.Id2);
+
+        var outputDto2 = await joinTable1Repository
+            .RightJoin(joinTable2Repository, x => x.T1.OrderIndex == x.T2.Id)
+            .RightJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T3.Name == name3)
+            .OrderByDescending(x => x.T3.Id)
+            .Select(x => new JoinOutputDto() { Id = x.T1.Id, Id2 = x.T2.Id })
+            .FirstOrDefaultAsync();
+
+        Assert.Null(outputDto2.Id);
+        Assert.Equal(joinTable2.Id, outputDto2.Id2);
     }
 
     [Theory]
@@ -166,45 +181,58 @@ public partial class RepositoryTest
     public async Task TestLeftJoin3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
         var name = GetRandomName();
-        var name2 = GetRandomName();
-        var orderHeader = new OrderHeader()
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = name,
-            State = 100
+            Name = name,
+            OrderIndex = -100
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderHeader2 = new OrderHeader()
+        var joinTable2 = new JoinTable2()
         {
-            CreateTime = DateTime.Now.AddMinutes(1),
-            OrderNo = name,
-            State = 100
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
         };
-        await orderHeaderRepository.InsertAsync(orderHeader2);
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail1 = new OrderDetail()
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
         };
-
-        await orderDetailRepository.InsertAsync(orderDetail1);
-
-        var outputDto = await orderHeaderRepository
-            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .Where(x => x.T1.OrderNo == name)
-            .OrderBy(x => x.T1.State)
-            .ThenByDescending(x => x.T1.CreateTime)
-            .Select(x => new JoinOutputDto() { Id = x.T2.Id })
+        await joinTable3Repository.InsertAsync(joinTable3);
+        var outputDto = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.OrderIndex == x.T2.Id)
+            .LeftJoin(joinTable3Repository, x => x.T2.OrderIndex == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T1.Name == name)
+            .OrderByDescending(x => x.T3.Id)
+            .Select(x => new JoinOutputDto() { Id = x.T3.Id, Id2 = x.T2.Id })
             .FirstOrDefaultAsync();
+
         Assert.Null(outputDto.Id);
+        Assert.Null(outputDto.Id2);
+
+        var outputDto2 = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .LeftJoin(joinTable3Repository, x => x.T2.OrderIndex == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T1.Name == name)
+            .OrderByDescending(x => x.T1.Id)
+            .Select(x => new JoinOutputDto() { Id = x.T3.Id, Id2 = x.T2.Id })
+            .FirstOrDefaultAsync();
+
+        Assert.Null(outputDto2.Id);
+        Assert.Equal(joinTable2.Id, outputDto2.Id2);
+
     }
 
     [Theory]
@@ -216,40 +244,53 @@ public partial class RepositoryTest
     public async Task TestJoinMax3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-        var orderHeader = new OrderHeader()
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
+        var name = GetRandomName();
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = "ABC",
-            State = 1
+            Name = name,
+            OrderIndex = -100
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
         };
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail2 = new OrderDetail()
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "B",
-            Quantity = 2,
-            State = 100
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 101,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
+        await joinTable3Repository.InsertAsync(joinTable3);
 
-        var value = await orderHeaderRepository
-            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .Where(x => x.T1.Id == orderHeader.Id)
-            .MaxAsync(x => x.T2.State);
-        Assert.Equal(100, value);
+        var joinTable3b = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3b);
+
+        var value = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .LeftJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T1.Name == name)
+            .MaxAsync(x => x.T3.OrderIndex);
+
+        Assert.Equal(101, value);
     }
 
     [Theory]
@@ -261,39 +302,53 @@ public partial class RepositoryTest
     public async Task TestJoinMin3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-        var orderHeader = new OrderHeader()
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
+        var name = GetRandomName();
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = "ABC",
-            State = 1
+            Name = name,
+            OrderIndex = -100
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
         };
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail2 = new OrderDetail()
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "B",
-            Quantity = 2,
-            State = 100
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 100,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
+        await joinTable3Repository.InsertAsync(joinTable3);
 
-        var value = await orderHeaderRepository
-            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .Where(x => x.T1.Id == orderHeader.Id)
-            .MinAsync(x => x.T2.State);
+        var joinTable3b = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3b);
+
+
+        var value = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .LeftJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T1.Name == name)
+            .MinAsync(x => x.T3.OrderIndex);
+
         Assert.Equal(1, value);
     }
 
@@ -306,40 +361,55 @@ public partial class RepositoryTest
     public async Task TestJoinSum3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-        var orderHeader = new OrderHeader()
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
+        var name = GetRandomName();
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = "ABC",
-            State = 1
+            Name = name,
+            OrderIndex = -100
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
         };
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail2 = new OrderDetail()
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "B",
-            Quantity = 2,
-            State = 100
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 100,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
+        await joinTable3Repository.InsertAsync(joinTable3);
 
-        var value = await orderHeaderRepository
-            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .Where(x => x.T1.Id == orderHeader.Id)
-            .SumAsync(x => x.T2.State);
+        var joinTable3b = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3b);
+
+
+        var value = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .LeftJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T1.Name == name)
+            .SumAsync(x => x.T3.OrderIndex);
+
         Assert.Equal(101, value);
+
     }
 
     [Theory]
@@ -351,40 +421,53 @@ public partial class RepositoryTest
     public async Task TestJoinAverage3Async(DbType dbType)
     {
         ChangeDb(dbType);
-        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
-        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
-
-        var orderHeader = new OrderHeader()
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
+        var name = GetRandomName();
+        var joinTable1 = new JoinTable1()
         {
             CreateTime = DateTime.Now,
-            OrderNo = "ABC",
-            State = 1
+            Name = name,
+            OrderIndex = -100
         };
-        await orderHeaderRepository.InsertAsync(orderHeader);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var orderDetail1 = new OrderDetail()
+        var joinTable2 = new JoinTable2()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "A",
-            Quantity = 1,
-            State = 1
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
         };
+        await joinTable2Repository.InsertAsync(joinTable2);
 
-        var orderDetail2 = new OrderDetail()
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
         {
-            OrderHeaderId = orderHeader.Id,
-            ProductName = "B",
-            Quantity = 2,
-            State = 100
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 101,
+            Table2Id = joinTable2.Id
         };
-        await orderDetailRepository.InsertAsync(orderDetail1);
-        await orderDetailRepository.InsertAsync(orderDetail2);
+        await joinTable3Repository.InsertAsync(joinTable3);
 
-        var value = await orderHeaderRepository
-            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .Where(x => x.T1.Id == orderHeader.Id)
-            .AverageAsync(x => x.T2.State);
-        Assert.Equal(50, value);
+        var joinTable3b = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3b);
+
+        var value = await joinTable1Repository
+            .LeftJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .LeftJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .WhereIf(joinTable1.Id > 0, x => x.T1.Name == name)
+            .AverageAsync(x => x.T3.OrderIndex);
+
+        Assert.Equal(51, value);
     }
 
     [Theory]
@@ -396,28 +479,55 @@ public partial class RepositoryTest
     public async Task TestJoinEntityWithStringNullCallMethod3(DbType dbType)
     {
         ChangeDb(dbType);
-        var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
-        var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
         var name = GetRandomName();
-        var propNullTest = new PropNullTest()
+        var joinTable1 = new JoinTable1()
         {
-            Name = name
+            CreateTime = DateTime.Now,
+            Name = name,
+            OrderIndex = -100
         };
-        await propNullTestRepository.InsertAsync(propNullTest);
-        var propNullTestItem = new PropNullTestItem()
-        {
-            Name = "testitem",
-            MapId = propNullTest.Id
-        };
-        await propNullTestItemRepository.InsertAsync(propNullTestItem);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
+        var joinTable2 = new JoinTable2()
+        {
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
+        };
+        await joinTable2Repository.InsertAsync(joinTable2);
+
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 101,
+            Table2Id = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3);
+
+        var joinTable3b = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 1,
+            Table2Id = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3b);
         var test = new PropNullTest()
         {
             Name = null
         };
+        var result = await joinTable1Repository
+            .InnerJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .InnerJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id && x.T2.Name == test.Name.Trim())
+            .Select(it => new { it.T1.Name, it.T2.Table1Id })
+            .ToListAsync();
 
-        var result = await propNullTestRepository.InnerJoin(propNullTestItemRepository, it => it.T1.Id == it.T2.MapId && it.T2.Name == test.Name.Trim())
-            .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
         Assert.Empty(result);
     }
 
@@ -430,26 +540,46 @@ public partial class RepositoryTest
     public async Task TestJoinEntityWithNullableProperty3(DbType dbType)
     {
         ChangeDb(dbType);
-        var propNullTestRepository = serviceProvider.GetService<IPropNullTestRepository>();
-        var propNullTestItemRepository = serviceProvider.GetService<IPropNullTestItemRepository>();
+        var joinTable1Repository = serviceProvider.GetService<IJoinTable1Repository>();
+        var joinTable2Repository = serviceProvider.GetService<IJoinTable2Repository>();
+        var joinTable3Repository = serviceProvider.GetService<IJoinTable3Repository>();
         var name = GetRandomName();
-        var propNullTest = new PropNullTest()
+        var joinTable1 = new JoinTable1()
         {
-            Name = name
+            CreateTime = DateTime.Now,
+            Name = name,
+            OrderIndex = -100
         };
-        await propNullTestRepository.InsertAsync(propNullTest);
-        var propNullTestItem = new PropNullTestItem()
-        {
-            Name = "testitem",
-            MapId = propNullTest.Id
-        };
-        await propNullTestItemRepository.InsertAsync(propNullTestItem);
+        await joinTable1Repository.InsertAsync(joinTable1);
 
-        var result = await propNullTestRepository.LeftJoin(propNullTestItemRepository, it => it.T1.Id == it.T2.MapId)
-            .Where(x => x.T1.Name == name)
-            .Select(it => new { it.T1.Name, it.T2.MapId }).ToListAsync();
+        var joinTable2 = new JoinTable2()
+        {
+            CreateTime = DateTime.Now,
+            Name = "ABC",
+            OrderIndex = -100,
+            Table1Id = joinTable1.Id
+        };
+        await joinTable2Repository.InsertAsync(joinTable2);
+
+        var name3 = GetRandomName();
+        var joinTable3 = new JoinTable3()
+        {
+            CreateTime = DateTime.Now,
+            Name = name3,
+            OrderIndex = 101,
+            Table2Id2 = joinTable2.Id
+        };
+        await joinTable3Repository.InsertAsync(joinTable3);
+
+        var result = await joinTable1Repository
+            .InnerJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
+            .InnerJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id2)
+            .Where(x=>x.T1.Name==name)
+            .Select(it => new { it.T1.Name, it.T3.Table2Id2 })
+            .ToListAsync();
+
         Assert.Single(result);
         Assert.Equal(name, result.First().Name);
-        Assert.Equal(propNullTest.Id, result.First().MapId);
+        Assert.Equal(joinTable2.Id, result.First().Table2Id2);
     }
 }

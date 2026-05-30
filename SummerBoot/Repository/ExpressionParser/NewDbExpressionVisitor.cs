@@ -434,7 +434,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 AddParameter = this.GetSqlVariableExpressionWithValueAndDynamicName
             });
             lastMethodCallName = methodCallStack.Pop();
-            lastMethodCalls.Add(lastMethodCallName);
+            //lastMethodCalls.Add(lastMethodCallName);
             return GetWrapperExpression(callResult);
         }
         //list.

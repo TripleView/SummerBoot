@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using SummerBoot.Core;
 using SummerBoot.Repository.Generator.Dto;
@@ -31,6 +31,7 @@ namespace SummerBoot.Repository.Generator.Dialect
             {"uuid","Guid"},//
             {"date","DateTime"},
             {"timestamp","DateTime"},
+            {"timestamptz","DateTime"},
             {"int2","short"},//
             {"int4","int"},//
             {"int8","long"},//

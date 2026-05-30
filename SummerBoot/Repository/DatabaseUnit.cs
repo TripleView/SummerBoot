@@ -38,7 +38,11 @@ namespace SummerBoot.Repository
         /// <summary>
         /// Mapping from C# types to database type names;c#类型到数据库类型名称的映射
         /// </summary>
-        public Dictionary<Type, string> CsharpTypeToDatabaseTypeNames { get; }
+        public Dictionary<Type, string> CsharpTypeToDatabaseTypeNameMaps { get; }
+        /// <summary>
+        /// Mapping from Database Type Names to C# Type Names;数据库类型名称到c#类型名称的映射
+        /// </summary>
+        public Dictionary<string, string> DatabaseTypeNameToCsharpTypeNameMaps { get; }
         /// <summary>
         /// Is it data migration mode? If yes, ignore id auto-increment when inserting data
         /// 是否为数据迁移模式,如果是，则插入数据时忽略id自增
@@ -142,6 +146,11 @@ namespace SummerBoot.Repository
         /// 数据库生成器类
         /// </summary>
         public Type IDbGeneratorType { get; private set; }
+
+        /// <summary>
+        ///Guid To String;guid类型转string类型
+        /// </summary>
+        public bool GuidToString { get; set; } = false;
         /// <summary>
         ///Entity Class Handler
         ///实体类处理程序
@@ -158,7 +167,8 @@ namespace SummerBoot.Repository
             this.DbConnectionType = dbConnectionType;
             this.ConnectionString = connectionString;
             this.ParameterTypeMaps = SbUtil.CsharpTypeToDbTypeMap.DeepClone();
-            this.CsharpTypeToDatabaseTypeNames = new Dictionary<Type, string>();
+            this.CsharpTypeToDatabaseTypeNameMaps = new Dictionary<Type, string>();
+            this.DatabaseTypeNameToCsharpTypeNameMaps = new Dictionary<string, string>();
             this.Id = Guid.NewGuid();
             TypeHandlers.TryAdd(Id, new Dictionary<Type, Type>());
             InitDefaultFunctionCall();
@@ -386,15 +396,33 @@ namespace SummerBoot.Repository
             var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
             var realType = nullableUnderlyingType ?? type;
             var nullableType = typeof(Nullable<>).MakeGenericType(realType);
-            if (this.CsharpTypeToDatabaseTypeNames.ContainsKey(realType))
+            if (this.CsharpTypeToDatabaseTypeNameMaps.ContainsKey(realType))
             {
-                this.CsharpTypeToDatabaseTypeNames[realType] = dbTypeName;
-                this.CsharpTypeToDatabaseTypeNames[nullableType] = dbTypeName;
+                this.CsharpTypeToDatabaseTypeNameMaps[realType] = dbTypeName;
+                this.CsharpTypeToDatabaseTypeNameMaps[nullableType] = dbTypeName;
             }
             else
             {
-                this.CsharpTypeToDatabaseTypeNames.Add(realType, dbTypeName);
-                this.CsharpTypeToDatabaseTypeNames.Add(nullableType, dbTypeName);
+                this.CsharpTypeToDatabaseTypeNameMaps.Add(realType, dbTypeName);
+                this.CsharpTypeToDatabaseTypeNameMaps.Add(nullableType, dbTypeName);
+            }
+        }
+
+        /// <summary>
+        /// Setting the mapping from database type name to C# type name; 设置数据库类型名称到c#类型名称的映射
+        /// </summary>
+        /// <param name="dbTypeName"></param>
+        /// <param name="csharpTypeName"></param>
+        public void SetDatabaseTypeNameToCsharpTypeNameMap( string dbTypeName, string csharpTypeName)
+        {
+            if (this.DatabaseTypeNameToCsharpTypeNameMaps.ContainsKey(dbTypeName))
+            {
+                this.DatabaseTypeNameToCsharpTypeNameMaps[dbTypeName] = csharpTypeName;
+              
+            }
+            else
+            {
+                this.DatabaseTypeNameToCsharpTypeNameMaps.Add(dbTypeName, csharpTypeName);
             }
         }
 
@@ -405,28 +433,18 @@ namespace SummerBoot.Repository
         /// <param name="dbType"></param>
         public void SetParameterTypeMap(Type type, DbType dbType)
         {
-            if (this.ParameterTypeMaps.ContainsKey(type))
+            var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
+            var realType = nullableUnderlyingType ?? type;
+            var nullableType = typeof(Nullable<>).MakeGenericType(realType);
+            if (this.ParameterTypeMaps.ContainsKey(realType))
             {
-                this.ParameterTypeMaps[type] = dbType;
-
-                //添加可空和非空类型
-                var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
-                if (nullableUnderlyingType == null)
-                {
-                    nullableUnderlyingType = typeof(Nullable<>).MakeGenericType(type);
-                }
-                this.ParameterTypeMaps[nullableUnderlyingType] = dbType;
+                this.ParameterTypeMaps[realType] = dbType;
+                this.ParameterTypeMaps[nullableType] = dbType;
             }
             else
             {
-                this.ParameterTypeMaps.Add(type, dbType);
-                //添加可空和非空类型
-                var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
-                if (nullableUnderlyingType == null)
-                {
-                    nullableUnderlyingType = typeof(Nullable<>).MakeGenericType(type);
-                }
-                this.ParameterTypeMaps.Add(nullableUnderlyingType, dbType);
+                this.ParameterTypeMaps.Add(realType, dbType);
+                this.ParameterTypeMaps.Add(nullableType, dbType);
             }
         }
 
@@ -438,19 +456,11 @@ namespace SummerBoot.Repository
         /// <param name="t"></param>
         public void SetTypeHandler(Type type, ITypeHandler t)
         {
-            this.InternalSetTypeHandler(type, t);
-            //return;
-            //添加可空和非空类型
             var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
-            if (nullableUnderlyingType != null)
-            {
-                this.InternalSetTypeHandler(nullableUnderlyingType, t);
-            }
-            else
-            {
-                nullableUnderlyingType = typeof(Nullable<>).MakeGenericType(type);
-                this.InternalSetTypeHandler(nullableUnderlyingType, t);
-            }
+            var realType = nullableUnderlyingType ?? type;
+            var nullableType = typeof(Nullable<>).MakeGenericType(realType);
+            this.InternalSetTypeHandler(type, t);
+            this.InternalSetTypeHandler(nullableType, t);
         }
 
         private void InternalSetTypeHandler(Type type, ITypeHandler t)
@@ -459,7 +469,6 @@ namespace SummerBoot.Repository
             typeHandlerCacheType.GetMethod("SetHandler").Invoke(null, new object[] { t });
             TypeHandlers[this.Id][type] = typeHandlerCacheType;
         }
-
 
         /// <summary>
         /// 数据库连接器类型

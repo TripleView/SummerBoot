@@ -42,20 +42,31 @@ public class MysqlDatabaseSpecificProvider : DefaultDatabaseSpecificProvider, ID
         {
             var property = internalResult.PropertyInfoMappings[i].PropertyInfo;
             var columnName = internalResult.PropertyInfoMappings[i].ColumnName;
-
             MySqlBulkCopyColumnMapping mapping;
             if (property.PropertyType.GetUnderlyingType() == typeof(Guid))
             {
-                mapping = new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} = unhex(@tmp)");
+                if (!databaseUnit.GuidToString)
+                {
+                    mapping = new MySqlBulkCopyColumnMapping(i, "@tmp", $"{columnName} = unhex(@tmp)");
+                }
+                else
+                {
+                    mapping = new MySqlBulkCopyColumnMapping(i, columnName, null);
+                }
             }
             else
             {
                 mapping = new MySqlBulkCopyColumnMapping(i, columnName, null);
             }
+
             mySqlBulkCopy.ColumnMappings.Add(mapping);
         }
         var insertData = list.ToDataTable(internalResult.PropertyInfoMappings.Select(it => it.PropertyInfo).ToList());
-        SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(insertData, guid1 => guid1.ToByteArray());
+        if (!databaseUnit.GuidToString)
+        {
+            SbUtil.ReplaceDataTableColumnType<Guid, byte[]>(insertData, guid1 => guid1.ToByteArray());
+        }
+
         return (mySqlBulkCopy, insertData);
     }
 

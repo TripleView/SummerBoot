@@ -9,9 +9,11 @@ public class DatabaseInitFixture : IDisposable
 {
     public DatabaseInitFixture()
     {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         //InitDatabase();
         //InitMysqlDatabase();
-        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+        //AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+       
         //InitPgsqlDatabase();
     }
 
