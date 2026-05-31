@@ -13,7 +13,7 @@ public class DatabaseInitFixture : IDisposable
         //InitDatabase();
         //InitMysqlDatabase();
         //AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-       
+
         //InitPgsqlDatabase();
     }
 

@@ -171,23 +171,20 @@ public class JoinRepository<T1, T2, T3> : IJoinRepository<T1, T2, T3>
 
     public IJoinRepository<T1, T2, T3, T4> LeftJoin<T4>(ILambdaRepository<T4> second, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
     {
-        return null;
-        //var methodInfo = JoinRepository3MethodsCache.RightJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-        //return InternalJoin(second, on, methodInfo);
+        var methodInfo = JoinRepository4MethodsCache.LeftJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+        return InternalJoin(second, on, methodInfo);
     }
 
     public IJoinRepository<T1, T2, T3, T4> RightJoin<T4>(ILambdaRepository<T4> second, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
     {
-        return null;
-        //var methodInfo = JoinRepository3MethodsCache.RightJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-        //return InternalJoin(second, on, methodInfo);
+        var methodInfo = JoinRepository4MethodsCache.RightJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+        return InternalJoin(second, on, methodInfo);
     }
 
     public IJoinRepository<T1, T2, T3, T4> InnerJoin<T4>(ILambdaRepository<T4> second, Expression<Func<JoinCondition<T1, T2, T3, T4>, bool>> on)
     {
-        return null;
-        //var methodInfo = JoinRepository3MethodsCache.RightJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
-        //return InternalJoin(second, on, methodInfo);
+        var methodInfo = JoinRepository4MethodsCache.InnerJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+        return InternalJoin(second, on, methodInfo);
     }
 
     public ILambdaRepository<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2, T3>, TResult>> selector)
@@ -264,8 +261,9 @@ public class JoinRepository<T1, T2, T3> : IJoinRepository<T1, T2, T3>
         if (on == null) throw new ArgumentNullException(nameof(on));
 
         var callExpr = Expression.Call(
-            Expression.Constant(this),
+            null,
             methodInfo,
+            Source.Expression,
             joinTable.Expression,
             Expression.Quote(on)
         );
@@ -298,15 +296,5 @@ public class JoinGroupRepository<T1, T2, T3, TKey> : IJoinGroupRepository<T1, T2
 
         var r = Source.Provider.CreateQuery<ILambdaRepository<TResult>>(callExpr);
         return r;
-    }
-}
-
-public class JoinRepository<T1, T2, T3, T4> : IJoinRepository<T1, T2, T3, T4>
-{
-    public ILambdaRepository<JoinCondition<T1, T2, T3, T4>> Source { get; }
-
-    public JoinRepository(ILambdaRepository<JoinCondition<T1, T2, T3, T4>> source)
-    {
-        Source = source;
     }
 }

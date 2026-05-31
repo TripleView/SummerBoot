@@ -14,4 +14,6 @@ public class JoinTable7
     public DateTime CreateTime { get; set; }
 
     public int Table6Id { get; set; }
+
+    public int? Table6Id2 { get; set; }
 }
