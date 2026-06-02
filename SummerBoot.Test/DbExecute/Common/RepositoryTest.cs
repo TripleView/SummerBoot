@@ -2692,5 +2692,154 @@ namespace SummerBoot.Test.DbExecute.Common
             Assert.Equal(orderHeader.CustomerId, r1.First().Count2);
         }
 
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestQueryFirstOrDefaultAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var tableName = GetTableName(databaseUnit, nameof(OrderHeader));
+            var parameterName = nameof(OrderHeader.OrderNo);
+            var columnName = GetColumnName(databaseUnit, parameterName);
+
+            var parameter = new SummerBoot.Repository.Core.DynamicParameters();
+            parameter.Add(parameterName, orderNo);
+            var dbModel = await orderHeaderRepository.QueryFirstOrDefaultAsync<OrderHeader>($"select * from {tableName} where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
+            TestUtils.CompareTwoModel(dbModel, orderHeader);
+        }
+
+        private string GetColumnName(DatabaseUnit databaseUnit,string columnName)
+        {
+            columnName = databaseUnit.LeftQualifiers + columnName + databaseUnit.RightQualifiers;
+            if (databaseUnit.ColumnNameMapping != null)
+            {
+                columnName = databaseUnit.ColumnNameMapping(columnName);
+            }
+
+            return columnName;
+        }
+
+        private string GetTableName(DatabaseUnit databaseUnit, string tableName)
+        {
+            tableName = databaseUnit.LeftQualifiers + tableName + databaseUnit.RightQualifiers;
+            if (databaseUnit.TableNameMapping != null)
+            {
+                tableName = databaseUnit.TableNameMapping(tableName);
+            }
+
+            return tableName;
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestQueryListAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var name = GetRandomName();
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var tableName = GetTableName(databaseUnit, nameof(OrderHeader));
+            var parameterName = nameof(OrderHeader.OrderNo);
+            var columnName = GetColumnName(databaseUnit, parameterName);
+            var orderDetailTableName = GetTableName(databaseUnit, nameof(OrderDetail));
+
+            var idColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.Id));
+            var orderHeaderIdColumnName = GetColumnName(databaseUnit, nameof(OrderDetail.OrderHeaderId));
+            var parameter = new SummerBoot.Repository.Core.DynamicParameters();
+            parameter.Add(parameterName, orderNo);
+            var dbModels = await orderDetailRepository.QueryListAsync<OrderDetail>($"select b.* from {tableName} a left join {orderDetailTableName} b on a.{idColumnName}=b.{orderHeaderIdColumnName} where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
+            TestUtils.CompareTwoModel(dbModels.First(x=>x.ProductName=="A"), orderDetail1);
+            TestUtils.CompareTwoModel(dbModels.First(x => x.ProductName == "B"), orderDetail2);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestExecuteAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var tableName = GetTableName(databaseUnit, nameof(OrderHeader));
+            var parameterName = nameof(OrderHeader.OrderNo);
+            var columnName = GetColumnName(databaseUnit, parameterName);
+            var stateColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.State));
+            var parameter = new SummerBoot.Repository.Core.DynamicParameters();
+            parameter.Add(parameterName, orderNo);
+            var affectRowCount = await orderHeaderRepository.ExecuteAsync($"update {tableName} set {stateColumnName}=2 where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
+            Assert.Equal(1,affectRowCount);
+            var dbModel = await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderNo);
+            Assert.Equal(2, dbModel.State);
+            orderHeader.State = 2;
+            TestUtils.CompareTwoModel(dbModel, orderHeader);
+        }
     }
 }

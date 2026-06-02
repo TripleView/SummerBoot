@@ -1,4 +1,7 @@
+using SqlParser.Net;
+using SqlParser.Net.Ast.Expression;
 using SummerBoot.Core;
+using SummerBoot.Core.Configuration.Parser;
 using SummerBoot.Repository.Core;
 using SummerBoot.Repository.DataMigrate;
 using SummerBoot.Repository.ExpressionParser;
@@ -11,7 +14,6 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
-using SqlParser.Net.Ast.Expression;
 
 namespace SummerBoot.Repository
 {
@@ -34,7 +36,7 @@ namespace SummerBoot.Repository
         /// Set Table name mapping at database unit scope;设置数据库单元范围内的表名映射
         /// </summary>
         public Func<string, string> TableNameMapping { get; set; }
-        public Dictionary<Type, DbType> ParameterTypeMaps { get; }
+        public Dictionary<Type, System.Data.DbType> ParameterTypeMaps { get; }
         /// <summary>
         /// Mapping from C# types to database type names;c#类型到数据库类型名称的映射
         /// </summary>
@@ -160,7 +162,21 @@ namespace SummerBoot.Repository
         /// Database unit id;数据库单元id
         /// </summary>
         public Guid Id { private set; get; }
+        /// <summary>
+        /// Left Qualifiers
+        /// 左限定符
+        /// </summary>
+        public string LeftQualifiers { get;private set; }
+        /// <summary>
+        /// right Qualifiers
+        /// 右限定符
+        /// </summary>
+        public string RightQualifiers { get; private set; }
 
+        /// <summary>
+        /// Parameter Name Prefix;参数名称前缀
+        /// </summary>
+        public string ParameterNamePrefix { get; private set; }
         public DatabaseUnit(Type iUnitOfWorkType, Type dbConnectionType, string connectionString)
         {
             this.IUnitOfWorkType = iUnitOfWorkType;
@@ -172,6 +188,39 @@ namespace SummerBoot.Repository
             this.Id = Guid.NewGuid();
             TypeHandlers.TryAdd(Id, new Dictionary<Type, Type>());
             InitDefaultFunctionCall();
+            InitDatabaseInfo();
+        }
+
+        private void InitDatabaseInfo()
+        {
+            switch (DatabaseType)
+            {
+                case DatabaseType.SqlServer:
+                    LeftQualifiers = "[";
+                    RightQualifiers = "]";
+                    ParameterNamePrefix = "@";
+                    break;
+                case DatabaseType.Mysql:
+                    LeftQualifiers = "`";
+                    RightQualifiers = "`";
+                    ParameterNamePrefix = "@";
+                    break;
+                case DatabaseType.Oracle:
+                    LeftQualifiers = "\"";
+                    RightQualifiers = "\"";
+                    ParameterNamePrefix = ":";
+                    break;
+                case DatabaseType.Sqlite:
+                    LeftQualifiers = "`";
+                    RightQualifiers = "`";
+                    ParameterNamePrefix = ":";
+                    break;
+                case DatabaseType.Pgsql:
+                    LeftQualifiers = "\"";
+                    RightQualifiers = "\"";
+                    ParameterNamePrefix = "@";
+                    break;
+            }
         }
 
         private SqlExpression StringBinaryMethodHandler(FunctionCallInfo x, SqlBinaryOperator sqlBinaryOperator, string likeLeft = "", string likeRight = "")
@@ -431,7 +480,7 @@ namespace SummerBoot.Repository
         /// </summary>
         /// <param name="type"></param>
         /// <param name="dbType"></param>
-        public void SetParameterTypeMap(Type type, DbType dbType)
+        public void SetParameterTypeMap(Type type, System.Data.DbType dbType)
         {
             var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
             var realType = nullableUnderlyingType ?? type;
