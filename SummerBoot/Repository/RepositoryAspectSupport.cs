@@ -19,8 +19,9 @@ namespace SummerBoot.Repository
         {
             this.uow = uow;
             this.dbFactory = uow.DbFactory;
+            this.databaseUnit = dbFactory.DatabaseUnit;
         }
-        private IPageable pageable;
+
         private IServiceProvider ServiceProvider { set; get; }
 
         private IDbConnection dbConnection;
@@ -32,33 +33,6 @@ namespace SummerBoot.Repository
         private IDbFactory dbFactory;
 
         private DatabaseUnit databaseUnit;
-
-        public void SetDatabaseUnit(DatabaseUnit databaseUnit)
-        {
-            this.databaseUnit = databaseUnit;
-        }
-
-        /// <summary>
-        /// 参数字典
-        /// </summary>
-        private Dictionary<string, object> parameterDictionary = new Dictionary<string, object>();
-        /// <summary>
-        /// 仓储参数
-        /// </summary>
-        private RepositoryOption repositoryOption;
-
-        private IConfiguration configuration;
-
-        private void Init()
-        {
-            //先获得工作单元和数据库工厂以及序列化器
-            //uow = ServiceProvider.GetService<IUnitOfWork>();
-            //dbFactory = ServiceProvider.GetService<IDbFactory>();
-            repositoryOption = ServiceProvider.GetService<RepositoryOption>();
-            configuration = ServiceProvider.GetService<IConfiguration>();
-            parameterDictionary.Clear();
-            pageable = null;
-        }
 
         protected void OpenDb()
         {
@@ -82,6 +56,7 @@ namespace SummerBoot.Repository
         /// <returns></returns>
         private string GetValueByConfiguration(string value)
         {
+            var configuration = ServiceProvider.GetService<IConfiguration>();
             if (value.IsNullOrWhiteSpace())
             {
                 return value;
@@ -114,12 +89,16 @@ namespace SummerBoot.Repository
         public Page<T> PageBaseExecute<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            Init();
+            var repositoryOption = ServiceProvider.GetService<RepositoryOption>();
+            var configuration = ServiceProvider.GetService<IConfiguration>();
+            //parameterDictionary.Clear();
+            Pageable pageable = null;
+
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
             {
-                var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+
                 //获得动态参数
                 var dbArgs = GetParameters(method, args);
                 if (pageable == null)
@@ -134,7 +113,6 @@ namespace SummerBoot.Repository
                 {
                     throw new NotSupportedException("sql must contain order by clause");
                 }
-                sql = ReplaceSqlBindWhereCondition(sql);
                 var result = new Page<T>() { };
 
                 //SqlParser.SqlParser parser;
@@ -183,7 +161,7 @@ namespace SummerBoot.Repository
         public async Task<Page<T>> PageBaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            Init();
+            Pageable pageable = null;
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
@@ -203,7 +181,6 @@ namespace SummerBoot.Repository
                 {
                     throw new NotSupportedException("sql must contain order by clause");
                 }
-                sql = ReplaceSqlBindWhereCondition(sql);
 
                 var result = new Page<T>() { };
 
@@ -253,7 +230,7 @@ namespace SummerBoot.Repository
         public T BaseExecute<T, TBaseType>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            Init();
+            Pageable pageable = null;
 
             var targetType = typeof(T);
             var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
@@ -267,7 +244,6 @@ namespace SummerBoot.Repository
             {
                 var sql = selectAttribute.Sql;
                 sql = GetValueByConfiguration(sql);
-                sql = ReplaceSqlBindWhereCondition(sql);
 
                 OpenDb();
                 if (baseTypeIsSameReturnType)
@@ -295,7 +271,7 @@ namespace SummerBoot.Repository
             var targetType = typeof(T);
             var baseTypeIsSameReturnType = typeof(T) == typeof(TBaseType);
 
-            Init();
+            Pageable pageable = null;
 
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
@@ -307,7 +283,6 @@ namespace SummerBoot.Repository
                 var dbArgs = GetParameters(method, args);
                 var sql = selectAttribute.Sql;
                 sql = GetValueByConfiguration(sql);
-                sql = ReplaceSqlBindWhereCondition(sql);
 
                 OpenDb();
 
@@ -318,7 +293,7 @@ namespace SummerBoot.Repository
                 }
                 else
                 {
-                    var queryResult =( await dbConnection.QueryAsync<TBaseType>(databaseUnit, sql, dbArgs, transaction: dbTransaction)).ToList();
+                    var queryResult = (await dbConnection.QueryAsync<TBaseType>(databaseUnit, sql, dbArgs, transaction: dbTransaction)).ToList();
                     if (targetType.IsCollection())
                     {
                         return (T)(object)queryResult;
@@ -344,7 +319,7 @@ namespace SummerBoot.Repository
         {
             ServiceProvider = serviceProvider;
 
-            Init();
+            Pageable pageable = null;
 
             //获得动态参数
             var dbArgs = GetParameters(method, args);
@@ -353,7 +328,6 @@ namespace SummerBoot.Repository
             if (deleteAttribute == null && updateAttribute == null) return 0;
             var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
             sql = GetValueByConfiguration(sql);
-            sql = ReplaceSqlBindWhereCondition(sql);
 
             OpenDb();
             var executeResult = dbConnection.Execute(databaseUnit, sql, dbArgs, transaction: dbTransaction);
@@ -366,7 +340,6 @@ namespace SummerBoot.Repository
             IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            Init();
             //获得动态参数
             var dbArgs = GetParameters(method, args);
             var deleteAttribute = method.GetCustomAttribute<DeleteAttribute>();
@@ -374,62 +347,11 @@ namespace SummerBoot.Repository
             if (deleteAttribute == null && updateAttribute == null) return 0;
             var sql = updateAttribute != null ? updateAttribute.Sql : deleteAttribute.Sql;
             sql = GetValueByConfiguration(sql);
-            sql = ReplaceSqlBindWhereCondition(sql);
             OpenDb();
             var executeResult = await dbConnection.ExecuteAsync(databaseUnit, sql, dbArgs, transaction: dbTransaction);
             CloseDb();
 
             return executeResult;
-        }
-
-        /// <summary>
-        /// 替换sql语句里的bindWhere条件的语句，如{{ and a.name=@name}}
-        /// </summary>
-        /// <param name="sql"></param>
-        /// <returns></returns>
-        private string ReplaceSqlBindWhereCondition(string sql)
-        {
-            var bindWhereParameterNames = parameterDictionary.Keys.ToList();
-
-            //参数前缀
-            var parameterPrefix = "";
-            switch (databaseUnit.DatabaseType)
-            {
-                case DatabaseType.Mysql:
-                case DatabaseType.SqlServer:
-                case DatabaseType.Pgsql:
-                    parameterPrefix = "@";
-                    break;
-                case DatabaseType.Sqlite:
-                case DatabaseType.Oracle:
-                    parameterPrefix = ":";
-                    break;
-            }
-
-            var tempSql = Regex.Replace(sql, "\\{\\{[^\\}]*\\}\\}", match =>
-            {
-                string matchValue = match.Value;
-                var hasFind = false;
-                foreach (var name in bindWhereParameterNames)
-                {
-                    var parameterName = parameterPrefix + name;
-                    var matchResult = Regex.Match(matchValue, $"{parameterPrefix}\\w*");
-                    if (matchResult.Success && matchResult.Value.ToLower() == parameterName.ToLower())
-                    {
-                        hasFind = true;
-                    }
-                }
-                //如果参数有值才返回该条件判断语句，否则返回空
-                if (hasFind)
-                {
-                    return matchValue.Replace("{{", "").Replace("}}", "");
-                }
-
-                return "";
-
-            }, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            return tempSql;
         }
         /// <summary>
         /// 获取实际参数值
@@ -440,6 +362,7 @@ namespace SummerBoot.Repository
         private DynamicParameters GetParameters(MethodInfo method, object[] args)
         {
             //获取参数
+            IPageable pageable = null;
             var dbArgs = new DynamicParameters();
             var parameterInfos = method.GetParameters();
             for (var i = 0; i < parameterInfos.Length; i++)
@@ -454,108 +377,31 @@ namespace SummerBoot.Repository
                         throw new NotSupportedException("2 IPageable parameters are not supported");
                     }
                     pageable = (IPageable)args[i];
+                    continue;
                 }
 
-                //查找所有条件语句替换
-                var bindWhere = parameterType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(parameterType.GetGenericTypeDefinition());
-                if (bindWhere)
+                //如果是值类型或者字符串直接添加到参数里
+                if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
                 {
-                    var paramAttribute = parameterInfos[i].GetCustomAttribute<ParamAttribute>();
-                    var argValue = args[i];
-                    var parameterName = paramAttribute != null && paramAttribute.Alias.HasText()
-                        ? paramAttribute.Alias
-                        : parameterInfos[i].Name;
-
-                    if (parameterName.IsNullOrWhiteSpace())
-                    {
-                        throw new ArgumentNullException(nameof(argValue));
-                    }
-
-                    if (parameterName.IsNullOrWhiteSpace())
-                    {
-                        throw new ArgumentNullException(nameof(argValue));
-                    }
-
-                    var value = parameterType.GetProperty("Value").GetValue(argValue);
-                    var active = (bool)parameterType.GetProperty("Active").GetValue(argValue);
-
-                    if (value != null && active)
-                    {
-                        var valueType = parameterType.GetGenericArguments()[0];
-                        parameterDictionary.Add(parameterName, value);
-                        dbArgs.Add(parameterName, value,valueType: valueType);
-                    }
+                    dbArgs.Add(parameterInfos[i].Name, args[i], valueType: parameterType);
                 }
-                else
+                //如果是类，则读取属性值，然后添加到参数里
+                else if (parameterType.IsClass)
                 {
-                    //如果是值类型或者字符串直接添加到参数里
-                    if (parameterType.IsValueType || parameterTypeIsString || parameterType.IsCollection())
+                    var properties = parameterType.GetProperties();
+                    foreach (PropertyInfo info in properties)
                     {
-                        dbArgs.Add(parameterInfos[i].Name, args[i], valueType: parameterType);
-                    }
-                    //如果是类，则读取属性值，然后添加到参数里
-                    else if (parameterType.IsClass)
-                    {
-                        var properties = parameterType.GetProperties();
-                        foreach (PropertyInfo info in properties)
+                        var propertyType = info.PropertyType;
+                        var propertyTypeIsString = propertyType.IsString();
+                        if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
                         {
-                            var propertyType = info.PropertyType;
-                            var propertyTypeIsString = propertyType.GetTypeInfo() == typeof(string);
-                            if (propertyType.IsValueType || propertyTypeIsString || propertyType.IsCollection())
-                            {
-                                dbArgs.Add(info.Name, info.GetValue(args[i]), valueType: propertyType);
-                            }
-                            //查找所有条件语句替换
-                            var propertyBindWhere = propertyType.IsGenericType && typeof(WhereItem<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition());
-                            if (propertyBindWhere)
-                            {
-                                var paramAttribute = parameterInfos[i].GetCustomAttribute<ParamAttribute>();
-                                var argValue = info.GetValue(args[i]);
-                                var parameterName = paramAttribute != null && paramAttribute.Alias.HasText()
-                                    ? paramAttribute.Alias
-                                    : parameterInfos[i].Name;
-
-                                if (parameterName.IsNullOrWhiteSpace())
-                                {
-                                    throw new ArgumentNullException(nameof(argValue));
-                                }
-
-                                if (parameterName.IsNullOrWhiteSpace())
-                                {
-                                    throw new ArgumentNullException(nameof(argValue));
-                                }
-
-                                var value = propertyType.GetProperty("Value").GetValue(argValue);
-                                var active = (bool)propertyType.GetProperty("Active").GetValue(argValue);
-
-                                if (value != null && active)
-                                {
-                                    parameterDictionary.Add(parameterName, value);
-                                    dbArgs.Add(parameterName, value, valueType: propertyType.GetGenericArguments()[0]);
-                                }
-                            }
+                            dbArgs.Add(info.Name, info.GetValue(args[i]), valueType: propertyType);
                         }
                     }
                 }
-
-
             }
 
             return dbArgs;
         }
-
-        //protected void ChangeDynamicParameters(List<SqlParameter> originSqlParameters, DynamicParameters dynamicParameters)
-        //{
-        //    if (originSqlParameters == null || originSqlParameters.Count == 0)
-        //    {
-        //        return;
-        //    }
-
-        //    foreach (var parameter in originSqlParameters)
-        //    {
-        //        dynamicParameters.Add(parameter.ParameterName, parameter.Value,valueType:parameter.ParameterType);
-        //    }
-        //}
-
     }
 }

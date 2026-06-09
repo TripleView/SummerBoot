@@ -184,8 +184,10 @@ namespace SummerBoot.Repository
         /// 动态生成接口的实现类
         /// </summary>
         /// <param name="interfaceType"></param>
-        /// <param name="constructor"></param>
+        /// <param name="customBaseRepositoryType"></param>
+        /// <param name="repositoryServiceType"></param>
         /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private Type BuildTargetType(Type interfaceType, Type customBaseRepositoryType, Type repositoryServiceType)
         {
             solidMethodNames = typeof(CustomBaseRepository<BaseEntity>).GetMethods().Select(x => x.Name).ToList();
@@ -236,13 +238,8 @@ namespace SummerBoot.Repository
                         targetMethods.AddRange(iInterface.GetMethods());
                         var genericType = iInterface.GetGenericArguments().First();
                         baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
-                        targetMethods.AddRange(typeof(IEnumerable<>).MakeGenericType(genericType).GetMethods());
-                        targetMethods.AddRange(typeof(IEnumerable).GetMethods());
-                        //targetMethods.AddRange(typeof(IQueryable).GetMethods());
-                        //var c = typeof(IBaseRepository<>).MakeGenericType(genericType).GetMethods();
                         targetMethods.AddRange(typeof(IBaseRepository<>).MakeGenericType(genericType).GetMethods());
                         targetMethods.AddRange(typeof(ISqlExecutor).GetMethods());
-                        //targetMethods.AddRange(typeof(IAsyncQueryable<>).MakeGenericType(genericType).GetMethods());
                         break;
                     }
                 }

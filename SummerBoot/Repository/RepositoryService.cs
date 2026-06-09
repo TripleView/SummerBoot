@@ -10,7 +10,7 @@ namespace SummerBoot.Repository
 {
     public class RepositoryService : RepositoryAspectSupport
     {
-        public RepositoryService(IUnitOfWork uow):base(uow)
+        public RepositoryService(IUnitOfWork uow) : base(uow)
         {
         }
 
@@ -21,7 +21,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             await base.BaseExecuteNoReturnAsync(method, args.ToArray(), serviceProvider);
         }
@@ -33,7 +32,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             base.BaseExecuteNoReturn(method, args.ToArray(), serviceProvider);
         }
@@ -45,7 +43,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             return await base.BaseExecuteReturnCountAsync(method, args.ToArray(), serviceProvider);
         }
@@ -57,7 +54,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             return base.BaseExecuteReturnCount(method, args.ToArray(), serviceProvider);
         }
@@ -69,7 +65,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             return await base.BaseExecuteAsync<T, TBaseType>(method, args.ToArray(), serviceProvider);
         }
@@ -81,7 +76,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             return base.BaseExecute<T, TBaseType>(method, args.ToArray(), serviceProvider);
         }
@@ -93,7 +87,6 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            var logFactory = serviceProvider.GetService<ILoggerFactory>();
 
             return await base.PageBaseExecuteAsync<T>(method, args.ToArray(), serviceProvider);
         }
@@ -105,7 +98,7 @@ namespace SummerBoot.Repository
 
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
-            
+
             return base.PageBaseExecute<T>(method, args.ToArray(), serviceProvider);
         }
 

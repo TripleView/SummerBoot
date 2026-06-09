@@ -261,7 +261,7 @@ namespace SummerBoot.Core
                     }
 
                     repositoryProxyBuilder.InitInterface(type, customBaseRepositoryType, repositoryServiceType);
-                    services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType, databaseUnit);
+                    services.AddSummerBootRepositoryService(type, ServiceLifetime.Scoped, customBaseRepositoryType, repositoryServiceType);
                 }
 
                 foreach (var type in manualRepositoryTypes)
@@ -322,25 +322,24 @@ namespace SummerBoot.Core
         }
 
         private static IServiceCollection AddSummerBootRepositoryService(this IServiceCollection services, Type serviceType,
-            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType, DatabaseUnit databaseUnit)
+            ServiceLifetime lifetime, Type customBaseRepositoryType, Type repositoryServiceType)
         {
             if (!serviceType.IsInterface) throw new ArgumentException(nameof(serviceType));
 
             object Factory(IServiceProvider provider)
             {
-                var repositoyProxyBuilder = (RepositoryProxyBuilder)provider.GetService<IRepositoryProxyBuilder>();
-                var repositoyService = (RepositoryService)provider.GetService(repositoryServiceType);
-                repositoyService!.SetDatabaseUnit(databaseUnit);
+                var repositoryProxyBuilder = (RepositoryProxyBuilder)provider.GetService<IRepositoryProxyBuilder>();
+                var repositoryService = (RepositoryService)provider.GetService(repositoryServiceType);
                 var repositoryType = serviceType.GetInterfaces().FirstOrDefault(it => it.IsGenericType && typeof(IBaseRepository<>).IsAssignableFrom(it.GetGenericTypeDefinition()));
                 if (repositoryType != null)
                 {
                     var genericType = repositoryType.GetGenericArguments().First();
                     var baseRepositoryType = customBaseRepositoryType.MakeGenericType(genericType);
                     var baseRepository = provider.GetService(baseRepositoryType);
-                    var proxy1 = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider, baseRepository);
+                    var proxy1 = repositoryProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoryService, provider, baseRepository);
                     return proxy1;
                 }
-                var proxy = repositoyProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoyService, provider);
+                var proxy = repositoryProxyBuilder.Build(serviceType, customBaseRepositoryType, repositoryServiceType, repositoryService, provider);
                 return proxy;
             }
             ;

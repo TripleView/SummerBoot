@@ -2841,5 +2841,43 @@ namespace SummerBoot.Test.DbExecute.Common
             orderHeader.State = 2;
             TestUtils.CompareTwoModel(dbModel, orderHeader);
         }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestSelectAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var tableName = GetTableName(databaseUnit, nameof(OrderHeader));
+            var parameterName = nameof(OrderHeader.OrderNo);
+            var columnName = GetColumnName(databaseUnit, parameterName);
+            var stateColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.State));
+            var parameter = new SummerBoot.Repository.Core.DynamicParameters();
+            parameter.Add(parameterName, orderNo);
+            var affectRowCount = await orderHeaderRepository.ExecuteAsync($"update {tableName} set {stateColumnName}=2 where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
+            Assert.Equal(1, affectRowCount);
+            var dbModel = await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderNo);
+            Assert.Equal(2, dbModel.State);
+            orderHeader.State = 2;
+            TestUtils.CompareTwoModel(dbModel, orderHeader);
+        }
     }
 }

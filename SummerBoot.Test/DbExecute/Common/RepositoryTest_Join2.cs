@@ -201,7 +201,7 @@ public partial class RepositoryTest
             .OrderByDescending(x => x.T2.Id)
             .Select(x => new { Id = x.T1.Id })
             .FirstOrDefaultAsync();
-        Assert.Equal(0,outputDto.Id);
+        Assert.Equal(0, outputDto.Id);
     }
 
 
@@ -499,5 +499,52 @@ public partial class RepositoryTest
         Assert.Single(result);
         Assert.Equal(name, result.First().Name);
         Assert.Equal(propNullTest.Id, result.First().MapId);
+    }
+
+    [Theory]
+    [InlineData(DbType.MySql)]
+    [InlineData(DbType.Pgsql)]
+    [InlineData(DbType.Oracle)]
+    [InlineData(DbType.SqlServer)]
+    [InlineData(DbType.Sqlite)]
+    public async Task TestJoinToPageAsync(DbType dbType)
+    {
+        ChangeDb(dbType);
+        var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+        var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+        var orderHeader = new OrderHeader()
+        {
+            CreateTime = DateTime.Now,
+            OrderNo = "ABC",
+            State = 1
+        };
+        await orderHeaderRepository.InsertAsync(orderHeader);
+
+        var orderDetail1 = new OrderDetail()
+        {
+            OrderHeaderId = orderHeader.Id,
+            ProductName = "A",
+            Quantity = 1,
+            State = 1
+        };
+
+        var orderDetail2 = new OrderDetail()
+        {
+            OrderHeaderId = orderHeader.Id,
+            ProductName = "B",
+            Quantity = 2,
+            State = 100
+        };
+        await orderDetailRepository.InsertAsync(orderDetail1);
+        await orderDetailRepository.InsertAsync(orderDetail2);
+
+        var pageResult = await orderHeaderRepository
+            .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+            .Where(x => x.T1.Id == orderHeader.Id)
+            .OrderBy(x=>x.T2.Id)
+            .Select(x => x.T2.Id).ToPageAsync(new Pageable(1, 1));
+        Assert.Equal(pageResult.TotalPages,2);
+        Assert.Equal(orderDetail1.Id, pageResult.Data.First());
     }
 }
