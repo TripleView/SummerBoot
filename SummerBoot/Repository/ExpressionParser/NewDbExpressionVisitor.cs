@@ -438,89 +438,90 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             return GetWrapperExpression(callResult);
         }
         //list.
-        else if (methodName == nameof(List<BaseEntity>.Contains) && method.DeclaringType?.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>)) == true)
+        else
         {
-            //collection
-            var isIEnumerable = method.DeclaringType.GetInterfaces().Contains(typeof(IEnumerable)) &&
-                                node.Arguments.Count == 1;
-            var isArray = method.DeclaringType == typeof(Enumerable) &&
-                          method.GetCustomAttribute<ExtensionAttribute>() != null && node.Arguments.Count == 2;
-
-            if (isIEnumerable || isArray)
+            if (methodName == nameof(List<BaseEntity>.Contains) )
             {
-                Expression collection;
-                Expression property;
-                if (isIEnumerable)
-                {
-                    collection = node.Object;
-                    property = node.Arguments[0];
-                }
-                else
-                {
-                    collection = node.Arguments[0];
-                    property = node.Arguments[1];
+                var isIEnumerable = method.DeclaringType != null && typeof(IEnumerable).IsAssignableFrom(method.DeclaringType) &&
+                                    node.Arguments.Count == 1;
 
-                }
-
-                var values = (IEnumerable)GetValue(collection);
-                var propertyExpression = this.Visit(property);
-                var body = GetSqlExpression(propertyExpression);
-                var count = 0;
-                foreach (var value in values)
+                var isArray = method.DeclaringType == typeof(Enumerable) &&
+                              method.IsDefined(typeof(ExtensionAttribute), false) &&
+                              node.Arguments.Count == 2;
+                if (isIEnumerable || isArray)
                 {
-                    count++;
-                }
-
-                var i = 1;
-                var sqlInExpressions = new List<SqlInExpression>();
-                var sqlVariableExpressions = new List<SqlVariableExpression>();
-                foreach (var value in values)
-                {
-                    var sqlVariableExpression = GetSqlVariableExpressionWithValueAndDynamicName(value);
-
-                    sqlVariableExpressions.Add(sqlVariableExpression);
-                    if ((i >= 500 && i % 500 == 0) || i == count)
+                    Expression collection;
+                    Expression property;
+                    if (isIEnumerable)
                     {
-                        var targetList = new List<SqlExpression>();
-                        targetList.AddRange(sqlVariableExpressions);
+                        collection = node.Object;
+                        property = node.Arguments[0];
+                    }
+                    else
+                    {
+                        collection = node.Arguments[0];
+                        property = node.Arguments[1];
 
-                        var sqlInExpression = new SqlInExpression()
-                        {
-                            Body = body,
-                            TargetList = targetList
-                        };
-                        sqlInExpressions.Add(sqlInExpression);
-
-                        sqlVariableExpressions.Clear();
                     }
 
-                    i++;
-                }
-
-                if (sqlInExpressions.Count > 1)
-                {
-                    SqlExpression first = sqlInExpressions.First();
-                    sqlInExpressions.RemoveAt(0);
-                    foreach (var sqlInExpression in sqlInExpressions)
+                    var values = (IEnumerable)GetValue(collection);
+                    var propertyExpression = this.Visit(property);
+                    var body = GetSqlExpression(propertyExpression);
+                    var count = 0;
+                    foreach (var value in values)
                     {
-                        first = new SqlBinaryExpression()
+                        count++;
+                    }
+
+                    var i = 1;
+                    var sqlInExpressions = new List<SqlInExpression>();
+                    var sqlVariableExpressions = new List<SqlVariableExpression>();
+                    foreach (var value in values)
+                    {
+                        var sqlVariableExpression = GetSqlVariableExpressionWithValueAndDynamicName(value);
+
+                        sqlVariableExpressions.Add(sqlVariableExpression);
+                        if ((i >= 500 && i % 500 == 0) || i == count)
                         {
-                            Left = first,
-                            Right = sqlInExpression,
-                            Operator = SqlBinaryOperator.Or
-                        };
+                            var targetList = new List<SqlExpression>();
+                            targetList.AddRange(sqlVariableExpressions);
+
+                            var sqlInExpression = new SqlInExpression()
+                            {
+                                Body = body,
+                                TargetList = targetList
+                            };
+                            sqlInExpressions.Add(sqlInExpression);
+
+                            sqlVariableExpressions.Clear();
+                        }
+
+                        i++;
+                    }
+
+                    if (sqlInExpressions.Count > 1)
+                    {
+                        SqlExpression first = sqlInExpressions.First();
+                        sqlInExpressions.RemoveAt(0);
+                        foreach (var sqlInExpression in sqlInExpressions)
+                        {
+                            first = new SqlBinaryExpression()
+                            {
+                                Left = first,
+                                Right = sqlInExpression,
+                                Operator = SqlBinaryOperator.Or
+                            };
+                        }
+                        lastMethodCallName = methodCallStack.Pop();
+                        lastMethodCalls.Add(lastMethodCallName);
+                        return GetWrapperExpression(first);
                     }
                     lastMethodCallName = methodCallStack.Pop();
                     lastMethodCalls.Add(lastMethodCallName);
-                    return GetWrapperExpression(first);
+                    return GetWrapperExpression(sqlInExpressions.First());
                 }
-                lastMethodCallName = methodCallStack.Pop();
-                lastMethodCalls.Add(lastMethodCallName);
-                return GetWrapperExpression(sqlInExpressions.First());
             }
-        }
-        else
-        {
+
             var date = this.GetValue(node);
             var r1 = GetSqlVariableExpressionWithValueAndDynamicName(date);
             lastMethodCallName = methodCallStack.Pop();

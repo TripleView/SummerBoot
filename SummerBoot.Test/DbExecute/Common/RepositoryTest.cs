@@ -2726,7 +2726,7 @@ namespace SummerBoot.Test.DbExecute.Common
             TestUtils.CompareTwoModel(dbModel, orderHeader);
         }
 
-        private string GetColumnName(DatabaseUnit databaseUnit,string columnName)
+        private string GetColumnName(DatabaseUnit databaseUnit, string columnName)
         {
             columnName = databaseUnit.LeftQualifiers + columnName + databaseUnit.RightQualifiers;
             if (databaseUnit.ColumnNameMapping != null)
@@ -2800,7 +2800,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var parameter = new SummerBoot.Repository.Core.DynamicParameters();
             parameter.Add(parameterName, orderNo);
             var dbModels = await orderDetailRepository.QueryListAsync<OrderDetail>($"select b.* from {tableName} a left join {orderDetailTableName} b on a.{idColumnName}=b.{orderHeaderIdColumnName} where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
-            TestUtils.CompareTwoModel(dbModels.First(x=>x.ProductName=="A"), orderDetail1);
+            TestUtils.CompareTwoModel(dbModels.First(x => x.ProductName == "A"), orderDetail1);
             TestUtils.CompareTwoModel(dbModels.First(x => x.ProductName == "B"), orderDetail2);
         }
 
@@ -2835,7 +2835,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var parameter = new SummerBoot.Repository.Core.DynamicParameters();
             parameter.Add(parameterName, orderNo);
             var affectRowCount = await orderHeaderRepository.ExecuteAsync($"update {tableName} set {stateColumnName}=2 where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
-            Assert.Equal(1,affectRowCount);
+            Assert.Equal(1, affectRowCount);
             var dbModel = await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderNo);
             Assert.Equal(2, dbModel.State);
             orderHeader.State = 2;
@@ -2878,6 +2878,71 @@ namespace SummerBoot.Test.DbExecute.Common
             Assert.Equal(2, dbModel.State);
             orderHeader.State = 2;
             TestUtils.CompareTwoModel(dbModel, orderHeader);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestListContainAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var orderNo = Guid.NewGuid().ToString();
+
+            var dt = DateTime.Now;
+            var list = Enumerable.Range(1, 50).Select(x => new OrderHeader()
+            {
+                CreateTime = dt,
+                OrderNo = orderNo + x,
+                State = 1,
+                CustomerId = x
+            }).ToList();
+
+            await orderHeaderRepository.InsertAsync(list);
+
+
+            var r1 = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => list.Select(y => y.OrderNo).Contains(x.T1.OrderNo))
+                .Select(x=>x.T1.OrderNo)
+                .ToListAsync();
+            Assert.Equal(50, r1.Count);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestListContain2Async(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var orderNo = Guid.NewGuid().ToString();
+
+            var dt = DateTime.Now;
+            var list = Enumerable.Range(1, 50).Select(x => new OrderHeader()
+            {
+                CreateTime = dt,
+                OrderNo = orderNo + x,
+                State = 1,
+                CustomerId = x
+            }).ToList();
+
+            await orderHeaderRepository.InsertAsync(list);
+            var tempList = list.Select(y => y.OrderNo).ToList();
+
+            var r1 = await orderHeaderRepository
+                .Where(x => tempList.Contains(x.OrderNo))
+                .Select(x => x.OrderNo)
+                .ToListAsync();
+            Assert.Equal(50, r1.Count);
         }
     }
 }
