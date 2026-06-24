@@ -1,0 +1,3 @@
+{
+  "QueryFirstSql": "select * from \"ORDERHEADER\" o where o.\"ORDERNO\" =:orderNo"
+}

@@ -46,6 +46,8 @@ namespace SummerBoot.Test.DbExecute.Common
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
+            var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "mysqlSql.json");
+            build.AddJsonFile(sqlConfigFile, true, true);
             var configurationRoot = build.Build();
 
             var services = new ServiceCollection();
@@ -91,6 +93,8 @@ namespace SummerBoot.Test.DbExecute.Common
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
+            var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "oracleSql.json");
+            build.AddJsonFile(sqlConfigFile, true, true);
             var configurationRoot = build.Build();
             var services = new ServiceCollection();
 
@@ -140,6 +144,8 @@ namespace SummerBoot.Test.DbExecute.Common
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
+            var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "pgsqlSql.json");
+            build.AddJsonFile(sqlConfigFile, true, true);
             var configurationRoot = build.Build();
 
             var services = new ServiceCollection();
@@ -184,6 +190,8 @@ namespace SummerBoot.Test.DbExecute.Common
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
+            var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "sqlserverSql.json");
+            build.AddJsonFile(sqlConfigFile, true, true);
             var configurationRoot = build.Build();
 
             var services = new ServiceCollection();
@@ -239,6 +247,8 @@ namespace SummerBoot.Test.DbExecute.Common
             var build = new ConfigurationBuilder();
             build.SetBasePath(Directory.GetCurrentDirectory());  // 获取当前程序执行目录
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
+            var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "sqliteSql.json");
+            build.AddJsonFile(sqlConfigFile, true, true);
             var configurationRoot = build.Build();
             var services = new ServiceCollection();
 
@@ -2872,12 +2882,9 @@ namespace SummerBoot.Test.DbExecute.Common
             var stateColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.State));
             var parameter = new SummerBoot.Repository.Core.DynamicParameters();
             parameter.Add(parameterName, orderNo);
-            var affectRowCount = await orderHeaderRepository.ExecuteAsync($"update {tableName} set {stateColumnName}=2 where {columnName}={databaseUnit.ParameterNamePrefix + parameterName}", parameter);
-            Assert.Equal(1, affectRowCount);
-            var dbModel = await orderHeaderRepository.FirstOrDefaultAsync(x => x.OrderNo == orderNo);
-            Assert.Equal(2, dbModel.State);
-            orderHeader.State = 2;
-            TestUtils.CompareTwoModel(dbModel, orderHeader);
+            var dbOrderHeader = await orderHeaderRepository.SelectQueryAsync(orderNo);
+            TestUtils.CompareTwoModel(orderHeader, dbOrderHeader);
+
         }
 
         [Theory]
@@ -2908,7 +2915,7 @@ namespace SummerBoot.Test.DbExecute.Common
             var r1 = await orderHeaderRepository
                 .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .Where(x => list.Select(y => y.OrderNo).Contains(x.T1.OrderNo))
-                .Select(x=>x.T1.OrderNo)
+                .Select(x => x.T1.OrderNo)
                 .ToListAsync();
             Assert.Equal(50, r1.Count);
         }

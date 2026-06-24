@@ -1,0 +1,3 @@
+{
+  "QueryFirstSql": "select * from [OrderHeader] o where o.[OrderNo] =@orderNo;"
+}
