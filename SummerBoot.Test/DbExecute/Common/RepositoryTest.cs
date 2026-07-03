@@ -2858,7 +2858,7 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
-        public async Task TestSelectAsync(DbType dbType)
+        public async Task TestSelectAttributeAsync(DbType dbType)
         {
             ChangeDb(dbType);
 
@@ -2882,10 +2882,84 @@ namespace SummerBoot.Test.DbExecute.Common
             var stateColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.State));
             var parameter = new SummerBoot.Repository.Core.DynamicParameters();
             parameter.Add(parameterName, orderNo);
-            var dbOrderHeader = await orderHeaderRepository.SelectQueryAsync(orderNo);
+            var dbOrderHeader = await orderHeaderRepository.TestSelectAttributeAsync(orderNo, 100);
             TestUtils.CompareTwoModel(orderHeader, dbOrderHeader);
 
         }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestUpdateAttributeAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var tableName = GetTableName(databaseUnit, nameof(OrderHeader));
+            var parameterName = nameof(OrderHeader.OrderNo);
+            var columnName = GetColumnName(databaseUnit, parameterName);
+            var stateColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.State));
+            var parameter = new SummerBoot.Repository.Core.DynamicParameters();
+            parameter.Add(parameterName, orderNo);
+            var affectRow = await orderHeaderRepository.TestUpdateAttributeAsync(orderNo, 200);
+            var dbModel = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).FirstOrDefaultAsync();
+            Assert.Equal(1, affectRow);
+            orderHeader.CustomerId = 200;
+            TestUtils.CompareTwoModel(orderHeader, dbModel);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestDeleteAttributeAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1,
+                CustomerId = 100
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var tableName = GetTableName(databaseUnit, nameof(OrderHeader));
+            var parameterName = nameof(OrderHeader.OrderNo);
+            var columnName = GetColumnName(databaseUnit, parameterName);
+            var stateColumnName = GetColumnName(databaseUnit, nameof(OrderHeader.State));
+            var parameter = new SummerBoot.Repository.Core.DynamicParameters();
+            parameter.Add(parameterName, orderNo);
+            var affectRow = await orderHeaderRepository.TestDeleteAttributeAsync(orderNo, 100);
+            var dbModel = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).FirstOrDefaultAsync();
+            Assert.Equal(1, affectRow);
+            Assert.Null(dbModel);
+        }
+
 
         [Theory]
         [InlineData(DbType.MySql)]

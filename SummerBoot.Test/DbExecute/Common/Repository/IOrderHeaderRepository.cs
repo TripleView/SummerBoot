@@ -8,7 +8,14 @@ namespace SummerBoot.Test.DbExecute.Common.Repository
     [AutoRepository]
     public interface IOrderHeaderRepository : IBaseRepository<OrderHeader>
     {
-        [Select("${QueryFirstSql}")]
-        Task<OrderHeader> SelectQueryAsync(string orderNo);
+        [Select("${TestSelectAttributeSql}")]
+        Task<OrderHeader> TestSelectAttributeAsync(string orderNo,int customerId);
+
+        [Update("${TestUpdateAttributeSql}")]
+        Task<int> TestUpdateAttributeAsync(string orderNo, int customerId);
+
+        [Delete("${TestDeleteAttributeSql}")]
+        Task<int> TestDeleteAttributeAsync(string orderNo, int customerId);
+        
     }
 }

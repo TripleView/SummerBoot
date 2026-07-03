@@ -1,3 +1,5 @@
 {
-  "QueryFirstSql": "select * from `OrderHeader` o where o.`OrderNo` =@orderNo;"
+  "TestSelectAttributeSql": "select * from `OrderHeader` o where o.`OrderNo` =@orderNo and `CustomerId` =@customerId",
+  "TestUpdateAttributeSql": "update `OrderHeader` set `CustomerId` =@customerId where `OrderNo` =@orderNo ",
+  "TestDeleteAttributeSql": "delete from `OrderHeader`  where `OrderNo` =@orderNo and `CustomerId` =@customerId"
 }

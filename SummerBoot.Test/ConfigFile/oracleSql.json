@@ -1,3 +1,5 @@
 {
-  "QueryFirstSql": "select * from \"ORDERHEADER\" o where o.\"ORDERNO\" =:orderNo"
+  "TestSelectAttributeSql": "select * from \"ORDERHEADER\" o where o.\"ORDERNO\" =:orderNo and o.\"CUSTOMERID\" =:customerId",
+  "TestUpdateAttributeSql": "update \"ORDERHEADER\" set \"CUSTOMERID\" =:customerId  where \"ORDERNO\" =:orderNo",
+  "TestDeleteAttributeSql": "delete from \"ORDERHEADER\" where \"ORDERNO\" =:orderNo and \"CUSTOMERID\" =:customerId"
 }
