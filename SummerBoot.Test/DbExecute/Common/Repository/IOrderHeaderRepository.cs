@@ -11,6 +11,9 @@ namespace SummerBoot.Test.DbExecute.Common.Repository
         [Select("${TestSelectAttributeSql}")]
         Task<OrderHeader> TestSelectAttributeAsync(string orderNo,int customerId);
 
+        [Select("${TestSelectAttributePageSql}")]
+        Task<Page<OrderHeader>> TestSelectAttributePageAsync(string orderNo,Pageable pageable);
+
         [Update("${TestUpdateAttributeSql}")]
         Task<int> TestUpdateAttributeAsync(string orderNo, int customerId);
 

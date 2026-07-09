@@ -16,6 +16,18 @@ namespace SummerBoot.Repository.Core
 
         public DynamicParameters(object entity)
         {
+            this.Add(entity);
+        }
+        /// <summary>
+        /// Add a class entity parameter;添加类实体参数
+        /// </summary>
+        /// <param name="entity"></param>
+        public void Add(object entity)
+        {
+            if (entity is null)
+            {
+                return;
+            }
             if (entity is DynamicParameters dp)
             {
                 foreach (var dpGetParamInfo in dp.GetParamInfos)
@@ -34,8 +46,8 @@ namespace SummerBoot.Repository.Core
             {
                 this.AddEntity(entity);
             }
-
         }
+
         private readonly Dictionary<string, ParamInfo> paramInfos = new Dictionary<string, ParamInfo>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, ParamInfo> GetParamInfos => paramInfos;
         /// <summary>

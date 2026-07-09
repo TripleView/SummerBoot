@@ -10,6 +10,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using SqlParser.Net;
+using SqlParser.Net.Ast.Expression;
+using SummerBoot.Repository.ExpressionParser;
 
 namespace SummerBoot.Repository
 {
@@ -89,79 +92,7 @@ namespace SummerBoot.Repository
         public Page<T> PageBaseExecute<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            var repositoryOption = ServiceProvider.GetService<RepositoryOption>();
-            var configuration = ServiceProvider.GetService<IConfiguration>();
-            //parameterDictionary.Clear();
-            Pageable pageable = null;
-
-            //处理select逻辑
-            var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
-            if (selectAttribute != null)
-            {
-
-                //获得动态参数
-                var dbArgs = GetParameters(method, args);
-                if (pageable == null)
-                {
-                    throw new Exception("method argument must have pageable");
-                }
-
-                OpenDb();
-                var sql = selectAttribute.Sql;
-                sql = GetValueByConfiguration(sql);
-                if (!sql.Contains("order by", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new NotSupportedException("sql must contain order by clause");
-                }
-                var result = new Page<T>() { };
-
-                //SqlParser.SqlParser parser;
-
-                //if (databaseUnit.IsOracle)
-                //{
-                //    parser = new OracleParser();
-                //}
-                //else if (databaseUnit.IsSqlServer)
-                //{
-                //    parser = new SqlServerParser();
-                //}
-                //else if (databaseUnit.IsMysql)
-                //{
-                //    parser = new MysqlParser();
-                //}
-                //else if (databaseUnit.IsPgsql)
-                //{
-                //    parser = new PgsqlParser();
-                //}
-                //else
-                //{
-                //    parser = new SqliteParser();
-                //}
-
-                //var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
-
-                //ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
-
-                //var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit,parseResult.CountSql, dbArgs, transaction: dbTransaction);
-                //var resultList = dbConnection.Query<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction).ToList();
-                //result.TotalPages = count;
-                //result.Data = resultList;
-
-                //result.PageSize = pageable.PageSize;
-                //result.PageNumber = pageable.PageNumber;
-
-                CloseDb();
-
-                return result;
-            }
-
-            throw new Exception("can not process method name:" + method.Name);
-        }
-
-        public async Task<Page<T>> PageBaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
-        {
-            ServiceProvider = serviceProvider;
-            Pageable pageable = null;
+            Pageable pageable = args.FirstOrDefault(x => x is Pageable) as Pageable;
             //处理select逻辑
             var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
             if (selectAttribute != null)
@@ -183,41 +114,18 @@ namespace SummerBoot.Repository
                 }
 
                 var result = new Page<T>() { };
+                var sqlSelectExpression = DbUtils.Parse(sql, databaseUnit.DbType);
 
-                //SqlParser.SqlParser parser;
+                var toPageOutputDto = new NewDbExpressionVisitor(databaseUnit).SqlSelectExpressionToPage(sqlSelectExpression, pageable);
 
-                //if (databaseUnit.IsOracle)
-                //{
-                //    parser = new OracleParser();
-                //}
-                //else if (databaseUnit.IsSqlServer)
-                //{
-                //    parser = new SqlServerParser();
-                //}
-                //else if (databaseUnit.IsMysql)
-                //{
-                //    parser = new MysqlParser();
-                //}
-                //else if (databaseUnit.IsPgsql)
-                //{
-                //    parser = new PgsqlParser();
-                //}
-                //else
-                //{
-                //    parser = new SqliteParser();
-                //}
+                dbArgs.Add(toPageOutputDto.DynamicParameters);
+                var count = dbConnection.QueryFirstOrDefault<int>(databaseUnit, toPageOutputDto.CountSqlSelectExpression.ToSql(databaseUnit.DbType), dbArgs, transaction: dbTransaction);
+                var resultList = (dbConnection.Query<T>(databaseUnit, toPageOutputDto.PageSqlSelectExpression.ToSql(databaseUnit.DbType), dbArgs, transaction: dbTransaction)).ToList();
+                result.TotalPages = count;
+                result.Data = resultList;
 
-                //var parseResult = parser.ParserPage(sql, pageable.PageNumber, pageable.PageSize);
-
-                //ChangeDynamicParameters(parseResult.SqlParameters, dbArgs);
-
-                //var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, parseResult.CountSql, dbArgs, transaction: dbTransaction);
-                //var resultList = (await dbConnection.QueryAsync<T>(databaseUnit, parseResult.PageSql, dbArgs, transaction: dbTransaction)).ToList();
-                //result.TotalPages = count;
-                //result.Data = resultList;
-
-                //result.PageSize = pageable.PageSize;
-                //result.PageNumber = pageable.PageNumber;
+                result.PageSize = pageable.PageSize;
+                result.PageNumber = pageable.PageNumber;
 
                 CloseDb();
 
@@ -226,6 +134,53 @@ namespace SummerBoot.Repository
 
             throw new Exception("can not process method name:" + method.Name);
         }
+
+        public async Task<Page<T>> PageBaseExecuteAsync<T>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+            Pageable pageable = args.FirstOrDefault(x => x is Pageable) as Pageable;
+            //处理select逻辑
+            var selectAttribute = method.GetCustomAttribute<SelectAttribute>();
+            if (selectAttribute != null)
+            {
+                var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+                //获得动态参数
+                var dbArgs = GetParameters(method, args);
+                if (pageable == null)
+                {
+                    throw new Exception("method argument must have pageable");
+                }
+
+                OpenDb();
+                var sql = selectAttribute.Sql;
+                sql = GetValueByConfiguration(sql);
+                if (!sql.Contains("order by", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new NotSupportedException("sql must contain order by clause");
+                }
+
+                var result = new Page<T>() { };
+                var sqlSelectExpression = DbUtils.Parse(sql, databaseUnit.DbType);
+
+                var toPageOutputDto = new NewDbExpressionVisitor(databaseUnit).SqlSelectExpressionToPage(sqlSelectExpression, pageable);
+
+                dbArgs.Add(toPageOutputDto.DynamicParameters);
+                var count = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, toPageOutputDto.CountSqlSelectExpression.ToSql(databaseUnit.DbType), dbArgs, transaction: dbTransaction);
+                var resultList = (await dbConnection.QueryAsync<T>(databaseUnit, toPageOutputDto.PageSqlSelectExpression.ToSql(databaseUnit.DbType), dbArgs, transaction: dbTransaction)).ToList();
+                result.TotalPages = count;
+                result.Data = resultList;
+
+                result.PageSize = pageable.PageSize;
+                result.PageNumber = pageable.PageNumber;
+
+                CloseDb();
+
+                return result;
+            }
+
+            throw new Exception("can not process method name:" + method.Name);
+        }
+
 
         public T BaseExecute<T, TBaseType>(MethodInfo method, object[] args, IServiceProvider serviceProvider)
         {

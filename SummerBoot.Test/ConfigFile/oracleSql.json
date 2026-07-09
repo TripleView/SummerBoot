@@ -1,5 +1,6 @@
 {
   "TestSelectAttributeSql": "select * from \"ORDERHEADER\" o where o.\"ORDERNO\" =:orderNo and o.\"CUSTOMERID\" =:customerId",
+  "TestSelectAttributePageSql": "select * from \"ORDERHEADER\" o where o.\"ORDERNO\" =:orderNo order by o.\"CUSTOMERID\"",
   "TestUpdateAttributeSql": "update \"ORDERHEADER\" set \"CUSTOMERID\" =:customerId  where \"ORDERNO\" =:orderNo",
   "TestDeleteAttributeSql": "delete from \"ORDERHEADER\" where \"ORDERNO\" =:orderNo and \"CUSTOMERID\" =:customerId"
 }

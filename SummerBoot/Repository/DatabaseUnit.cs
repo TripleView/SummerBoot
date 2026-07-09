@@ -14,6 +14,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
+using DbType = SqlParser.Net.DbType;
 
 namespace SummerBoot.Repository
 {
@@ -173,6 +174,8 @@ namespace SummerBoot.Repository
         /// </summary>
         public string RightQualifiers { get; private set; }
 
+        public DbType DbType { get; set; }
+
         /// <summary>
         /// Parameter Name Prefix;参数名称前缀
         /// </summary>
@@ -199,26 +202,31 @@ namespace SummerBoot.Repository
                     LeftQualifiers = "[";
                     RightQualifiers = "]";
                     ParameterNamePrefix = "@";
+                    DbType = DbType.SqlServer;
                     break;
                 case DatabaseType.Mysql:
                     LeftQualifiers = "`";
                     RightQualifiers = "`";
                     ParameterNamePrefix = "@";
+                    DbType = DbType.MySql;
                     break;
                 case DatabaseType.Oracle:
                     LeftQualifiers = "\"";
                     RightQualifiers = "\"";
                     ParameterNamePrefix = ":";
+                    DbType = DbType.Oracle;
                     break;
                 case DatabaseType.Sqlite:
                     LeftQualifiers = "`";
                     RightQualifiers = "`";
                     ParameterNamePrefix = ":";
+                    DbType = DbType.Sqlite;
                     break;
                 case DatabaseType.Pgsql:
                     LeftQualifiers = "\"";
                     RightQualifiers = "\"";
                     ParameterNamePrefix = "@";
+                    DbType = DbType.Pgsql;
                     break;
             }
         }

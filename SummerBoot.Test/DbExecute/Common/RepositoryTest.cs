@@ -2893,6 +2893,43 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestSelectAttributePageAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+            var repositoryOption = serviceProvider.GetService<RepositoryOption>();
+            var databaseUnit = repositoryOption.DatabaseUnits.First().Value;
+            var orderNo = GetRandomName();
+            var orderHeaders = new List<OrderHeader>();
+            for (int i = 0; i < 100; i++)
+            {
+                var orderHeader = new OrderHeader()
+                {
+                    CreateTime = DateTime.Now,
+                    OrderNo = orderNo,
+                    State = 1,
+                    CustomerId = i
+                };
+                orderHeaders.Add(orderHeader);
+            }
+           
+            await orderHeaderRepository.FastBatchInsertAsync(orderHeaders);
+
+            var dbOrderHeaders = await orderHeaderRepository.TestSelectAttributePageAsync(orderNo,new Pageable(1,50));
+            Assert.Equal(50,dbOrderHeaders.Data.Count);
+
+            //TestUtils.CompareTwoModel(orderHeader, dbOrderHeader);
+
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestUpdateAttributeAsync(DbType dbType)
         {
             ChangeDb(dbType);
