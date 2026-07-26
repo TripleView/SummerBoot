@@ -136,6 +136,22 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// </summary>
     private string MethodName => methodCallStack.Count > 0 ? methodCallStack.Peek() : "";
 
+
+    private bool SearchFromTop(string functionName)
+    {
+        if (methodCallStack.Count > 0)
+        {
+            foreach (var se in methodCallStack)
+            {
+                if (se == functionName)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     #region 本次新增
 
     protected DatabaseUnit databaseUnit;
@@ -254,6 +270,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         switch (methodName)
         {
+            case nameof(RepositoryMethodsCache.SetValue):
+                result = this.VisitSetValue(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
+            case nameof(RepositoryMethodsCache.ToUpdate):
+                result = this.VisitToUpdate(node);
+                lastMethodCallName = methodCallStack.Pop();
+                lastMethodCalls.Add(lastMethodCallName);
+                return result;
             case nameof(RepositoryMethodsCache.ToPage):
                 result = this.VisitToPage(node);
                 lastMethodCallName = methodCallStack.Pop();
@@ -581,6 +607,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return sqlExpression;
     }
 
+    private SqlExpression ConvertSqlPropertyExpressionToSqlIdentifierExpression(SqlExpression sqlExpression)
+    {
+        if (sqlExpression is SqlPropertyExpression sqlPropertyExpression)
+        {
+            return sqlPropertyExpression.Name;
+        }
+
+        return sqlExpression;
+    }
+
     protected override Expression VisitBinary(BinaryExpression binaryExpression)
     {
         if (MethodName == nameof(Queryable.Select))
@@ -602,6 +638,15 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             var right = GetSqlExpression(rightExpression);
             left = ConvertFixedValueExpressionToSqlVariableExpression(left);
             right = ConvertFixedValueExpressionToSqlVariableExpression(right);
+
+            if (SearchFromTop(nameof(RepositoryMethods.ToUpdate)))
+            {
+                if (SearchFromTop(nameof(RepositoryMethods.Where)))
+                {
+                    left = ConvertSqlPropertyExpressionToSqlIdentifierExpression(left);
+                    right = ConvertSqlPropertyExpressionToSqlIdentifierExpression(right);
+                }
+            }
 
             var tempResult = new SqlBinaryExpression()
             {
@@ -903,7 +948,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         };
     }
 
-    private void ProcessChildrenSqlSelectExpression(SqlSelectQueryExpression x,  SqlOrderByExpression orderBy)
+    private void ProcessChildrenSqlSelectExpression(SqlSelectQueryExpression x, SqlOrderByExpression orderBy)
     {
         if (x.Columns.Count == 1 && x.Columns[0].Body is SqlAllColumnExpression sqlAllColumnExpression && x.From is IAliasExpression aliasExpression)
         {
@@ -1191,6 +1236,41 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         countSqlSelectQueryExpression.OrderBy = null;
     }
 
+    public virtual Expression VisitToUpdate(MethodCallExpression toUpdateCall)
+    {
+        var sourceExpression = this.Visit(toUpdateCall.Arguments[0]);
+        return sourceExpression;
+    }
+
+    public virtual Expression VisitSetValue(MethodCallExpression setValueCall)
+    {
+        var sourceExpression = this.Visit(setValueCall.Arguments[0]);
+        var sourceConditionExpression = StripQuotes(setValueCall.Arguments[1]);
+        var conditionExpression = this.Visit(sourceConditionExpression);
+        var leftSqlCondition = GetSqlExpression(conditionExpression);
+
+        leftSqlCondition = ConvertSqlPropertyExpressionToSqlIdentifierExpression(leftSqlCondition);
+
+
+        var sqlSourceExpression = GetSqlExpression(sourceExpression);
+        var valueExpression = this.Visit(setValueCall.Arguments[2]);
+        var rightSqlCondition = GetSqlExpression(valueExpression);
+        if (sqlSourceExpression is SqlUpdateExpression sqlUpdateExpression)
+        {
+            sqlUpdateExpression.Items.Add(new SqlBinaryExpression()
+            {
+                Left = leftSqlCondition,
+                Operator = SqlBinaryOperator.EqualTo,
+                Right = rightSqlCondition
+            });
+            return GetWrapperExpression(sqlUpdateExpression);
+        }
+
+        throw new NotSupportedException(nameof(VisitSetValue));
+    }
+
+
+
     public virtual Expression VisitToPage(MethodCallExpression toPageCall)
     {
         var sourceExpression = this.Visit(toPageCall.Arguments[0]);
@@ -1438,6 +1518,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             sqlDeleteExpression.Where = where;
             return sqlDeleteExpression;
+        }
+        else if (mainSqlExpression is SqlUpdateExpression sqlUpdateExpression)
+        {
+            sqlUpdateExpression.Where = where;
+            return sqlUpdateExpression;
         }
         else if (mainSqlExpression is SqlSelectExpression sqlSelectExpression)
         {
@@ -1733,6 +1818,18 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 if (lastMethodName == nameof(RepositoryMethods.Delete))
                 {
                     r1 = new SqlDeleteExpression()
+                    {
+                        DbType = dbType,
+                        Table = r1
+                    };
+                }
+                else if (lastMethodName == nameof(RepositoryMethods.ToUpdate))
+                {
+                    if (r1 is SqlTableExpression sqlTableExpression)
+                    {
+                        sqlTableExpression.Alias = null;
+                    }
+                    r1 = new SqlUpdateExpression()
                     {
                         DbType = dbType,
                         Table = r1

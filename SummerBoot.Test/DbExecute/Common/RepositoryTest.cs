@@ -2914,11 +2914,11 @@ namespace SummerBoot.Test.DbExecute.Common
                 };
                 orderHeaders.Add(orderHeader);
             }
-           
+
             await orderHeaderRepository.FastBatchInsertAsync(orderHeaders);
 
-            var dbOrderHeaders = await orderHeaderRepository.TestSelectAttributePageAsync(orderNo,new Pageable(1,50));
-            Assert.Equal(50,dbOrderHeaders.Data.Count);
+            var dbOrderHeaders = await orderHeaderRepository.TestSelectAttributePageAsync(orderNo, new Pageable(1, 50));
+            Assert.Equal(50, dbOrderHeaders.Data.Count);
 
             //TestUtils.CompareTwoModel(orderHeader, dbOrderHeader);
 
@@ -3061,6 +3061,29 @@ namespace SummerBoot.Test.DbExecute.Common
                 .Select(x => x.OrderNo)
                 .ToListAsync();
             Assert.Equal(50, r1.Count);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestSetValueUpdateAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).SetValue(x => x.State, 2).SetValue(x => x.CustomerId, 1).ToUpdateAsync();
+            Assert.Equal(1, r1);
         }
     }
 }

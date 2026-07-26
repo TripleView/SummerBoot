@@ -59,6 +59,10 @@ public class RepositoryProvider : IRepositoryProvider
             {
                 newType = typeof(CustomBaseRepository<>).MakeGenericType(childrenType);
             }
+            else if (genericType == typeof(IUpdateLambdaRepository<>))
+            {
+                newType = typeof(UpdateLambdaRepository<>).MakeGenericType(childrenType);
+            }
             return (T)Activator.CreateInstance(newType, args: new object[2] { expression, this });
         }
         else

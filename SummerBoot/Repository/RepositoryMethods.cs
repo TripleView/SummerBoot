@@ -14,6 +14,16 @@ internal static class RepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
+    public static IUpdateLambdaRepository<T> SetValue<T>(ISetValue<T> source, Expression<Func<T, object>> predicate, object value)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static int ToUpdate<T>(ISetValue<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
     public static IOrderLambdaRepository<T> OrderBy<T, TKey>(ILambdaRepository<T> source, Expression<Func<T, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
@@ -151,6 +161,17 @@ internal static class RepositoryMethods
 
 internal static class RepositoryMethodsCache
 {
+    public static readonly MethodInfo SetValue =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.SetValue) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1);
+
+    public static readonly MethodInfo ToUpdate =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.ToUpdate) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1);
+
+
     public static readonly MethodInfo Where =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -216,7 +237,7 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.First) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
- 
+
     public static readonly MethodInfo DeleteWithPredicate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -237,13 +258,13 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.ToPage) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 2);
 
- 
+
     public static readonly MethodInfo ToPageNoPageParameter =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.ToPage) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
 
-    
+
     public static readonly MethodInfo Max =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)

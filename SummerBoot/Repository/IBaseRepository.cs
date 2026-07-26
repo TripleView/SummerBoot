@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository;
 
@@ -16,9 +17,13 @@ public interface IBaseLambdaRepository
     IRepositoryProvider Provider { get; }
 }
 
-public interface ILambdaRepository<T> : IBaseLambdaRepository
+public interface ISetValue<T>
 {
+    IUpdateLambdaRepository<T> SetValue(Expression<Func<T, object>> predicate, object value);
+}
 
+public interface ILambdaRepository<T> : IBaseLambdaRepository, ISetValue<T>
+{
     ILambdaRepository<T> Where(Expression<Func<T, bool>> predicate);
     ILambdaRepository<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate);
     IOrderLambdaRepository<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector);
@@ -81,6 +86,66 @@ public interface ILambdaRepository<T> : IBaseLambdaRepository
     Task<int> ExecuteUpdateAsync();
 }
 
+public interface IUpdateLambdaRepository<T>: ISetValue<T>
+{
+    int ToUpdate();
+    Task<int> ToUpdateAsync();
+}
+
+public class UpdateLambdaRepository<T> : IUpdateLambdaRepository<T>, IBaseLambdaRepository
+{
+    public UpdateLambdaRepository(Expression expression, IRepositoryProvider provider)
+    {
+        this.Expression = expression;
+        this.Provider = provider;
+    }
+    public IRepositoryProvider Provider { get; protected set; }
+
+    public Type ElementType => typeof(T);
+
+    public Expression Expression { get; protected set; }
+
+    public IUpdateLambdaRepository<T> SetValue(Expression<Func<T, object>> predicate, object value)
+    {
+        var methodInfo = RepositoryMethodsCache.SetValue.MakeGenericMethod(typeof(T));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            this.Expression,
+            Expression.Quote(predicate),
+            Expression.Constant(value,typeof(object))
+        );
+
+        var result = Provider.CreateQuery<IUpdateLambdaRepository<T>>(callExpr);
+        return result;
+    }
+
+    public int ToUpdate()
+    {
+        var methodInfo = RepositoryMethodsCache.ToUpdate.MakeGenericMethod(typeof(T));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            this.Expression
+        );
+        var result = Provider.Execute(callExpr);
+        return result;
+    }
+
+    public async Task<int> ToUpdateAsync()
+    {
+        var methodInfo = RepositoryMethodsCache.ToUpdate.MakeGenericMethod(typeof(T));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            this.Expression
+        );
+        var result = await Provider.ExecuteAsync(callExpr);
+        return result;
+    }
+}
+
+
 public interface IGroupLambdaRepository<T, TKey>
 {
     ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, TResult>>> selector);
@@ -132,6 +197,23 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
     public Type ElementType => typeof(T);
 
     public Expression Expression { get; protected set; }
+
+    public IUpdateLambdaRepository<T> SetValue(Expression<Func<T, object>> predicate, object value)
+    {
+        var methodInfo = RepositoryMethodsCache.SetValue.MakeGenericMethod(typeof(T));
+
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            this.Expression,
+            Expression.Quote(predicate),
+            Expression.Constant(value,typeof(object))
+        );
+
+        var result = Provider.CreateQuery<IUpdateLambdaRepository<T>>(callExpr);
+        return result;
+    }
+
 
     public ILambdaRepository<T> Where(Expression<Func<T, bool>> predicate)
     {
