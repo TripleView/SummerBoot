@@ -152,6 +152,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return false;
     }
 
+
+    private bool CheckTopItem(string functionName)
+    {
+        if (methodCallStack.Count > 0)
+        {
+            return methodCallStack.Last() == functionName;
+        }
+        return false;
+    }
+
     #region 本次新增
 
     protected DatabaseUnit databaseUnit;
@@ -639,7 +649,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             left = ConvertFixedValueExpressionToSqlVariableExpression(left);
             right = ConvertFixedValueExpressionToSqlVariableExpression(right);
 
-            if (SearchFromTop(nameof(RepositoryMethods.ToUpdate)))
+            if (CheckTopItem(nameof(RepositoryMethods.ToUpdate)))
             {
                 if (SearchFromTop(nameof(RepositoryMethods.Where)))
                 {
