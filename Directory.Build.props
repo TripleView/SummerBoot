@@ -2,5 +2,6 @@
   <PropertyGroup>
     <MySdk>net6.0;net8.0</MySdk>
     <DefineConstants>$(DefineConstants);MY_GLOBAL_DEFINE</DefineConstants>
+    <LatesVersion>3.0.0</LatesVersion>
   </PropertyGroup>
 </Project>
