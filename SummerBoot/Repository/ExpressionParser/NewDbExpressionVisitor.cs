@@ -16,6 +16,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
@@ -993,37 +994,33 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     private SqlOrderByExpression BuildSqlOrderByExpression(SqlSelectQueryExpression sqlSelectQueryExpression)
     {
         var orderBy = new SqlOrderByExpression();
-        if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
+        TableInfo sqlInfo = null;
+        if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out sqlInfo))
         {
-            var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First();
-            tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
-            orderBy = new SqlOrderByExpression()
-            {
-                Items = new List<SqlOrderByItemExpression>()
-                {
-                    new SqlOrderByItemExpression()
-                    {
-                        Body = GetSqlPropertyExpression(tableAlias, orderByColumn.Name)
-                    },
-                },
-            };
-        }
-        else if (sqlSelectQueryExpression.Columns?.Any() == true)
-        {
-            var column = sqlSelectQueryExpression.Columns.First();
 
-            orderBy = new SqlOrderByExpression()
-            {
-                Items = new List<SqlOrderByItemExpression>()
-                {
-                    new SqlOrderByItemExpression()
-                    {
-                        Body = column.Body.Clone()
-                    },
-                },
-            };
+        }
+        //随便找个表
+        else if (tableNameToTableInfoMap.Count > 0)
+        {
+            sqlInfo = tableNameToTableInfoMap.First().Value;
+        }
+        else
+        {
+            throw new NotSupportedException(nameof(BuildSqlOrderByExpression));
         }
 
+        var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First(x => x.Name != "*");
+        tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
+        orderBy = new SqlOrderByExpression()
+        {
+            Items = new List<SqlOrderByItemExpression>()
+            {
+                new SqlOrderByItemExpression()
+                {
+                    Body = GetSqlPropertyExpression(tableAlias, orderByColumn.Name)
+                },
+            },
+        };
         return orderBy;
     }
 
@@ -1043,24 +1040,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     sqlSelectQueryExpression.OrderBy = null;
                 }
                 //没有order by，那就取主键
-                else if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
-                {
-                    var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First();
-                    tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
-                    orderBy = new SqlOrderByExpression()
-                    {
-                        Items = new List<SqlOrderByItemExpression>()
-                        {
-                            new SqlOrderByItemExpression()
-                            {
-                                Body = GetSqlPropertyExpression(tableAlias, orderByColumn.Name)
-                            },
-                        },
-                    };
-                }
                 else
                 {
-                    throw new NotSupportedException();
+                    orderBy = BuildSqlOrderByExpression(sqlSelectQueryExpression);
                 }
 
                 var tempResult = AddParentSqlSelectExpression(sqlSelectExpression, orderBy);
@@ -1119,9 +1101,16 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private SqlPropertyExpression GetSqlPropertyExpression(string tableName, string propertyName)
     {
+        var name = propertyName == "*"
+            ? new SqlIdentifierExpression()
+            {
+                Value = "*",
+                DbType = dbType
+            }
+            : GetSqlIdentifierExpression(propertyName);
         return new SqlPropertyExpression()
         {
-            Name = GetSqlIdentifierExpression(propertyName),
+            Name = name,
             Table = GetSqlIdentifierExpression(tableName),
             DbType = dbType
         };
@@ -1285,10 +1274,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         var sourceExpression = this.Visit(toPageCall.Arguments[0]);
         var sqlSourceExpression = GetSqlExpression(sourceExpression);
-        var pageable = new Pageable(1, 1);
+        IPageable pageable = new Pageable(1, 1);
         if (toPageCall.Arguments.Count == 2)
         {
-            pageable = (Pageable)((ConstantExpression)toPageCall.Arguments[1]).Value;
+            pageable = (IPageable)((ConstantExpression)toPageCall.Arguments[1]).Value;
 
             var pageOutputDto = SqlSelectExpressionToPage(sqlSourceExpression, pageable);
             return GetWrapperExpression(pageOutputDto.PageSqlSelectExpression, countSqlExpression: pageOutputDto.CountSqlSelectExpression);
@@ -1310,7 +1299,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     }
 
     public virtual SqlSelectExpressionToPageOutputDto SqlSelectExpressionToPage(SqlExpression sourceSqlExpression,
-        Pageable pageable)
+        IPageable pageable)
     {
         if (sourceSqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
@@ -1821,8 +1810,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 return GetWrapperExpression(r1);
             }
 
+            //repository.ToListAsync()
+            if (methodCallStack.Count == 0)
+            {
+                r1 = GetSqlSelectExpression(r1);
+            }
             //如果是方法解析的最底层，即repository仓库本身，则开始构建最基础的增删改查sqlExpression，比如repository.where.orderby.tolist
-            if (index >= methodCallStack.Count)
+            else if (index >= methodCallStack.Count)
             {
                 var lastMethodName = methodCallStack.Last();
                 if (lastMethodName == nameof(RepositoryMethods.Delete))
@@ -2012,7 +2006,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         else if (GetNumberOfMemberExpressionLayers(memberExpression) == 2 && memberExpression.Expression is MemberExpression rightSecondMemberExpression && memberExpression.Member is PropertyInfo propertyInfo)
         {
             var sqlPropertyExpression =
-                GetSqlPropertyExpression(memberExpression.Member.ReflectedType, propertyInfo);
+                GetSqlPropertyExpression(rightSecondMemberExpression.Member.GetMemberType(), propertyInfo);
             return GetWrapperExpression(sqlPropertyExpression);
         }
         else if (GetNumberOfMemberExpressionLayers(memberExpression) == 3 && memberExpression.Member.Name == "Length" && memberExpression.Member.DeclaringType == typeof(string))
@@ -2041,12 +2035,22 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 return value;
             }
         }
-        //如果是it.name这种形式
+        //如果是it.name这种形式或者it.T1
         else if (memberExpression.Expression is ParameterExpression parameterExpression && memberExpression.Member is PropertyInfo p2)
         {
-            var sqlPropertyExpression =
-                GetSqlPropertyExpression(parameterExpression.Type, p2);
-            return GetWrapperExpression(sqlPropertyExpression);
+            if (parameterExpression.Type?.Name.Contains("JoinCondition`") == true)
+            {
+                tableNameToTableAliasMap.TryGetValue(GetTableInfo(p2.PropertyType).Name, out var tableAlias);
+                var sqlPropertyExpression =
+                    GetSqlPropertyExpression(tableAlias, "*");
+                return GetWrapperExpression(sqlPropertyExpression);
+            }
+            else
+            {
+                var sqlPropertyExpression =
+                    GetSqlPropertyExpression(parameterExpression.Type, p2);
+                return GetWrapperExpression(sqlPropertyExpression);
+            }
         }
         //如果是constant
         else if (memberExpression.Expression is ConstantExpression c2)

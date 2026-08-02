@@ -591,7 +591,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         var result = await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, sql, param, dbTransaction);
         CloseDb();
         return result;
-    }
+     }
 
     public async Task<int> ExecuteAsync(string sql, object param = null)
     {

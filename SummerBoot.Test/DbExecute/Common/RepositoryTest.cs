@@ -3085,5 +3085,84 @@ namespace SummerBoot.Test.DbExecute.Common
             var r1 = await orderHeaderRepository.Where(x => x.OrderNo == orderNo).SetValue(x => x.State, 2).SetValue(x => x.CustomerId, 1).ToUpdateAsync();
             Assert.Equal(1, r1);
         }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestToListAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var r1 = await orderHeaderRepository.ToListAsync();
+
+            Assert.True(r1.Count > 0);
+        }
+
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestJoinSelectTAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
+
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = "ABC",
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var orderDetail1 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "A",
+                Quantity = 1,
+                State = 1
+            };
+
+            var orderDetail2 = new OrderDetail()
+            {
+                OrderHeaderId = orderHeader.Id,
+                ProductName = "B",
+                Quantity = 2,
+                State = 1
+            };
+            await orderDetailRepository.InsertAsync(orderDetail1);
+            await orderDetailRepository.InsertAsync(orderDetail2);
+
+            var dbOrderHeader = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.Id == orderHeader.Id)
+                .Select(x=>x.T1)
+                .FirstOrDefaultAsync();
+            Assert.NotNull(dbOrderHeader);
+            Assert.Equal("ABC", dbOrderHeader.OrderNo);
+            var dbOrderDetail = await orderHeaderRepository
+                .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
+                .Where(x => x.T1.Id == orderHeader.Id)
+                .OrderBy(x=>x.T2.Id)
+                .Select(x => x.T2)
+                .FirstOrDefaultAsync();
+            Assert.NotNull(dbOrderDetail);
+            Assert.Equal("A", dbOrderDetail.ProductName);
+        }
     }
 }
