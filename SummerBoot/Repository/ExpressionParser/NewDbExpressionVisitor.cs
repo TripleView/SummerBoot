@@ -995,7 +995,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         var orderBy = new SqlOrderByExpression();
         TableInfo sqlInfo = null;
-        if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out sqlInfo))
+        if (sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(GetCacheKey(sqlTableExpression.Name.Value), out sqlInfo))
         {
 
         }
@@ -1010,7 +1010,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
 
         var orderByColumn = sqlInfo.Columns.FirstOrDefault(x => x.IsKey) ?? sqlInfo.Columns.First(x => x.Name != "*");
-        tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
+        var tableNameKey = GetCacheKey(sqlInfo.Name);
+        tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias);
         orderBy = new SqlOrderByExpression()
         {
             Items = new List<SqlOrderByItemExpression>()
@@ -1613,7 +1614,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         var sourceSqlExpression = GetSqlExpression(sourceExpression);
         var sqlSelectExpression = AppendSqlSelectItems(sourceSqlExpression, sqlSelectItemExpressions);
-        tableNameToTableAliasMap.TryGetValue(tableInfo.Name, out string tableAlias);
+        var tableNameKey = GetCacheKey(tableInfo.Name);
+        tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias);
         sqlExpressionIdToAliasMap.Add(sqlSelectExpression.Id, tableAlias);
         return GetWrapperExpression(sqlSelectExpression);
     }
@@ -1739,8 +1741,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private TableInfo GetTableInfo(Type type)
     {
-        var key = $"{databaseUnit.Id}:{type.FullName}";
-
+        var key = GetCacheKey(type.FullName);
         if (!classNameToTableInfoMap.TryGetValue(key, out TableInfo tableInfo))
         {
             tableInfo = new TableInfo(type);
@@ -1757,38 +1758,42 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     tableInfoColumn.Name = databaseUnit.ColumnNameMapping(tableInfoColumn.Name);
                 }
             }
-
             classNameToTableInfoMap.TryAdd(key, tableInfo);
-
         }
+        var tableNameKey = GetCacheKey(tableInfo.Name);
+        tableNameToTableInfoMap.TryAdd(tableNameKey, tableInfo);
 
-
-        tableNameToTableInfoMap.TryAdd(tableInfo.Name, tableInfo);
-
-        if (!tableNameToTableAliasMap.TryGetValue(tableInfo.Name, out string tableAlias))
+        if (!tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias))
         {
             tableAlias = GetTableAlias();
-            tableNameToTableAliasMap.Add(tableInfo.Name, tableAlias);
+            tableNameToTableAliasMap.Add(tableNameKey, tableAlias);
         }
 
         return tableInfo;
     }
 
+    private string GetCacheKey(string key)
+    {
+        key = $"{databaseUnit.Id}:{key}";
+        return key;
+    }
+
     private SqlTableExpression GetSqlTableExpression(Type type)
     {
-        var key = $"{databaseUnit.Id}:{type.FullName}";
+        var key = GetCacheKey(type.FullName);
         var tableInfo = GetTableInfo(type);
         classNameToSqlTableExpressionMap.TryGetOrAdd(key, out var sqlTableExpression, () =>
         {
-            tableNameToTableAliasMap.TryGetValue(tableInfo.Name, out string tableAlias);
             var table = new SqlTableExpression()
             {
                 DbType = dbType,
                 Name = GetSqlIdentifierExpression(tableInfo.Name),
-                Alias = GetSqlIdentifierExpression(tableAlias)
             };
             return table;
         });
+        var tableNameKey = GetCacheKey(tableInfo.Name);
+        tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias);
+        sqlTableExpression.Alias = GetSqlIdentifierExpression(tableAlias);
         return sqlTableExpression;
     }
 
@@ -1949,7 +1954,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         var tableInfo = GetTableInfo(type);
         var columnInfo = tableInfo.GetColumnInfo(propertyInfo);
-        tableNameToTableAliasMap.TryGetValue(tableInfo.Name, out string tableAlias);
+        var tableNameKey = GetCacheKey(tableInfo.Name);
+        tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias);
         var sqlPropertyExpression = new SqlPropertyExpression()
         {
             DbType = dbType,
@@ -2040,7 +2046,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             if (parameterExpression.Type?.Name.Contains("JoinCondition`") == true)
             {
-                tableNameToTableAliasMap.TryGetValue(GetTableInfo(p2.PropertyType).Name, out var tableAlias);
+                var tableInfo = GetTableInfo(p2.PropertyType);
+                var tableNameKey = GetCacheKey(tableInfo.Name);
+                tableNameToTableAliasMap.TryGetValue(tableNameKey, out var tableAlias);
                 var sqlPropertyExpression =
                     GetSqlPropertyExpression(tableAlias, "*");
                 return GetWrapperExpression(sqlPropertyExpression);
@@ -2256,7 +2264,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         if (sqlExpression is SqlSelectExpression { Query: SqlSelectQueryExpression sqlSelectQueryExpression } sqlSelectExpression)
         {
-            if (sqlSelectQueryExpression.Columns.Count == 0 && sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(sqlTableExpression.Name.Value, out var sqlInfo))
+            if (sqlSelectQueryExpression.Columns.Count == 0 && sqlSelectQueryExpression.From is SqlTableExpression sqlTableExpression && tableNameToTableInfoMap.TryGetValue(GetCacheKey(sqlTableExpression.Name.Value), out var sqlInfo))
             {
                 if (sqlSelectQueryExpression.GroupBy?.Items.HasValue() == true)
                 {
@@ -2266,7 +2274,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     }));
                     sqlSelectQueryExpression.GroupBy = null;
                 }
-                tableNameToTableAliasMap.TryGetValue(sqlInfo.Name, out string tableAlias);
+                var tableNameKey = GetCacheKey(sqlInfo.Name);
+                tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias);
                 foreach (var sqlInfoColumnInfo in sqlInfo.Columns)
                 {
                     sqlSelectQueryExpression.Columns.Add(new SqlSelectItemExpression()

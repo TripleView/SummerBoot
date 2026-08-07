@@ -20,7 +20,7 @@ namespace SummerBoot.Repository
 {
     public delegate void RepositoryEvent(object entity);
 
-    public delegate void RepositoryLogEvent(DbQueryResult dbQueryResult);
+    public delegate void RepositoryLogEvent(SqlLogContext sqlLogContext);
 
     public delegate string RepositoryReplaceSqlEvent(string sql);
 
@@ -108,11 +108,11 @@ namespace SummerBoot.Repository
             return sql;
         }
 
-        public void OnLogSqlInfo(DbQueryResult dbQueryResult)
+        public void OnLogSqlInfo(SqlLogContext sqlLogContext)
         {
             if (LogSql != null)
             {
-                LogSql(dbQueryResult);
+                LogSql(sqlLogContext);
             }
         }
 

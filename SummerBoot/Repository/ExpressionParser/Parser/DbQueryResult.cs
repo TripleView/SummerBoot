@@ -13,7 +13,7 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// </summary>
         public string Sql
         {
-            get => ExecuteSqlExpression.ToSql();
+            get => ExecuteSqlExpression?.ToSql();
             set
             {
 

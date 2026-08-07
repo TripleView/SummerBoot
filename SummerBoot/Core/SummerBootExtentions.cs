@@ -45,7 +45,6 @@ namespace SummerBoot.Core
             //var f= ResourceManager.InternalGet("err1");
             //Console.WriteLine("进入多语言模式"+f);
             services.AddLogging();
-
             var types = SbUtil.GetAppAllTypes();
             var autoRegisterTypes = types.Where(it => it.IsClass && it.GetCustomAttribute<AutoRegisterAttribute>() != null
                                                                  && (it.BaseType == null || (it.BaseType != null && !it.BaseType.IsGenericType) || (it.BaseType != null && it.BaseType.IsGenericType && it.BaseType.GetGenericTypeDefinition() != typeof(CustomBaseRepository<>)))).ToList();

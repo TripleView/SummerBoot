@@ -92,11 +92,14 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         return result;
     }
     #region sync
-
+    private void LogSql(DbQueryResult internalResult)
+    {
+        databaseUnit.OnLogSqlInfo(new SqlLogContext() { Sql = internalResult.Sql, CountSql = internalResult.CountSql, Parameters = internalResult.DynamicParameters });
+    }
     public T Get(object id)
     {
         DbQueryResult internalResult = InternalGet(id);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = dbConnection.QueryFirstOrDefault<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
         CloseDb();
@@ -106,7 +109,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
     public List<T> GetAll()
     {
         var internalResult = InternalGetAll();
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = dbConnection.Query<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction).ToList();
         CloseDb();
@@ -126,7 +129,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         }
         databaseUnit.OnBeforeUpdate(t);
         var internalResult = InternalUpdate(t);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = dbConnection.Execute(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
         CloseDb();
@@ -148,7 +151,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
     public int Delete(T t)
     {
         var internalResult = InternalDelete(t);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = dbConnection.Execute(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
         CloseDb();
@@ -196,7 +199,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         }
 
         var internalResult = InternalInsert(t);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
 
         if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
@@ -290,7 +293,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
             databaseUnit.OnBeforeInsert(t);
         }
 
-        //databaseUnit.OnLogSqlInfo(internalResult);
+        //LogSql(internalResult);
         OpenDb();
         databaseSpecificProvider.FastBatchInsert(list);
         CloseDb();
@@ -303,7 +306,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
     public async Task<T> GetAsync(object id)
     {
         DbQueryResult internalResult = InternalGet(id);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = await dbConnection.QueryFirstOrDefaultAsync<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
         CloseDb();
@@ -317,7 +320,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
     public async Task<List<T>> GetAllAsync()
     {
         var internalResult = InternalGetAll();
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = (await dbConnection.QueryAsync<T>(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction)).ToList();
         CloseDb();
@@ -333,7 +336,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         }
         databaseUnit.OnBeforeUpdate(t);
         var internalResult = InternalUpdate(t);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
         CloseDb();
@@ -361,7 +364,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
     public async Task<int> DeleteAsync(T t)
     {
         var internalResult = InternalDelete(t);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
         var result = await dbConnection.ExecuteAsync(databaseUnit, internalResult.Sql, internalResult.DynamicParameters, transaction: dbTransaction);
         CloseDb();
@@ -402,7 +405,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         }
         databaseUnit.OnBeforeInsert(t);
         var internalResult = InternalInsert(t);
-        databaseUnit.OnLogSqlInfo(internalResult);
+        LogSql(internalResult);
         OpenDb();
 
         if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
@@ -521,7 +524,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
             databaseUnit.OnBeforeInsert(t);
         }
 
-        //databaseUnit.OnLogSqlInfo(internalResult);
+        //LogSql(internalResult);
         OpenDb();
         if (IsSqlite)
         {

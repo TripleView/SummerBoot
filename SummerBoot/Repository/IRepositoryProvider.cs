@@ -1,10 +1,12 @@
+using SummerBoot.Repository.Core;
+using SummerBoot.Repository.ExpressionParser;
+using SummerBoot.Repository.ExpressionParser.Parser;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using SummerBoot.Repository.ExpressionParser;
 
 namespace SummerBoot.Repository;
 
@@ -71,11 +73,17 @@ public class RepositoryProvider : IRepositoryProvider
         }
     }
 
+    private void LogSql(SqlLogContext sqlLogContext)
+    {
+        DatabaseUnit.OnLogSqlInfo(sqlLogContext);
+    }
+
     public int Execute(Expression expression)
     {
         var wrapperExpression = GetDbQueryResultByExpression(expression);
         var sql = wrapperExpression.SqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = sql, Parameters = parameters });
         return Repository.Execute(sql, parameters);
     }
 
@@ -84,6 +92,7 @@ public class RepositoryProvider : IRepositoryProvider
         var wrapperExpression = GetDbQueryResultByExpression(expression);
         var sql = wrapperExpression.SqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = sql, Parameters = parameters });
         return await Repository.ExecuteAsync(sql, parameters);
     }
 
@@ -92,6 +101,7 @@ public class RepositoryProvider : IRepositoryProvider
         var wrapperExpression = GetDbQueryResultByExpression(expression);
         var sql = wrapperExpression.SqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = sql, Parameters = parameters });
         return Repository.QueryFirstOrDefault<TResult>(sql, parameters);
     }
 
@@ -100,6 +110,7 @@ public class RepositoryProvider : IRepositoryProvider
         var wrapperExpression = GetDbQueryResultByExpression(expression);
         var sql = wrapperExpression.SqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = sql, Parameters = parameters });
         return await Repository.QueryFirstOrDefaultAsync<TResult>(sql, parameters);
     }
 
@@ -120,6 +131,7 @@ public class RepositoryProvider : IRepositoryProvider
         var wrapperExpression = GetDbQueryResultByExpression(expression);
         var sql = wrapperExpression.SqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = sql, Parameters = parameters });
         return Repository.QueryList<TResult>(sql, parameters);
     }
 
@@ -128,6 +140,7 @@ public class RepositoryProvider : IRepositoryProvider
         var wrapperExpression = GetDbQueryResultByExpression(expression);
         var sql = wrapperExpression.SqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = sql, Parameters = parameters });
         return await Repository.QueryListAsync<TResult>(sql, parameters);
     }
 
@@ -137,6 +150,7 @@ public class RepositoryProvider : IRepositoryProvider
         var pageSql = wrapperExpression.SqlExpression.ToSql();
         var countSql = wrapperExpression.CountSqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = pageSql, Parameters = parameters,CountSql = countSql});
         return Repository.QueryPageWithFullSql<TResult>(pageSql, countSql, parameters);
     }
 
@@ -146,6 +160,7 @@ public class RepositoryProvider : IRepositoryProvider
         var pageSql = wrapperExpression.SqlExpression.ToSql();
         var countSql = wrapperExpression.CountSqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
+        LogSql(new SqlLogContext() { Sql = pageSql, Parameters = parameters, CountSql = countSql });
         return await Repository.QueryPageWithFullSqlAsync<TResult>(pageSql, countSql, parameters);
     }
 }
