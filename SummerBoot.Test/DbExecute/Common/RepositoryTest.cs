@@ -3092,6 +3092,39 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestSetValueUpdateWithIgnoreUpdateAttributeAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var setValueUpdateWithIgnoreUpdateAttributeRepository = serviceProvider.GetService<ISetValueUpdateWithIgnoreUpdateAttributeRepository>();
+            var customerNo = GetRandomName();
+            var model = new SetValueUpdateWithIgnoreUpdateAttribute()
+            {
+                Name = "abc",
+                CustomerNo = customerNo
+            };
+            await setValueUpdateWithIgnoreUpdateAttributeRepository.InsertAsync(model);
+           
+            var r1 = await setValueUpdateWithIgnoreUpdateAttributeRepository.Where(x => x.CustomerNo == customerNo).SetValue(x => x.Name, "xx").SetValue(x => x.CustomerNo, "yy").ToUpdateAsync();
+            Assert.Equal(1, r1);
+            var dbModel = await setValueUpdateWithIgnoreUpdateAttributeRepository.GetAsync(model.Id);
+            Assert.Equal("xx",dbModel.Name);
+            Assert.Equal(customerNo, dbModel.CustomerNo);
+
+            dbModel.CustomerNo = "ccc";
+            dbModel.Name = "ddd";
+            var r2 = await setValueUpdateWithIgnoreUpdateAttributeRepository.UpdateAsync(dbModel);
+            Assert.Equal(1, r2);
+            var dbModel2 = await setValueUpdateWithIgnoreUpdateAttributeRepository.GetAsync(dbModel.Id);
+            Assert.Equal("ddd", dbModel2.Name);
+            Assert.Equal(customerNo, dbModel2.CustomerNo);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestToListAsync(DbType dbType)
         {
             ChangeDb(dbType);
@@ -3151,14 +3184,14 @@ namespace SummerBoot.Test.DbExecute.Common
             var dbOrderHeader = await orderHeaderRepository
                 .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .Where(x => x.T1.Id == orderHeader.Id)
-                .Select(x=>x.T1)
+                .Select(x => x.T1)
                 .FirstOrDefaultAsync();
             Assert.NotNull(dbOrderHeader);
             Assert.Equal("ABC", dbOrderHeader.OrderNo);
             var dbOrderDetail = await orderHeaderRepository
                 .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
                 .Where(x => x.T1.Id == orderHeader.Id)
-                .OrderBy(x=>x.T2.Id)
+                .OrderBy(x => x.T2.Id)
                 .Select(x => x.T2)
                 .FirstOrDefaultAsync();
             Assert.NotNull(dbOrderDetail);

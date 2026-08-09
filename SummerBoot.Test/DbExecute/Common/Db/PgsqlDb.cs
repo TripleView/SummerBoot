@@ -69,5 +69,6 @@ namespace SummerBoot.Test.DbExecute.Common.Db
         public DbSet<JoinTable5> JoinTable5 { get; set; }
         public DbSet<JoinTable6> JoinTable6 { get; set; }
         public DbSet<JoinTable7> JoinTable7 { get; set; }
+        public DbSet<SetValueUpdateWithIgnoreUpdateAttribute> SetValueUpdateWithIgnoreUpdateAttribute { get; set; }
     }
 }

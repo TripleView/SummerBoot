@@ -38,4 +38,6 @@ internal class WrapperExpression : Expression
     /// internal pagingParams
     /// </summary>
     public InternalPageable InternalPageable { get; set; }
+
+    public bool? IsIgnoreWhenUpdate { get; set; }
 }

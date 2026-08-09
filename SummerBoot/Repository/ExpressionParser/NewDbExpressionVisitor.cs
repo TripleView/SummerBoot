@@ -16,6 +16,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using SummerBoot.Repository.Attributes;
 using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository.ExpressionParser;
@@ -1247,6 +1248,11 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sourceExpression = this.Visit(setValueCall.Arguments[0]);
         var sourceConditionExpression = StripQuotes(setValueCall.Arguments[1]);
         var conditionExpression = this.Visit(sourceConditionExpression);
+        if (conditionExpression is WrapperExpression { IsIgnoreWhenUpdate: true })
+        {
+            return sourceExpression;
+        }
+
         var leftSqlCondition = GetSqlExpression(conditionExpression);
 
         leftSqlCondition = ConvertSqlPropertyExpressionToSqlIdentifierExpression(leftSqlCondition);
@@ -1864,7 +1870,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                 };
                 return GetWrapperExpression(sqlSelectItemExpression);
             }
-            else if (MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
+            else if (MethodName == nameof(RepositoryMethodsCache.SetValue) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
                 var r1 = GetSqlVariableExpressionWithValueAndDynamicName(strValue);
 
@@ -1945,9 +1951,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     }
 
-    private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null, SqlExpression countSqlExpression = null, Pageable pageable = null, InternalPageable internalPageable = null)
+    private Expression GetWrapperExpression(SqlExpression sqlExpression, Type propertyType = null, SqlExpression countSqlExpression = null, Pageable pageable = null, InternalPageable internalPageable = null, bool? isIgnoreWhenUpdate = null)
     {
-        return new WrapperExpression() { SqlExpression = sqlExpression, PropertyType = propertyType, CountSqlExpression = countSqlExpression, Pageable = pageable, InternalPageable = internalPageable };
+        return new WrapperExpression() { SqlExpression = sqlExpression, PropertyType = propertyType, CountSqlExpression = countSqlExpression, Pageable = pageable, InternalPageable = internalPageable, IsIgnoreWhenUpdate = isIgnoreWhenUpdate };
     }
 
     private SqlPropertyExpression GetSqlPropertyExpression(Type type, PropertyInfo propertyInfo)
@@ -2057,7 +2063,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             {
                 var sqlPropertyExpression =
                     GetSqlPropertyExpression(parameterExpression.Type, p2);
-                return GetWrapperExpression(sqlPropertyExpression);
+                var isIgnoreWhenUpdate = p2.GetCustomAttribute<IgnoreWhenUpdateAttribute>() != null;
+                return GetWrapperExpression(sqlPropertyExpression, isIgnoreWhenUpdate: isIgnoreWhenUpdate);
             }
         }
         //Èç¹ûÊÇconstant
