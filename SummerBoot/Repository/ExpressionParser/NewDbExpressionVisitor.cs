@@ -83,8 +83,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         }
     }
 
-
-
     private List<SqlExpression> _lastGroupByExpressions = new List<SqlExpression>();
 
     private static readonly IDictionary<ExpressionType, string> nodeTypeMappings = new Dictionary<ExpressionType, string>
@@ -499,17 +497,36 @@ public class NewDbExpressionVisitor : ExpressionVisitor
                     {
                         collection = node.Arguments[0];
                         property = node.Arguments[1];
-
                     }
 
                     var values = (IEnumerable)GetValue(collection);
+                    var count = 0;
+                    if (values != null)
+                    {
+                        if (values is ICollection collectionValues)
+                        {
+                            count = collectionValues.Count;
+                        }
+                        else
+                        {
+                            count = values.Cast<object>().Count();
+                        }
+                    }
+
+                    //如果参数个数为0,直接赋值为false
+                    if (count == 0)
+                    {
+                        var falseResult = new SqlBinaryExpression()
+                        {
+                            Left = GetSqlNumberExpression(0),
+                            Right = GetSqlNumberExpression(1),
+                            Operator = SqlBinaryOperator.EqualTo
+                        };
+                        return GetWrapperExpression(falseResult);
+                    }
+
                     var propertyExpression = this.Visit(property);
                     var body = GetSqlExpression(propertyExpression);
-                    var count = 0;
-                    foreach (var value in values)
-                    {
-                        count++;
-                    }
 
                     var i = 1;
                     var sqlInExpressions = new List<SqlInExpression>();

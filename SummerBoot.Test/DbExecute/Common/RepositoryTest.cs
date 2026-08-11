@@ -3069,6 +3069,68 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestListContain3Async(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString();
+
+            var dt = DateTime.Now;
+            var list = Enumerable.Range(1, 50).Select(x => new OrderHeader()
+            {
+                CreateTime = dt,
+                OrderNo = orderNo + x,
+                State = 1,
+                CustomerId = x
+            }).ToList();
+
+            await orderHeaderRepository.InsertAsync(list);
+            var tempList = new List<string>();
+
+            var r1 = await orderHeaderRepository
+                .Where(x => tempList.Contains(x.OrderNo))
+                .Select(x => x.OrderNo)
+                .ToListAsync();
+            Assert.Empty(r1);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestListContain4Async(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString();
+
+            var dt = DateTime.Now;
+            var list = Enumerable.Range(1, 50).Select(x => new OrderHeader()
+            {
+                CreateTime = dt,
+                OrderNo = orderNo + x,
+                State = 1,
+                CustomerId = x
+            }).ToList();
+
+            await orderHeaderRepository.InsertAsync(list);
+            var tempList = new List<string>();
+            tempList = null;
+            var r1 = await orderHeaderRepository
+                .Where(x => tempList.Contains(x.OrderNo))
+                .Select(x => x.OrderNo)
+                .ToListAsync();
+            Assert.Empty(r1);
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestSetValueUpdateAsync(DbType dbType)
         {
             ChangeDb(dbType);
@@ -3103,11 +3165,11 @@ namespace SummerBoot.Test.DbExecute.Common
                 CustomerNo = customerNo
             };
             await setValueUpdateWithIgnoreUpdateAttributeRepository.InsertAsync(model);
-           
+
             var r1 = await setValueUpdateWithIgnoreUpdateAttributeRepository.Where(x => x.CustomerNo == customerNo).SetValue(x => x.Name, "xx").SetValue(x => x.CustomerNo, "yy").ToUpdateAsync();
             Assert.Equal(1, r1);
             var dbModel = await setValueUpdateWithIgnoreUpdateAttributeRepository.GetAsync(model.Id);
-            Assert.Equal("xx",dbModel.Name);
+            Assert.Equal("xx", dbModel.Name);
             Assert.Equal(customerNo, dbModel.CustomerNo);
 
             dbModel.CustomerNo = "ccc";
