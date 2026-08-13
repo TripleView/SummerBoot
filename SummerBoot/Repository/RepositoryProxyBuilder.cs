@@ -15,10 +15,8 @@ namespace SummerBoot.Repository
 {
     public class RepositoryProxyBuilder : IRepositoryProxyBuilder
     {
-        public static Dictionary<string, MethodInfo> MethodsCache { get; set; } = new Dictionary<string, MethodInfo>();
-        private static ConcurrentDictionary<string, object> LockObjCache { get; set; } = new ConcurrentDictionary<string, object>();
+        public static ConcurrentDictionary<string, MethodInfo> MethodsCache { get; set; } = new ConcurrentDictionary<string, MethodInfo>();
         private Type targetType;
-        private readonly object lockObj = new object();
 
         private static ConcurrentDictionary<string, Type> TargetTypeCache { set; get; } =
             new ConcurrentDictionary<string, Type>();
@@ -117,7 +115,7 @@ namespace SummerBoot.Repository
                     list.Add(methodInfo);
                 }
             }
-            
+
             var allInterfaces = interfaceType.GetInterfaces();
             // 递归处理当前接口和父接口
             foreach (var allInterface in allInterfaces)
@@ -310,7 +308,7 @@ namespace SummerBoot.Repository
                     }
                     //缓存接口的方法体，便于后续将方法体传递给httpService
                     string methodKey = Guid.NewGuid().ToString();
-                    MethodsCache[methodKey] = targetMethod;
+                    MethodsCache.TryAdd(methodKey, targetMethod);
 
                     //得到方法的各个参数的类型和参数
                     var paramInfo = targetMethod.GetParameters();
@@ -461,7 +459,7 @@ namespace SummerBoot.Repository
                         ilGen.Emit(OpCodes.Call,
                             typeof(RepositoryProxyBuilder).GetMethod("get_MethodsCache", BindingFlags.Static | BindingFlags.Public));
                         ilGen.Emit(OpCodes.Ldstr, methodKey);
-                        ilGen.Emit(OpCodes.Call, typeof(Dictionary<string, MethodInfo>).GetMethod("get_Item"));
+                        ilGen.Emit(OpCodes.Call, typeof(ConcurrentDictionary<string, MethodInfo>).GetMethod("get_Item"));
 
                         ilGen.Emit(OpCodes.Ldarg_0);
                         ilGen.Emit(OpCodes.Ldfld, serviceProviderField);

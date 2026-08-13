@@ -76,6 +76,7 @@ namespace SummerBoot.Repository.Core
             var paramInfo = paramInfos[CleanParameterName(name)];
 
             object val = paramInfo.AssociatedActualParameters != null ? paramInfo.AssociatedActualParameters.Value : paramInfo.Value;
+            
             if (val == DBNull.Value)
             {
                 if (default(T) != null)

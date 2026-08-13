@@ -41,6 +41,19 @@ namespace SummerBoot.Repository.ExpressionParser.Parser
         /// 列字段的信息
         /// </summary>
         public List<DbQueryResultPropertyInfoMapping> PropertyInfoMappings { get; set; }
+
+        public DbQueryResult Clone()
+        {
+            return new DbQueryResult()
+            {
+                ExecuteSqlExpression = this.ExecuteSqlExpression,
+                CountSql = this.CountSql,
+                LastInsertIdSql = this.LastInsertIdSql,
+                IdKeyPropertyInfo = this.IdKeyPropertyInfo,
+                IdName = this.IdName,
+                PropertyInfoMappings = this.PropertyInfoMappings
+            };
+        }
     }
 
     public class DbQueryResultPropertyInfoMapping

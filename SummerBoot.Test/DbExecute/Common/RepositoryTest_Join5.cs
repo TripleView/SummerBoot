@@ -5,8 +5,10 @@ using SummerBoot.Test.DbExecute.Common.Dto;
 using SummerBoot.Test.DbExecute.Common.Models;
 using SummerBoot.Test.DbExecute.Common.Repository;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using SummerBoot.Core;
 using Xunit;
 using DbType = SqlParser.Net.DbType;
 
@@ -406,7 +408,7 @@ public partial class RepositoryTest
         {
             CreateTime = DateTime.Now,
             Name = name5,
-            OrderIndex =101,
+            OrderIndex = 101,
             Table4Id = joinTable4.Id
         };
         await joinTable5Repository.InsertAsync(joinTable5b);
@@ -749,8 +751,8 @@ public partial class RepositoryTest
         };
         var result = await joinTable1Repository
             .InnerJoin(joinTable2Repository, x => x.T1.Id == x.T2.Table1Id)
-            .InnerJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id )
-            .InnerJoin(joinTable4Repository, x => x.T3.Id == x.T4.Table3Id )
+            .InnerJoin(joinTable3Repository, x => x.T2.Id == x.T3.Table2Id)
+            .InnerJoin(joinTable4Repository, x => x.T3.Id == x.T4.Table3Id)
             .InnerJoin(joinTable5Repository, x => x.T4.Id == x.T5.Table4Id && x.T5.Name == test.Name.Trim())
             .Select(it => new { it.T1.Name, it.T2.Table1Id })
             .ToListAsync();

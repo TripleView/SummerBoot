@@ -1,5 +1,6 @@
-ï»¿using System;
+using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using YamlDotNet.Core.Tokens;
@@ -9,7 +10,7 @@ namespace SummerBoot.Core
     public static partial class SbUtil
     {
         /// <summary>
-        /// å­—å…¸ä¸­å½“é”®ä¸å­˜åœ¨åˆ™æ·»åŠ 
+        /// ×ÖµäÖĞµ±¼ü²»´æÔÚÔòÌí¼Ó
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <typeparam name="T2"></typeparam>
@@ -28,7 +29,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ä¸å­˜åœ¨åˆ™æ·»åŠ ï¼Œå­˜åœ¨åˆ™æ›¿æ¢
+        /// ²»´æÔÚÔòÌí¼Ó£¬´æÔÚÔòÌæ»»
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <typeparam name="T2"></typeparam>
@@ -61,15 +62,13 @@ namespace SummerBoot.Core
             return true;
         }
 
-        public static bool TryGetOrAdd<T1, T2>(this IDictionary<T1, T2> dictionary,T1 key,out T2 value,Func<T2> func)
+        public static bool TryGetOrAdd<TKey, TValue>(
+            this ConcurrentDictionary<TKey, TValue> dictionary,
+            TKey key,
+            out TValue value,
+            Func<TValue> func)
         {
-            if (dictionary.TryGetValue(key, out value))
-            {
-                return true;
-            }
-
-            value = func();
-            dictionary.TryAdd(key, value);
+            value = dictionary.GetOrAdd(key, _ => func());
             return true;
         }
     }

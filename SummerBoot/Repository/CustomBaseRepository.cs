@@ -192,20 +192,19 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
 
     public T Insert(T t)
     {
-        databaseUnit.OnBeforeInsert(t);
         if (t is IBaseEntity baseEntity)
         {
             entityClassHandler.ProcessingEntity(baseEntity);
         }
-
+        databaseUnit.OnBeforeInsert(t);
         var internalResult = InternalInsert(t);
         LogSql(internalResult);
         OpenDb();
 
-        if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
+        if (databaseType == DatabaseType.Oracle)
         {
-            var dynamicParameters = new Core.DynamicParameters(t);
-            if (internalResult.IdKeyPropertyInfo != null)
+            var dynamicParameters = internalResult.DynamicParameters;
+            if (internalResult.IdKeyPropertyInfo != null && !databaseUnit.IsDataMigrateMode)
             {
                 dynamicParameters.Add(internalResult.IdName, 0, dbType: System.Data.DbType.Int32, direction: ParameterDirection.Output);
             }
@@ -220,27 +219,59 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
                 internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
             }
         }
-        else if (databaseType == DatabaseType.Sqlite)
+        else if (databaseType == DatabaseType.Pgsql)
         {
-            if (internalResult.IdKeyPropertyInfo != null)
+            var dynamicParameters = internalResult.DynamicParameters;
+            foreach (var dynamicParametersGetParamInfo in dynamicParameters.GetParamInfos)
             {
-                var sql = internalResult.Sql + ";" + internalResult.LastInsertIdSql;
-                var dynamicParameters = new DynamicParameters(t);
-
-                var multiResult = dbConnection.QueryMultiple(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
-                var id = multiResult.Read<int>().FirstOrDefault();
-
-                if (id != null)
+                if (dynamicParametersGetParamInfo.Value != null && dynamicParametersGetParamInfo.Value.ValueType != null && (dynamicParametersGetParamInfo.Value.ValueType.IsEnum || (dynamicParametersGetParamInfo.Value.ValueType.IsNullable() && Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType).IsEnum)))
                 {
-                    internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+                    var enumType = dynamicParametersGetParamInfo.Value.ValueType.IsEnum ? dynamicParametersGetParamInfo.Value.ValueType : Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType);
+                    var enumUnderlyingType = Enum.GetUnderlyingType(enumType);
+                    if (dynamicParametersGetParamInfo.Value.Value != null)
+                    {
+                        if (enumUnderlyingType == typeof(int))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
+                        }
+                        else if (enumUnderlyingType == typeof(uint))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToUInt32(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(uint);
+                        }
+                        else if (enumUnderlyingType == typeof(long))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToInt64(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(long);
+                        }
+                        else if (enumUnderlyingType == typeof(ulong))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToUInt64(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(ulong);
+                        }
+                        else
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
+                        }
+
+                    }
                 }
             }
-            else
+            var sql = internalResult.Sql;
+            var id = dbConnection.QueryFirstOrDefault<int>(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
+            if (internalResult.IdKeyPropertyInfo != null)
             {
-                dbConnection.Execute(databaseUnit, internalResult.Sql, t, transaction: dbTransaction);
+                internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
             }
         }
-        else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql)
+        else if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.Mysql || databaseType == DatabaseType.Sqlite)
         {
             if (internalResult.IdKeyPropertyInfo != null)
             {
@@ -408,7 +439,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         LogSql(internalResult);
         OpenDb();
 
-        if (databaseType == DatabaseType.Oracle || databaseType == DatabaseType.Pgsql)
+        if (databaseType == DatabaseType.Oracle)
         {
             var dynamicParameters = internalResult.DynamicParameters;
             if (internalResult.IdKeyPropertyInfo != null && !databaseUnit.IsDataMigrateMode)
@@ -416,58 +447,65 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
                 dynamicParameters.Add(internalResult.IdName, 0, dbType: System.Data.DbType.Int32, direction: ParameterDirection.Output);
             }
 
-            if (databaseType == DatabaseType.Pgsql)
-            {
-                foreach (var dynamicParametersGetParamInfo in dynamicParameters.GetParamInfos)
-                {
-                    if (dynamicParametersGetParamInfo.Value != null && dynamicParametersGetParamInfo.Value.ValueType != null && (dynamicParametersGetParamInfo.Value.ValueType.IsEnum || (dynamicParametersGetParamInfo.Value.ValueType.IsNullable() && Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType).IsEnum)))
-                    {
-                        var enumType = dynamicParametersGetParamInfo.Value.ValueType.IsEnum ? dynamicParametersGetParamInfo.Value.ValueType : Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType);
-                        var enumUnderlyingType = Enum.GetUnderlyingType(enumType);
-                        if (dynamicParametersGetParamInfo.Value.Value != null)
-                        {
-                            if (enumUnderlyingType == typeof(int))
-                            {
-                                dynamicParametersGetParamInfo.Value.Value =
-                                    Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
-                                dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
-                            }
-                            else if (enumUnderlyingType == typeof(uint))
-                            {
-                                dynamicParametersGetParamInfo.Value.Value =
-                                    Convert.ToUInt32(dynamicParametersGetParamInfo.Value.Value);
-                                dynamicParametersGetParamInfo.Value.ValueType = typeof(uint);
-                            }
-                            else if (enumUnderlyingType == typeof(long))
-                            {
-                                dynamicParametersGetParamInfo.Value.Value =
-                                    Convert.ToInt64(dynamicParametersGetParamInfo.Value.Value);
-                                dynamicParametersGetParamInfo.Value.ValueType = typeof(long);
-                            }
-                            else if (enumUnderlyingType == typeof(ulong))
-                            {
-                                dynamicParametersGetParamInfo.Value.Value =
-                                    Convert.ToUInt64(dynamicParametersGetParamInfo.Value.Value);
-                                dynamicParametersGetParamInfo.Value.ValueType = typeof(ulong);
-                            }
-                            else
-                            {
-                                dynamicParametersGetParamInfo.Value.Value =
-                                    Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
-                                dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
-                            }
-
-                        }
-                    }
-                }
-            }
-
             var sql = internalResult.Sql;
+
             await dbConnection.ExecuteAsync(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
 
             if (internalResult.IdKeyPropertyInfo != null)
             {
                 var id = dynamicParameters.Get<int>(internalResult.IdName);
+                internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
+            }
+        }
+        else if (databaseType == DatabaseType.Pgsql)
+        {
+            var dynamicParameters = internalResult.DynamicParameters;
+            foreach (var dynamicParametersGetParamInfo in dynamicParameters.GetParamInfos)
+            {
+                if (dynamicParametersGetParamInfo.Value != null && dynamicParametersGetParamInfo.Value.ValueType != null && (dynamicParametersGetParamInfo.Value.ValueType.IsEnum || (dynamicParametersGetParamInfo.Value.ValueType.IsNullable() && Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType).IsEnum)))
+                {
+                    var enumType = dynamicParametersGetParamInfo.Value.ValueType.IsEnum ? dynamicParametersGetParamInfo.Value.ValueType : Nullable.GetUnderlyingType(dynamicParametersGetParamInfo.Value.ValueType);
+                    var enumUnderlyingType = Enum.GetUnderlyingType(enumType);
+                    if (dynamicParametersGetParamInfo.Value.Value != null)
+                    {
+                        if (enumUnderlyingType == typeof(int))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
+                        }
+                        else if (enumUnderlyingType == typeof(uint))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToUInt32(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(uint);
+                        }
+                        else if (enumUnderlyingType == typeof(long))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToInt64(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(long);
+                        }
+                        else if (enumUnderlyingType == typeof(ulong))
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToUInt64(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(ulong);
+                        }
+                        else
+                        {
+                            dynamicParametersGetParamInfo.Value.Value =
+                                Convert.ToInt32(dynamicParametersGetParamInfo.Value.Value);
+                            dynamicParametersGetParamInfo.Value.ValueType = typeof(int);
+                        }
+
+                    }
+                }
+            }
+            var sql = internalResult.Sql;
+            var id = await dbConnection.QueryFirstOrDefaultAsync<int>(databaseUnit, sql, dynamicParameters, transaction: dbTransaction);
+            if (internalResult.IdKeyPropertyInfo != null)
+            {
                 internalResult.IdKeyPropertyInfo.SetValue(t, Convert.ChangeType(id, internalResult.IdKeyPropertyInfo.PropertyType));
             }
         }
@@ -536,7 +574,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         {
             await databaseSpecificProvider.FastBatchInsertAsync(list);
         }
-            
+
         CloseDb();
     }
 
@@ -594,7 +632,7 @@ public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<
         var result = await dbConnection.QueryFirstOrDefaultAsync<TResult>(databaseUnit, sql, param, dbTransaction);
         CloseDb();
         return result;
-     }
+    }
 
     public async Task<int> ExecuteAsync(string sql, object param = null)
     {

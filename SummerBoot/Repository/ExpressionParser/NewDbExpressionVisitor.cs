@@ -1,8 +1,8 @@
 using SqlParser.Net;
 using SqlParser.Net.Ast;
 using SqlParser.Net.Ast.Expression;
-using StackExchange.Redis;
 using SummerBoot.Core;
+using SummerBoot.Repository.Attributes;
 using SummerBoot.Repository.Core;
 using SummerBoot.Repository.ExpressionParser.Base;
 using SummerBoot.Repository.ExpressionParser.Parser;
@@ -12,12 +12,11 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using SummerBoot.Repository.Attributes;
-using YamlDotNet.Core.Tokens;
 
 namespace SummerBoot.Repository.ExpressionParser;
 
@@ -27,6 +26,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     private static ConcurrentDictionary<string, SqlUpdateExpression> sqlUpdateExpressionDic = new ConcurrentDictionary<string, SqlUpdateExpression>();
     private static ConcurrentDictionary<string, List<ColumnInfo>> sqlExpressionKeyColumnDic = new ConcurrentDictionary<string, List<ColumnInfo>>();
     private static ConcurrentDictionary<string, SqlDeleteExpression> sqlDeleteExpressionDic = new ConcurrentDictionary<string, SqlDeleteExpression>();
+
+    public static ConcurrentDictionary<string, DbQueryResult> DbQueryResultDic = new ConcurrentDictionary<string, DbQueryResult>();
     private bool isMysql;
     private bool isSqlServer;
     private bool isOracle;
@@ -38,46 +39,35 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     {
         this.databaseUnit = databaseUnit;
         var databaseType = databaseUnit.DatabaseType;
+        leftQualifiers = databaseUnit.LeftQualifiers;
+        rightQualifiers = databaseUnit.RightQualifiers;
+        prefix = databaseUnit.ParameterNamePrefix;
+
         switch (databaseType)
         {
             case DatabaseType.SqlServer:
                 dbType = DbType.SqlServer;
                 isSqlServer = true;
-                leftQualifiers = "[";
-                rightQualifiers = "]";
-                prefix = "@";
                 lengthName = "len";
                 break;
             case DatabaseType.Mysql:
                 dbType = DbType.MySql;
                 isMysql = true;
-                leftQualifiers = "`";
-                rightQualifiers = "`";
-                prefix = "@";
                 lengthName = "length";
                 break;
             case DatabaseType.Oracle:
                 dbType = DbType.Oracle;
                 isOracle = true;
-                leftQualifiers = "\"";
-                rightQualifiers = "\"";
-                prefix = ":";
                 lengthName = "length";
                 break;
             case DatabaseType.Sqlite:
                 dbType = DbType.Sqlite;
                 isSqlite = true;
-                leftQualifiers = "`";
-                rightQualifiers = "`";
-                prefix = ":";
                 lengthName = "length";
                 break;
             case DatabaseType.Pgsql:
                 dbType = DbType.Pgsql;
                 isPgsql = true;
-                leftQualifiers = "\"";
-                rightQualifiers = "\"";
-                prefix = "@";
                 lengthName = "length";
                 break;
         }
@@ -85,48 +75,48 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private List<SqlExpression> _lastGroupByExpressions = new List<SqlExpression>();
 
-    private static readonly IDictionary<ExpressionType, string> nodeTypeMappings = new Dictionary<ExpressionType, string>
-        {
-            {ExpressionType.Add, "+"},
-            {ExpressionType.And, "AND"},
-            {ExpressionType.AndAlso, "AND"},
-            {ExpressionType.Divide, "/"},
-            {ExpressionType.Equal, "="},
-            {ExpressionType.ExclusiveOr, "^"},
-            {ExpressionType.GreaterThan, ">"},
-            {ExpressionType.GreaterThanOrEqual, ">="},
-            {ExpressionType.LessThan, "<"},
-            {ExpressionType.LessThanOrEqual, "<="},
-            {ExpressionType.Modulo, "%"},
-            {ExpressionType.Multiply, "*"},
-            {ExpressionType.Negate, "-"},
-            {ExpressionType.Not, "NOT"},
-            {ExpressionType.NotEqual, "<>"},
-            {ExpressionType.Or, "OR"},
-            {ExpressionType.OrElse, "OR"},
-            {ExpressionType.Subtract, "-"}
-        };
-
-    private static readonly IDictionary<ExpressionType, SqlBinaryOperator> nodeTypeSqlBinaryOperatorsMappings = new Dictionary<ExpressionType, SqlBinaryOperator>
+    private static readonly ConcurrentDictionary<ExpressionType, string> nodeTypeMappings = new ConcurrentDictionary<ExpressionType, string>
     {
-        {ExpressionType.Add, SqlBinaryOperator.Add},
-        {ExpressionType.And, SqlBinaryOperator.And},
-        {ExpressionType.AndAlso, SqlBinaryOperator.And},
-        {ExpressionType.Divide, SqlBinaryOperator.Divide},
-        {ExpressionType.Equal, SqlBinaryOperator.EqualTo},
-        {ExpressionType.ExclusiveOr, SqlBinaryOperator.BitwiseXor },
-        {ExpressionType.GreaterThan, SqlBinaryOperator.GreaterThen},
-        {ExpressionType.GreaterThanOrEqual, SqlBinaryOperator.GreaterThenOrEqualTo},
-        {ExpressionType.LessThan,SqlBinaryOperator.LessThen},
-        {ExpressionType.LessThanOrEqual, SqlBinaryOperator.LessThenOrEqualTo},
-        {ExpressionType.Modulo, SqlBinaryOperator.Mod},
-        {ExpressionType.Multiply, SqlBinaryOperator.Multiply},
-        {ExpressionType.Negate, SqlBinaryOperator.Sub},
-        {ExpressionType.Not, SqlBinaryOperator.IsNot},
-        {ExpressionType.NotEqual,SqlBinaryOperator.NotEqualTo},
-        {ExpressionType.Or, SqlBinaryOperator.Or},
-        {ExpressionType.OrElse, SqlBinaryOperator.Or},
-        {ExpressionType.Subtract, SqlBinaryOperator.Sub}
+        [ExpressionType.Add] = "+",
+        [ExpressionType.And] = "AND",
+        [ExpressionType.AndAlso] = "AND",
+        [ExpressionType.Divide] = "/",
+        [ExpressionType.Equal] = "=",
+        [ExpressionType.ExclusiveOr] = "^",
+        [ExpressionType.GreaterThan] = ">",
+        [ExpressionType.GreaterThanOrEqual] = ">=",
+        [ExpressionType.LessThan] = "<",
+        [ExpressionType.LessThanOrEqual] = "<=",
+        [ExpressionType.Modulo] = "%",
+        [ExpressionType.Multiply] = "*",
+        [ExpressionType.Negate] = "-",
+        [ExpressionType.Not] = "NOT",
+        [ExpressionType.NotEqual] = "<>",
+        [ExpressionType.Or] = "OR",
+        [ExpressionType.OrElse] = "OR",
+        [ExpressionType.Subtract] = "-"
+    };
+
+    private static readonly ConcurrentDictionary<ExpressionType, SqlBinaryOperator> nodeTypeSqlBinaryOperatorsMappings = new ConcurrentDictionary<ExpressionType, SqlBinaryOperator>
+    {
+        [ExpressionType.Add] = SqlBinaryOperator.Add,
+        [ExpressionType.And] = SqlBinaryOperator.And,
+        [ExpressionType.AndAlso] = SqlBinaryOperator.And,
+        [ExpressionType.Divide] = SqlBinaryOperator.Divide,
+        [ExpressionType.Equal] = SqlBinaryOperator.EqualTo,
+        [ExpressionType.ExclusiveOr] = SqlBinaryOperator.BitwiseXor,
+        [ExpressionType.GreaterThan] = SqlBinaryOperator.GreaterThen,
+        [ExpressionType.GreaterThanOrEqual] = SqlBinaryOperator.GreaterThenOrEqualTo,
+        [ExpressionType.LessThan] = SqlBinaryOperator.LessThen,
+        [ExpressionType.LessThanOrEqual] = SqlBinaryOperator.LessThenOrEqualTo,
+        [ExpressionType.Modulo] = SqlBinaryOperator.Mod,
+        [ExpressionType.Multiply] = SqlBinaryOperator.Multiply,
+        [ExpressionType.Negate] = SqlBinaryOperator.Sub,
+        [ExpressionType.Not] = SqlBinaryOperator.IsNot,
+        [ExpressionType.NotEqual] = SqlBinaryOperator.NotEqualTo,
+        [ExpressionType.Or] = SqlBinaryOperator.Or,
+        [ExpressionType.OrElse] = SqlBinaryOperator.Or,
+        [ExpressionType.Subtract] = SqlBinaryOperator.Sub
     };
 
     private Stack<string> methodCallStack = new Stack<string>();
@@ -135,7 +125,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// 当前处理的方法名称，比如select，where
     /// </summary>
     private string MethodName => methodCallStack.Count > 0 ? methodCallStack.Peek() : "";
-
 
     private bool SearchFromTop(string functionName)
     {
@@ -170,25 +159,25 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     /// Mapping of Table Names to Table Information
     /// 表名到表信息的映射
     /// </summary>
-    private Dictionary<string, TableInfo> tableNameToTableInfoMap = new Dictionary<string, TableInfo>();
+    private ConcurrentDictionary<string, TableInfo> tableNameToTableInfoMap = new ConcurrentDictionary<string, TableInfo>();
     /// <summary>
     /// 类型限定名到表信息的映射
     /// Mapping of type qualified names to table information
     /// </summary>
-    private static Dictionary<string, TableInfo> classNameToTableInfoMap = new Dictionary<string, TableInfo>();
+    private static ConcurrentDictionary<string, TableInfo> classNameToTableInfoMap = new ConcurrentDictionary<string, TableInfo>();
     /// <summary>
     /// 表名到表别名的映射
     /// Mapping from table name to table alias
     /// </summary>
-    private Dictionary<string, string> tableNameToTableAliasMap = new Dictionary<string, string>();
+    private ConcurrentDictionary<string, string> tableNameToTableAliasMap = new ConcurrentDictionary<string, string>();
 
-    private Dictionary<Guid, string> sqlExpressionIdToAliasMap = new Dictionary<Guid, string>();
+    private ConcurrentDictionary<Guid, string> sqlExpressionIdToAliasMap = new ConcurrentDictionary<Guid, string>();
 
     /// <summary>
     /// 类型限定名到SqlTableExpression的映射
     /// Mapping of type qualified names to SqlTableExpression
     /// </summary>
-    private static Dictionary<string, SqlTableExpression> classNameToSqlTableExpressionMap = new Dictionary<string, SqlTableExpression>();
+    private static ConcurrentDictionary<string, SqlTableExpression> classNameToSqlTableExpressionMap = new ConcurrentDictionary<string, SqlTableExpression>();
     /// <summary>
     /// Qualifiers for identifiers
     /// 标识符的限定符
@@ -588,13 +577,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             $"not support method {methodName},You can call the function AddSqlFunctionMapping in DatabaseUnit to add mapping");
     }
 
-    private bool IsListContains(MethodInfo methodInfo)
-    {
-        return methodInfo.Name == "Contains"
-               && methodInfo.DeclaringType?.IsGenericType == true
-               && methodInfo.DeclaringType.GetGenericTypeDefinition() == typeof(List<>);
-    }
-
     /// <summary>
     /// Remove parameter reference wrappers from expressions
     /// 去除表达式中的参数引用包装
@@ -853,8 +835,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         return sqlExpression;
     }
-
-
 
     public virtual Expression VisitFirstOrDefault(MethodCallExpression firstOrDefaultCall)
     {
@@ -1117,7 +1097,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return sqlSelectExpression;
     }
 
-
     private SqlPropertyExpression GetSqlPropertyExpression(string tableName, string propertyName)
     {
         var name = propertyName == "*"
@@ -1291,8 +1270,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
         throw new NotSupportedException(nameof(VisitSetValue));
     }
-
-
 
     public virtual Expression VisitToPage(MethodCallExpression toPageCall)
     {
@@ -1639,7 +1616,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var sqlSelectExpression = AppendSqlSelectItems(sourceSqlExpression, sqlSelectItemExpressions);
         var tableNameKey = GetCacheKey(tableInfo.Name);
         tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias);
-        sqlExpressionIdToAliasMap.Add(sqlSelectExpression.Id, tableAlias);
+        sqlExpressionIdToAliasMap.TryAdd(sqlSelectExpression.Id, tableAlias);
         return GetWrapperExpression(sqlSelectExpression);
     }
 
@@ -1789,7 +1766,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         if (!tableNameToTableAliasMap.TryGetValue(tableNameKey, out string tableAlias))
         {
             tableAlias = GetTableAlias();
-            tableNameToTableAliasMap.Add(tableNameKey, tableAlias);
+            tableNameToTableAliasMap.TryAdd(tableNameKey, tableAlias);
         }
 
         return tableInfo;
@@ -1822,9 +1799,9 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     private bool IsJoinMethod(string methodName)
     {
-        return methodName == nameof(JoinRepository2Methods.LeftJoin) ||
-               methodName == nameof(JoinRepository2Methods.RightJoin) ||
-               methodName == nameof(JoinRepository2Methods.InnerJoin);
+        return methodName is nameof(JoinRepository2Methods.LeftJoin) or
+               nameof(JoinRepository2Methods.RightJoin) or
+               nameof(JoinRepository2Methods.InnerJoin);
     }
 
     protected override Expression VisitConstant(ConstantExpression constant)
@@ -2399,8 +2376,8 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
     public virtual DbQueryResult Insert<T>(T insertEntity)
     {
-        var key = $"GetSqlInsertExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
-        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        var key = $"GetSqlInsertExpression:{GetCacheKey(typeof(T).FullName)}";
+        var cacheResult = DbQueryResultDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
@@ -2499,7 +2476,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
 
             return result;
         });
-
+        cacheResult = cacheResult.Clone();
         cacheResult.DynamicParameters = new DynamicParameters(insertEntity);
 
         return cacheResult;
@@ -2508,7 +2485,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     public DbQueryResult Update<T>(T updateEntity)
     {
         var typeName = typeof(T).FullName;
-        var key = $"GetSqlUpdateExpression:{this.databaseUnit.Id}:{typeName}";
+        var key = $"GetSqlUpdateExpression:{GetCacheKey(typeName)}";
         var sqlUpdateExpression = sqlUpdateExpressionDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
@@ -2553,6 +2530,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         });
 
         sqlExpressionKeyColumnDic.TryGetValue(key, out var keyColumns);
+        sqlUpdateExpression = sqlUpdateExpression.Clone();
         sqlUpdateExpression.Where = BuildWhereExpression(updateEntity, keyColumns);
         var cacheResult = new DbQueryResult
         {
@@ -2625,74 +2603,10 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return where;
     }
 
-    public DbQueryResult ExecuteUpdate<T>(Expression expression, List<SelectItem<T>> updateItems)
-    {
-        if (updateItems == null || updateItems.Count == 0)
-        {
-            throw new ArgumentNullException(nameof(updateItems));
-        }
-
-        var body = this.Visit(expression);
-        var sqlSelectQueryExpression = GetSqlSelectQueryExpression(GetSqlExpression(body));
-
-        var updateColumns = new List<SqlIdentifierExpression>();
-        foreach (var updateItem in updateItems)
-        {
-            var tempR = this.Visit(updateItem.Select);
-            var column = GetSqlExpression(tempR);
-            if (column is SqlIdentifierExpression sqlIdentifierExpression)
-            {
-                updateColumns.Add(sqlIdentifierExpression);
-            }
-        }
-
-        var updateColumnKeys = updateColumns.Select(x => x.Value).OrderBy(x => x).StringJoin(";");
-
-        var key = "GetExecuteUpdateSqlUpdateExpression" + typeof(T).FullName + updateColumnKeys;
-        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
-        {
-            var table = this.GetTableInfo(typeof(T));
-            var dbType = this.dbType;
-
-            var tableExpression = new SqlTableExpression()
-            {
-                Name = GetSqlIdentifierExpression(table.Name)
-            };
-            if (table.Schema.HasText())
-            {
-                tableExpression.Schema = GetSqlIdentifierExpression(table.Schema);
-            }
-            var updateExpression = new SqlUpdateExpression()
-            {
-                DbType = dbType,
-                Table = tableExpression
-            };
-
-            foreach (var column in updateColumns)
-            {
-                updateExpression.Items.Add(new SqlBinaryExpression()
-                {
-                    Left = column,
-                    Operator = SqlBinaryOperator.EqualTo,
-                    Right = GetSqlVariableExpressionWithSpecifiedName(column.Value)
-                });
-            }
-
-            var r = new DbQueryResult()
-            {
-                ExecuteSqlExpression = updateExpression
-            };
-
-            return r;
-        });
-
-        return cacheResult;
-    }
-
     public DbQueryResult Get<T>(object id)
     {
-        var key = $"GetSqlSelectExpressionById:{this.databaseUnit.Id}:{typeof(T).FullName}";
-        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        var key = $"GetSqlSelectExpressionById:{GetCacheKey(typeof(T).FullName)}";
+        var cacheResult = DbQueryResultDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
@@ -2751,13 +2665,14 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         });
         var dp = new DynamicParameters();
         dp.Add("id", id);
+        cacheResult = cacheResult.Clone();
         cacheResult.DynamicParameters = dp;
         return cacheResult;
     }
     public DbQueryResult GetAll<T>()
     {
-        var key = $"GetSqlSelectExpression:{this.databaseUnit.Id}:{typeof(T).FullName}";
-        var cacheResult = (DbQueryResult)SbUtil.CacheDictionary.GetOrAdd(key, x =>
+        var key = $"GetSqlSelectExpression:{GetCacheKey(typeof(T).FullName)}";
+        var cacheResult = DbQueryResultDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
             var dbType = this.dbType;
@@ -2806,7 +2721,7 @@ public class NewDbExpressionVisitor : ExpressionVisitor
     public DbQueryResult Delete<T>(T deleteEntity)
     {
         var typeName = typeof(T).FullName;
-        var key = $"GetSqlDeleteExpression:{this.databaseUnit.Id}:{typeName}";
+        var key = $"GetSqlDeleteExpression:{GetCacheKey(typeof(T).FullName)}";
         var sqlDeleteExpression = sqlDeleteExpressionDic.GetOrAdd(key, x =>
         {
             var table = this.GetTableInfo(typeof(T));
@@ -2838,19 +2753,6 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         {
             ExecuteSqlExpression = sqlDeleteExpression,
             DynamicParameters = new DynamicParameters(deleteEntity)
-        };
-        return cacheResult;
-    }
-
-    public DbQueryResult DeleteByExpression<T>(Expression predicate)
-    {
-        var wrapperExpression = this.Visit(predicate);
-        var deleteExpression = GetSqlExpression(wrapperExpression);
-        var c = deleteExpression.ToFormat();
-        var cacheResult = new DbQueryResult
-        {
-            ExecuteSqlExpression = deleteExpression,
-            DynamicParameters = this.parameters
         };
         return cacheResult;
     }

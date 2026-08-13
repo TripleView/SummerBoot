@@ -40,7 +40,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         private IServiceProvider serviceProvider;
-
+        private IServiceProvider rootServiceProvider;
         private void InitMysqlService()
         {
             var build = new ConfigurationBuilder();
@@ -84,8 +84,8 @@ namespace SummerBoot.Test.DbExecute.Common
                     });
             });
 
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+            rootServiceProvider = services.BuildServiceProvider();
+            serviceProvider = rootServiceProvider.CreateScope().ServiceProvider;
         }
 
         private void InitOracleService(Action<string, SummerBoot.Repository.Core.DynamicParameters> debugSqlAction = null)
@@ -135,8 +135,8 @@ namespace SummerBoot.Test.DbExecute.Common
                     });
             });
 
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+            rootServiceProvider = services.BuildServiceProvider();
+            serviceProvider = rootServiceProvider.CreateScope().ServiceProvider;
         }
 
         private void InitPgsqlService()
@@ -181,8 +181,8 @@ namespace SummerBoot.Test.DbExecute.Common
                     });
             });
 
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+            rootServiceProvider = services.BuildServiceProvider();
+            serviceProvider = rootServiceProvider.CreateScope().ServiceProvider;
         }
 
         private void InitSqlServerService()
@@ -228,8 +228,8 @@ namespace SummerBoot.Test.DbExecute.Common
                     });
             });
 
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+            rootServiceProvider = services.BuildServiceProvider();
+            serviceProvider = rootServiceProvider.CreateScope().ServiceProvider;
         }
 
         private void InitSqliteDatabase(string databaseString)
@@ -284,8 +284,8 @@ namespace SummerBoot.Test.DbExecute.Common
                     });
             });
 
-            serviceProvider = services.BuildServiceProvider();
-            serviceProvider = serviceProvider.CreateScope().ServiceProvider;
+            rootServiceProvider = services.BuildServiceProvider();
+            serviceProvider = rootServiceProvider.CreateScope().ServiceProvider;
         }
 
 
