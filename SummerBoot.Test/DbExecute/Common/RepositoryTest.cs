@@ -3131,6 +3131,39 @@ namespace SummerBoot.Test.DbExecute.Common
         [InlineData(DbType.Oracle)]
         [InlineData(DbType.SqlServer)]
         [InlineData(DbType.Sqlite)]
+        public async Task TestListContain5Async(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = Guid.NewGuid().ToString();
+
+            var dt = DateTime.Now;
+            var list = Enumerable.Range(1, 50).Select(x => new OrderHeader()
+            {
+                CreateTime = dt,
+                OrderNo = orderNo + x,
+                State = x,
+                CustomerId = x
+            }).ToList();
+
+            await orderHeaderRepository.InsertAsync(list);
+            var tempList = list.Take(3).Select(x => x.OrderNo).ToList();
+
+            var r1 = await orderHeaderRepository
+                .Where(x => tempList.Distinct().Contains(x.OrderNo))
+                .OrderBy(x => x.State)
+                .Select(x => x.OrderNo)
+                .ToListAsync();
+            Assert.Equal(3,r1.Count);
+            Assert.Equal(list.First().OrderNo, r1.First());
+        }
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
         public async Task TestSetValueUpdateAsync(DbType dbType)
         {
             ChangeDb(dbType);

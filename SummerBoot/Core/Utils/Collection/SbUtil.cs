@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -8,20 +8,16 @@ namespace SummerBoot.Core
 {
     public static partial class SbUtil
     {
-        public static bool IsNullOrEmpty(this IEnumerable enumerable)
-        {
-            if (enumerable != null)
-                return !enumerable.GetEnumerator().MoveNext();
-            return true;
-        }
-
         public static bool IsNotNullAndNotEmpty<T>(this List<T> list)
         {
             return list != null && list.Count > 0;
         }
-
+        public static bool IsNullOrEmpty<T>(this List<T> list)
+        {
+            return list == null || list.Count == 0;
+        }
         /// <summary>
-        /// Concatenate a collection of strings;å¯¹å­—ç¬¦ä¸²é›†åˆè¿›è¡Œæ‹¼æ¥
+        /// Concatenate a collection of strings;¶Ô×Ö·û´®¼¯ºÏ½øĞĞÆ´½Ó
         /// </summary>
         /// <param name="source"></param>
         /// <param name="separator"></param>
@@ -31,7 +27,7 @@ namespace SummerBoot.Core
             return string.Join(separator, source);
         }
         /// <summary>
-        /// Concatenate a collection of strings;å¯¹å­—ç¬¦ä¸²é›†åˆè¿›è¡Œæ‹¼æ¥
+        /// Concatenate a collection of strings;¶Ô×Ö·û´®¼¯ºÏ½øĞĞÆ´½Ó
         /// </summary>
         /// <param name="source"></param>
         /// <param name="separator"></param>
@@ -42,7 +38,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// Get in batches;åˆ†æ‰¹æ¬¡è·å–
+        /// Get in batches;·ÖÅú´Î»ñÈ¡
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="T1"></typeparam>
@@ -69,7 +65,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// Get in batches;åˆ†æ‰¹æ¬¡è·å–
+        /// Get in batches;·ÖÅú´Î»ñÈ¡
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="T1"></typeparam>
@@ -96,7 +92,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// Execute in batches;åˆ†æ‰¹æ¬¡æ‰§è¡Œ
+        /// Execute in batches;·ÖÅú´ÎÖ´ĞĞ
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <param name="pList"></param>
@@ -118,7 +114,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// Execute in batches;åˆ†æ‰¹æ¬¡æ‰§è¡Œ
+        /// Execute in batches;·ÖÅú´ÎÖ´ĞĞ
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <param name="pList"></param>

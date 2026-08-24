@@ -282,7 +282,7 @@ namespace SummerBoot.Repository.Generator
                         FieldModifySqls = new List<string>()
                     };
 
-                    if (dbTableInfo.Description.IsNullOrEmpty() && tableDescription.HasText())
+                    if (dbTableInfo.Description.IsNullOrWhiteSpace() && tableDescription.HasText())
                     {
                         var newTableDescriptionSql = databaseInfo.CreateTableDescription(schema, tableName, tableDescription);
                         if (newTableDescriptionSql.HasText())

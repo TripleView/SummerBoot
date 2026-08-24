@@ -1,4 +1,4 @@
-ï»¿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using SummerBoot.Core;
 using System;
 using System.Collections;
@@ -29,20 +29,20 @@ namespace SummerBoot.Feign
     {
         private IServiceProvider _serviceProvider;
         /// <summary>
-        /// è§£ææ–¹æ³•çš„å‚æ•°ä»¥åŠå€¼
+        /// ½âÎö·½·¨µÄ²ÎÊıÒÔ¼°Öµ
         /// </summary>
         private Dictionary<string, object> parameters = new Dictionary<string, object>();
 
         /// <summary>
-        /// è§£æéœ€è¦æ·»åŠ åˆ°urlçš„å‚æ•°ä»¥åŠå€¼
+        /// ½âÎöĞèÒªÌí¼Óµ½urlµÄ²ÎÊıÒÔ¼°Öµ
         /// </summary>
         private Dictionary<string, object> urlParameters = new Dictionary<string, object>();
         /// <summary>
-        /// ç¼–ç å™¨
+        /// ±àÂëÆ÷
         /// </summary>
         private IFeignEncoder encoder;
         /// <summary>
-        /// è§£ç å™¨
+        /// ½âÂëÆ÷
         /// </summary>
         private IFeignDecoder decoder;
 
@@ -55,17 +55,17 @@ namespace SummerBoot.Feign
             urlParameters.Clear();
             parameters.Clear();
             _serviceProvider = serviceProvider;
-            //è·å¾—å…·ä½“çš„clientå®¢æˆ·ç«¯
+            //»ñµÃ¾ßÌåµÄclient¿Í»§¶Ë
             var feignClient = serviceProvider.GetService<IClient>();
 
-            //åºåˆ—åŒ–å™¨ä¸ååºåˆ—åŒ–å™¨
+            //ĞòÁĞ»¯Æ÷Óë·´ĞòÁĞ»¯Æ÷
             encoder = serviceProvider.GetService<IFeignEncoder>();
             decoder = serviceProvider.GetService<IFeignDecoder>();
             feignOption = serviceProvider.GetService<FeignOption>();
             configuration = serviceProvider.GetService<IConfiguration>();
             feignUnitOfWork = serviceProvider.GetService<IFeignUnitOfWork>();
-            //è¯»å–feignClientAttributeé‡Œçš„ä¿¡æ¯ï¼›
-            //æ¥å£ç±»å‹
+            //¶ÁÈ¡feignClientAttributeÀïµÄĞÅÏ¢£»
+            //½Ó¿ÚÀàĞÍ
             var interfaceType = method.DeclaringType;
             if (interfaceType == null) throw new Exception(nameof(interfaceType));
 
@@ -82,18 +82,18 @@ namespace SummerBoot.Feign
                 ClientName = clientName
             };
 
-            //å¤„ç†å‚æ•°
+            //´¦Àí²ÎÊı
             ProcessParameter(method, args, requestTemplate, encoder);
 
-            //å¤„ç†è¯·æ±‚å¤´é€»è¾‘
+            //´¦ÀíÇëÇóÍ·Âß¼­
             ProcessHeaders(method, requestTemplate, interfaceType);
 
             var path = "";
 
             var mappingCount = 0;
-            //æ˜¯å¦ä»…ä½¿ç”¨è·¯å¾„ä½œä¸ºurl
+            //ÊÇ·ñ½öÊ¹ÓÃÂ·¾¶×÷Îªurl
             var usePathAsUrl = false;
-            //å¤„ç†geté€»è¾‘
+            //´¦ÀígetÂß¼­
             var getMappingAttribute = method.GetCustomAttribute<GetMappingAttribute>();
             if (getMappingAttribute != null)
             {
@@ -103,7 +103,7 @@ namespace SummerBoot.Feign
                 usePathAsUrl = getMappingAttribute.UsePathAsUrl;
             }
 
-            //å¤„ç†posté€»è¾‘
+            //´¦ÀípostÂß¼­
             var postMappingAttribute = method.GetCustomAttribute<PostMappingAttribute>();
             if (postMappingAttribute != null)
             {
@@ -113,7 +113,7 @@ namespace SummerBoot.Feign
                 usePathAsUrl = postMappingAttribute.UsePathAsUrl;
             }
 
-            //å¤„ç†puté€»è¾‘
+            //´¦ÀíputÂß¼­
             var putMappingAttribute = method.GetCustomAttribute<PutMappingAttribute>();
             if (putMappingAttribute != null)
             {
@@ -123,7 +123,7 @@ namespace SummerBoot.Feign
                 usePathAsUrl = putMappingAttribute.UsePathAsUrl;
             }
 
-            //å¤„ç†Deleteé€»è¾‘
+            //´¦ÀíDeleteÂß¼­
             var deleteMappingAttribute = method.GetCustomAttribute<DeleteMappingAttribute>();
             if (deleteMappingAttribute != null)
             {
@@ -133,7 +133,7 @@ namespace SummerBoot.Feign
                 usePathAsUrl = deleteMappingAttribute.UsePathAsUrl;
             }
 
-            //å¤„ç†patché€»è¾‘
+            //´¦ÀípatchÂß¼­
             var patchMappingAttribute = method.GetCustomAttribute<PatchMappingAttribute>();
             if (patchMappingAttribute != null)
             {
@@ -150,7 +150,7 @@ namespace SummerBoot.Feign
 
             path = GetValueByConfiguration(path);
 
-            //å¦‚æœä»…ä½¿ç”¨pathä½œä¸ºurlï¼Œå°±ä¸éœ€è¦æ·»åŠ feignClientä¸Šçš„urlå‰ç¼€
+            //Èç¹û½öÊ¹ÓÃpath×÷Îªurl£¬¾Í²»ĞèÒªÌí¼ÓfeignClientÉÏµÄurlÇ°×º
             var urlTemp = usePathAsUrl ? path : CombineUrl(requestPath,path);
             urlTemp = ReplaceVariable(urlTemp);
             urlTemp = AddUrlParameter(urlTemp);
@@ -159,7 +159,7 @@ namespace SummerBoot.Feign
             requestTemplate.Url = urlTemp;
 
             ProcessCookie(requestTemplate);
-            //æ˜¯å¦å¿½ç•¥æ‹¦æˆªå™¨
+            //ÊÇ·ñºöÂÔÀ¹½ØÆ÷
             var ignoreInterceptorAttribute = method.GetCustomAttribute<IgnoreInterceptorAttribute>();
             if (ignoreInterceptorAttribute == null)
             {
@@ -167,25 +167,25 @@ namespace SummerBoot.Feign
                 if (feignClientAttribute.InterceptorType != null)
                 {
                     hasMethodInterceptor = true;
-                    //è·å¾—è¯·æ±‚æ‹¦æˆªå™¨
+                    //»ñµÃÇëÇóÀ¹½ØÆ÷
                     var requestInterceptor = (IRequestInterceptor)serviceProvider.GetService(feignClientAttribute.InterceptorType);
                     await requestInterceptor.ApplyAsync(requestTemplate);
                 }
-                //å¦‚æœæ–¹æ³•ä¸Šæ²¡æœ‰æ‹¦æˆªå™¨ï¼Œåˆ™ä½¿ç”¨å…¨å±€æ‹¦æˆªå™¨
+                //Èç¹û·½·¨ÉÏÃ»ÓĞÀ¹½ØÆ÷£¬ÔòÊ¹ÓÃÈ«¾ÖÀ¹½ØÆ÷
                 if (!hasMethodInterceptor && feignOption.GlobalInterceptorType != null)
                 {
-                    //è·å¾—è¯·æ±‚æ‹¦æˆªå™¨
+                    //»ñµÃÇëÇóÀ¹½ØÆ÷
                     var requestInterceptor = (IRequestInterceptor)serviceProvider.GetService(feignOption.GlobalInterceptorType);
                     await requestInterceptor.ApplyAsync(requestTemplate);
                 }
             }
             var responseTemplate = await feignClient.ExecuteAsync(requestTemplate, new CancellationToken());
-            //ç›´æ¥è¿”å›æ–‡ä»¶æµ
+            //Ö±½Ó·µ»ØÎÄ¼şÁ÷
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
                 return (T)(object)responseTemplate.Body;
             }
-            //è¿”å›åŸå§‹ä¿¡æ¯
+            //·µ»ØÔ­Ê¼ĞÅÏ¢
             if (typeof(HttpResponseMessage).IsAssignableFrom(typeof(T)))
             {
                 return (T)(object)responseTemplate.OrignHttpResponseMessage;
@@ -215,7 +215,7 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// è·å–urlä¸»ä½“éƒ¨åˆ†
+        /// »ñÈ¡urlÖ÷Ìå²¿·Ö
         /// </summary>
         /// <param name="feignClientAttribute"></param>
         /// <returns></returns>
@@ -223,7 +223,7 @@ namespace SummerBoot.Feign
         {
             var url = feignClientAttribute.Url;
             url = GetValueByConfiguration(url);
-            //åˆ¤æ–­æ˜¯å¦ä¸ºå¾®æœåŠ¡æ¨¡å¼
+            //ÅĞ¶ÏÊÇ·ñÎªÎ¢·şÎñÄ£Ê½
             if (feignOption.EnableNacos && feignClientAttribute.MicroServiceMode)
             {
                 var nacosService = _serviceProvider.GetService<INacosService>();
@@ -233,17 +233,17 @@ namespace SummerBoot.Feign
                 {
                     throw new ArgumentNullException("feignClientAttribute's ServiceName can not be null");
                 }
-                //å…ˆä»æ³¨è§£ä¸Šè¯»å–
+                //ÏÈ´Ó×¢½âÉÏ¶ÁÈ¡
                 var namespaceId = feignClientAttribute.NacosNamespaceId;
                 
                 if (namespaceId.IsNullOrWhiteSpace())
                 {
-                    //ä»é…ç½®æ–‡ä»¶ä¸­è¯»å–
+                    //´ÓÅäÖÃÎÄ¼şÖĞ¶ÁÈ¡
                     namespaceId = configuration.GetSection("nacos:defaultNacosNamespaceId")?.Value;
                 }
                 if (namespaceId.IsNullOrWhiteSpace())
                 {
-                    //è·å¾—é»˜è®¤å€¼
+                    //»ñµÃÄ¬ÈÏÖµ
                     namespaceId = "public";
                 }
                 namespaceId = GetValueByConfiguration(namespaceId);
@@ -272,7 +272,7 @@ namespace SummerBoot.Feign
                     {
                         var lbStrategy = configuration.GetSection("nacos:lbStrategy")?.Value;
                         var tempHosts = new List<QueryInstanceListItemOutputDto>();
-                        //æ ¹æ®æƒé‡åŠ æƒåè¿›è¡Œéšæœº
+                        //¸ù¾İÈ¨ÖØ¼ÓÈ¨ºó½øĞĞËæ»ú
                         if (lbStrategy == "WeightRandom")
                         {
                             foreach (var hostDto in serviceInstance.Hosts)
@@ -288,7 +288,7 @@ namespace SummerBoot.Feign
                         {
                             tempHosts = serviceInstance.Hosts;
                         }
-                        //é‡‡ç”¨éšæœºç®—æ³•åˆ†é…è¦è¯·æ±‚çš„æœåŠ¡å™¨
+                        //²ÉÓÃËæ»úËã·¨·ÖÅäÒªÇëÇóµÄ·şÎñÆ÷
                         Random random = new Random();
                         int randomPos = random.Next(tempHosts.Count);
                         var host = tempHosts[randomPos];
@@ -347,7 +347,7 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// å¤„ç†cookie
+        /// ´¦Àícookie
         /// </summary>
         /// <param name="requestTemplate"></param>
         private void ProcessCookie(RequestTemplate requestTemplate)
@@ -385,7 +385,7 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// å¤„ç†è¯·æ±‚å¤´é€»è¾‘
+        /// ´¦ÀíÇëÇóÍ·Âß¼­
         /// </summary>
         /// <param name="method"></param>
         /// <param name="requestTemplate"></param>
@@ -416,7 +416,7 @@ namespace SummerBoot.Feign
                             var headerParamArr = headerParam.Split(":");
                             var key = headerParamArr[0].Trim();
                             var keyValue = headerParamArr[1];
-                            //æ›¿æ¢å˜é‡
+                            //Ìæ»»±äÁ¿
                             key = ReplaceVariable(key).Trim();
                             keyValue = ReplaceVariable(keyValue).Trim();
 
@@ -471,7 +471,7 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// é€šè¿‡é…ç½®æ–‡ä»¶è·å–å…·ä½“çš„å€¼
+        /// Í¨¹ıÅäÖÃÎÄ¼ş»ñÈ¡¾ßÌåµÄÖµ
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -506,7 +506,7 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// ä¸ºurlæ·»åŠ queryå‚æ•°
+        /// ÎªurlÌí¼Óquery²ÎÊı
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
@@ -526,7 +526,7 @@ namespace SummerBoot.Feign
                     pairValue = encoder.EncoderObject(pair.Value);
                 }
 
-                if (pairValue.IsNullOrEmpty())
+                if (pairValue.IsNullOrWhiteSpace())
                 {
                     continue;
                 }
@@ -548,7 +548,7 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// å¤„ç†å‚æ•°
+        /// ´¦Àí²ÎÊı
         /// </summary>
         private void ProcessParameter(MethodInfo method, object[] args, RequestTemplate requestTemplate, IFeignEncoder encoder)
         {
@@ -567,7 +567,7 @@ namespace SummerBoot.Feign
                 var queryAttribute = parameterInfo.GetCustomAttribute<QueryAttribute>();
                 var parameterName = aliasAsAttribute != null ? aliasAsAttribute.Name : parameterInfos[i].Name;
                 var isEmbedded = parameterInfo.GetCustomAttribute<EmbeddedAttribute>() != null;
-                //å¤„ç†bodyç±»å‹
+                //´¦ÀíbodyÀàĞÍ
                 if (bodyAttribute != null)
                 {
                     switch (bodyAttribute.SerializationKind)
@@ -623,7 +623,7 @@ namespace SummerBoot.Feign
                             break;
                     }
                 }
-                //å¤„ç†queryç±»å‹
+                //´¦ÀíqueryÀàĞÍ
                 else if (queryAttribute != null)
                 {
                     if (arg != null)
@@ -649,7 +649,7 @@ namespace SummerBoot.Feign
                         }
                     }
                 }
-                //å¤„ç†æ™®é€šçš„å‚æ•°
+                //´¦ÀíÆÕÍ¨µÄ²ÎÊı
                 else
                 {
                     if (arg != null)
@@ -758,13 +758,13 @@ namespace SummerBoot.Feign
         }
 
         /// <summary>
-        /// æ·»åŠ ç±»ç±»å‹çš„å‚æ•°
+        /// Ìí¼ÓÀàÀàĞÍµÄ²ÎÊı
         /// </summary>
         /// <param name="parameterType"></param>
-        /// <param name="arg">å‚æ•°</param>
+        /// <param name="arg">²ÎÊı</param>
         /// <param name="originDictionary"></param>
-        /// <param name="originEmbedded">åˆå§‹æ˜¯å¦åµŒå¥—</param>
-        /// <param name="totalEmbedded">æ˜¯å¦åµŒå¥—æ€»å¼€å…³ï¼Œæ€»å¼€å…³å…³é—­åˆ™å…¨ä½“ä¸åµŒå¥—</param>
+        /// <param name="originEmbedded">³õÊ¼ÊÇ·ñÇ¶Ì×</param>
+        /// <param name="totalEmbedded">ÊÇ·ñÇ¶Ì××Ü¿ª¹Ø£¬×Ü¿ª¹Ø¹Ø±ÕÔòÈ«Ìå²»Ç¶Ì×</param>
         /// <returns></returns>
         private Dictionary<string, object> AddClassParameter(Type parameterType, object arg, bool originEmbedded, bool totalEmbedded)
         {
@@ -772,9 +772,9 @@ namespace SummerBoot.Feign
             {
                 originEmbedded = false;
             }
-            //æ­£å¸¸è¿”å›å€¼
+            //Õı³£·µ»ØÖµ
             var targetDictionary = new Dictionary<string, object>();
-            //å¦‚æœæ˜¯å­—å…¸ç±»å‹
+            //Èç¹ûÊÇ×ÖµäÀàĞÍ
             if (parameterType.IsDictionary())
             {
                 if (arg is IDictionary argDictionary)
@@ -787,13 +787,13 @@ namespace SummerBoot.Feign
                     }
                 }
             }
-            //æ­£å¸¸ç±»
+            //Õı³£Àà
             else
             {
                 var parameterPropertyInfos = parameterType.GetProperties();
                 foreach (var propertyInfo in parameterPropertyInfos)
                 {
-                    //åˆ¤æ–­æ˜¯å¦åºåˆ—åŒ–
+                    //ÅĞ¶ÏÊÇ·ñĞòÁĞ»¯
                     var isEmbedded = (propertyInfo.GetCustomAttribute<EmbeddedAttribute>() != null || originEmbedded) && totalEmbedded;
 
                     var propertyAliasAsAttribute = propertyInfo.GetCustomAttribute<AliasAsAttribute>();
@@ -801,7 +801,7 @@ namespace SummerBoot.Feign
                     var key = propertyAliasAsAttribute != null
                         ? propertyAliasAsAttribute.Name
                         : propertyInfo.Name;
-                    //å¤„ç†å¸¸è§„ç±»å‹
+                    //´¦Àí³£¹æÀàĞÍ
                     var value = propertyInfo.GetValue(arg);
                     if (propertyInfo.PropertyType.IsString() || propertyInfo.PropertyType.IsValueType)
                     {

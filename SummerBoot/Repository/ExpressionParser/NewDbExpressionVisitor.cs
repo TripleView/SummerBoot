@@ -1899,8 +1899,19 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         var objectMember = Expression.Convert(member, typeof(object));
         var getterLambda = Expression.Lambda<Func<object>>(objectMember);
         var getter = getterLambda.Compile();
-        var r = getter();
-        return r;
+        var value = getter();
+        if (member is MethodCallExpression { Method: { Name: nameof(Enumerable.Distinct) } } && value is IEnumerable enumerable and not string)
+        {
+            var list = new List<object>();
+            foreach (var o in enumerable)
+            {
+                list.Add(o);
+            }
+
+            return list;
+        }
+
+        return value;
     }
 
     private Expression GetConstExpression(Expression member)
