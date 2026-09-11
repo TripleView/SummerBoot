@@ -676,7 +676,7 @@ namespace SummerBoot.Repository.Core
             var parameter = dbCommand.CreateParameter();
             parameter.ParameterName = parameterName;
             parameter.Direction = paramInfo.ParameterDirection;
-            
+
             var isSetValue = true;
             if (paramInfo.DbType != null)
             {
@@ -949,8 +949,19 @@ namespace SummerBoot.Repository.Core
                 // il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
 
                 il.MarkLabel(dbNullLabel);
-                il.Emit(OpCodes.Pop);// [target, target]
-                il.Emit(OpCodes.Pop);// [target]
+                if (databaseUnit.IsOracle && queryMemberCacheInfo.PropertyInfo.PropertyType == typeof(string))
+                {
+                    //³õÊ¼Îª[target, target, getItemValue]
+                    il.Emit(OpCodes.Pop);// [target, target]
+                    il.Emit(OpCodes.Ldstr, ""); //[target, target,str]
+                    il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
+                }
+                else
+                {
+                    il.Emit(OpCodes.Pop);// [target, target]
+                    il.Emit(OpCodes.Pop);// [target]
+                }
+                
                 il.Emit(OpCodes.Br_S, finishLabel);
                 il.MarkLabel(finishLabel);
             }

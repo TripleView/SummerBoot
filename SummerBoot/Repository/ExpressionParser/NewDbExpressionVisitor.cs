@@ -1866,6 +1866,12 @@ public class NewDbExpressionVisitor : ExpressionVisitor
             }
             else if (MethodName == nameof(RepositoryMethodsCache.SetValue) || MethodName == nameof(Queryable.Where) || MethodName == nameof(Queryable.FirstOrDefault) || MethodName == nameof(Queryable.First) || MethodName == nameof(Queryable.Count))
             {
+                //在Oracle中,空字符串''会被当作 NULL 处理
+                if (isOracle && MethodName == nameof(Queryable.Where) && strValue.IsNullOrWhiteSpace())
+                {
+                    var sqlNullExpression = GetSqlNullExpression();
+                    return GetWrapperExpression(sqlNullExpression);
+                }
                 var r1 = GetSqlVariableExpressionWithValueAndDynamicName(strValue);
 
                 return GetWrapperExpression(r1);
@@ -1887,6 +1893,13 @@ public class NewDbExpressionVisitor : ExpressionVisitor
         return base.VisitConstant(constant);
     }
 
+    private SqlNullExpression GetSqlNullExpression()
+    {
+        return new SqlNullExpression()
+        {
+            DbType = dbType
+        };
+    }
     protected override Expression VisitParameter(ParameterExpression param)
     {
         var tableName = DbQueryUtil.GetTableName(param.Type);

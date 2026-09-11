@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
@@ -11,7 +11,7 @@ namespace SummerBoot.Core
     public static partial class SbUtil
     {
         /// <summary>
-        /// è¿ç»­å¤šä¸ªç©ºæ ¼è½¬ä¸ºä¸€ä¸ª
+        /// Á¬Ğø¶à¸ö¿Õ¸ñ×ªÎªÒ»¸ö
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -24,7 +24,7 @@ namespace SummerBoot.Core
             return str;
         }
         /// <summary>
-        /// åˆ¤æ–­å­—ç¬¦ä¸²æ˜¯å¦ä¸ºç©º
+        /// ÅĞ¶Ï×Ö·û´®ÊÇ·ñÎª¿Õ
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -34,7 +34,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// åˆ¤æ–­å­—ç¬¦ä¸²æ˜¯å¦æœ‰å€¼
+        /// ÅĞ¶Ï×Ö·û´®ÊÇ·ñÓĞÖµ
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -44,7 +44,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// å­—ç¬¦ä¸²è½¬byteæ•°ç»„
+        /// ×Ö·û´®×ªbyteÊı×é
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -54,7 +54,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// byteæ•°ç»„è·å¾—å­—ç¬¦ä¸²
+        /// byteÊı×é»ñµÃ×Ö·û´®
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -65,10 +65,10 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// åˆ¤æ–­ä¸€ä¸ªå­—ç¬¦ä¸²é‡Œæ˜¯å¦åŒ…å«ä¸€ä¸ªå­—ç¬¦
+        /// ÅĞ¶ÏÒ»¸ö×Ö·û´®ÀïÊÇ·ñ°üº¬Ò»¸ö×Ö·û
         /// </summary>
-        /// <param name="str">å­—ç¬¦ä¸²</param>
-        /// <param name="value">å­—ç¬¦</param>
+        /// <param name="str">×Ö·û´®</param>
+        /// <param name="value">×Ö·û</param>
         /// <returns></returns>
         public static bool HasIndexOf(this string str, char value)
         {
@@ -76,10 +76,10 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// åˆ¤æ–­ä¸€ä¸ªå­—ç¬¦ä¸²é‡Œæ˜¯å¦åŒ…å«ä¸€ä¸ªå­—ç¬¦ä¸²
+        /// ÅĞ¶ÏÒ»¸ö×Ö·û´®ÀïÊÇ·ñ°üº¬Ò»¸ö×Ö·û´®
         /// </summary>
-        /// <param name="str">å­—ç¬¦ä¸²</param>
-        /// <param name="value">å­—ç¬¦</param>
+        /// <param name="str">×Ö·û´®</param>
+        /// <param name="value">×Ö·û</param>
         /// <returns></returns>
         public static bool HasIndexOf(this string str, string value)
         {
@@ -87,10 +87,10 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// å–å­—ç¬¦ä¸²å½“å‰å€¼ï¼Œå¦‚æœå½“å‰å€¼ä¸ºç©ºï¼Œåˆ™å–é»˜è®¤å€¼
+        /// È¡×Ö·û´®µ±Ç°Öµ£¬Èç¹ûµ±Ç°ÖµÎª¿Õ£¬ÔòÈ¡Ä¬ÈÏÖµ
         /// </summary>
         /// <param name="str"></param>
-        /// <param name="defaultValue">é»˜è®¤å€¼</param>
+        /// <param name="defaultValue">Ä¬ÈÏÖµ</param>
         /// <returns></returns>
         public static string GetValueOrDefault(this string str, string defaultValue)
         {
@@ -98,7 +98,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// è·å–ç»è¿‡åŒ…è£…çš„likeå­—ç¬¦ä¸²
+        /// »ñÈ¡¾­¹ı°ü×°µÄlike×Ö·û´®
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -124,7 +124,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// è½¬æ¢ä¸ºbase64ç¼–ç 
+        /// ×ª»»Îªbase64±àÂë
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -135,7 +135,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// è½¬ä¸ºbase64ç¼–ç 
+        /// ×ªÎªbase64±àÂë
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -144,7 +144,7 @@ namespace SummerBoot.Core
             return Convert.ToBase64String(bytes);
         }
         /// <summary>
-        /// ä½¿ç”¨sha1è®¡ç®—æ•£åˆ—å€¼
+        /// Ê¹ÓÃsha1¼ÆËãÉ¢ÁĞÖµ
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -152,14 +152,14 @@ namespace SummerBoot.Core
         {
             SHA1 sha1 = SHA1.Create();
             byte[] originalPwd = Encoding.UTF8.GetBytes(str);
-            //åŠ å¯†
+            //¼ÓÃÜ
             byte[] newPwd = sha1.ComputeHash(originalPwd);
             var result = string.Join("", newPwd.Select(o => string.Format("{0:x2}", o)).ToArray());
             return result;
         }
 
         /// <summary>
-        /// ä½¿ç”¨sha256è®¡ç®—æ•£åˆ—å€¼
+        /// Ê¹ÓÃsha256¼ÆËãÉ¢ÁĞÖµ
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -170,20 +170,20 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// ä½¿ç”¨sha256è®¡ç®—æ•£åˆ—å€¼
+        /// Ê¹ÓÃsha256¼ÆËãÉ¢ÁĞÖµ
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
         public static string ToSha256(this byte[] bytes)
         {
             var sha1 = SHA256.Create();
-            //åŠ å¯†
+            //¼ÓÃÜ
             byte[] newPwd = sha1.ComputeHash(bytes);
             var result = string.Join("", newPwd.Select(o => string.Format("{0:x2}", o)).ToArray());
             return result;
         }
         /// <summary>
-        /// è½¬ä¸ºmd5å­—ç¬¦ä¸²
+        /// ×ªÎªmd5×Ö·û´®
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -201,7 +201,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// å­—èŠ‚æ•°ç»„è½¬ä¸ºmd5å­—èŠ‚æ•°ç»„
+        /// ×Ö½ÚÊı×é×ªÎªmd5×Ö½ÚÊı×é
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -213,14 +213,14 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// å…ˆä½¿ç”¨Sha256å†ä½¿ç”¨base64
+        /// ÏÈÊ¹ÓÃSha256ÔÙÊ¹ÓÃbase64
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
         public static string ToSha256ThenBase64(this byte[] bytes)
         {
             var sha1 = SHA256.Create();
-            //åŠ å¯†
+            //¼ÓÃÜ
             byte[] newPwd = sha1.ComputeHash(bytes);
             var result = newPwd.ToBase64();
             return result;
@@ -228,20 +228,20 @@ namespace SummerBoot.Core
 
 
         /// <summary>
-        /// å…ˆä½¿ç”¨Sha1å†ä½¿ç”¨base64
+        /// ÏÈÊ¹ÓÃSha1ÔÙÊ¹ÓÃbase64
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
         public static string ToSha1ThenBase64(this byte[] bytes)
         {
             var sha1 = SHA1.Create();
-            //åŠ å¯†
+            //¼ÓÃÜ
             byte[] newPwd = sha1.ComputeHash(bytes);
             var result = newPwd.ToBase64();
             return result;
         }
         /// <summary>
-        /// å…ˆä½¿ç”¨Sha1å†ä½¿ç”¨base64
+        /// ÏÈÊ¹ÓÃSha1ÔÙÊ¹ÓÃbase64
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -251,7 +251,7 @@ namespace SummerBoot.Core
             return bytes.ToSha1ThenBase64();
         }
         /// <summary>
-        /// å…ˆè½¬ä¸ºHmacSha256å†ä½¿ç”¨base64
+        /// ÏÈ×ªÎªHmacSha256ÔÙÊ¹ÓÃbase64
         /// </summary>
         /// <param name="source"></param>
         /// <param name="key"></param>
@@ -271,7 +271,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// è½¬ä¸º16è¿›åˆ¶
+        /// ×ªÎª16½øÖÆ
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -280,7 +280,7 @@ namespace SummerBoot.Core
             StringBuilder ret = new StringBuilder();
             foreach (byte bx in bytes)
             {
-                //{0:X2} å¤§å†™
+                //{0:X2} ´óĞ´
                 ret.AppendFormat("{0:x2}", bx);
             }
             var hex = ret.ToString();
@@ -360,13 +360,13 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// åå…­è¿›åˆ¶è½¬byte array
+        /// Ê®Áù½øÖÆ×ªbyte array
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
         public static byte[] HexToBytes(this string str)
         {
-            str = str.Replace(" ", "");//ç§»é™¤ç©ºæ ¼
+            str = str.Replace(" ", "");//ÒÆ³ı¿Õ¸ñ
             byte[] comBuffer = new byte[str.Length / 2];
             for (int i = 0; i < str.Length; i += 2)
             {
@@ -377,7 +377,7 @@ namespace SummerBoot.Core
         }
 
         /// <summary>
-        /// å­—èŠ‚æ•°ç»„è½¬ä¸º16è¿›åˆ¶å­—ç¬¦ä¸²ï¼Œå†è½¬ä¸ºintç±»å‹
+        /// ×Ö½ÚÊı×é×ªÎª16½øÖÆ×Ö·û´®£¬ÔÙ×ªÎªintÀàĞÍ
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -394,6 +394,16 @@ namespace SummerBoot.Core
             //var result = Convert.ToInt32(middle, 16);
             //return result;
             return 0;
+        }
+        /// <summary>
+        /// Case-Insensitive Comparison;ºöÂÔ´óĞ¡Ğ´½øĞĞ±È½Ï
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="str2"></param>
+        /// <returns></returns>
+        public static bool IgnoreCaseEquals(this string str,string str2)
+        {
+            return string.Equals(str, str2, StringComparison.OrdinalIgnoreCase);
         }
     }
 
