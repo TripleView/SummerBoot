@@ -148,11 +148,11 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
                     var hasFieldName = false;
                     foreach (var tempLinePart in lineArr)
                     {
-                        var matchValue = Regex.Match(tempLinePart, "\"[^\"}]*\"");
+                        var matchValue = Regex.Match(tempLinePart, @"`(.+?)`");
                         if (matchValue.Success)
                         {
                             hasFieldName = true;
-                            fieldInfo.ColumnName = matchValue.Value.Replace("\"", "");
+                            fieldInfo.ColumnName = matchValue.Value.Replace("`", "");
                             continue;
                         }
 
@@ -192,7 +192,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
 
         public override string CreatePrimaryKey(string schema, string tableName, DatabaseFieldInfoDto fieldInfo)
         {
-            throw new NotImplementedException();
+            return "";
         }
 
 

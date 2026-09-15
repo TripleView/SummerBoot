@@ -569,9 +569,9 @@ namespace SummerBoot.Feign
                 if (s_isQuotedDomainField == null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
-                    FieldInfo? field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
-                    s_isQuotedDomainField = field;
+                    FieldInfo? field1 = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Debug.Assert(field1!= null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
+                    s_isQuotedDomainField = field1;
                 }
 
                 return s_isQuotedDomainField;
@@ -586,9 +586,9 @@ namespace SummerBoot.Feign
                 if (s_isQuotedVersionField == null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
-                    FieldInfo? field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
-                    s_isQuotedVersionField = field;
+                    FieldInfo? field1 = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Debug.Assert(field1 != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
+                    s_isQuotedVersionField = field1;
                 }
 
                 return s_isQuotedVersionField;
