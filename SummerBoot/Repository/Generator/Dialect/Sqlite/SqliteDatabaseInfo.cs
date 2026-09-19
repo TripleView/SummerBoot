@@ -1,4 +1,4 @@
-锘縰sing SummerBoot.Core;
+using SummerBoot.Core;
 using SummerBoot.Repository.Generator.Dto;
 using System;
 using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
             {
                 var fieldInfo = fieldInfos[i];
 
-                //琛屾湯灏炬槸鍚︽湁閫楀彿
+                //行末尾是否有逗号
                 var lastComma = "";
                 if (i != fieldInfos.Count - 1)
                 {
@@ -58,7 +58,7 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
         }
 
         /// <summary>
-        /// 閫氳繃瀛楁淇℃伅鐢熸垚鐢熸垚琛ㄧ殑sql
+        /// 通过字段信息生成生成表的sql
         /// </summary>
         /// <param name="fieldInfo"></param>
         /// <returns></returns>
@@ -155,7 +155,13 @@ namespace SummerBoot.Repository.Generator.Dialect.Sqlite
                             fieldInfo.ColumnName = matchValue.Value.Replace("`", "");
                             continue;
                         }
-
+                        matchValue = Regex.Match(tempLinePart, "\"[^\"}]*\"");
+                        if (matchValue.Success)
+                        {
+                            hasFieldName = true;
+                            fieldInfo.ColumnName = matchValue.Value.Replace("\"", "");
+                            continue;
+                        }
                         if (hasFieldName)
                         {
                             fieldInfo.ColumnDataType = tempLinePart;

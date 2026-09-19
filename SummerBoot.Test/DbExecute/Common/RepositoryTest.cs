@@ -44,7 +44,7 @@ namespace SummerBoot.Test.DbExecute.Common
         private void InitMysqlService()
         {
             var build = new ConfigurationBuilder();
-            build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌĞòÖ´ĞĞÄ¿Â¼
+            build.SetBasePath(Directory.GetCurrentDirectory());  // è·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "mysqlSql.json");
             build.AddJsonFile(sqlConfigFile, true, true);
@@ -91,7 +91,7 @@ namespace SummerBoot.Test.DbExecute.Common
         private void InitOracleService(Action<string, SummerBoot.Repository.Core.DynamicParameters> debugSqlAction = null)
         {
             var build = new ConfigurationBuilder();
-            build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌĞòÖ´ĞĞÄ¿Â¼
+            build.SetBasePath(Directory.GetCurrentDirectory());  // è·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "oracleSql.json");
             build.AddJsonFile(sqlConfigFile, true, true);
@@ -142,7 +142,7 @@ namespace SummerBoot.Test.DbExecute.Common
         private void InitPgsqlService()
         {
             var build = new ConfigurationBuilder();
-            build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌĞòÖ´ĞĞÄ¿Â¼
+            build.SetBasePath(Directory.GetCurrentDirectory());  // è·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "pgsqlSql.json");
             build.AddJsonFile(sqlConfigFile, true, true);
@@ -188,7 +188,7 @@ namespace SummerBoot.Test.DbExecute.Common
         private void InitSqlServerService()
         {
             var build = new ConfigurationBuilder();
-            build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌĞòÖ´ĞĞÄ¿Â¼
+            build.SetBasePath(Directory.GetCurrentDirectory());  // è·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "sqlserverSql.json");
             build.AddJsonFile(sqlConfigFile, true, true);
@@ -234,8 +234,8 @@ namespace SummerBoot.Test.DbExecute.Common
 
         private void InitSqliteDatabase(string databaseString)
         {
-            //³õÊ¼»¯Êı¾İ¿â
-            using (var database = new SqliteDb(databaseString))    //ĞÂÔö
+            //åˆå§‹åŒ–æ•°æ®åº“
+            using (var database = new SqliteDb(databaseString))    //æ–°å¢
             {
                 database.Database.EnsureDeleted();
                 database.Database.EnsureCreated();
@@ -245,7 +245,7 @@ namespace SummerBoot.Test.DbExecute.Common
         private void InitSqliteServices(string databaseString)
         {
             var build = new ConfigurationBuilder();
-            build.SetBasePath(Directory.GetCurrentDirectory());  // »ñÈ¡µ±Ç°³ÌĞòÖ´ĞĞÄ¿Â¼
+            build.SetBasePath(Directory.GetCurrentDirectory());  // è·å–å½“å‰ç¨‹åºæ‰§è¡Œç›®å½•
             build.AddJsonFile(TestConstValue.CONFIG_FILE, true, true);
             var sqlConfigFile = Path.Combine(AppContext.BaseDirectory, "ConfigFile", "sqliteSql.json");
             build.AddJsonFile(sqlConfigFile, true, true);
@@ -671,7 +671,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        /// ²âÊÔ´øÊÂÎñµÄ¿ìËÙÅúÁ¿²åÈë
+        /// æµ‹è¯•å¸¦äº‹åŠ¡çš„å¿«é€Ÿæ‰¹é‡æ’å…¥
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -1138,7 +1138,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        /// ²âÊÔwhereÌõ¼şÖĞÓÒ±ßµÄÖµÎªdtoµÄÊôĞÔ£¬²¢ÇÒÍ¬Ê±²âÊÔ´ÓlistÀï»ñÈ¡Ë÷ÒıÎª0»òÕß1µÄÖµ
+        /// æµ‹è¯•whereæ¡ä»¶ä¸­å³è¾¹çš„å€¼ä¸ºdtoçš„å±æ€§ï¼Œå¹¶ä¸”åŒæ—¶æµ‹è¯•ä»listé‡Œè·å–ç´¢å¼•ä¸º0æˆ–è€…1çš„å€¼
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -1189,7 +1189,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        ///²âÊÔ²åÈëÊµÌåºÍ¸üĞÂÊµÌåÇ°µÄ×Ô¶¨Òåº¯Êı
+        ///æµ‹è¯•æ’å…¥å®ä½“å’Œæ›´æ–°å®ä½“å‰çš„è‡ªå®šä¹‰å‡½æ•°
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -1233,7 +1233,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
 
         /// <summary>
-        ///²âÊÔidÀàĞÍÎªguidµÄmodelµÄÔöÉ¾¸Ä²é
+        ///æµ‹è¯•idç±»å‹ä¸ºguidçš„modelçš„å¢åˆ æ”¹æŸ¥
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -1270,7 +1270,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
 
         /// <summary>
-        ///²âÊÔ¸ù¾İÊµÌåÀà´´½¨Êı¾İ¿â±íºÍ½øĞĞ²åÈë²éÑ¯¶ÔÕÕ
+        ///æµ‹è¯•æ ¹æ®å®ä½“ç±»åˆ›å»ºæ•°æ®åº“è¡¨å’Œè¿›è¡Œæ’å…¥æŸ¥è¯¢å¯¹ç…§
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -1343,7 +1343,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
 
         /// <summary>
-        ///²âÊÔ±íÃû×Ö¶ÎÃûÓ³Éä
+        ///æµ‹è¯•è¡¨åå­—æ®µåæ˜ å°„
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -1366,7 +1366,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        ///²âÊÔ¸ù¾İÊı¾İ¿â±íÉú³Éc#Àà
+        ///æµ‹è¯•æ ¹æ®æ•°æ®åº“è¡¨ç”Ÿæˆc#ç±»
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -2102,7 +2102,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        ///²âÊÔ¸ù¾İc#ÀàÉú³ÉÊı¾İ¿â±í
+        ///æµ‹è¯•æ ¹æ®c#ç±»ç”Ÿæˆæ•°æ®åº“è¡¨
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -2137,7 +2137,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    `TimeSpan2` time NULL,");
                 sb.AppendLine("    `Byte2` tinyint unsigned NULL,");
                 sb.AppendLine("    `String2` varchar(100) NULL,");
-                sb.AppendLine("    `String3` text NULL,");
+                sb.AppendLine("    `String3` varchar(50) NULL,");
                 sb.AppendLine("    `Enum2` int NULL,");
                 sb.AppendLine("    `TestInt3` int NULL,");
                 sb.AppendLine("    PRIMARY KEY (`Id`)");
@@ -2168,7 +2168,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    `TimeSpan2` time NOT NULL,");
                 sb.AppendLine("    `Byte2` tinyint unsigned NOT NULL,");
                 sb.AppendLine("    `String2` varchar(100) NOT NULL,");
-                sb.AppendLine("    `String3` text NOT NULL,");
+                sb.AppendLine("    `String3` varchar(50) NOT NULL,");
                 sb.AppendLine("    PRIMARY KEY (`Id`)");
                 sb.AppendLine(")");
 
@@ -2188,7 +2188,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 Assert.Equal(1, result.Count());
                 sb.Clear();
                 sb.AppendLine("CREATE TABLE test.`SpecifiedMapTestTable` (");
-                sb.AppendLine("    `NormalTxt` text NULL,");
+                sb.AppendLine("    `NormalTxt` varchar(50) NULL,");
                 sb.AppendLine("    `SpecifiedTxt` text NULL");
                 sb.AppendLine(")");
                 exceptStr = sb.ToString();
@@ -2214,7 +2214,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    [TimeSpan2] time NULL,");
                 sb.AppendLine("    [Byte2] tinyint NULL,");
                 sb.AppendLine("    [String2] nvarchar(100) NULL,");
-                sb.AppendLine("    [String3] nvarchar(max) NULL,");
+                sb.AppendLine("    [String3] nvarchar(50) NULL,");
                 sb.AppendLine("    [Enum2] int NULL,");
                 sb.AppendLine("    [TestInt3] int NULL,");
                 sb.AppendLine("    CONSTRAINT PK_NullableTable2 PRIMARY KEY (Id)");
@@ -2245,7 +2245,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    [TimeSpan2] time NOT NULL,");
                 sb.AppendLine("    [Byte2] tinyint NOT NULL,");
                 sb.AppendLine("    [String2] nvarchar(100) NOT NULL,");
-                sb.AppendLine("    [String3] nvarchar(max) NOT NULL,");
+                sb.AppendLine("    [String3] nvarchar(50) NOT NULL,");
                 sb.AppendLine("    CONSTRAINT PK_NotNullableTable2 PRIMARY KEY (Id)");
                 sb.AppendLine(")");
                 exceptStr = sb.ToString();
@@ -2264,7 +2264,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 Assert.Equal(1, result.Count());
                 sb.Clear();
                 sb.AppendLine("CREATE TABLE dbo.[SpecifiedMapTestTable] (");
-                sb.AppendLine("    [NormalTxt] nvarchar(max) NULL,");
+                sb.AppendLine("    [NormalTxt] nvarchar(50) NULL,");
                 sb.AppendLine("    [SpecifiedTxt] text NULL");
                 sb.AppendLine(")");
                 exceptStr = sb.ToString();
@@ -2289,7 +2289,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    \"TIMESPAN2\" INTERVAL DAY(8) TO SECOND(7),");
                 sb.AppendLine("    \"BYTE2\" NUMBER(3,0),");
                 sb.AppendLine("    \"STRING2\" NVARCHAR2(100),");
-                sb.AppendLine("    \"STRING3\" NVARCHAR2(2000),");
+                sb.AppendLine("    \"STRING3\" NVARCHAR2(50),");
                 sb.AppendLine("    \"ENUM2\" NUMBER(18,2),");
                 sb.AppendLine("    \"TESTINT3\" NUMBER(10,0),");
                 sb.AppendLine("    CONSTRAINT \"PK_NULLABLETABLE2\" PRIMARY KEY (\"ID\")");
@@ -2320,7 +2320,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    \"TIMESPAN2\" INTERVAL DAY(8) TO SECOND(7) NOT NULL,");
                 sb.AppendLine("    \"BYTE2\" NUMBER(3,0) NOT NULL,");
                 sb.AppendLine("    \"STRING2\" NVARCHAR2(100) NOT NULL,");
-                sb.AppendLine("    \"STRING3\" NVARCHAR2(2000) NOT NULL,");
+                sb.AppendLine("    \"STRING3\" NVARCHAR2(50) NOT NULL,");
                 sb.AppendLine("    CONSTRAINT \"PK_NOTNULLABLETABLE2\" PRIMARY KEY (\"ID\")");
                 sb.AppendLine(")");
                 exceptStr = sb.ToString();
@@ -2339,7 +2339,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 Assert.Equal(1, result.Count());
                 sb.Clear();
                 sb.AppendLine("CREATE TABLE TEST.\"SPECIFIEDMAPTESTTABLE\" (");
-                sb.AppendLine("    \"NORMALTXT\" NVARCHAR2(2000),");
+                sb.AppendLine("    \"NORMALTXT\" NVARCHAR2(50),");
                 sb.AppendLine("    \"SPECIFIEDTXT\" text");
                 sb.AppendLine(")");
                 exceptStr = sb.ToString();
@@ -2432,7 +2432,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    \"TimeSpan2\" interval NULL,");
                 sb.AppendLine("    \"Byte2\" int2 NULL,");
                 sb.AppendLine("    \"String2\" varchar(100) NULL,");
-                sb.AppendLine("    \"String3\" text NULL,");
+                sb.AppendLine("    \"String3\" varchar(50) NULL,");
                 sb.AppendLine("    \"Enum2\" int4 NULL,");
                 sb.AppendLine("    \"TestInt3\" int4 NULL,");
                 sb.AppendLine(" CONSTRAINT NullableTable2_pk PRIMARY KEY (\"Id\")");
@@ -2463,7 +2463,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 sb.AppendLine("    \"TimeSpan2\" interval NOT NULL,");
                 sb.AppendLine("    \"Byte2\" int2 NOT NULL,");
                 sb.AppendLine("    \"String2\" varchar(100) NOT NULL,");
-                sb.AppendLine("    \"String3\" text NOT NULL,");
+                sb.AppendLine("    \"String3\" varchar(50) NOT NULL,");
                 sb.AppendLine(" CONSTRAINT NotNullableTable2_pk PRIMARY KEY (\"Id\")");
                 sb.AppendLine(")");
 
@@ -2483,7 +2483,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 Assert.Equal(1, result.Count());
                 sb.Clear();
                 sb.AppendLine("CREATE TABLE public.\"SpecifiedMapTestTable\" (");
-                sb.AppendLine("    \"NormalTxt\" text NULL,");
+                sb.AppendLine("    \"NormalTxt\" varchar(50) NULL,");
                 sb.AppendLine("    \"SpecifiedTxt\" text NULL");
                 sb.AppendLine(")");
                 exceptStr = sb.ToString();
@@ -2494,7 +2494,7 @@ namespace SummerBoot.Test.DbExecute.Common
 
 
         /// <summary>
-        ///²âÊÔÊÂÎñ
+        ///æµ‹è¯•äº‹åŠ¡
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -2528,7 +2528,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        ///²âÊÔÊÂÎñ»Ø¹ö
+        ///æµ‹è¯•äº‹åŠ¡å›æ»š
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -2562,7 +2562,7 @@ namespace SummerBoot.Test.DbExecute.Common
         }
 
         /// <summary>
-        ///²âÊÔÊÂÎñ»Ø¹ö
+        ///æµ‹è¯•äº‹åŠ¡å›æ»š
         /// </summary>
         /// <param name="dbType"></param>
         /// <returns></returns>
@@ -3338,7 +3338,7 @@ namespace SummerBoot.Test.DbExecute.Common
             await orderHeaderRepository.InsertAsync(orderHeader);
 
             var dbOrder = await orderHeaderRepository.Where(x => x.Id == orderHeader.Id && x.OrderNo == "").FirstOrDefaultAsync();
-            Assert.Equal(dbOrder.OrderNo, orderHeader.OrderNo);
+            Assert.Equal(dbOrder.OrderNo.IsNullOrWhiteSpace(), orderHeader.OrderNo.IsNullOrWhiteSpace());
             Assert.Equal(dbOrder.State, orderHeader.State);
             Assert.True(TestUtils.CompareTwoDate(dbOrder.CreateTime, orderHeader.CreateTime));
         }
@@ -3368,7 +3368,55 @@ namespace SummerBoot.Test.DbExecute.Common
             Assert.Equal(dbOrder.State, orderHeader.State);
             Assert.True(TestUtils.CompareTwoDate(dbOrder.CreateTime, orderHeader.CreateTime));
         }
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestMultiWhereAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+            var orderHeader2 = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 2
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader2);
+            var dbOrders = await orderHeaderRepository.Where(x => x.Id == orderHeader.Id).Where(x=>x.OrderNo==orderNo).ToListAsync();
+            Assert.Equal(1, dbOrders.Count);
+            Assert.Equal(dbOrders[0].State, orderHeader.State);
+        }
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestFloatAbsAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var nullableTableRepository = serviceProvider.GetService<INullableTableRepository>();
+            var nullableTable1 = new NullableTable()
+            {
+                Float2 = 1.35f
+            };
+            await nullableTableRepository.InsertAsync(nullableTable1);
 
-        
+            var dbModel = await nullableTableRepository.Where(x => x.Id == nullableTable1.Id && nullableTable1.Float2==x.Float2).FirstOrDefaultAsync();
+            Assert.Equal(dbModel.Float2, nullableTable1.Float2);
+            var dbModel2 = await nullableTableRepository.Where(x => x.Id == nullableTable1.Id && x.Float2>1.34f).FirstOrDefaultAsync();
+            Assert.Equal(dbModel2.Float2, nullableTable1.Float2);
+        }
     }
 }

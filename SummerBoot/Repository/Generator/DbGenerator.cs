@@ -52,7 +52,7 @@ namespace SummerBoot.Repository.Generator
 
         public List<string> GenerateCsharpClass(List<string> tableNames, string classNameSpace, string namesapce = "")
         {
-            //c#ÖĞ¿É¿ÕµÄ»ù±¾ÀàĞÍ
+            //c#ä¸­å¯ç©ºçš„åŸºæœ¬ç±»å‹
             var csharpCanBeNullableType = new List<string>()
             {
                 "int",
@@ -118,7 +118,7 @@ namespace SummerBoot.Repository.Generator
                             : databaseFieldMapping.ConvertDatabaseTypeToCsharpType(new List<DatabaseFieldInfoDto>() { columnInfo }).First();
 
                     var nullablePart = (columnInfo.IsNullable && csharpCanBeNullableType.Any(it => it == fieldType)) ? "?" : "";
-                    //ÎªÁË·ûºÏc#ÃüÃû¹æ·¶£¬ÖØĞÂ¼ÆËãÁĞÃû
+                    //ä¸ºäº†ç¬¦åˆc#å‘½åè§„èŒƒï¼Œé‡æ–°è®¡ç®—åˆ—å
                     var columnName = columnInfo.ColumnName;
                     if (columnName.Length > 0)
                     {
@@ -184,29 +184,29 @@ namespace SummerBoot.Repository.Generator
                     var columnAttribute = propertyInfo.GetCustomAttribute<ColumnAttribute>();
                     var fieldName = columnAttribute != null ? columnAttribute.Name : propertyInfo.Name;
                     var requireAttribute = propertyInfo.GetCustomAttribute<RequiredAttribute>();
-                    //ºöÂÔ×Ö¶Î
+                    //å¿½ç•¥å­—æ®µ
                     var notMappedAttribute = propertyInfo.GetCustomAttribute<NotMappedAttribute>();
                     if (notMappedAttribute != null)
                     {
                         continue;
                     }
-                    //Êı¾İ¿â¿É¿ÕÀàĞÍÅĞ¶Ï
+                    //æ•°æ®åº“å¯ç©ºç±»å‹åˆ¤æ–­
                     var isNullable = propertyInfo.PropertyType.IsNullable();
                     var fieldTypeName = isNullable
                         ? propertyInfo.PropertyType.GetGenericArguments()[0]
                         : propertyInfo.PropertyType;
 
-                    //Èç¹ûÊÇstringÀàĞÍ£¬ÔÊĞí¿É¿Õ
+                    //å¦‚æœæ˜¯stringç±»å‹ï¼Œå…è®¸å¯ç©º
                     if (propertyInfo.PropertyType == typeof(string))
                     {
                         isNullable = true;
                     }
-                    //Èç¹û¾ßÓĞrequire×¢½â£¬ÔòÄ¬ÈÏ²»¿É¿Õ
+                    //å¦‚æœå…·æœ‰requireæ³¨è§£ï¼Œåˆ™é»˜è®¤ä¸å¯ç©º
                     if (requireAttribute != null)
                     {
                         isNullable = false;
                     }
-                    //Èç¹ûÊÇÃ¶¾ÙÀàĞÍ£¬Í³Ò»×ªÎªint
+                    //å¦‚æœæ˜¯æšä¸¾ç±»å‹ï¼Œç»Ÿä¸€è½¬ä¸ºint
                     if (propertyInfo.PropertyType.IsEnum || (propertyInfo.PropertyType.IsNullable() && propertyInfo.PropertyType.GetUnderlyingType().IsEnum))
                     {
                         fieldTypeName = typeof(int);
@@ -218,9 +218,9 @@ namespace SummerBoot.Repository.Generator
                     var stringLengthAttribute = propertyInfo.GetCustomAttribute<StringLengthAttribute>();
                     var maxLengthAttribute = propertyInfo.GetCustomAttribute<MaxLengthAttribute>();
                     var decimalPrecisionAttribute = propertyInfo.GetCustomAttribute<DecimalPrecisionAttribute>();
-                    //Ä¬ÈÏ×Ö¶ÎÓ³Éä
+                    //é»˜è®¤å­—æ®µæ˜ å°„
                     var dbFieldTypeName = databaseFieldMapping.ConvertCsharpTypeToDatabaseType(new List<string>() { fieldTypeName.Name }).FirstOrDefault();
-                    //×Ô¶¨ÒåÍ¨ÓÃ×Ö¶ÎÓ³Éä
+                    //è‡ªå®šä¹‰é€šç”¨å­—æ®µæ˜ å°„
                     if (fieldTypeMappers != null && fieldTypeMappers.TryGetValue(fieldTypeName, out var tempDbFieldTypeName))
                     {
                         dbFieldTypeName = tempDbFieldTypeName;
@@ -231,7 +231,7 @@ namespace SummerBoot.Repository.Generator
                     {
                         dbFieldTypeName = databaseTypeName;
                     }
-                    //×î¸ß¼¶±ğµÄcolumn×Ö¶ÎÓ³Éä
+                    //æœ€é«˜çº§åˆ«çš„columnå­—æ®µæ˜ å°„
                     if (columnAttribute != null && columnAttribute.TypeName.HasText())
                     {
                         dbFieldTypeName = columnAttribute.TypeName;
@@ -241,7 +241,7 @@ namespace SummerBoot.Repository.Generator
                         throw new Exception($"can not convert {propertyInfo.PropertyType.Name} to database type");
                     }
 
-                    //decimal¾«¶ÈÎÊÌâ
+                    //decimalç²¾åº¦é—®é¢˜
                     var precision = decimalPrecisionAttribute?.Precision ?? 18;
                     var scale = decimalPrecisionAttribute?.Scale ?? 2;
                     if (databaseUnit.ColumnNameMapping != null)
@@ -257,7 +257,7 @@ namespace SummerBoot.Repository.Generator
                         IsKey = keyAttribute != null,
                         IsAutoCreate = databaseGeneratedAttribute != null && databaseGeneratedAttribute.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity,
                         Description = descriptionAttribute != null ? descriptionAttribute.Description : "",
-                        StringMaxLength = maxLengthAttribute?.Length ?? stringLengthAttribute?.MaximumLength,
+                        StringMaxLength = maxLengthAttribute?.Length ?? stringLengthAttribute?.MaximumLength ?? 50,
                         Precision = precision,
                         Scale = scale,
                         ColumnType = propertyInfo.PropertyType
@@ -271,9 +271,9 @@ namespace SummerBoot.Repository.Generator
                 {
                     tableName = databaseUnit.TableNameMapping(tableName);
                 }
-                //ÅĞ¶ÏÊı¾İ¿âÖĞÊÇ·ñÒÑ¾­ÓĞÕâÕÅ±í£¬Èç¹ûÓĞ£¬Ôò±È½ÏÁ½ÕÅ±íµÄ½á¹¹
+                //åˆ¤æ–­æ•°æ®åº“ä¸­æ˜¯å¦å·²ç»æœ‰è¿™å¼ è¡¨ï¼Œå¦‚æœæœ‰ï¼Œåˆ™æ¯”è¾ƒä¸¤å¼ è¡¨çš„ç»“æ„
                 var dbTableInfo = databaseInfo.GetTableInfoByName(schema, tableName);
-                //Èç¹û´æÔÚÕâÕÅ±í
+                //å¦‚æœå­˜åœ¨è¿™å¼ è¡¨
                 if (dbTableInfo.FieldInfos.Any() && !isForce)
                 {
                     var item = new GenerateDatabaseSqlResult()
@@ -307,7 +307,7 @@ namespace SummerBoot.Repository.Generator
                                     item.Descriptions.Add(createFieldDescriptionSql);
                                 }
                             }
-                            //Ìí¼ÓÔ¼Êø
+                            //æ·»åŠ çº¦æŸ
                             if (fieldInfo.IsKey)
                             {
                                 var createPrimaryKeySql = databaseInfo.CreatePrimaryKey(schema, tableName, fieldInfo);
@@ -321,7 +321,7 @@ namespace SummerBoot.Repository.Generator
 
                         else
                         {
-                            //Ã»ÓĞ×¢ÊÍ£¬²¹³ä×¢ÊÍ
+                            //æ²¡æœ‰æ³¨é‡Šï¼Œè¡¥å……æ³¨é‡Š
                             if (dbFieldInfo.Description.HasText() && fieldInfo.Description.HasText() && dbFieldInfo.Description != fieldInfo.Description)
                             {
                                 var createFieldDescriptionSql = databaseInfo.UpdateTableFieldDescription(schema, tableName, fieldInfo);
@@ -339,7 +339,7 @@ namespace SummerBoot.Repository.Generator
                     }
                 }
                 else
-                //²»´æÔÚÕâÕÅ±íÔòĞÂ½¨
+                //ä¸å­˜åœ¨è¿™å¼ è¡¨åˆ™æ–°å»º
                 {
                     var item = databaseInfo.CreateTable(new DatabaseTableInfoDto()
                     {

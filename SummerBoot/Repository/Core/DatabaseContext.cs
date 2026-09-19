@@ -949,19 +949,20 @@ namespace SummerBoot.Repository.Core
                 // il.Emit(OpCodes.Call,typeof(Console).GetMethod(nameof(Console.WriteLine),new []{typeof(object)}));
 
                 il.MarkLabel(dbNullLabel);
-                if (databaseUnit.IsOracle && queryMemberCacheInfo.PropertyInfo.PropertyType == typeof(string))
-                {
-                    //初始为[target, target, getItemValue]
-                    il.Emit(OpCodes.Pop);// [target, target]
-                    il.Emit(OpCodes.Ldstr, ""); //[target, target,str]
-                    il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
-                }
-                else
-                {
-                    il.Emit(OpCodes.Pop);// [target, target]
-                    il.Emit(OpCodes.Pop);// [target]
-                }
-                
+                //if (databaseUnit.IsOracle && queryMemberCacheInfo.PropertyInfo.PropertyType == typeof(string))
+                //{
+                //    //初始为[target, target, getItemValue]
+                //    il.Emit(OpCodes.Pop);// [target, target]
+                //    il.Emit(OpCodes.Ldstr, ""); //[target, target,str]
+                //    il.Emit(OpCodes.Call, queryMemberCacheInfo.PropertyInfo.GetSetMethod()); //[target]
+                //}
+                //else
+                //{
+                //    il.Emit(OpCodes.Pop);// [target, target]
+                //    il.Emit(OpCodes.Pop);// [target]
+                //}
+                il.Emit(OpCodes.Pop);// [target, target]
+                il.Emit(OpCodes.Pop);// [target]
                 il.Emit(OpCodes.Br_S, finishLabel);
                 il.MarkLabel(finishLabel);
             }
