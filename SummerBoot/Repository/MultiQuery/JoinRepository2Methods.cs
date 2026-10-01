@@ -95,6 +95,11 @@ public static class JoinRepository2Methods
     {
         throw new NotSupportedException("Only for expression translation.");
     }
+
+    public static IEnumerable<TResult> Having<T1, T2, TKey, TResult>(IGroupBySelectOrHavingRepository<T1, T2, TKey> source, Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> predicate)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
 }
 
 internal static class JoinRepository2MethodsCache
@@ -179,5 +184,13 @@ internal static class JoinRepository2MethodsCache
         typeof(JoinRepository2Methods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(JoinRepository2Methods.Average) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 3);
+   
+    public static readonly MethodInfo Having =
+        typeof(JoinRepository2Methods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(JoinRepository2Methods.Having) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 4);
+
+    
+
 
 }

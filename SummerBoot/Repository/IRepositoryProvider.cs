@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using SummerBoot.Repository.MultiQuery;
 
 namespace SummerBoot.Repository;
 
@@ -53,7 +54,7 @@ public class RepositoryProvider : IRepositoryProvider
                 newType = typeof(PageLambdaRepository<>).MakeGenericType(childrenType);
 
             }
-            else if ( genericType == typeof(ILambdaRepository<>) || genericType == typeof(IOrderLambdaRepository<>))
+            else if (genericType == typeof(ILambdaRepository<>) || genericType == typeof(IOrderLambdaRepository<>))
             {
                 newType = typeof(OrderLambdaRepository<>).MakeGenericType(childrenType);
             }
@@ -64,6 +65,10 @@ public class RepositoryProvider : IRepositoryProvider
             else if (genericType == typeof(IUpdateLambdaRepository<>))
             {
                 newType = typeof(UpdateLambdaRepository<>).MakeGenericType(childrenType);
+            }
+            else if (genericType == typeof(IGroupBySelectRepository<,,>))
+            {
+                newType = typeof(GroupBySelectRepository<,,>).MakeGenericType(type.GetGenericArguments());
             }
             return (T)Activator.CreateInstance(newType, args: new object[2] { expression, this });
         }
@@ -150,7 +155,7 @@ public class RepositoryProvider : IRepositoryProvider
         var pageSql = wrapperExpression.SqlExpression.ToSql();
         var countSql = wrapperExpression.CountSqlExpression.ToSql();
         var parameters = wrapperExpression.Parameters;
-        LogSql(new SqlLogContext() { Sql = pageSql, Parameters = parameters,CountSql = countSql});
+        LogSql(new SqlLogContext() { Sql = pageSql, Parameters = parameters, CountSql = countSql });
         return Repository.QueryPageWithFullSql<TResult>(pageSql, countSql, parameters);
     }
 

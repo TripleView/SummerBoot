@@ -7,25 +7,428 @@ using System.Threading.Tasks;
 
 namespace SummerBoot.Repository.MultiQuery;
 
-public class JoinOrderRepository<T1, T2> : JoinRepository<T1, T2>, IJoinOrderRepository<T1, T2>
+
+public class HavingRepository<T1, T2, TKey> : IHavingRepository<T1, T2, TKey>
 {
-    public JoinOrderRepository(ILambdaRepository<JoinCondition<T1, T2>> source) : base(source)
+    public IBaseLambdaRepository Source { get; }
+
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+
+    public HavingRepository(IBaseLambdaRepository source)
     {
+        Source = source;
     }
-    public IJoinOrderRepository<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public IGroupBySelectRepository<T1, T2, TKey> Having<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> predicate)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var methodInfo = JoinRepository2MethodsCache.Having.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey), typeof(TResult));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(predicate)
+        );
+
+        var r = Source.Provider.CreateQuery<IGroupBySelectRepository<T1, T2, TKey>>(callExpr);
+        return r;
+    }
+}
+
+
+public class SelectRepository<T1, T2> : ISelectRepository<T1, T2>
+{
+    public IBaseLambdaRepository Source { get; }
+
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+
+    public SelectRepository(IBaseLambdaRepository source)
+    {
+        Source = source;
+    }
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var methodInfo = JoinRepository2MethodsCache.Select.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TResult));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+
+        var r = Source.Provider.CreateQuery<ILambdaRepository<TResult>>(callExpr);
+        return r;
+    }
+}
+
+public class WhereRepository<T1, T2> : IWhereRepository<T1, T2>
+{
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public IBaseLambdaRepository Source { get; }
+
+    public WhereRepository(IBaseLambdaRepository source)
+    {
+        Source = source;
+    }
+    public ISelectOrOrderByOrGroupBy<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+        var methodInfo = JoinRepository2MethodsCache.Where.MakeGenericMethod(typeof(T1), typeof(T2));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(predicate)
+        );
+
+        var r = Source.Provider.CreateQuery<ISelectOrOrderByOrGroupBy<T1, T2>>(callExpr);
+        return r;
+    }
+
+    public ISelectOrOrderByOrGroupBy<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
+    {
+        if (condition)
+        {
+            return Where(predicate);
+        }
+
+        return new SelectOrOrderByOrGroupBy<T1, T2>(Source.Expression);
+    }
+}
+
+
+public class OrderByRepository<T1, T2> : IOrderByRepository<T1, T2>
+{
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public IBaseLambdaRepository Source { get; }
+
+    public OrderByRepository(IBaseLambdaRepository source)
+    {
+        Source = source;
+    }
+    public IThenByRepository<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        var methodInfo = JoinRepository2MethodsCache.OrderBy.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
+        var result = InternalOrderBy(keySelector, methodInfo);
+        return result;
+    }
+
+    public IThenByRepository<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        var methodInfo = JoinRepository2MethodsCache.OrderByDescending.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
+        var result = InternalOrderBy(keySelector, methodInfo);
+        return result;
+    }
+
+    protected IThenByRepository<T1, T2> InternalOrderBy<TKey>(
+        Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector,
+        MethodInfo methodInfo
+    )
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(keySelector)
+        );
+
+        var r = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
+        var result = new JoinOrderRepository<T1, T2>(r);
+        return result;
+    }
+}
+
+public class ThenByRepository<T1, T2> : IThenByRepository<T1, T2>
+{
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public ILambdaRepository<JoinCondition<T1, T2>> Source { get; }
+
+    public ThenByRepository(ILambdaRepository<JoinCondition<T1, T2>> source)
+    {
+        Source = source;
+    }
+    public IThenByOrSelect<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         var methodInfo = JoinRepository2MethodsCache.ThenBy.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
         var result = InternalOrderBy(keySelector, methodInfo);
         return result;
     }
 
-    public IJoinOrderRepository<T1, T2> ThenByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public IThenByOrSelect<T1, T2> ThenByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         var methodInfo = JoinRepository2MethodsCache.ThenByDescending.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
         var result = InternalOrderBy(keySelector, methodInfo);
         return result;
     }
+
+    protected IThenByOrSelect<T1, T2> InternalOrderBy<TKey>(
+        Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector,
+        MethodInfo methodInfo
+    )
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(keySelector)
+        );
+
+        var r = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
+        var result = new JoinOrderRepository<T1, T2>(r);
+        return result;
+    }
 }
+
+public class GroupByRepository<T1, T2> : IGroupByRepository<T1, T2>
+{
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public ILambdaRepository<JoinCondition<T1, T2>> Source { get; }
+
+    public GroupByRepository(ILambdaRepository<JoinCondition<T1, T2>> source)
+    {
+        Source = source;
+    }
+    public IGroupBySelectOrHavingRepository<T1, T2, TKey> GroupBy<TKey>(
+        Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+        var methodInfo = JoinRepository2MethodsCache.GroupBy.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+        var r = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
+        var result = new JoinGroupRepository<T1, T2, TKey>(r);
+        return result;
+    }
+}
+
+public class GroupBySelectRepository<T1, T2, TKey> : IGroupBySelectRepository<T1, T2, TKey>
+{
+    public Expression Expression => Source.Expression;
+
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public IGroupBySelectOrHavingRepository<T1, T2, TKey> Source { get; }
+
+    public GroupBySelectRepository(IGroupBySelectOrHavingRepository<T1, T2, TKey> source)
+    {
+        Source = source;
+    }
+
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+    {
+        if (Source == null) throw new ArgumentNullException(nameof(Source));
+
+        var methodInfo = JoinRepository2MethodsCache.GroupBySelect.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey), typeof(TResult));
+        var callExpr = Expression.Call(
+            null,
+            methodInfo,
+            Source.Expression,
+            Expression.Quote(selector)
+        );
+
+        var r = Source.Provider.CreateQuery<ILambdaRepository<TResult>>(callExpr);
+        return r;
+    }
+}
+
+public class ThenByOrSelect<T1, T2> : IThenByOrSelect<T1, T2>
+{
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public OrderByRepository<T1, T2> Source { get; }
+
+    public Expression Expression => Source.Expression;
+
+    private readonly ISelectRepository<T1, T2> selectRepository;
+
+    private readonly IThenByRepository<T1, T2> thenByRepository;
+    public ThenByOrSelect(OrderByRepository<T1, T2> source)
+    {
+        Source = source;
+        selectRepository = new SelectRepository<T1, T2>(source.Source);
+        thenByRepository = new ThenByRepository<T1, T2>(source.Source);
+    }
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return selectRepository.Select(selector);
+    }
+
+    public IThenByOrSelect<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        return thenByRepository.ThenBy(keySelector);
+    }
+
+    public IThenByOrSelect<T1, T2> ThenByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        return thenByRepository.ThenByDescending(keySelector);
+    }
+}
+
+public class SelectOrWhereOrOrderByOrGroupBy<T1, T2> : ISelectOrWhereOrOrderByOrGroupBy<T1, T2>
+{
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public OrderByRepository<T1, T2> Source { get; }
+
+    public Expression Expression => Source.Expression;
+
+    private readonly ISelectRepository<T1, T2> selectRepository;
+
+    private readonly IOrderByRepository<T1, T2> orderByRepository;
+
+    private readonly IWhereRepository<T1, T2> whereRepository;
+
+    private readonly IGroupByRepository<T1, T2> groupByRepository;
+    public SelectOrWhereOrOrderByOrGroupBy(OrderByRepository<T1, T2> source)
+    {
+        Source = source;
+        selectRepository = new SelectRepository<T1, T2>(source.Source);
+        orderByRepository = new OrderByRepository<T1, T2>(source.Source);
+        whereRepository = new WhereRepository<T1, T2>(source.Source);
+        groupByRepository = new GroupByRepository<T1, T2>(source.Source);
+    }
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return selectRepository.Select(selector);
+    }
+
+    public ISelectOrOrderByOrGroupBy<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
+    {
+        return whereRepository.Where(predicate);
+    }
+
+    public ISelectOrOrderByOrGroupBy<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
+    {
+        return whereRepository.WhereIf(condition,predicate);
+    }
+
+    public IThenByRepository<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        return orderByRepository.OrderBy(keySelector);
+    }
+
+    public IThenByRepository<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        return orderByRepository.OrderBy(keySelector);
+    }
+
+    public IGroupBySelectOrHavingRepository<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    {
+        return groupByRepository.GroupBy(selector);
+    }
+}
+
+
+public class SelectOrOrderByOrGroupBy<T1, T2> : ISelectOrOrderByOrGroupBy<T1, T2>
+{
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public OrderByRepository<T1, T2> Source { get; }
+
+    public Expression Expression => Source.Expression;
+
+    private readonly ISelectRepository<T1, T2> selectRepository;
+
+    private readonly IOrderByRepository<T1, T2> orderByRepository;
+
+    private readonly IGroupByRepository<T1, T2> groupByRepository;
+    public SelectOrOrderByOrGroupBy(OrderByRepository<T1, T2> source)
+    {
+        Source = source;
+        selectRepository = new SelectRepository<T1, T2>(source.Source);
+        orderByRepository = new OrderByRepository<T1, T2>(source.Source);
+        groupByRepository = new GroupByRepository<T1, T2>(source.Source);
+    }
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        return selectRepository.Select(selector);
+    }
+
+    public IThenByRepository<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        return orderByRepository.OrderBy(keySelector);
+    }
+
+    public IThenByRepository<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        return orderByRepository.OrderBy(keySelector);
+    }
+
+    public IGroupBySelectOrHavingRepository<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    {
+        return groupByRepository.GroupBy(selector);
+    }
+}
+
+public class GroupBySelectOrHavingRepository<T1, T2, TKey> : IGroupBySelectOrHavingRepository<T1, T2, TKey>
+{
+    public Type ElementType => Source.ElementType;
+
+    public IRepositoryProvider Provider => Source.Provider;
+    public GroupBySelectOrHavingRepository<T1, T2, TKey>  Source { get; }
+
+    public Expression Expression => Source.Expression;
+
+    private readonly IGroupBySelectRepository<T1, T2, TKey> groupBySelectRepository;
+
+    private readonly IHavingRepository<T1, T2, TKey> havingRepository;
+
+    public GroupBySelectOrHavingRepository(GroupBySelectOrHavingRepository<T1, T2, TKey> source)
+    {
+        Source = source;
+        groupBySelectRepository = new GroupBySelectRepository<T1, T2, TKey>(source.Source);
+        havingRepository = new HavingRepository<T1, T2, TKey>(source.Source);
+    }
+
+    public IGroupBySelectRepository<T1, T2, TKey> Having<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> predicate)
+    {
+        return havingRepository.Having(predicate);
+    }
+
+    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+    {
+        return groupBySelectRepository.Select(selector);
+    }
+}
+
 
 public class JoinRepository<T1, T2> : IJoinRepository<T1, T2>
 {
@@ -113,61 +516,6 @@ public class JoinRepository<T1, T2> : IJoinRepository<T1, T2>
         return callExpr;
     }
 
-
-    public IJoinGroupRepository<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
-    {
-        if (Source == null) throw new ArgumentNullException(nameof(Source));
-        var methodInfo = JoinRepository2MethodsCache.GroupBy.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            Source.Expression,
-            Expression.Quote(selector)
-        );
-        var r = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
-        var result = new JoinGroupRepository<T1, T2, TKey>(r);
-        return result;
-    }
-
-    public IJoinRepository<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
-    {
-        if (Source == null) throw new ArgumentNullException(nameof(Source));
-        var methodInfo = JoinRepository2MethodsCache.Where.MakeGenericMethod(typeof(T1), typeof(T2));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            Source.Expression,
-            Expression.Quote(predicate)
-        );
-
-        var r = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
-        var result = new JoinRepository<T1, T2>(r);
-        return result;
-    }
-
-    public IJoinRepository<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
-    {
-        if (condition)
-        {
-            return Where(predicate);
-        }
-
-        return this;
-    }
-    public IJoinOrderRepository<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
-    {
-        var methodInfo = JoinRepository2MethodsCache.OrderBy.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
-        var result = InternalOrderBy(keySelector, methodInfo);
-        return result;
-    }
-
-    public IJoinOrderRepository<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
-    {
-        var methodInfo = JoinRepository2MethodsCache.OrderByDescending.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey));
-        var result = InternalOrderBy(keySelector, methodInfo);
-        return result;
-    }
-
     public IJoinRepository<T1, T2, T3> LeftJoin<T3>(ILambdaRepository<T3> second, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on)
     {
         var methodInfo = JoinRepository3MethodsCache.LeftJoin.MakeGenericMethod(typeof(T1), typeof(T2), typeof(T3));
@@ -232,25 +580,6 @@ public class JoinRepository<T1, T2> : IJoinRepository<T1, T2>
         return result;
     }
 
-    protected IJoinOrderRepository<T1, T2> InternalOrderBy<TKey>(
-        Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector,
-        MethodInfo methodInfo
-    )
-    {
-        if (Source == null) throw new ArgumentNullException(nameof(Source));
-
-        var callExpr = Expression.Call(
-          null,
-            methodInfo,
-            Source.Expression,
-            Expression.Quote(keySelector)
-        );
-
-        var r = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
-        var result = new JoinOrderRepository<T1, T2>(r);
-        return result;
-    }
-
     protected IJoinRepository<T1, T2, T3> InternalJoin<T3>(
         ILambdaRepository<T3> joinTable,
         Expression<Func<JoinCondition<T1, T2, T3>, bool>> on,
@@ -273,29 +602,31 @@ public class JoinRepository<T1, T2> : IJoinRepository<T1, T2>
         return result;
     }
 
-}
-
-public class JoinGroupRepository<T1, T2, TKey> : IJoinGroupRepository<T1, T2, TKey>
-{
-    public ILambdaRepository<JoinCondition<T1, T2>> Source { get; }
-
-    public JoinGroupRepository(ILambdaRepository<JoinCondition<T1, T2>> source)
+    public Expression Expression { get; }
+    public Type ElementType { get; }
+    public IRepositoryProvider Provider { get; }
+    public ISelectOrOrderByOrGroupBy<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
     {
-        Source = source;
+        throw new NotImplementedException();
     }
-    public ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+
+    public ISelectOrOrderByOrGroupBy<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
     {
-        if (Source == null) throw new ArgumentNullException(nameof(Source));
+        throw new NotImplementedException();
+    }
 
-        var methodInfo = JoinRepository2MethodsCache.GroupBySelect.MakeGenericMethod(typeof(T1), typeof(T2), typeof(TKey), typeof(TResult));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            Source.Expression,
-            Expression.Quote(selector)
-        );
+    public IThenByRepository<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        throw new NotImplementedException();
+    }
 
-        var r = Source.Provider.CreateQuery<ILambdaRepository<TResult>>(callExpr);
-        return r;
+    public IThenByRepository<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IGroupBySelectOrHavingRepository<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -17,27 +17,112 @@ public interface IBaseLambdaRepository
     IRepositoryProvider Provider { get; }
 }
 
-public interface ISetValue<T>
+/// <summary>
+/// SqlExecutor;sqlæ‰§è¡Œå™¨
+/// </summary>
+public interface ISqlExecutor
 {
-    IUpdateLambdaRepository<T> SetValue(Expression<Func<T, object>> predicate, object value);
+    #region sync
+    /// <summary>
+    /// Get list data through sql statement
+    /// é€šè¿‡sqlè¯­å¥è·å–åˆ—è¡¨æ•°æ®
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <returns></returns>
+    List<TResult> QueryList<TResult>(string sql, object param = null);
+    /// <summary>
+    /// Get a single entity through sql statement
+    /// é€šè¿‡sqlè¯­å¥è·å–å•ä¸ªå®ä½“
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <returns></returns>
+    TResult QueryFirstOrDefault<TResult>(string sql, object param = null);
+    /// <summary>
+    /// Execute SQL statements
+    /// æ‰§è¡Œsqlè¯­å¥
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <returns></returns>
+    int Execute(string sql, object param = null);
+    /// <summary>
+    /// Paging query through sql statement
+    /// é€šè¿‡sqlè¯­å¥åˆ†é¡µæŸ¥è¯¢
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <param name="pageParameter"></param>
+    /// <returns></returns>
+    Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null);
+
+    Page<TResult> QueryPageWithFullSql<TResult>(string pageSql, string countSql, object param = null);
+    #endregion
+
+    #region async
+    /// <summary>
+    /// Get list data through sql statement
+    /// é€šè¿‡sqlè¯­å¥è·å–åˆ—è¡¨æ•°æ®
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <returns></returns>
+    Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null);
+    /// <summary>
+    /// Get a single entity through sql statement
+    /// é€šè¿‡sqlè¯­å¥è·å–å•ä¸ªå®ä½“
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <returns></returns>
+    Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null);
+    /// <summary>
+    /// Execute SQL statements
+    /// æ‰§è¡Œsqlè¯­å¥
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <returns></returns>
+    Task<int> ExecuteAsync(string sql, object param = null);
+    /// <summary>
+    /// Paging query through sql statement
+    /// é€šè¿‡sqlè¯­å¥åˆ†é¡µæŸ¥è¯¢
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="sql"></param>
+    /// <param name="param"></param>
+    /// <param name="pageParameter"></param>
+    /// <returns></returns>
+    Task<Page<TResult>> QueryPageAsync<TResult>(string sql, Pageable pageParameter, object param = null);
+
+    Task<Page<TResult>> QueryPageWithFullSqlAsync<TResult>(string pageSql, string countSql, object param = null);
+    #endregion
 }
 
-public interface ILambdaRepository<T> : IBaseLambdaRepository, ISetValue<T>
+
+public interface ISetValueProvider<T>
 {
-    ILambdaRepository<T> Where(Expression<Func<T, bool>> predicate);
-    ILambdaRepository<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate);
-    IOrderLambdaRepository<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector);
-    IOrderLambdaRepository<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> keySelector);
-    IGroupLambdaRepository<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
+    ISetValueStage<T> SetValue(Expression<Func<T, object>> predicate, object value);
+}
 
-    ILambdaRepository<TResult> Select<TResult>(Expression<Func<T, TResult>> selector);
+public interface ISetValueStage<T> : ISetValueProvider<T>
+{
+    int ToUpdate();
+    Task<int> ToUpdateAsync();
+}
 
+
+public interface IExecuteProvider<T> : IBaseLambdaRepository
+{
     List<T> ToList();
 
     Task<List<T>> ToListAsync();
-
-    IPageLambdaRepository<T> Take(int count);
-    IPageLambdaRepository<T> Skip(int count);
 
     int Count();
     Task<int> CountAsync();
@@ -58,13 +143,13 @@ public interface ILambdaRepository<T> : IBaseLambdaRepository, ISetValue<T>
     Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
 
     /// <summary>
-    /// Éú³É¾­¹ı·ÖÒ³µÄ½á¹û
+    /// ç”Ÿæˆç»è¿‡åˆ†é¡µçš„ç»“æœ
     /// </summary>
     /// <returns></returns>
     Page<T> ToPage(IPageable pageable);
 
     /// <summary>
-    /// Éú³É¾­¹ı·ÖÒ³µÄ½á¹û
+    /// ç”Ÿæˆç»è¿‡åˆ†é¡µçš„ç»“æœ
     /// </summary>
     /// <returns></returns>
     Task<Page<T>> ToPageAsync(IPageable pageable);
@@ -81,69 +166,151 @@ public interface ILambdaRepository<T> : IBaseLambdaRepository, ISetValue<T>
     TResult Average<TResult>(Expression<Func<T, TResult>> selector);
 
     Task<TResult> AverageAsync<TResult>(Expression<Func<T, TResult>> selector);
-
-    int ExecuteUpdate();
-    Task<int> ExecuteUpdateAsync();
 }
 
-public interface IUpdateLambdaRepository<T>: ISetValue<T>
+
+public interface ILambdaRepository<T> : 
+    ISetValueProvider<T>,
+    IExecuteProvider<T>,
+    IWhereProvider<T>,
+    IOrderByProvider<T>, 
+    IDistinctProvider<T>, 
+    ISelectProvider<T>,
+    IGroupByProvider<T>
 {
-    int ToUpdate();
-    Task<int> ToUpdateAsync();
-}
 
-public class UpdateLambdaRepository<T> : IUpdateLambdaRepository<T>, IBaseLambdaRepository
+    //IPageLambdaRepository<T> Take(int count);
+    //IPageLambdaRepository<T> Skip(int count);
+}
+public interface ISelectStage<T> : IExecuteProvider<T>
 {
-    public UpdateLambdaRepository(Expression expression, IRepositoryProvider provider)
-    {
-        this.Expression = expression;
-        this.Provider = provider;
-    }
-    public IRepositoryProvider Provider { get; protected set; }
 
-    public Type ElementType => typeof(T);
-
-    public Expression Expression { get; protected set; }
-
-    public IUpdateLambdaRepository<T> SetValue(Expression<Func<T, object>> predicate, object value)
-    {
-        var methodInfo = RepositoryMethodsCache.SetValue.MakeGenericMethod(typeof(T));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            this.Expression,
-            Expression.Quote(predicate),
-            Expression.Constant(value,typeof(object))
-        );
-
-        var result = Provider.CreateQuery<IUpdateLambdaRepository<T>>(callExpr);
-        return result;
-    }
-
-    public int ToUpdate()
-    {
-        var methodInfo = RepositoryMethodsCache.ToUpdate.MakeGenericMethod(typeof(T));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            this.Expression
-        );
-        var result = Provider.Execute(callExpr);
-        return result;
-    }
-
-    public async Task<int> ToUpdateAsync()
-    {
-        var methodInfo = RepositoryMethodsCache.ToUpdate.MakeGenericMethod(typeof(T));
-        var callExpr = Expression.Call(
-            null,
-            methodInfo,
-            this.Expression
-        );
-        var result = await Provider.ExecuteAsync(callExpr);
-        return result;
-    }
 }
+public interface ISelectProvider<T> : IBaseLambdaRepository
+{
+    ISelectStage<T> Select<TResult>(Expression<Func<T, TResult>> selector);
+}
+
+public interface IDistinctProvider<T> : IBaseLambdaRepository
+{
+    IExecuteProvider<T> Distinct();
+}
+
+public interface IWhereProvider<T> : IBaseLambdaRepository
+{
+    IWhereStage<T> Where(Expression<Func<T, bool>> predicate);
+    IWhereStage<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate);
+}
+
+public interface IWhereStage<T> : IWhereProvider<T>, IOrderByProvider<T>, ISelectProvider<T>, IGroupByProvider<T>
+{
+
+}
+
+public interface IOrderByProvider<T> : IBaseLambdaRepository
+{
+    IOrderByStage<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector);
+    IOrderByStage<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> keySelector);
+}
+
+public interface IOrderByStage<T> : IThenByProvider<T>, ISelectProvider<T>
+{
+
+}
+
+public interface IThenByProvider<T> : IBaseLambdaRepository
+{
+    IThenByStage<T> ThenBy<TKey>(Expression<Func<T, TKey>> keySelector);
+
+    IThenByStage<T> ThenByDescending<TKey>(Expression<Func<T, TKey>> keySelector);
+}
+
+public interface IThenByStage<T> : ISelectProvider<T>, IThenByProvider<T>
+{
+
+}
+
+public interface IHavingProvider<T, TKey>
+{
+    IHavingStage<T, TKey> Having<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> predicate);
+}
+
+public interface IHavingStage<T, TKey> : IGroupBySelectProvider<T, TKey>
+{
+
+}
+
+
+public interface IGroupByProvider<T>
+{
+    IGroupByStage<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> selector);
+}
+
+
+public interface IGroupByStage<T, TKey> : IGroupBySelectProvider<T, TKey>, IHavingProvider<T, TKey>
+{
+
+}
+
+public interface IGroupBySelectProvider<T, TKey> : IBaseLambdaRepository
+{
+    ISelectStage<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector);
+}
+
+
+
+//public class UpdateLambdaRepository<T> : IUpdateLambdaRepository<T>, IBaseLambdaRepository
+//{
+//    public UpdateLambdaRepository(Expression expression, IRepositoryProvider provider)
+//    {
+//        this.Expression = expression;
+//        this.Provider = provider;
+//    }
+//    public IRepositoryProvider Provider { get; protected set; }
+
+//    public Type ElementType => typeof(T);
+
+//    public Expression Expression { get; protected set; }
+
+//    public IUpdateLambdaRepository<T> SetValue(Expression<Func<T, object>> predicate, object value)
+//    {
+//        var methodInfo = RepositoryMethodsCache.SetValue.MakeGenericMethod(typeof(T));
+//        var callExpr = Expression.Call(
+//            null,
+//            methodInfo,
+//            this.Expression,
+//            Expression.Quote(predicate),
+//            Expression.Constant(value,typeof(object))
+//        );
+
+//        var result = Provider.CreateQuery<IUpdateLambdaRepository<T>>(callExpr);
+//        return result;
+//    }
+
+//    public int ToUpdate()
+//    {
+//        var methodInfo = RepositoryMethodsCache.ToUpdate.MakeGenericMethod(typeof(T));
+//        var callExpr = Expression.Call(
+//            null,
+//            methodInfo,
+//            this.Expression
+//        );
+//        var result = Provider.Execute(callExpr);
+//        return result;
+//    }
+
+//    public async Task<int> ToUpdateAsync()
+//    {
+//        var methodInfo = RepositoryMethodsCache.ToUpdate.MakeGenericMethod(typeof(T));
+//        var callExpr = Expression.Call(
+//            null,
+//            methodInfo,
+//            this.Expression
+//        );
+//        var result = await Provider.ExecuteAsync(callExpr);
+//        return result;
+//    }
+//}
 
 
 public interface IGroupLambdaRepository<T, TKey>
@@ -207,7 +374,7 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
             methodInfo,
             this.Expression,
             Expression.Quote(predicate),
-            Expression.Constant(value,typeof(object))
+            Expression.Constant(value, typeof(object))
         );
 
         var result = Provider.CreateQuery<IUpdateLambdaRepository<T>>(callExpr);
@@ -318,7 +485,7 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
 
     public async Task<List<T>> ToListAsync()
     {
-        var result =await Provider.QueryListAsync<T>(Expression);
+        var result = await Provider.QueryListAsync<T>(Expression);
         return result;
     }
     private IPageLambdaRepository<T> InternalTakeSkip(
@@ -614,12 +781,12 @@ public class OrderLambdaRepository<T> : IOrderLambdaRepository<T>
 public interface IPageLambdaRepository<T> : IOrderLambdaRepository<T>
 {
     /// <summary>
-    /// Éú³É¾­¹ı·ÖÒ³µÄ½á¹û
+    /// ç”Ÿæˆç»è¿‡åˆ†é¡µçš„ç»“æœ
     /// </summary>
     /// <returns></returns>
     Page<T> ToPage();
     /// <summary>
-    /// Éú³É¾­¹ı·ÖÒ³µÄ½á¹û
+    /// ç”Ÿæˆç»è¿‡åˆ†é¡µçš„ç»“æœ
     /// </summary>
     /// <returns></returns>
     Task<Page<T>> ToPageAsync();
@@ -661,161 +828,75 @@ public class PageLambdaRepository<T> : OrderLambdaRepository<T>, IPageLambdaRepo
     }
 }
 
-/// <summary>
-/// SqlExecutor;sqlÖ´ĞĞÆ÷
-/// </summary>
-public interface ISqlExecutor
-{
-    #region sync
-    /// <summary>
-    /// Get list data through sql statement
-    /// Í¨¹ısqlÓï¾ä»ñÈ¡ÁĞ±íÊı¾İ
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <returns></returns>
-    List<TResult> QueryList<TResult>(string sql, object param = null);
-    /// <summary>
-    /// Get a single entity through sql statement
-    /// Í¨¹ısqlÓï¾ä»ñÈ¡µ¥¸öÊµÌå
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <returns></returns>
-    TResult QueryFirstOrDefault<TResult>(string sql, object param = null);
-    /// <summary>
-    /// Execute SQL statements
-    /// Ö´ĞĞsqlÓï¾ä
-    /// </summary>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <returns></returns>
-    int Execute(string sql, object param = null);
-    /// <summary>
-    /// Paging query through sql statement
-    /// Í¨¹ısqlÓï¾ä·ÖÒ³²éÑ¯
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <param name="pageParameter"></param>
-    /// <returns></returns>
-    Page<TResult> QueryPage<TResult>(string sql, Pageable pageParameter, object param = null);
 
-    Page<TResult> QueryPageWithFullSql<TResult>(string pageSql, string countSql, object param = null);
-    #endregion
-
-    #region async
-    /// <summary>
-    /// Get list data through sql statement
-    /// Í¨¹ısqlÓï¾ä»ñÈ¡ÁĞ±íÊı¾İ
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <returns></returns>
-    Task<List<TResult>> QueryListAsync<TResult>(string sql, object param = null);
-    /// <summary>
-    /// Get a single entity through sql statement
-    /// Í¨¹ısqlÓï¾ä»ñÈ¡µ¥¸öÊµÌå
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <returns></returns>
-    Task<TResult> QueryFirstOrDefaultAsync<TResult>(string sql, object param = null);
-    /// <summary>
-    /// Execute SQL statements
-    /// Ö´ĞĞsqlÓï¾ä
-    /// </summary>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <returns></returns>
-    Task<int> ExecuteAsync(string sql, object param = null);
-    /// <summary>
-    /// Paging query through sql statement
-    /// Í¨¹ısqlÓï¾ä·ÖÒ³²éÑ¯
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="sql"></param>
-    /// <param name="param"></param>
-    /// <param name="pageParameter"></param>
-    /// <returns></returns>
-    Task<Page<TResult>> QueryPageAsync<TResult>(string sql, Pageable pageParameter, object param = null);
-
-    Task<Page<TResult>> QueryPageWithFullSqlAsync<TResult>(string pageSql, string countSql, object param = null);
-    #endregion
-}
 
 public interface IBaseRepository<T> : IPageLambdaRepository<T>, ISqlExecutor
 {
     #region sync
     /// <summary>
     /// Get entity by id
-    /// Í¨¹ıid»ñµÃÊµÌå
+    /// é€šè¿‡idè·å¾—å®ä½“
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
     T Get(object id);
     /// <summary>
     /// Get all entities
-    /// »ñÈ¡ËùÓĞÊµÌå
+    /// è·å–æ‰€æœ‰å®ä½“
     /// </summary>
     /// <returns></returns>
     List<T> GetAll();
     /// <summary>
     /// Update Entity
-    /// ¸üĞÂÊµÌå
+    /// æ›´æ–°å®ä½“
     /// </summary>
     /// <param name="t"></param>
     /// <returns></returns>
     int Update(T t);
     /// <summary>
     /// Update entity list
-    /// ¸üĞÂÊµÌåÁĞ±í
+    /// æ›´æ–°å®ä½“åˆ—è¡¨
     /// </summary>
     /// <param name="list"></param>
     void Update(List<T> list);
     /// <summary>
     /// Delete Entity
-    /// É¾³ıÊµÌå
+    /// åˆ é™¤å®ä½“
     /// </summary>
     /// <param name="t"></param>
     /// <returns></returns>
     int Delete(T t);
     /// <summary>
     /// Delete Entity list
-    /// É¾³ıÊµÌåÁĞ±í
+    /// åˆ é™¤å®ä½“åˆ—è¡¨
     /// </summary>
     /// <param name="list"></param>
     /// <returns></returns>
     void Delete(List<T> list);
     /// <summary>
     /// Deleting entities by condition
-    /// Í¨¹ıÌõ¼şÉ¾³ıÊµÌå
+    /// é€šè¿‡æ¡ä»¶åˆ é™¤å®ä½“
     /// </summary>
     /// <param name="predicate"></param>
     /// <returns></returns>
     int Delete(Expression<Func<T, bool>> predicate);
     /// <summary>
     /// Insert Entity
-    /// ²åÈëÊµÌå
+    /// æ’å…¥å®ä½“
     /// </summary>
     /// <param name="t"></param>
     /// <returns></returns>
     T Insert(T t);
     /// <summary>
     /// Insert entity list
-    /// ²åÈëÊµÌåÁĞ±í
+    /// æ’å…¥å®ä½“åˆ—è¡¨
     /// </summary>
     /// <param name="list"></param>
     /// <returns></returns>
     List<T> Insert(List<T> list);
     /// <summary>
     /// Fast bulk insert
-    /// ¿ìËÙÅúÁ¿²åÈë
+    /// å¿«é€Ÿæ‰¹é‡æ’å…¥
     /// </summary>
     /// <param name="list"></param>
     void FastBatchInsert(List<T> list);
@@ -825,68 +906,68 @@ public interface IBaseRepository<T> : IPageLambdaRepository<T>, ISqlExecutor
     #region async
     /// <summary>
     /// Get entity by id
-    /// Í¨¹ıid»ñµÃÊµÌå
+    /// é€šè¿‡idè·å¾—å®ä½“
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
     Task<T> GetAsync(object id);
     /// <summary>
     /// Get all entities
-    /// »ñÈ¡ËùÓĞÊµÌå
+    /// è·å–æ‰€æœ‰å®ä½“
     /// </summary>
     /// <returns></returns>
     Task<List<T>> GetAllAsync();
     /// <summary>
     /// Update Entity
-    /// ¸üĞÂÊµÌå
+    /// æ›´æ–°å®ä½“
     /// </summary>
     /// <param name="t"></param>
     /// <returns></returns>
     Task<int> UpdateAsync(T t);
     /// <summary>
     /// Update entity list
-    /// ¸üĞÂÊµÌåÁĞ±í
+    /// æ›´æ–°å®ä½“åˆ—è¡¨
     /// </summary>
     /// <param name="list"></param>
     Task UpdateAsync(List<T> list);
     /// <summary>
     /// Delete Entity
-    /// É¾³ıÊµÌå
+    /// åˆ é™¤å®ä½“
     /// </summary>
     /// <param name="t"></param>
     /// <returns></returns>
     Task<int> DeleteAsync(T t);
     /// <summary>
     /// Deleting entities by condition
-    /// Í¨¹ıÌõ¼şÉ¾³ıÊµÌå
+    /// é€šè¿‡æ¡ä»¶åˆ é™¤å®ä½“
     /// </summary>
     /// <param name="predicate"></param>
     /// <returns></returns>
     Task<int> DeleteAsync(Expression<Func<T, bool>> predicate);
     /// <summary>
     /// Delete Entity list
-    /// É¾³ıÊµÌåÁĞ±í
+    /// åˆ é™¤å®ä½“åˆ—è¡¨
     /// </summary>
     /// <param name="list"></param>
     /// <returns></returns>
     Task DeleteAsync(List<T> list);
     /// <summary>
     /// Insert Entity
-    /// ²åÈëÊµÌå
+    /// æ’å…¥å®ä½“
     /// </summary>
     /// <param name="t"></param>
     /// <returns></returns>
     Task<T> InsertAsync(T t);
     /// <summary>
     /// Insert entity list
-    /// ²åÈëÊµÌåÁĞ±í
+    /// æ’å…¥å®ä½“åˆ—è¡¨
     /// </summary>
     /// <param name="list"></param>
     /// <returns></returns>
     Task<List<T>> InsertAsync(List<T> list);
     /// <summary>
     /// Fast bulk insert
-    /// ¿ìËÙÅúÁ¿²åÈë
+    /// å¿«é€Ÿæ‰¹é‡æ’å…¥
     /// </summary>
     /// <param name="list"></param>
     Task FastBatchInsertAsync(List<T> list);

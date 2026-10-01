@@ -9,21 +9,15 @@ using System.Xml.Linq;
 
 namespace SummerBoot.Repository.MultiQuery;
 
-public interface IJoinRepository<T1, T2>
+public interface IJoinRepository<T1, T2> : IExecuteProvider<T1, T2>
 {
     IJoinRepository<T1, T2, T3> LeftJoin<T3>(ILambdaRepository<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
     IJoinRepository<T1, T2, T3> RightJoin<T3>(ILambdaRepository<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
     IJoinRepository<T1, T2, T3> InnerJoin<T3>(ILambdaRepository<T3> table, Expression<Func<JoinCondition<T1, T2, T3>, bool>> on);
-    IJoinOrderRepository<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+}
 
-    IJoinOrderRepository<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
-
-    ILambdaRepository<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
-
-    IJoinRepository<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
-
-    IJoinRepository<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
-
+public interface IExecuteProvider<T1, T2> : IBaseLambdaRepository
+{
     int Count(Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
 
     Task<int> CountAsync(Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
@@ -42,22 +36,74 @@ public interface IJoinRepository<T1, T2>
     Task<TResult> AverageAsync<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
 
     Task<TResult> SumAsync<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
-
-
-    IJoinGroupRepository<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
-}
-
-public interface IJoinGroupRepository<T1, T2, TKey>
-{
-    ILambdaRepository<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector);
 }
 
 
-public interface IJoinOrderRepository<T1, T2> : IJoinRepository<T1, T2>
+public interface ISelectProvider<T1, T2>: IBaseLambdaRepository
 {
-    IJoinOrderRepository<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+    ISelectStage<TResult> Select<TResult>(Expression<Func<JoinCondition<T1, T2>, TResult>> selector);
+}
 
-    IJoinOrderRepository<T1, T2> ThenByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+
+public interface IWhereProvider<T1, T2> : IBaseLambdaRepository
+{
+    IWhereStage<T1, T2> Where(Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
+    IWhereStage<T1, T2> WhereIf(bool condition, Expression<Func<JoinCondition<T1, T2>, bool>> predicate);
+}
+
+public interface IWhereStage<T1, T2> : IWhereProvider<T1, T2>, IOrderByProvider<T1, T2>, ISelectProvider<T1, T2>,IGroupByProvider<T1, T2>
+{
+
+}
+
+public interface IOrderByProvider<T1, T2> : IBaseLambdaRepository
+{
+    IOrderByStage<T1, T2> OrderBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+    IOrderByStage<T1, T2> OrderByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+}
+
+public interface IOrderByStage<T1, T2> : IThenByProvider<T1, T2>, ISelectProvider<T1, T2>
+{
+
+}
+
+public interface IThenByProvider<T1, T2> : IBaseLambdaRepository
+{
+    IThenByStage<T1, T2> ThenBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+
+    IThenByStage<T1, T2> ThenByDescending<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector);
+}
+
+public interface IThenByStage<T1, T2> : ISelectProvider<T1, T2>, IThenByProvider<T1, T2>
+{
+
+}
+
+public interface IHavingProvider<T1, T2, TKey>
+{
+    IHavingStage<T1, T2, TKey> Having<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> predicate);
+}
+
+public interface IHavingStage<T1, T2, TKey> : IGroupBySelectProvider<T1, T2, TKey>
+{
+
+}
+
+
+public interface IGroupByProvider<T1, T2>
+{
+    IGroupByStage<T1, T2, TKey> GroupBy<TKey>(Expression<Func<JoinCondition<T1, T2>, TKey>> selector);
+}
+
+
+public interface IGroupByStage<T1, T2, TKey> : IGroupBySelectProvider<T1, T2, TKey>, IHavingProvider<T1, T2, TKey>
+{
+
+}
+
+public interface IGroupBySelectProvider<T1, T2, TKey> : IBaseLambdaRepository
+{
+    ISelectStage<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector);
 }
 
 
