@@ -43,39 +43,40 @@ public class RepositoryProvider : IRepositoryProvider
     public T CreateQuery<T>(Expression expression)
     {
         var type = typeof(T);
-        if (type.IsGenericType)
-        {
-            var genericType = type.GetGenericTypeDefinition();
-            var childrenType = type.GetGenericArguments().First();
-            Type newType = null;
-
-            if (genericType == typeof(IPageLambdaRepository<>))
-            {
-                newType = typeof(PageLambdaRepository<>).MakeGenericType(childrenType);
-
-            }
-            else if (genericType == typeof(ILambdaRepository<>) || genericType == typeof(IOrderLambdaRepository<>))
-            {
-                newType = typeof(OrderLambdaRepository<>).MakeGenericType(childrenType);
-            }
-            else if (genericType == typeof(IBaseRepository<>))
-            {
-                newType = typeof(CustomBaseRepository<>).MakeGenericType(childrenType);
-            }
-            else if (genericType == typeof(IUpdateLambdaRepository<>))
-            {
-                newType = typeof(UpdateLambdaRepository<>).MakeGenericType(childrenType);
-            }
-            else if (genericType == typeof(IGroupBySelectRepository<,,>))
-            {
-                newType = typeof(GroupBySelectRepository<,,>).MakeGenericType(type.GetGenericArguments());
-            }
-            return (T)Activator.CreateInstance(newType, args: new object[2] { expression, this });
-        }
-        else
-        {
-            throw new NotSupportedException(typeof(T).FullName);
-        }
+        // if (type.IsGenericType)
+        // {
+        //     var genericType = type.GetGenericTypeDefinition();
+        //     var childrenType = type.GetGenericArguments().First();
+        //     Type newType = null;
+        //
+        //     if (genericType == typeof(IPageLambdaRepository<>))
+        //     {
+        //         newType = typeof(PageLambdaRepository<>).MakeGenericType(childrenType);
+        //
+        //     }
+        //     else if (genericType == typeof(ILambdaRepository<>) || genericType == typeof(IOrderLambdaRepository<>))
+        //     {
+        //         newType = typeof(OrderLambdaRepository<>).MakeGenericType(childrenType);
+        //     }
+        //     else if (genericType == typeof(IBaseRepository<>))
+        //     {
+        //         newType = typeof(CustomBaseRepository<>).MakeGenericType(childrenType);
+        //     }
+        //     else if (genericType == typeof(IUpdateLambdaRepository<>))
+        //     {
+        //         newType = typeof(UpdateLambdaRepository<>).MakeGenericType(childrenType);
+        //     }
+        //     else if (genericType == typeof(IGroupBySelectRepository<,,>))
+        //     {
+        //         newType = typeof(GroupBySelectRepository<,,>).MakeGenericType(type.GetGenericArguments());
+        //     }
+        //     return (T)Activator.CreateInstance(newType, args: new object[2] { expression, this });
+        // }
+        // else
+        // {
+        //     throw new NotSupportedException(typeof(T).FullName);
+        // }
+        throw new NotSupportedException(typeof(T).FullName);
     }
 
     private void LogSql(SqlLogContext sqlLogContext)

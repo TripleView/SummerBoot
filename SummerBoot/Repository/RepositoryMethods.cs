@@ -9,89 +9,96 @@ namespace SummerBoot.Repository;
 
 internal static class RepositoryMethods
 {
-    public static ILambdaRepository<T> Where<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
+    public static IWhereStage<T> Where<T>(IWhereProvider<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IUpdateLambdaRepository<T> SetValue<T>(ISetValue<T> source, Expression<Func<T, object>> predicate, object value)
+    public static IHavingStage<T, TKey> Having<T, TKey>(IHavingProvider<T, TKey> source, Expression<Func<IGrouping<TKey, T>, bool>> predicate)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+    public static ISetValueStage<T> SetValue<T>(ISetValueProvider<T> source, Expression<Func<T, object>> predicate, object value)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+    public static IExecuteProvider<T> Distinct<T>(IDistinctProvider<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+    public static int ToUpdate<T>(ISetValueStage<T> source)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static int ToUpdate<T>(ISetValue<T> source)
+    public static IOrderByStage<T> OrderBy<T, TKey>(IOrderByProvider<T> source, Expression<Func<T, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IOrderLambdaRepository<T> OrderBy<T, TKey>(ILambdaRepository<T> source, Expression<Func<T, TKey>> keySelector)
+    public static IOrderByStage<T> OrderByDescending<T, TKey>(IOrderByProvider<T> source, Expression<Func<T, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IOrderLambdaRepository<T> OrderByDescending<T, TKey>(ILambdaRepository<T> source, Expression<Func<T, TKey>> keySelector)
+    public static IThenByStage<T> ThenBy<T, TKey>(IOrderByStage<T> source, Expression<Func<T, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IOrderLambdaRepository<T> ThenBy<T, TKey>(ILambdaRepository<T> source, Expression<Func<T, TKey>> keySelector)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static IOrderLambdaRepository<T> ThenByDescending<T, TKey>(ILambdaRepository<T> source, Expression<Func<T, TKey>> keySelector)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-
-    public static IGroupLambdaRepository<T, TKey> GroupBy<T, TKey>(ILambdaRepository<T> source, Expression<Func<T, TKey>> keySelector)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static ILambdaRepository<TResult> Select<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static IEnumerable<TResult> Select<T, TKey, TResult>(IGroupLambdaRepository<T, TKey> source, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static List<T> ToList<T>(ILambdaRepository<T> source)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static IPageLambdaRepository<T> Take<T>(ILambdaRepository<T> source, int count)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static IPageLambdaRepository<T> Skip<T>(ILambdaRepository<T> source, int count)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static int Count<T>(ILambdaRepository<T> source)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static int Count<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
+    public static IThenByStage<T> ThenByDescending<T, TKey>(IOrderByStage<T> source, Expression<Func<T, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
 
-    public static T First<T>(ILambdaRepository<T> source)
+    public static IGroupByStage<T, TKey> GroupBy<T, TKey>(IGroupByProvider<T> source, Expression<Func<T, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static T First<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
+    public static ISelectStage<TResult> Select<T, TResult>(ISelectProvider<T> source, Expression<Func<T, TResult>> selector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static ISelectStage<TResult> Select<T, TKey, TResult>(IGroupBySelectProvider<T, TKey> source, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static List<T> ToList<T>(IExecuteProvider<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static ITakeStage<T> Take<T>(ITakeProvider<T> source, int count)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static ISkipStage<T> Skip<T>(ISkipProvider<T> source, int count)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static int Count<T>(IExecuteProvider<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static int Count<T>(IExecuteProvider<T> source, Expression<Func<T, bool>> predicate)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+
+    public static T First<T>(IExecuteProvider<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static T First<T>(IExecuteProvider<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -101,21 +108,12 @@ internal static class RepositoryMethods
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static T FirstOrDefault<T>(ILambdaRepository<T> source)
+    public static T FirstOrDefault<T>(IExecuteProvider<T> source)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static T FirstOrDefault<T>(ILambdaRepository<T> source, Expression<Func<T, bool>> predicate)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    /// <summary>
-    /// 生成经过分页的结果
-    /// </summary>
-    /// <returns></returns>
-    public static Page<T> ToPage<T>(ILambdaRepository<T> source, IPageable pageable)
+    public static T FirstOrDefault<T>(IExecuteProvider<T> source, Expression<Func<T, bool>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -124,39 +122,42 @@ internal static class RepositoryMethods
     /// 生成经过分页的结果
     /// </summary>
     /// <returns></returns>
-    public static Page<T> ToPage<T>(IPageLambdaRepository<T> source)
+    public static Page<T> ToPage<T>(IExecuteProvider<T> source, IPageable pageable)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static TResult Max<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
+    /// <summary>
+    /// 生成经过分页的结果
+    /// </summary>
+    /// <returns></returns>
+    public static Page<T> ToPage<T>(IExecuteProvider<T> source)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static TResult Max<T, TResult>(IExecuteProvider<T> source, Expression<Func<T, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
 
-    public static TResult Min<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
+    public static TResult Min<T, TResult>(IExecuteProvider<T> source, Expression<Func<T, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
 
-    public static TResult Sum<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
+    public static TResult Sum<T, TResult>(IExecuteProvider<T> source, Expression<Func<T, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
 
-    public static TResult Average<T, TResult>(ILambdaRepository<T> source, Expression<Func<T, TResult>> selector)
+    public static TResult Average<T, TResult>(IExecuteProvider<T> source, Expression<Func<T, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
-
-    public static int ExecuteUpdate<T>(ILambdaRepository<T> source)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
 }
 
 internal static class RepositoryMethodsCache
@@ -166,6 +167,11 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.SetValue) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1);
 
+    public static readonly MethodInfo Distinct =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.Distinct) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1);
+    
     public static readonly MethodInfo ToUpdate =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -212,6 +218,11 @@ internal static class RepositoryMethodsCache
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.Select) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 3);
 
+    public static readonly MethodInfo Having =
+        typeof(RepositoryMethods)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(m => m.Name == nameof(RepositoryMethods.Having) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 2);
+    
     public static readonly MethodInfo ToList =
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -284,10 +295,5 @@ internal static class RepositoryMethodsCache
         typeof(RepositoryMethods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(RepositoryMethods.Average) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 2);
-
-    public static readonly MethodInfo ExecuteUpdate =
-        typeof(RepositoryMethods)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Single(m => m.Name == nameof(RepositoryMethods.ExecuteUpdate) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
-
+    
 }

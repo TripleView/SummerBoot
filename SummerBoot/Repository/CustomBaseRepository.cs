@@ -13,7 +13,7 @@ using DbType = SqlParser.Net.DbType;
 
 namespace SummerBoot.Repository;
 
-public class CustomBaseRepository<T> : PageLambdaRepository<T>, IBaseRepository<T>
+public class CustomBaseRepository<T> : LambdaRepository<T>, IBaseRepository<T>
 {
     public CustomBaseRepository(IUnitOfWork uow, IDatabaseSpecificProvider databaseSpecificProvider) : base(null, null)
     {
