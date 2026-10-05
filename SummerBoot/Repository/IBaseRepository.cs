@@ -117,9 +117,9 @@ public interface IToUpdateProvider
     Task<int> ToUpdateAsync();
 }
 
-public interface ISetValueStage<T> : ISetValueProvider<T>,IToUpdateProvider
+public interface ISetValueStage<T> : ISetValueProvider<T>, IToUpdateProvider
 {
- 
+
 }
 
 
@@ -174,10 +174,10 @@ public interface IExecuteProvider<T> : IBaseLambdaRepository
 }
 
 
-public interface ILambdaRepository<T> : 
-    IBaseLambdaRepository,ISetValueStage<T>,ISelectStage<T>,IOrderByStage<T>,IThenByStage<T>,IWhereStage<T>,IGroupByProvider<T>,ISkipStage<T>,ITakeStage<T>
+public interface ILambdaRepository<T> :
+    IBaseLambdaRepository, ISetValueStage<T>, ISelectStage<T>, IOrderByStage<T>, IThenByStage<T>, IWhereStage<T>, IGroupByProvider<T>, ISkipStage<T>, ITakeStage<T>, ITakePageProvider<T>
 {
-    
+
 }
 public interface ISelectStage<T> : IExecuteProvider<T>
 {
@@ -185,7 +185,7 @@ public interface ISelectStage<T> : IExecuteProvider<T>
 }
 public interface ISelectProvider<T> : IBaseLambdaRepository
 {
-    ISelectStage<T> Select<TResult>(Expression<Func<T, TResult>> selector);
+    ISelectStage<TResult> Select<TResult>(Expression<Func<T, TResult>> selector);
 }
 
 public interface IDistinctProvider<T> : IBaseLambdaRepository
@@ -199,7 +199,14 @@ public interface IWhereProvider<T> : IBaseLambdaRepository
     IWhereStage<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate);
 }
 
-public interface IWhereStage<T> : IWhereProvider<T>, IOrderByProvider<T>, ISelectProvider<T>, IGroupByProvider<T>,IExecuteProvider<T>
+public interface IWhereStage<T> : IWhereProvider<T>, 
+    IOrderByProvider<T>, 
+    ISelectProvider<T>,
+    IGroupByProvider<T>, 
+    IExecuteProvider<T>,
+    ISkipProvider<T>,
+    ITakeProvider<T>,
+    ISetValueProvider<T>
 {
 
 }
@@ -212,12 +219,12 @@ public interface IOrderByProvider<T> : IBaseLambdaRepository
 
 public interface ISkipProvider<T> : IBaseLambdaRepository
 {
-    ISkipStage<T>  Skip(int skip);
+    ISkipStage<T> Skip(int skip);
 }
 
 public interface ISkipStage<T> : ITakeProvider<T>
 {
-    
+
 }
 
 public interface ITakeProvider<T> : IBaseLambdaRepository
@@ -225,12 +232,27 @@ public interface ITakeProvider<T> : IBaseLambdaRepository
     ITakeStage<T> Take(int take);
 }
 
-public interface ITakeStage<T> : IBaseLambdaRepository,IExecuteProvider<T>
+public interface ITakePageProvider<T>
 {
-    
+    /// <summary>
+    /// 生成经过分页的结果
+    /// </summary>
+    /// <returns></returns>
+    Page<T> ToPage();
+
+    /// <summary>
+    /// 生成经过分页的结果
+    /// </summary>
+    /// <returns></returns>
+    Task<Page<T>> ToPageAsync();
 }
 
-public interface IOrderByStage<T> : IThenByProvider<T>, ISelectProvider<T>,ISkipProvider<T>,ITakeProvider<T>
+public interface ITakeStage<T> : IBaseLambdaRepository, IExecuteProvider<T>,ITakePageProvider<T>
+{
+
+}
+
+public interface IOrderByStage<T> : IThenByProvider<T>, ISelectProvider<T>, ISkipProvider<T>, ITakeProvider<T>,IExecuteProvider<T>
 {
 
 }
@@ -242,14 +264,14 @@ public interface IThenByProvider<T> : IBaseLambdaRepository
     IThenByStage<T> ThenByDescending<TKey>(Expression<Func<T, TKey>> keySelector);
 }
 
-public interface IThenByStage<T> : ISelectProvider<T>, IThenByProvider<T>,ISkipProvider<T>,ITakeProvider<T>
+public interface IThenByStage<T> : ISelectProvider<T>, IThenByProvider<T>, ISkipProvider<T>, ITakeProvider<T>, IExecuteProvider<T>
 {
 
 }
 
 public interface IHavingProvider<T, TKey>
 {
-    IHavingStage<T, TKey> Having(Expression<Func<IGrouping<TKey, T>, bool>> predicate);
+    IHavingStage<T, TKey> Having(Expression<Func<IMyGrouping<TKey, T>, bool>> predicate);
 }
 
 public interface IHavingStage<T, TKey> : IGroupBySelectProvider<T, TKey>
@@ -257,6 +279,17 @@ public interface IHavingStage<T, TKey> : IGroupBySelectProvider<T, TKey>
 
 }
 
+public interface IMyGrouping<out TKey,Table>
+{
+    TKey Key { get; }
+
+    IAggregateFunc<Table> T { get; }
+}
+
+public interface IAggregateFunc<T>
+{
+    TResult Sum<TResult>(Expression<Func<T,TResult>> predicate);
+}
 
 public interface IGroupByProvider<T>
 {
@@ -296,7 +329,7 @@ public class LambdaRepository<T> : ILambdaRepository<T>
         return new LambdaRepository<T>(callExpr, Provider);
     }
 
-    public ISelectStage<T> Select<TResult>(Expression<Func<T, TResult>> selector)
+    public ISelectStage<TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
     {
         var methodInfo = RepositoryMethodsCache.Select.MakeGenericMethod(typeof(T), typeof(TResult));
         var callExpr = Expression.Call(
@@ -305,9 +338,9 @@ public class LambdaRepository<T> : ILambdaRepository<T>
             Expression,
             Expression.Quote(selector)
         );
-        return new LambdaRepository<T>(callExpr, Provider);
+        return new LambdaRepository<TResult>(callExpr, Provider);
     }
-    
+
     public Expression Expression { get; protected set; }
 
     public ISetValueStage<T> SetValue(Expression<Func<T, object>> predicate, object value)
@@ -318,7 +351,7 @@ public class LambdaRepository<T> : ILambdaRepository<T>
             methodInfo,
             this.Expression,
             Expression.Quote(predicate),
-            Expression.Constant(value,typeof(object))
+            Expression.Constant(value, typeof(object))
         );
 
         return new LambdaRepository<T>(callExpr, Provider);
@@ -398,7 +431,7 @@ public class LambdaRepository<T> : ILambdaRepository<T>
 
         return new LambdaRepository<T>(callExpr, Provider);
     }
-    
+
     private LambdaRepository<T> InternalTakeSkip(
         int count,
         MethodInfo methodInfo
@@ -411,22 +444,22 @@ public class LambdaRepository<T> : ILambdaRepository<T>
             Expression,
             Expression.Constant(count)
         );
-    
+
         return new LambdaRepository<T>(callExpr, Provider);
     }
 
     public ISkipStage<T> Skip(int skip)
     {
-       var methodInfo = RepositoryMethodsCache.Skip.MakeGenericMethod(typeof(T));
-       return InternalTakeSkip(skip, methodInfo);
+        var methodInfo = RepositoryMethodsCache.Skip;
+        return InternalTakeSkip(skip, methodInfo);
     }
 
     public ITakeStage<T> Take(int take)
     {
-        var methodInfo = RepositoryMethodsCache.Take.MakeGenericMethod(typeof(T));
+        var methodInfo = RepositoryMethodsCache.Take;
         return InternalTakeSkip(take, methodInfo);
     }
-    
+
     public IGroupByStage<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
     {
         var methodInfo = RepositoryMethodsCache.GroupBy.MakeGenericMethod(typeof(T), typeof(TKey));
@@ -436,9 +469,9 @@ public class LambdaRepository<T> : ILambdaRepository<T>
             Expression,
             Expression.Quote(keySelector)
         );
-       return new GroupRepository<T, TKey>(callExpr, Provider);
+        return new GroupRepository<T, TKey>(callExpr, Provider);
     }
-    
+
     public IThenByStage<T> ThenBy<TKey>(Expression<Func<T, TKey>> keySelector)
     {
         var methodInfo = RepositoryMethodsCache.ThenBy.MakeGenericMethod(typeof(T), typeof(TKey));
@@ -452,8 +485,8 @@ public class LambdaRepository<T> : ILambdaRepository<T>
         var result = InternalOrderBy(keySelector, methodInfo);
         return result;
     }
-    
-        private MethodCallExpression GetCountMethodCallExpression()
+
+    private MethodCallExpression GetCountMethodCallExpression()
     {
         var methodInfo = RepositoryMethodsCache.Count.MakeGenericMethod(typeof(T));
         var callExpr = Expression.Call(
@@ -682,7 +715,7 @@ public class LambdaRepository<T> : ILambdaRepository<T>
         var result = await Provider.QueryFirstOrDefaultAsync<TResult>(callExpr);
         return result;
     }
-    
+
     public List<T> ToList()
     {
         var result = Provider.QueryList<T>(Expression);
@@ -720,11 +753,11 @@ public class LambdaRepository<T> : ILambdaRepository<T>
 
         return result;
     }
-    
- 
+
+
 }
 
-public class GroupRepository<T, TKey> : IGroupByStage<T, TKey>, IBaseLambdaRepository,IHavingStage<T, TKey>
+public class GroupRepository<T, TKey> : IGroupByStage<T, TKey>, IBaseLambdaRepository, IHavingStage<T, TKey>
 {
     public GroupRepository(Expression expression, IRepositoryProvider provider)
     {
@@ -749,7 +782,7 @@ public class GroupRepository<T, TKey> : IGroupByStage<T, TKey>, IBaseLambdaRepos
     }
 
     public Expression Expression { get; protected set; }
-    
+
     public IHavingStage<T, TKey> Having(Expression<Func<IGrouping<TKey, T>, bool>> predicate)
     {
         var methodInfo = RepositoryMethodsCache.Having.MakeGenericMethod(typeof(T), typeof(TKey));
@@ -764,7 +797,7 @@ public class GroupRepository<T, TKey> : IGroupByStage<T, TKey>, IBaseLambdaRepos
     }
 }
 
-public interface IBaseRepository<T> :ILambdaRepository<T>, ISqlExecutor
+public interface IBaseRepository<T> : ILambdaRepository<T>, ISqlExecutor
 {
     #region sync
     /// <summary>

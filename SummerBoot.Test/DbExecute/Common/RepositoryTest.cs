@@ -3393,7 +3393,7 @@ namespace SummerBoot.Test.DbExecute.Common
                 State = 2
             };
             await orderHeaderRepository.InsertAsync(orderHeader2);
-            var dbOrders = await orderHeaderRepository.Where(x => x.Id == orderHeader.Id).Where(x=>x.OrderNo==orderNo).ToListAsync();
+            var dbOrders = await orderHeaderRepository.Where(x => x.Id == orderHeader.Id).Where(x => x.OrderNo == orderNo).ToListAsync();
             Assert.Equal(1, dbOrders.Count);
             Assert.Equal(dbOrders[0].State, orderHeader.State);
         }
@@ -3413,10 +3413,38 @@ namespace SummerBoot.Test.DbExecute.Common
             };
             await nullableTableRepository.InsertAsync(nullableTable1);
 
-            var dbModel = await nullableTableRepository.Where(x => x.Id == nullableTable1.Id && nullableTable1.Float2==x.Float2).FirstOrDefaultAsync();
+            var dbModel = await nullableTableRepository.Where(x => x.Id == nullableTable1.Id && nullableTable1.Float2 == x.Float2).FirstOrDefaultAsync();
             Assert.Equal(dbModel.Float2, nullableTable1.Float2);
-            var dbModel2 = await nullableTableRepository.Where(x => x.Id == nullableTable1.Id && x.Float2>1.34f).FirstOrDefaultAsync();
+            var dbModel2 = await nullableTableRepository.Where(x => x.Id == nullableTable1.Id && x.Float2 > 1.34f).FirstOrDefaultAsync();
             Assert.Equal(dbModel2.Float2, nullableTable1.Float2);
+        }
+
+
+        [Theory]
+        [InlineData(DbType.MySql)]
+        [InlineData(DbType.Pgsql)]
+        [InlineData(DbType.Oracle)]
+        [InlineData(DbType.SqlServer)]
+        [InlineData(DbType.Sqlite)]
+        public async Task TestHavingAsync(DbType dbType)
+        {
+            ChangeDb(dbType);
+            var orderHeaderRepository = serviceProvider.GetService<IOrderHeaderRepository>();
+            var orderNo = GetRandomName();
+            var orderHeader = new OrderHeader()
+            {
+                CreateTime = DateTime.Now,
+                OrderNo = orderNo,
+                State = 1
+            };
+            await orderHeaderRepository.InsertAsync(orderHeader);
+
+            var r1 = await orderHeaderRepository.GroupBy(x => new { x.OrderNo, x.State })
+                .Having(x => x.T.Sum(y => y.State) > 0)
+                .Select(x => x.Key)
+                .FirstOrDefaultAsync();
+
+            Assert.Equal(1, r1);
         }
     }
 }

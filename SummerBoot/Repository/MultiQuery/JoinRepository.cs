@@ -50,8 +50,7 @@ public class JoinRepository<T1> : IJoinRepository<T1>
             joinTable.Expression,
             Expression.Quote(on));
 
-        var body = Source.Provider.CreateQuery<ILambdaRepository<JoinCondition<T1, T2>>>(callExpr);
-        var result = new JoinRepository<T1, T2>(body);
+        var result = new JoinRepository<T1, T2>(callExpr, Source.Provider);
 
         return result;
     }

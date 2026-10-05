@@ -32,71 +32,71 @@ public static class JoinRepository2Methods
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IJoinOrderRepository<T1, T2> OrderBy<T1, T2, TKey>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public static IOrderByStage<T1, T2> OrderBy<T1, T2, TKey>(IOrderByProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IJoinOrderRepository<T1, T2> OrderByDescending<T1, T2, TKey>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public static IOrderByStage<T1, T2> OrderByDescending<T1, T2, TKey>(IOrderByProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IJoinOrderRepository<T1, T2> ThenBy<T1, T2, TKey>(IJoinOrderRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public static IThenByStage<T1, T2> ThenBy<T1, T2, TKey>(IThenByProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IJoinOrderRepository<T1, T2> ThenByDescending<T1, T2, TKey>(IJoinOrderRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public static IThenByStage<T1, T2> ThenByDescending<T1, T2, TKey>(IThenByProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
-    public static IJoinGroupRepository<T1, T2, TKey> GroupBy<T1, T2, TKey>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
+    public static IGroupByStage<T1, T2, TKey> GroupBy<T1, T2, TKey>(IGroupByProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TKey>> keySelector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
-    public static ILambdaRepository<TResult> Select<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-
-    public static IJoinRepository<T1, T2> Where<T1, T2>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
-    {
-        throw new NotSupportedException("Only for expression translation.");
-    }
-    public static TResult Max<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public static ISelectStage<TResult> Select<T1, T2, TResult>(ISelectProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static TResult Min<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public static IWhereStage<T1, T2> Where<T1, T2>(IWhereProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> predicate)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+    public static TResult Max<T1, T2, TResult>(IExecuteProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static TResult Sum<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public static TResult Min<T1, T2, TResult>(IExecuteProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static TResult Average<T1, T2, TResult>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    public static TResult Sum<T1, T2, TResult>(IExecuteProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static int Count<T1, T2>(IJoinRepository<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> selector)
+    public static TResult Average<T1, T2, TResult>(IExecuteProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, TResult>> selector)
+    {
+        throw new NotSupportedException("Only for expression translation.");
+    }
+
+    public static int Count<T1, T2>(IExecuteProvider<T1, T2> source, Expression<Func<JoinCondition<T1, T2>, bool>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
 
 
-    public static IEnumerable<TResult> Select<T1, T2, TKey, TResult>(IJoinGroupRepository<T1, T2, TKey> source, Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
+    public static ISelectStage<TResult> Select<T1, T2, TKey, TResult>(IGroupBySelectProvider<T1, T2, TKey> source, Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> selector)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
 
-    public static IEnumerable<TResult> Having<T1, T2, TKey, TResult>(IGroupBySelectOrHavingRepository<T1, T2, TKey> source, Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> predicate)
+    public static IHavingStage<T1, T2, TKey> Having<T1, T2, TKey, TResult>(IHavingProvider<T1, T2, TKey> source, Expression<Func<IGrouping<TKey, JoinCondition<T1, T2>>, TResult>> predicate)
     {
         throw new NotSupportedException("Only for expression translation.");
     }
@@ -189,8 +189,5 @@ internal static class JoinRepository2MethodsCache
         typeof(JoinRepository2Methods)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Single(m => m.Name == nameof(JoinRepository2Methods.Having) && m.IsGenericMethodDefinition && m.GetGenericArguments().Length == 4);
-
-    
-
 
 }

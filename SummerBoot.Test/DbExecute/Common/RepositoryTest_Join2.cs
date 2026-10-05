@@ -218,7 +218,6 @@ public partial class RepositoryTest
         var orderDetailRepository = serviceProvider.GetService<IOrderDetailRepository>();
 
         var name = GetRandomName();
-        var name2 = GetRandomName();
         var orderHeader = new OrderHeader()
         {
             CreateTime = DateTime.Now,
@@ -226,11 +225,11 @@ public partial class RepositoryTest
             State = 100
         };
         await orderHeaderRepository.InsertAsync(orderHeader);
-
+        var name2 = GetRandomName();
         var orderHeader2 = new OrderHeader()
         {
             CreateTime = DateTime.Now.AddMinutes(1),
-            OrderNo = name,
+            OrderNo = name2,
             State = 100
         };
         await orderHeaderRepository.InsertAsync(orderHeader2);
@@ -247,7 +246,7 @@ public partial class RepositoryTest
 
         var outputDto = await orderHeaderRepository
             .LeftJoin(orderDetailRepository, x => x.T1.Id == x.T2.OrderHeaderId)
-            .Where(x => x.T1.OrderNo == name)
+            .Where(x => x.T1.OrderNo == name2)
             .OrderBy(x => x.T1.State)
             .ThenByDescending(x => x.T1.CreateTime)
             .Select(x => new JoinOutputDto() { Id = x.T2.Id })
